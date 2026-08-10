@@ -1,0 +1,5 @@
+contract_code,metric_code,name_en,source,notes
+13874A,SP500_COT,S&P 500 Consolidated,CFTC Traders in Financial Futures,Tuesday position snapshot released with a standard three-day lag.
+098662,DXY_COT,U.S. Dollar Index,CFTC Traders in Financial Futures,Legacy financial contract code.
+088691,GOLD_COT,Gold,CFTC Disaggregated Commitments of Traders,Commodity positioning.
+067651,WTI_COT,WTI Crude Oil,CFTC Disaggregated Commitments of Traders,Commodity positioning.

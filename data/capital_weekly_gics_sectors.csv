@@ -1,0 +1,12 @@
+gics_sector_code,sector_name_cn,sector_name_en,ticker,currency,provider,provider_symbol,source,proxy_type,notes
+10,能源,Energy,XLE,USD,sina_us,XLE,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+15,材料,Materials,XLB,USD,sina_us,XLB,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+20,工业,Industrials,XLI,USD,sina_us,XLI,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+25,可选消费,Consumer Discretionary,XLY,USD,sina_us,XLY,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+30,日常消费,Consumer Staples,XLP,USD,sina_us,XLP,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+35,医疗保健,Health Care,XLV,USD,sina_us,XLV,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+40,金融,Financials,XLF,USD,sina_us,XLF,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+45,信息技术,Information Technology,XLK,USD,sina_us,XLK,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+50,通信服务,Communication Services,XLC,USD,sina_us,XLC,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+55,公用事业,Utilities,XLU,USD,sina_us,XLU,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.
+60,房地产,Real Estate,XLRE,USD,sina_us,XLRE,Sina Finance US ETF,Sector SPDR ETF,Free-source ETF proxy for the GICS sector.

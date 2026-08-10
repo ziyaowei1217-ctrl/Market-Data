@@ -1,0 +1,6 @@
+metric_code,metric_name,series_id,risk_direction
+vix,VIX level,VIXCLS,1
+us_10y,US 10-year yield,DGS10,1
+dollar,Trade-weighted US dollar index,DTWEXBGS,1
+equity,S&P 500 index,SP500,-1
+credit,US high-yield option-adjusted spread,BAMLH0A0HYM2,1

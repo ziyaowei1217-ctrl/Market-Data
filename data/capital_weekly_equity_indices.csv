@@ -1,0 +1,21 @@
+region,index_name_cn,index_name_en,ticker,currency,provider,provider_symbol,source,notes
+US,标普500,S&P 500,.INX,USD,sina_us,.INX,Sina Finance US Index,
+US,纳斯达克综合指数,NASDAQ Composite,.IXIC,USD,sina_us,.IXIC,Sina Finance US Index,
+US,道琼斯工业平均指数,Dow Jones Industrial Average,.DJI,USD,sina_us,.DJI,Sina Finance US Index,
+US,纳斯达克100,NASDAQ 100,.NDX,USD,sina_us,.NDX,Sina Finance US Index,
+US,罗素2000,Russell 2000,RUT,USD,yahoo_ftse_russell,^RUT,Yahoo Finance + FTSE Russell,Direct hybrid feed; FTSE Russell extends Yahoo on missing latest dates after scale validation
+US,费城半导体指数,PHLX Semiconductor Index,SOX,USD,sina_us,.SOX,Sina Finance US Index,Direct daily index feed
+Europe,欧洲Stoxx50,EURO STOXX 50,SX5E,EUR,sina_global,SX5E,Sina Finance Global Index,STOXX Europe 600 was not available from the selected free endpoint.
+Europe,德国DAX,DAX,DAX,EUR,sina_global,DAX,Sina Finance Global Index,
+Europe,法国CAC40,CAC 40,CAC,EUR,sina_global,CAC,Sina Finance Global Index,
+Europe,英国富时100,FTSE 100,UKX,GBP,sina_global,UKX,Sina Finance Global Index,
+Asia,日经225,Nikkei 225,NKY,JPY,sina_global,NKY,Sina Finance Global Index,
+Asia,韩国综合指数,KOSPI,KOSPI,KRW,sina_global,KOSPI,Sina Finance Global Index,
+Asia,中国台湾加权指数,Taiwan Weighted,TWJQ,TWD,sina_global,TWJQ,Sina Finance Global Index,
+Asia,印度Sensex,BSE Sensex,SENSEX,INR,sina_global,SENSEX,Sina Finance Global Index,
+HK,恒生指数,Hang Seng Index,hkHSI,HKD,tencent_kline,hkHSI,Tencent Finance Kline,
+HK,恒生科技指数,Hang Seng TECH Index,hkHSTECH,HKD,tencent_kline,hkHSTECH,Tencent Finance Kline,
+China A,上证综指,SSE Composite,sh000001,CNY,tencent_kline,sh000001,Tencent Finance Kline,
+China A,沪深300,CSI 300,sh000300,CNY,tencent_kline,sh000300,Tencent Finance Kline,
+China A,深证成指,SZSE Component,sz399001,CNY,tencent_kline,sz399001,Tencent Finance Kline,
+China A,创业板指,ChiNext Index,sz399006,CNY,tencent_kline,sz399006,Tencent Finance Kline,
