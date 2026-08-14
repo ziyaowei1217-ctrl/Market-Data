@@ -6,7 +6,7 @@ import json
 import math
 import re
 from dataclasses import asdict, dataclass
-from datetime import datetime, time
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -16,6 +16,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
@@ -420,6 +421,7 @@ def _snapshot_row(config: IndexConfig, snapshot: Any, source: str, url: str) -> 
 def fetch_equity_indices(
     universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
+    as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     session = _session()
     rows: list[dict[str, Any]] = []
@@ -434,6 +436,7 @@ def fetch_equity_indices(
         try:
             history, raw_text = fetch_history(config, session=session)
             history = _drop_unfinished_current_day(history, config)
+            history = truncate_history_as_of(history, as_of_date)
             if raw_path:
                 (raw_path / f"{config.ticker.replace('.', '_')}.txt").write_text(
                     raw_text, encoding="utf-8"

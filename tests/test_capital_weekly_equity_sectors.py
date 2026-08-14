@@ -57,6 +57,40 @@ class EquitySectorUniverseTests(unittest.TestCase):
 
 
 class EquitySectorFetchTests(unittest.TestCase):
+    def test_fetcher_applies_as_of_cutoff_before_snapshot_calculation(self):
+        with TemporaryDirectory() as directory:
+            universe_path = Path(directory) / "universe.csv"
+            universe_path.write_text(
+                "market,taxonomy,taxonomy_version,taxonomy_level,sector_code,"
+                "sector_name_cn,sector_name_en,ticker,currency,provider,"
+                "provider_symbol,source,instrument_type,sort_order,notes\n"
+                "US,GICS,2018,Level 1,10,能源,Energy,TEST,USD,sina_us,.TEST,"
+                "Sina Finance,Index,1,\n",
+                encoding="utf-8",
+            )
+            history = pd.DataFrame(
+                {
+                    "date": [date(2025, 12, 31), date(2026, 8, 7), date(2026, 8, 10)],
+                    "open": [100.0, 105.0, 110.0],
+                    "high": [100.0, 105.0, 110.0],
+                    "low": [100.0, 105.0, 110.0],
+                    "close": [100.0, 105.0, 110.0],
+                    "volume": [1, 1, 1],
+                }
+            )
+
+            with patch(
+                "capital_weekly.equity_sectors.fetch_history",
+                return_value=(history, "fake history"),
+            ):
+                data, source_log = fetch_equity_sectors(
+                    universe_path,
+                    as_of_date=date(2026, 8, 9),
+                )
+
+        self.assertEqual(data.loc[0, "latest_date"], "2026-08-07")
+        self.assertEqual(source_log.loc[0, "latest_date"], "2026-08-07")
+
     def legacy_investing_sector_appends_reported_ytd_baseline_after_session_filter(self):
         with TemporaryDirectory() as directory:
             universe_path = Path(directory) / "universe.csv"

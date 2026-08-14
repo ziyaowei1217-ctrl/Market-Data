@@ -12,7 +12,7 @@ from urllib.parse import urljoin
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable, Mapping
 
 import pandas as pd
 import requests
@@ -46,6 +46,9 @@ class MacroAssetConfig:
     change_unit: str
     sort_order: int
     notes: str = ""
+    calculation_id: str = ""
+    formula_version: str = ""
+    input_series_codes: str = ""
 
 
 def load_macro_asset_universe(
@@ -69,21 +72,101 @@ def _normalized_values(
     return values
 
 
+def align_series_histories(
+    histories: Mapping[str, Iterable[dict]],
+    input_codes: tuple[str, ...],
+    calculator: Callable[..., float],
+) -> list[dict[str, date | float]]:
+    if not input_codes:
+        raise ValueError("Calculated series must declare at least one input")
+    try:
+        values_by_code = {
+            code: _normalized_values(histories[code])
+            for code in input_codes
+        }
+    except KeyError as error:
+        raise ValueError(f"Calculated series is missing input: {error.args[0]}") from error
+    shared_dates = set.intersection(
+        *(set(values) for values in values_by_code.values())
+    )
+    aligned = []
+    for observation_date in sorted(shared_dates):
+        value = float(
+            calculator(
+                *(values_by_code[code][observation_date] for code in input_codes)
+            )
+        )
+        if not math.isfinite(value):
+            raise ValueError("Calculated series produced a non-finite value")
+        aligned.append({"date": observation_date, "value": value})
+    return aligned
+
+
+def calculate_five_year_five_year(be5: float, be10: float) -> float:
+    if not math.isfinite(be5) or not math.isfinite(be10):
+        raise ValueError("Breakeven inputs must be finite")
+    if be5 <= -100.0 or be10 <= -100.0:
+        raise ValueError("Breakeven inputs must be greater than -100 percent")
+    return (
+        ((1.0 + be10 / 100.0) ** 2) / (1.0 + be5 / 100.0) - 1.0
+    ) * 100.0
+
+
+CALCULATED_SERIES = {
+    "UST10Y2Y": (
+        ("UST10Y", "UST2Y"),
+        lambda ten, two: ten - two,
+        "curve-spread-v1",
+    ),
+    "US_BE5Y": (
+        ("UST5Y", "UST_REAL5Y"),
+        lambda nominal, real: nominal - real,
+        "breakeven-v1",
+    ),
+    "US_BE10Y": (
+        ("UST10Y", "UST_REAL10Y"),
+        lambda nominal, real: nominal - real,
+        "breakeven-v1",
+    ),
+    "US_5Y5Y": (
+        ("US_BE5Y", "US_BE10Y"),
+        calculate_five_year_five_year,
+        "forward-inflation-v1",
+    ),
+}
+CALCULATION_IDS = {
+    "UST10Y2Y": "curve_spread",
+    "US_BE5Y": "breakeven",
+    "US_BE10Y": "breakeven",
+    "US_5Y5Y": "five_year_five_year",
+}
+CALCULATED_SOURCE_REFERENCES = {
+    "UST10Y2Y": (
+        "calculated:UST10Y-UST2Y (shared Treasury observation dates)"
+    ),
+    "US_BE5Y": (
+        "calculated:UST5Y-UST_REAL5Y (shared Treasury observation dates)"
+    ),
+    "US_BE10Y": (
+        "calculated:UST10Y-UST_REAL10Y (shared Treasury observation dates)"
+    ),
+    "US_5Y5Y": (
+        "calculated:5Y5Y from US_BE5Y and US_BE10Y "
+        "(shared Treasury observation dates)"
+    ),
+}
+
+
 def align_curve_spread(
     ten_year: Iterable[dict],
     two_year: Iterable[dict],
 ) -> list[dict[str, date | float]]:
     """Inner-join Treasury histories by date and calculate 10Y minus 2Y."""
-    ten_year_values = _normalized_values(ten_year)
-    two_year_values = _normalized_values(two_year)
-    return [
-        {
-            "date": observation_date,
-            "value": ten_year_values[observation_date]
-            - two_year_values[observation_date],
-        }
-        for observation_date in sorted(ten_year_values.keys() & two_year_values.keys())
-    ]
+    return align_series_histories(
+        {"UST10Y": ten_year, "UST2Y": two_year},
+        ("UST10Y", "UST2Y"),
+        lambda ten, two: ten - two,
+    )
 
 
 def _parse_treasury_csv(text: str, field: str) -> list[dict]:
@@ -551,15 +634,31 @@ def _fetch_config_history(
             )
             session._macro_raw_parts.append(shared[key][0])
         return shared[key]
-    if config.provider == "us_treasury":
-        field = {"2-year": "2 Yr", "10-year": "10 Yr", "30-year": "30 Yr"}[config.provider_symbol]
+    if config.provider in {"us_treasury", "us_treasury_real"}:
+        if config.provider == "us_treasury":
+            fields = {
+                "2-year": "2 Yr",
+                "5-year": "5 Yr",
+                "10-year": "10 Yr",
+                "30-year": "30 Yr",
+            }
+            curve_type = "daily_treasury_yield_curve"
+        else:
+            fields = {"5-year": "5 YR", "10-year": "10 YR"}
+            curve_type = "daily_treasury_real_yield_curve"
+        try:
+            field = fields[config.provider_symbol]
+        except KeyError as error:
+            raise ValueError(
+                f"Unsupported {config.provider} symbol: {config.provider_symbol}"
+            ) from error
         responses = []
         history = []
         urls = []
         for year in (today.year - 1, today.year):
             url = (
                 f"https://home.treasury.gov/resource-center/data-chart-center/interest-rates/"
-                f"daily-treasury-rates.csv/{year}/all?type=daily_treasury_yield_curve&"
+                f"daily-treasury-rates.csv/{year}/all?type={curve_type}&"
                 f"field_tdr_date_value={year}&page&_format=csv"
             )
             response = _get(session, url)
@@ -898,6 +997,36 @@ def _cache_raw_failure(raw_path, config, raw_parts):
         return "CACHE_WRITE_FAILED", str(cache_error)
 
 
+def _source_audit_metadata(
+    config: MacroAssetConfig,
+    known_as_of: str | None,
+    *,
+    warnings: str = "",
+) -> dict:
+    freshness_days = {
+        "daily": 7,
+        "weekly": 14,
+        "monthly": 45,
+        "quarterly": 120,
+        "event": 365,
+    }.get(config.frequency)
+    return {
+        "provider": config.provider,
+        "provider_symbol": config.provider_symbol,
+        "source_tier": "public",
+        "requiredness": "required",
+        "provider_version": "1.0.0",
+        "schema_version": "macro-asset-v2",
+        "frequency": config.frequency,
+        "freshness_days": freshness_days,
+        "known_as_of": known_as_of,
+        "warnings": warnings,
+        "calculation_id": config.calculation_id,
+        "formula_version": config.formula_version,
+        "input_series_codes": config.input_series_codes,
+    }
+
+
 def fetch_macro_assets(
     universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
@@ -916,10 +1045,47 @@ def fetch_macro_assets(
         session._macro_raw_parts = []
         try:
             if config.provider == "calculated":
-                history = align_curve_spread(histories["UST10Y"], histories["UST2Y"])
+                definition = CALCULATED_SERIES.get(config.series_code)
+                if definition is None:
+                    raise ValueError(
+                        f"Unknown calculated macro series: {config.series_code}"
+                    )
+                input_codes, calculator, formula_version = definition
+                declared_inputs = tuple(
+                    code
+                    for code in config.input_series_codes.split("|")
+                    if code
+                )
+                if config.calculation_id != CALCULATION_IDS[config.series_code]:
+                    raise ValueError(
+                        f"{config.series_code} calculation_id does not match registry"
+                    )
+                if config.formula_version != formula_version:
+                    raise ValueError(
+                        f"{config.series_code} formula_version does not match registry"
+                    )
+                if declared_inputs != input_codes:
+                    raise ValueError(
+                        f"{config.series_code} input_series_codes do not match registry"
+                    )
+                history = align_series_histories(
+                    histories,
+                    input_codes,
+                    calculator,
+                )
                 raw = json.dumps(history, default=str).encode("utf-8")
-                url = "calculated:UST10Y-UST2Y (shared Treasury observation dates)"
+                url = CALCULATED_SOURCE_REFERENCES[config.series_code]
             else:
+                if any(
+                    (
+                        config.calculation_id,
+                        config.formula_version,
+                        config.input_series_codes,
+                    )
+                ):
+                    raise ValueError(
+                        f"Observed series {config.series_code} must not declare a calculation"
+                    )
                 if as_of_date is None:
                     history, raw, url = _fetch_config_history(config, session)
                 else:
@@ -954,6 +1120,11 @@ def fetch_macro_assets(
                 "latest_value": snapshot.latest_value, "source_url": url,
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status, "raw_cache_error": raw_cache_error,
+                **_source_audit_metadata(
+                    config,
+                    _iso(snapshot.latest_date),
+                    warnings=raw_cache_error,
+                ),
             })
         except Exception as error:
             url = _attempt_provenance(session._macro_attempt_trace, url)
@@ -978,5 +1149,10 @@ def fetch_macro_assets(
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status,
                 "raw_cache_error": raw_cache_error,
+                **_source_audit_metadata(
+                    config,
+                    None,
+                    warnings=raw_cache_error,
+                ),
             })
     return pd.DataFrame(detail_rows), pd.DataFrame(source_rows)

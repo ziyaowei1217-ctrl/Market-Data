@@ -22,7 +22,6 @@ _运行文件/
 tmp/
 .playwright-cli/
 .superpowers/
-docs/superpowers/
 .worktrees/
 
 *.raw

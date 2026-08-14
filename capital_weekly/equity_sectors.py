@@ -4,7 +4,7 @@ import csv
 import os
 import tempfile
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,7 @@ from .equity_indices import (
     fetch_history,
     source_url,
 )
+from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
@@ -163,6 +164,7 @@ def _atomic_write_text(path: Path, text: str) -> None:
 def fetch_equity_sectors(
     universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
+    as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     session = _session()
     rows: list[dict[str, Any]] = []
@@ -178,6 +180,7 @@ def fetch_equity_sectors(
             url = source_url(config)
             history, raw_text = fetch_history(config, session=session)
             history = _drop_unfinished_current_day(history, config)
+            history = truncate_history_as_of(history, as_of_date)
             snapshot = calculate_return_snapshot(_series_for_returns(history), "pct")
             raw_cache_status = "DISABLED"
             raw_cache_error = ""

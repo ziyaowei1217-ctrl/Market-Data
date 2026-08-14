@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -18,6 +19,38 @@ from capital_weekly.equity_indices import (
 
 
 class EquityIndexFetcherTests(unittest.TestCase):
+    def test_fetcher_applies_as_of_cutoff_before_snapshot_calculation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            universe_path = Path(directory) / "universe.csv"
+            universe_path.write_text(
+                "region,index_name_cn,index_name_en,ticker,currency,provider,"
+                "provider_symbol,source,notes\n"
+                "US,测试指数,Test Index,TEST,USD,sina_us,.TEST,Sina Finance,\n",
+                encoding="utf-8",
+            )
+            history = pd.DataFrame(
+                {
+                    "date": [date(2025, 12, 31), date(2026, 8, 7), date(2026, 8, 10)],
+                    "open": [100.0, 105.0, 110.0],
+                    "high": [100.0, 105.0, 110.0],
+                    "low": [100.0, 105.0, 110.0],
+                    "close": [100.0, 105.0, 110.0],
+                    "volume": [1, 1, 1],
+                }
+            )
+
+            with patch(
+                "capital_weekly.equity_indices.fetch_history",
+                return_value=(history, "fake history"),
+            ):
+                data, source_log = equity_indices.fetch_equity_indices(
+                    universe_path,
+                    as_of_date=date(2026, 8, 9),
+                )
+
+        self.assertEqual(data.loc[0, "latest_date"], "2026-08-07")
+        self.assertEqual(source_log.loc[0, "latest_date"], "2026-08-07")
+
     def test_parse_yahoo_chart_ohlcv_normalizes_daily_rows(self):
         payload = {
             "chart": {
