@@ -68,6 +68,10 @@ workflow. Its failure remains visible in `source_log.csv` but does not block an
 otherwise complete week. The provider does not publish option-chain history,
 ETF-flow proxies, or generated regime labels.
 
+`yfinance` is not affiliated with or endorsed by Yahoo. Yahoo data is subject
+to Yahoo's personal-use terms, so this integration remains limited to the
+approved local desktop research workflow.
+
 `EIA_API_KEY` enables the existing free EIA commodity-fundamentals provider.
 Keep the key in the process environment; never place it in repository files.
 

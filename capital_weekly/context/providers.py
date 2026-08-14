@@ -575,6 +575,7 @@ def _yahoo_volatility_provider(
     end: date,
     config,
 ) -> ProviderResult:
+    raw_text = ""
     try:
         frame = downloader(
             tickers=[item.ticker for item in config],
@@ -588,6 +589,7 @@ def _yahoo_volatility_provider(
             progress=False,
         )
         histories = extract_yahoo_close_histories(frame, config, end)
+        raw_text = serialize_yahoo_close_histories(histories, config)
         metrics = calculate_yahoo_volatility_metrics(histories, config, end)
         rows = [
             {
@@ -608,7 +610,7 @@ def _yahoo_volatility_provider(
         return ProviderResult(
             category="financial_conditions",
             rows=rows,
-            raw_text=serialize_yahoo_close_histories(histories, config),
+            raw_text=raw_text,
             source=YAHOO_VOLATILITY_SOURCE,
             source_url=YAHOO_FINANCE_URL,
         )
@@ -616,7 +618,7 @@ def _yahoo_volatility_provider(
         return ProviderResult(
             category="financial_conditions",
             rows=[],
-            raw_text="",
+            raw_text=raw_text,
             source=YAHOO_VOLATILITY_SOURCE,
             source_url=YAHOO_FINANCE_URL,
             status="FETCH_FAILED",

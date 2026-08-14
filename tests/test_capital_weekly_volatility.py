@@ -118,6 +118,29 @@ class YahooVolatilityTests(unittest.TestCase):
             all(row["source_url"].startswith("https://") for row in metrics)
         )
 
+    def test_uses_the_latest_common_term_date_when_one_series_lacks_friday(self):
+        frame = yahoo_frame().iloc[:2].copy()
+        frame.loc[pd.Timestamp("2026-08-07"), ("^VIX3M", "Close")] = float("nan")
+        frame.loc[pd.Timestamp("2026-08-07"), ("^SKEW", "Close")] = 146.0
+
+        histories = extract_yahoo_close_histories(
+            frame, config_rows(), date(2026, 8, 9)
+        )
+        metrics = calculate_yahoo_volatility_metrics(
+            histories, config_rows(), date(2026, 8, 9)
+        )
+        by_code = {row["metric_code"]: row for row in metrics}
+
+        self.assertEqual(
+            by_code["vix_1m_3m_spread"]["as_of_date"],
+            date(2026, 8, 6),
+        )
+        self.assertEqual(by_code["vix_1m_3m_spread"]["value"], -4.0)
+        self.assertEqual(
+            by_code["cboe_skew_level"]["as_of_date"],
+            date(2026, 8, 7),
+        )
+
     def test_loads_the_exact_five_roles_in_file_order(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "volatility.csv"
@@ -214,7 +237,11 @@ class YahooVolatilityTests(unittest.TestCase):
             frame, config_rows(), date(2026, 8, 16)
         )
 
-        with self.assertRaisesRegex(ValueError, "freshness window"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "SKEW date 2026-08-06 has lag 10 days versus target Sunday "
+            "2026-08-16; allowed range is 0..7 days",
+        ):
             calculate_yahoo_volatility_metrics(
                 histories, config_rows(), date(2026, 8, 16)
             )
@@ -234,7 +261,11 @@ class YahooVolatilityTests(unittest.TestCase):
             frame, config_rows(), date(2026, 8, 20)
         )
 
-        with self.assertRaisesRegex(ValueError, "term structure"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "term structure date 2026-08-07 has lag 13 days versus target "
+            "Sunday 2026-08-20; allowed range is 0..7 days",
+        ):
             calculate_yahoo_volatility_metrics(
                 histories, config_rows(), date(2026, 8, 20)
             )

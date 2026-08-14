@@ -110,7 +110,11 @@ def calculate_yahoo_volatility_metrics(
     for label, observed in (("term structure", term_date), ("SKEW", skew_date)):
         lag = (as_of_date - observed).days
         if lag < 0 or lag > max_lag_days:
-            raise ValueError(f"Yahoo {label} date is outside the freshness window")
+            raise ValueError(
+                f"Yahoo {label} date {observed.isoformat()} has lag {lag} days "
+                f"versus target Sunday {as_of_date.isoformat()}; allowed range "
+                f"is 0..{max_lag_days} days"
+            )
 
     observed_dates = {role: term_date for role in TERM_ROLES}
     observed_dates["skew"] = skew_date
