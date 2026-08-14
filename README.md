@@ -30,11 +30,13 @@ provider status, observation dates, quality flags, and source URLs.
 
 ## Requirements
 
-- Python 3.9 or newer
+- Python 3.10 or newer
 - Node.js for workbook packaging
 - `@oai/artifact-tool` supplied by the Codex workspace runtime
 
-The Python requirements include `pypdf` for official policy-document parsing.
+The Python requirements include `pypdf` for official policy-document parsing
+and the constrained `yfinance` 1.x client for optional Yahoo volatility
+signals.
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -54,6 +56,20 @@ or a machine-specific symlink.
   includes an organization and contact address.
 
 No credentials are stored in the repository.
+
+### Optional Yahoo volatility signals
+
+The weekly-context pipeline uses `yfinance` to request `^VIX9D`, `^VIX`,
+`^VIX3M`, `^VIX6M`, and `^SKEW`. It publishes observed levels plus registered
+1M–3M and 9D–1M term calculations into `financial_conditions.csv`.
+
+Yahoo Finance is an optional public research source for this local desktop
+workflow. Its failure remains visible in `source_log.csv` but does not block an
+otherwise complete week. The provider does not publish option-chain history,
+ETF-flow proxies, or generated regime labels.
+
+`EIA_API_KEY` enables the existing free EIA commodity-fundamentals provider.
+Keep the key in the process environment; never place it in repository files.
 
 ## Coordinated weekly refresh
 
