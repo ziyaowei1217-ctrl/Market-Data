@@ -124,3 +124,38 @@ Tests use fixtures and mocks; they do not require a full live weekly fetch.
 ## License
 
 MIT. See `LICENSE`.
+
+## 使用手册
+目前需要在终端运行 5 个采集程序。以 2026-08-03 至 2026-08-09 这一周为例：
+
+1. 下载并安装
+git clone https://github.com/ziyaowei1217-ctrl/Market-Data.git
+cd Market-Data
+
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+2. 采集每周数据
+period="20260803-20260809"
+week_dir="outputs/week_${period}"
+
+python3 scripts/fetch_equity_indices.py \
+  --output-dir "${week_dir}/capital_weekly_equity_indices_python_20260809"
+
+python3 scripts/fetch_equity_sectors.py \
+  --output-dir "${week_dir}/capital_weekly_equity_sectors_python_20260809"
+
+python3 scripts/fetch_gics_sectors.py \
+  --output-dir "${week_dir}/capital_weekly_gics_sectors_python_20260809"
+
+python3 scripts/fetch_macro_assets.py \
+  --as-of-date 2026-08-09 \
+  --output-dir "${week_dir}/capital_weekly_macro_assets_python_20260809"
+
+python3 scripts/fetch_weekly_context.py \
+  --start-date 2026-08-03 \
+  --end-date 2026-08-09 \
+  --output-dir "${week_dir}/capital_weekly_context_20260809"
+生成结果位于：
+outputs/week_20260803-20260809/
+里面会有股票指数、行业、宏观资产、事件背景等 CSV，以及数据来源状态 source_log.csv。每周运行时只需要替换开始日期、结束日期和目录日期。
