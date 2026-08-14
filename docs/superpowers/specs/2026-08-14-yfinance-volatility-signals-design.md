@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-14
 
-**Status:** Approach approved in conversation; pending written-spec review
+**Status:** Implemented and verified on 2026-08-14
 
 **Repository:** `/Users/a1-6/Documents/market data`
 
@@ -105,6 +105,13 @@ metric codes, or missing required roles fail provider validation.
 Update `requirements.txt` with the constrained `yfinance` dependency. No new
 output table or release pipeline is added.
 
+Modify `capital_weekly/weekly_release.py` only to register
+`("yahoo_volatility_signals", "financial_conditions")` as the single optional
+provider identity whose `FETCH_FAILED` status is accepted for formal
+publication. The existing rule that rejects `FETCH_FAILED` from every other
+provider remains unchanged. This narrow allowlist is required because the
+current validator rejects `FETCH_FAILED` even when `requiredness="optional"`.
+
 ## 5. Data Flow
 
 1. `build_default_providers` loads the Yahoo volatility registry.
@@ -183,6 +190,9 @@ Focused tests cover:
 - rejection of empty, stale, duplicate-date, future-only, non-finite, missing
   ticker, and zero-denominator histories;
 - registry metadata and optional requiredness;
+- release validation accepts `FETCH_FAILED` only for the registered optional
+  Yahoo volatility provider and still rejects the same status from every other
+  optional or required provider;
 - a provider failure remaining visible without blocking unrelated optional or
   required context data;
 - preservation of the exact existing context table schema.
@@ -223,4 +233,3 @@ Verification order:
   `https://www.cboe.com/tradable-products/vix/term-structure`
 - Cboe SKEW index listing:
   `https://www.cboe.com/us/indices/benchmark_indices/`
-
