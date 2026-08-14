@@ -8,7 +8,7 @@ import shutil
 import sys
 import tempfile
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +44,12 @@ def main() -> None:
     parser.add_argument("--universe", default="data/capital_weekly_equity_sectors.csv")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--no-raw-cache", action="store_true")
+    parser.add_argument(
+        "--as-of-date",
+        type=date.fromisoformat,
+        default=None,
+        help="Only use observations on or before this ISO date.",
+    )
     args = parser.parse_args()
 
     output_dir = Path(
@@ -56,7 +62,11 @@ def main() -> None:
     ))
     try:
         raw_dir = None if args.no_raw_cache else staging_dir / "raw"
-        data, source_log = fetch_equity_sectors(args.universe, raw_dir=raw_dir)
+        data, source_log = fetch_equity_sectors(
+            args.universe,
+            raw_dir=raw_dir,
+            as_of_date=args.as_of_date,
+        )
         ranked = add_return_ranks(data)
         summary = build_divergence_summary(ranked)
 

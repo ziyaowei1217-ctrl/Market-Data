@@ -5,18 +5,28 @@ import os
 import shutil
 import tempfile
 import time
-from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
-from typing import Callable
+from typing import Mapping
 
 import pandas as pd
 
-from .context.common import normalize_metric_rows
+from .context.common import METRIC_FIELDS, normalize_metric_rows
+from .context.economic_releases import (
+    ECONOMIC_RELEASE_FIELDS,
+    normalize_economic_release_rows,
+    validate_economic_release_input_references,
+)
+from .context.provider_contracts import (
+    ContextProvider,
+    ProviderResult,
+    filter_known_as_of,
+)
 
 
 CATEGORY_FILES = {
     "events": "events.csv",
+    "economic_releases": "economic_releases.csv",
     "market_internals": "market_internals.csv",
     "positioning_flows": "positioning_flows.csv",
     "company_events": "company_events.csv",
@@ -25,16 +35,63 @@ CATEGORY_FILES = {
     "source_log": "source_log.csv",
 }
 
-
-@dataclass(frozen=True)
-class ProviderResult:
-    category: str
-    rows: list[dict]
-    raw_text: str | bytes
-    source: str
-    source_url: str
-    status: str = "OK"
-    notes: str = ""
+EVENT_FIELDS = (
+    "event_date",
+    "release_time_bjt",
+    "release_datetime_bjt",
+    "region",
+    "event_type",
+    "event_name",
+    "reference_period",
+    "actual",
+    "previous",
+    "revised_previous",
+    "evidence_status",
+    "source",
+    "source_url",
+    "qc_flag",
+)
+SOURCE_LOG_FIELDS = (
+    "provider",
+    "source_tier",
+    "requiredness",
+    "provider_version",
+    "schema_version",
+    "frequency",
+    "freshness_days",
+    "latest_known_as_of",
+    "warnings",
+    "category",
+    "status",
+    "observations",
+    "as_of_date",
+    "source",
+    "source_url",
+    "elapsed_ms",
+    "notes",
+)
+COMPANY_EVENT_FIELDS = METRIC_FIELDS + (
+    "event_date",
+    "ticker",
+    "cik",
+    "form",
+    "event_type",
+    "accession_number",
+    "report_date",
+    "accepted_at",
+    "items",
+    "evidence_status",
+)
+CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {
+    "events": EVENT_FIELDS,
+    "economic_releases": ECONOMIC_RELEASE_FIELDS,
+    "market_internals": METRIC_FIELDS,
+    "positioning_flows": METRIC_FIELDS,
+    "company_events": COMPANY_EVENT_FIELDS,
+    "commodity_fundamentals": METRIC_FIELDS,
+    "financial_conditions": METRIC_FIELDS,
+    "source_log": SOURCE_LOG_FIELDS,
+}
 
 
 def _safe_provider_name(name: str) -> str:
@@ -42,7 +99,7 @@ def _safe_provider_name(name: str) -> str:
 
 
 def run_weekly_context(
-    providers: dict[str, Callable[[], ProviderResult]],
+    providers: Mapping[str, ContextProvider],
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
 ) -> dict[str, list[dict]]:
@@ -55,15 +112,26 @@ def run_weekly_context(
     for provider_name, provider in providers.items():
         started = time.monotonic()
         try:
-            result = provider()
+            if provider_name != provider.spec.name:
+                raise ValueError(
+                    f"Provider mapping key {provider_name!r} does not match "
+                    f"ProviderSpec name {provider.spec.name!r}"
+                )
+            result = provider.fetch()
+            if result.category != provider.spec.category:
+                raise ValueError(
+                    f"Provider result category {result.category!r} does not match "
+                    f"ProviderSpec category {provider.spec.category!r}"
+                )
             rows = (
-                normalize_metric_rows(result.rows)
+                normalize_economic_release_rows(result.rows)
+                if result.category == "economic_releases"
+                else normalize_metric_rows(result.rows)
                 if result.category != "events"
                 else [dict(row) for row in result.rows]
             )
-            if result.category not in tables or result.category == "source_log":
+            if provider.spec.category not in tables or provider.spec.category == "source_log":
                 raise ValueError(f"Unsupported context category: {result.category}")
-            tables[result.category].extend(rows)
             if raw_path:
                 raw_content = (
                     result.raw_text
@@ -73,10 +141,54 @@ def run_weekly_context(
                 (raw_path / f"{_safe_provider_name(provider_name)}.raw").write_bytes(
                     raw_content
                 )
+            rows_declare_known_as_of = any(
+                "known_as_of" in row for row in rows
+            )
+            if rows_declare_known_as_of:
+                rows = filter_known_as_of(rows, run_date)
+                if not rows:
+                    unavailable_note = (
+                        "No rows are known on or before target Sunday "
+                        f"{run_date.isoformat()}."
+                    )
+                    notes = "; ".join(
+                        note for note in (result.notes, unavailable_note) if note
+                    )
+                    tables["source_log"].append(
+                        {
+                            "provider": provider_name,
+                            "source_tier": provider.spec.source_tier,
+                            "requiredness": provider.spec.requiredness,
+                            "provider_version": provider.spec.provider_version,
+                            "schema_version": provider.spec.schema_version,
+                            "frequency": provider.spec.frequency,
+                            "freshness_days": provider.spec.freshness_days,
+                            "latest_known_as_of": None,
+                            "warnings": notes,
+                            "category": provider.spec.category,
+                            "status": "POINT_IN_TIME_UNAVAILABLE",
+                            "observations": 0,
+                            "as_of_date": run_date.isoformat(),
+                            "source": result.source,
+                            "source_url": result.source_url,
+                            "elapsed_ms": int((time.monotonic() - started) * 1000),
+                            "notes": notes,
+                        }
+                    )
+                    continue
+            tables[provider.spec.category].extend(rows)
             tables["source_log"].append(
                 {
                     "provider": provider_name,
-                    "category": result.category,
+                    "source_tier": provider.spec.source_tier,
+                    "requiredness": provider.spec.requiredness,
+                    "provider_version": provider.spec.provider_version,
+                    "schema_version": provider.spec.schema_version,
+                    "frequency": provider.spec.frequency,
+                    "freshness_days": provider.spec.freshness_days,
+                    "latest_known_as_of": _latest_known_as_of(rows),
+                    "warnings": result.notes,
+                    "category": provider.spec.category,
                     "status": result.status,
                     "observations": len(rows),
                     "as_of_date": run_date.isoformat(),
@@ -90,7 +202,15 @@ def run_weekly_context(
             tables["source_log"].append(
                 {
                     "provider": provider_name,
-                    "category": None,
+                    "source_tier": provider.spec.source_tier,
+                    "requiredness": provider.spec.requiredness,
+                    "provider_version": provider.spec.provider_version,
+                    "schema_version": provider.spec.schema_version,
+                    "frequency": provider.spec.frequency,
+                    "freshness_days": provider.spec.freshness_days,
+                    "latest_known_as_of": None,
+                    "warnings": str(error),
+                    "category": provider.spec.category,
                     "status": "FETCH_FAILED",
                     "observations": 0,
                     "as_of_date": run_date.isoformat(),
@@ -100,7 +220,55 @@ def run_weekly_context(
                     "notes": str(error),
                 }
             )
+    _validate_combined_economic_releases(tables, run_date)
     return tables
+
+
+def _validate_combined_economic_releases(
+    tables: dict[str, list[dict]],
+    as_of_date: date,
+) -> None:
+    try:
+        tables["economic_releases"] = normalize_economic_release_rows(
+            tables["economic_releases"]
+        )
+        validate_economic_release_input_references(tables["economic_releases"])
+    except ValueError as error:
+        tables["economic_releases"] = []
+        tables["source_log"].append(
+            {
+                "provider": "economic_releases_validation",
+                "source_tier": "public",
+                "requiredness": "required",
+                "provider_version": "economic-release-v1",
+                "schema_version": "economic-release-v1",
+                "frequency": "event",
+                "freshness_days": None,
+                "latest_known_as_of": None,
+                "warnings": str(error),
+                "category": "economic_releases",
+                "status": "FETCH_FAILED",
+                "observations": 0,
+                "as_of_date": as_of_date.isoformat(),
+                "source": None,
+                "source_url": None,
+                "elapsed_ms": 0,
+                "notes": str(error),
+            }
+        )
+
+
+def _latest_known_as_of(rows: list[dict]) -> str | None:
+    known_values: list[tuple[datetime, str]] = []
+    for row in rows:
+        if not row.get("known_as_of"):
+            continue
+        raw = str(row["known_as_of"])
+        known = datetime.fromisoformat(raw)
+        if known.tzinfo is None:
+            raise ValueError("known_as_of must include a UTC offset")
+        known_values.append((known, raw))
+    return max(known_values, default=(None, None), key=lambda item: item[0])[1]
 
 
 def _json_ready(value):
@@ -127,7 +295,9 @@ def publish_weekly_context_bundle(
     backup = destination.with_name(f".{destination.name}.backup")
     try:
         for category, filename in CATEGORY_FILES.items():
-            pd.DataFrame(tables.get(category, [])).to_csv(
+            pd.DataFrame(
+                tables.get(category, []), columns=CATEGORY_FIELDS[category]
+            ).to_csv(
                 staging / filename, index=False
             )
         snapshot = {
@@ -156,6 +326,7 @@ def publish_weekly_context_bundle(
 
 
 __all__ = [
+    "CATEGORY_FIELDS",
     "ProviderResult",
     "normalize_metric_rows",
     "publish_weekly_context_bundle",

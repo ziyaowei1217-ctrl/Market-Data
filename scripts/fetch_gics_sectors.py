@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +33,12 @@ def main() -> None:
         action="store_true",
         help="Skip writing raw API responses.",
     )
+    parser.add_argument(
+        "--as-of-date",
+        type=date.fromisoformat,
+        default=None,
+        help="Only use observations on or before this ISO date.",
+    )
     args = parser.parse_args()
 
     output_dir = Path(
@@ -42,7 +48,11 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     raw_dir = None if args.no_raw_cache else output_dir / "raw"
 
-    data, source_log = fetch_gics_sectors(args.universe, raw_dir=raw_dir)
+    data, source_log = fetch_gics_sectors(
+        args.universe,
+        raw_dir=raw_dir,
+        as_of_date=args.as_of_date,
+    )
     data.to_csv(output_dir / "03_gics_sectors.csv", index=False)
     source_log.to_csv(output_dir / "source_log.csv", index=False)
 

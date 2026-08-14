@@ -27,7 +27,9 @@ from capital_weekly.macro_assets import (
     _parse_rate_xlsx,
     _fetch_config_history,
     MacroAssetConfig,
+    align_series_histories,
     align_curve_spread,
+    calculate_five_year_five_year,
     fetch_macro_assets,
     load_macro_asset_universe,
 )
@@ -426,6 +428,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
     def test_every_configured_provider_dispatches(self):
         contracts = {
             "us_treasury": ("GET", "home.treasury.gov"), "fred": ("GET", "fredgraph.csv"),
+            "us_treasury_real": ("GET", "type=daily_treasury_real_yield_curve"),
             "yahoo_chart": ("GET", "query2.finance.yahoo.com"), "china_bond": ("POST", "yield.chinabond.com.cn"),
             "sina_fx": ("GET", "NewForexService.getDayKLine?symbol=fx_susdcnh"),
             "pboc_lpr": ("POST", "LprHisExcel"), "hkab_hibor": ("GET", "hkab.org.hk/api/hibor"),
@@ -439,7 +442,8 @@ class MacroAssetUniverseTests(unittest.TestCase):
         universe = load_macro_asset_universe()
         self.assertEqual(set(contracts), {item.provider for item in universe} - {"calculated"})
         expected_symbols = {
-            "us_treasury": {"2-year", "10-year", "30-year"},
+            "us_treasury": {"2-year", "5-year", "10-year", "30-year"},
+            "us_treasury_real": {"5-year", "10-year"},
             "fred": {"BAMLC0A0CM", "BAMLH0A0HYM2", "DFEDTARL", "DFEDTARU", "IORB", "RRPONTSYAWARD"},
             "yahoo_chart": {"CL=F", "BZ=F", "GC=F", "DX-Y.NYB", "CNY=X", "HKD=X", "BTC-USD"}, "china_bond": {"2Y", "5Y", "10Y", "30Y"},
             "sina_fx": {"fx_susdcnh"},
@@ -712,12 +716,116 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertEqual(detail.loc[1, "qc_flag"], "FETCH_FAILED")
         self.assertIn("upstream unavailable", source_log.loc[1, "error"])
 
+    def test_calculated_series_emit_formula_and_provider_audit_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            universe = Path(directory) / "universe.csv"
+            header = (
+                "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
+                "source,source_url,frequency,level_unit,change_unit,sort_order,notes,"
+                "calculation_id,formula_version,input_series_codes\n"
+            )
+            universe.write_text(
+                header
+                + "fixed_income,sovereign_curve,UST5Y,名义5年,Nominal 5Y,"
+                "us_treasury,5-year,Treasury,https://example.test/nominal,daily,"
+                "percent,bp,1,,,,\n"
+                + "fixed_income,sovereign_curve,UST_REAL5Y,实际5年,Real 5Y,"
+                "us_treasury_real,5-year,Treasury,https://example.test/real,daily,"
+                "percent,bp,2,,,,\n"
+                + "fixed_income,inflation_expectations,US_BE5Y,5年盈亏平衡,5Y Breakeven,"
+                "calculated,UST5Y-UST_REAL5Y,Calculated,https://example.test/calculated,"
+                "daily,percent,bp,3,Registered calculation,breakeven,breakeven-v1,"
+                "UST5Y|UST_REAL5Y\n",
+                encoding="utf-8",
+            )
+
+            def fake_fetch(config, session, as_of_date=None):
+                value = 4.0 if config.series_code == "UST5Y" else 1.9
+                return (
+                    [
+                        {"date": date(2025, 12, 31), "value": value - 0.5},
+                        {"date": date(2026, 8, 7), "value": value},
+                    ],
+                    b"fixture",
+                    config.source_url,
+                )
+
+            with patch(
+                "capital_weekly.macro_assets._fetch_config_history",
+                side_effect=fake_fetch,
+            ):
+                detail, source_log = fetch_macro_assets(
+                    universe,
+                    as_of_date=date(2026, 8, 9),
+                )
+
+        calculated = detail.loc[detail["series_code"] == "US_BE5Y"].iloc[0]
+        self.assertAlmostEqual(calculated["latest_value"], 2.1)
+        self.assertEqual(calculated["calculation_id"], "breakeven")
+        self.assertEqual(calculated["formula_version"], "breakeven-v1")
+        self.assertEqual(calculated["input_series_codes"], "UST5Y|UST_REAL5Y")
+        calculated_audit = source_log.loc[
+            source_log["series_code"] == "US_BE5Y"
+        ].iloc[0]
+        self.assertEqual(calculated_audit["provider"], "calculated")
+        self.assertEqual(calculated_audit["source_tier"], "public")
+        self.assertEqual(calculated_audit["requiredness"], "required")
+        self.assertEqual(calculated_audit["provider_version"], "1.0.0")
+        self.assertEqual(calculated_audit["schema_version"], "macro-asset-v2")
+        self.assertEqual(calculated_audit["known_as_of"], "2026-08-07")
+        self.assertEqual(calculated_audit["calculation_id"], "breakeven")
+        self.assertEqual(calculated_audit["formula_version"], "breakeven-v1")
+        self.assertEqual(
+            calculated_audit["input_series_codes"],
+            "UST5Y|UST_REAL5Y",
+        )
+
     def test_treasury_csv_parser_normalizes_dates_values_and_blanks(self):
         fixture = "Date,2 Yr,10 Yr\n07/10/2026,4.21,4.56\n07/09/2026,,4.50\n"
 
         result = _parse_treasury_csv(fixture, "2 Yr")
 
         self.assertEqual(result, [{"date": date(2026, 7, 10), "value": 4.21}])
+
+    def test_treasury_real_provider_uses_official_real_curve_fields_and_type(self):
+        def response_for(url, timeout):
+            fixture = (
+                "Date,5 YR,10 YR\n"
+                if "/2025/" in url
+                else "Date,5 YR,10 YR\n08/07/2026,1.90,2.00\n"
+            )
+            response = unittest.mock.Mock(content=fixture.encode(), text=fixture)
+            response.raise_for_status.return_value = None
+            return response
+
+        for symbol, expected_value in (("5-year", 1.9), ("10-year", 2.0)):
+            with self.subTest(symbol=symbol):
+                session = unittest.mock.Mock(
+                    _macro_attempt_trace=[],
+                    _macro_raw_parts=[],
+                )
+                session.get.side_effect = response_for
+
+                history, _, provenance = _fetch_config_history(
+                    self._config("us_treasury_real", symbol),
+                    session,
+                    as_of_date=date(2026, 8, 9),
+                )
+
+                self.assertEqual(
+                    history,
+                    [{"date": date(2026, 8, 7), "value": expected_value}],
+                )
+                self.assertEqual(session.get.call_count, 2)
+                for call in session.get.call_args_list:
+                    self.assertIn(
+                        "type=daily_treasury_real_yield_curve",
+                        call.args[0],
+                    )
+                self.assertIn(
+                    "type=daily_treasury_real_yield_curve",
+                    provenance,
+                )
 
     def test_fred_csv_parser_drops_dot_missing_values(self):
         fixture = "observation_date,BAMLC0A0CM\n2026-07-08,.\n2026-07-09,0.76\n"
@@ -788,13 +896,59 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertAlmostEqual(result[0]["value"], 0.5)
         self.assertAlmostEqual(result[1]["value"], 0.5)
 
-    def test_universe_has_approved_41_series_without_removed_short_term_policy_rate(self):
+    def test_five_year_five_year_uses_registered_compounding_formula(self):
+        expected = (
+            ((1.0 + 2.4 / 100.0) ** 2) / (1.0 + 2.1 / 100.0) - 1.0
+        ) * 100.0
+
+        self.assertAlmostEqual(
+            calculate_five_year_five_year(2.1, 2.4),
+            expected,
+            places=12,
+        )
+
+    def test_five_year_five_year_rejects_invalid_breakeven_inputs(self):
+        for be5, be10 in (
+            (-100.0, 2.4),
+            (2.1, -100.0),
+            (float("nan"), 2.4),
+        ):
+            with self.subTest(be5=be5, be10=be10):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Breakeven inputs",
+                ):
+                    calculate_five_year_five_year(be5, be10)
+
+    def test_breakeven_uses_only_dates_shared_by_nominal_and_real_curves(self):
+        result = align_series_histories(
+            {
+                "UST5Y": [{"date": date(2026, 8, 7), "value": 4.0}],
+                "UST_REAL5Y": [
+                    {"date": date(2026, 8, 6), "value": 1.8},
+                    {"date": date(2026, 8, 7), "value": 1.9},
+                ],
+            },
+            ("UST5Y", "UST_REAL5Y"),
+            lambda nominal, real: nominal - real,
+        )
+
+        self.assertEqual(
+            result,
+            [{"date": date(2026, 8, 7), "value": 2.1}],
+        )
+
+    def test_universe_has_approved_47_series_and_registered_inflation_calculations(self):
         universe = load_macro_asset_universe()
 
-        self.assertEqual(len(universe), 41)
+        self.assertEqual(len(universe), 47)
         self.assertEqual(
             len({item.series_code for item in universe}),
             len(universe),
+        )
+        self.assertEqual(
+            sorted(item.sort_order for item in universe),
+            list(range(1, 48)),
         )
         by_class = {
             asset_class: [item for item in universe if item.asset_class == asset_class]
@@ -802,7 +956,47 @@ class MacroAssetUniverseTests(unittest.TestCase):
         }
         self.assertEqual(
             {asset_class: len(items) for asset_class, items in by_class.items()},
-            {"fixed_income": 14, "commodity": 4, "foreign_exchange": 4, "policy_rate": 12, "money_market": 7},
+            {"fixed_income": 20, "commodity": 4, "foreign_exchange": 4, "policy_rate": 12, "money_market": 7},
+        )
+        new_rates = {
+            item.series_code: item
+            for item in universe
+            if item.series_code in {
+                "UST5Y",
+                "UST_REAL5Y",
+                "UST_REAL10Y",
+                "US_BE5Y",
+                "US_BE10Y",
+                "US_5Y5Y",
+            }
+        }
+        self.assertEqual(
+            set(new_rates),
+            {
+                "UST5Y",
+                "UST_REAL5Y",
+                "UST_REAL10Y",
+                "US_BE5Y",
+                "US_BE10Y",
+                "US_5Y5Y",
+            },
+        )
+        self.assertTrue(
+            all(item.change_unit == "bp" for item in new_rates.values())
+        )
+        self.assertEqual(new_rates["US_BE5Y"].calculation_id, "breakeven")
+        self.assertEqual(new_rates["US_BE5Y"].formula_version, "breakeven-v1")
+        self.assertEqual(
+            new_rates["US_BE5Y"].input_series_codes,
+            "UST5Y|UST_REAL5Y",
+        )
+        self.assertEqual(
+            new_rates["US_5Y5Y"].formula_version,
+            "forward-inflation-v1",
+        )
+        self.assertEqual(
+            new_rates["US_5Y5Y"].input_series_codes,
+            "US_BE5Y|US_BE10Y",
         )
         additions = by_class["policy_rate"] + by_class["money_market"]
         self.assertTrue(all(item.level_unit == "percent" for item in additions))
@@ -881,7 +1075,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         from scripts import fetch_macro_assets as fetch_cli
 
         class_counts = {
-            "fixed_income": 14,
+            "fixed_income": 20,
             "commodity": 4,
             "foreign_exchange": 4,
             "policy_rate": 12,
@@ -935,20 +1129,20 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 ),
             )
 
-            self.assertEqual(len(pd.read_csv(root / "fixed_income.csv")), 14)
+            self.assertEqual(len(pd.read_csv(root / "fixed_income.csv")), 20)
             self.assertEqual(len(pd.read_csv(root / "commodities.csv")), 4)
             self.assertEqual(len(pd.read_csv(root / "foreign_exchange.csv")), 4)
             self.assertEqual(len(pd.read_csv(root / "policy_rates.csv")), 12)
             self.assertEqual(len(pd.read_csv(root / "money_market.csv")), 7)
-            self.assertEqual(len(pd.read_csv(root / "source_log.csv")), 41)
+            self.assertEqual(len(pd.read_csv(root / "source_log.csv")), 47)
             self.assertEqual(
                 sum(len(snapshot[key]) for key in (
                     "fixed_income", "commodities", "foreign_exchange", "policy_rates", "money_market"
                 )),
-                41,
+                47,
             )
             self.assertEqual(len(snapshot["macro_divergence"]), 28)
-            self.assertEqual(len(snapshot["source_log"]), 41)
+            self.assertEqual(len(snapshot["source_log"]), 47)
             self.assertLess(
                 abs(snapshot["fixed_income"][1]["daily_change"] - precision_sentinel),
                 1e-12,

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import csv
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from .equity_indices import _session, fetch_history, source_url
+from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
@@ -90,6 +91,7 @@ def _snapshot_row(config: SectorConfig, snapshot: Any, url: str) -> dict[str, An
 def fetch_gics_sectors(
     universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
+    as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     session = _session()
     rows: list[dict[str, Any]] = []
@@ -103,6 +105,7 @@ def fetch_gics_sectors(
         started_at = datetime.now()
         try:
             history, raw_text = fetch_history(sector, session=session)
+            history = truncate_history_as_of(history, as_of_date)
             if raw_path:
                 (raw_path / f"{sector.ticker}.txt").write_text(raw_text, encoding="utf-8")
             snapshot = calculate_return_snapshot(_series_for_returns(history), "pct")

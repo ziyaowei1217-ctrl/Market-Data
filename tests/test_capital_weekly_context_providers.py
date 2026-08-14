@@ -9,6 +9,7 @@ from capital_weekly.context.providers import (
     not_configured_result,
 )
 from capital_weekly.context.common import METRIC_FIELDS
+from capital_weekly.context.provider_contracts import ContextProvider
 
 
 class ContextProviderTests(unittest.TestCase):
@@ -81,6 +82,19 @@ class ContextProviderTests(unittest.TestCase):
                 "sse_microstructure",
                 "szse_microstructure",
             }.issubset(providers)
+        )
+        self.assertTrue(all(isinstance(provider, ContextProvider) for provider in providers.values()))
+        self.assertEqual(providers["sec_company_events"].spec.requiredness, "optional")
+        self.assertEqual(providers["eia_commodities"].spec.requiredness, "optional")
+        self.assertEqual(
+            providers["fred_financial_conditions"].spec.requiredness, "optional"
+        )
+        self.assertEqual(providers["bls_calendar"].spec.requiredness, "required")
+        self.assertEqual(providers["nasdaq_market_summary"].spec.source_tier, "public")
+        self.assertEqual(providers["nasdaq_market_summary"].spec.provider_version, "1.0.0")
+        self.assertEqual(
+            providers["nasdaq_market_summary"].spec.schema_version,
+            "context-metric-v1",
         )
 
 

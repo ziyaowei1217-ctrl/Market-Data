@@ -14,7 +14,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from ..weekly_context import ProviderResult
+from .provider_contracts import ContextProvider, ProviderResult, ProviderSpec
 from .commodities import (
     EIA_SOURCE_URL,
     calculate_weekly_change,
@@ -774,7 +774,7 @@ def build_default_providers(
     data_dir: str | Path = "data",
     environ: Mapping[str, str] | None = None,
     session: requests.Session | None = None,
-) -> dict[str, Callable[[], ProviderResult]]:
+) -> dict[str, ContextProvider]:
     if end < start:
         raise ValueError("Report end must not precede start")
     settings = dict(os.environ if environ is None else environ)
@@ -790,7 +790,7 @@ def build_default_providers(
     eia_config = _config(root / "capital_weekly_eia_series.csv")
     financial_config = _config(root / "capital_weekly_financial_conditions.csv")
 
-    return {
+    fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
         "federal_reserve_calendar": lambda: _fed_provider(client, start, end),
         "census_calendar": lambda: _event_provider(
@@ -822,6 +822,40 @@ def build_default_providers(
         "hkex_microstructure": lambda: _hkex_provider(client, end),
         "sse_microstructure": lambda: _sse_provider(client, end),
         "szse_microstructure": lambda: _szse_provider(client, end),
+    }
+    definitions = {
+        "bls_calendar": ("events", "event", "required"),
+        "federal_reserve_calendar": ("events", "event", "required"),
+        "census_calendar": ("events", "event", "required"),
+        "nasdaq_market_summary": ("market_internals", "daily", "required"),
+        "cftc_tff": ("positioning_flows", "weekly", "required"),
+        "finra_margin": ("positioning_flows", "monthly", "required"),
+        "sec_company_events": ("company_events", "event", "optional"),
+        "eia_commodities": ("commodity_fundamentals", "weekly", "optional"),
+        "fred_financial_conditions": (
+            "financial_conditions",
+            "daily",
+            "optional",
+        ),
+        "hkex_microstructure": ("market_internals", "daily", "required"),
+        "sse_microstructure": ("market_internals", "daily", "required"),
+        "szse_microstructure": ("market_internals", "daily", "required"),
+    }
+    return {
+        name: ContextProvider(
+            spec=ProviderSpec(
+                name=name,
+                category=category,
+                source_tier="public",
+                requiredness=requiredness,
+                provider_version="1.0.0",
+                schema_version="context-metric-v1",
+                frequency=frequency,
+                freshness_days=None,
+            ),
+            fetch=fetchers[name],
+        )
+        for name, (category, frequency, requiredness) in definitions.items()
     }
 
 
