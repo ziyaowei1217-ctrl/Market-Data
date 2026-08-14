@@ -1,0 +1,6 @@
+metric_code,metric_name,ticker,unit,role
+vix_9d_level,Cboe S&P 500 9-Day Volatility Index,^VIX9D,index_points,vix_9d
+vix_1m_level,Cboe VIX 30-Day Volatility Index,^VIX,index_points,vix_1m
+vix_3m_level,Cboe S&P 500 3-Month Volatility Index,^VIX3M,index_points,vix_3m
+vix_6m_level,Cboe S&P 500 6-Month Volatility Index,^VIX6M,index_points,vix_6m
+cboe_skew_level,Cboe SKEW Index,^SKEW,index_points,skew
