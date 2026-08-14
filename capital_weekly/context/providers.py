@@ -14,6 +14,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
+
 from .provider_contracts import ContextProvider, ProviderResult, ProviderSpec
 from .commodities import (
     EIA_SOURCE_URL,
@@ -41,6 +46,12 @@ from .microstructure import (
     parse_szse_daily_overview,
 )
 from .positioning import parse_cftc_tff_csv, parse_finra_margin_table
+from .volatility import (
+    calculate_yahoo_volatility_metrics,
+    extract_yahoo_close_histories,
+    load_yahoo_volatility_config,
+    serialize_yahoo_close_histories,
+)
 
 
 BLS_URL = "https://www.bls.gov/schedule/{year}/home.htm"
@@ -54,6 +65,8 @@ SEC_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 HKEX_URL = "https://www.hkex.com.hk/eng/stat/smstat/dayquot/d{stamp}e.htm"
 SSE_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
+YAHOO_FINANCE_URL = "https://finance.yahoo.com/"
+YAHOO_VOLATILITY_SOURCE = "Yahoo Finance (Cboe indices)"
 
 
 def _session() -> requests.Session:
@@ -549,6 +562,68 @@ def _fred_provider(
     )
 
 
+def _default_yahoo_download(**kwargs):
+    if yf is None:
+        raise RuntimeError(
+            "yfinance is unavailable; install the declared Python requirements"
+        )
+    return yf.download(**kwargs)
+
+
+def _yahoo_volatility_provider(
+    downloader: Callable[..., Any],
+    end: date,
+    config,
+) -> ProviderResult:
+    try:
+        frame = downloader(
+            tickers=[item.ticker for item in config],
+            start=(end - timedelta(days=550)).isoformat(),
+            end=(end + timedelta(days=1)).isoformat(),
+            interval="1d",
+            auto_adjust=False,
+            actions=False,
+            group_by="ticker",
+            threads=False,
+            progress=False,
+        )
+        histories = extract_yahoo_close_histories(frame, config, end)
+        metrics = calculate_yahoo_volatility_metrics(histories, config, end)
+        rows = [
+            {
+                "as_of_date": metric["as_of_date"],
+                "category": "financial_conditions",
+                "metric_code": metric["metric_code"],
+                "metric_name": metric["metric_name"],
+                "value": metric["value"],
+                "unit": metric["unit"],
+                "frequency": "daily",
+                "market": "US",
+                "source": YAHOO_VOLATILITY_SOURCE,
+                "source_url": metric["source_url"],
+                "qc_flag": "OK",
+            }
+            for metric in metrics
+        ]
+        return ProviderResult(
+            category="financial_conditions",
+            rows=rows,
+            raw_text=serialize_yahoo_close_histories(histories, config),
+            source=YAHOO_VOLATILITY_SOURCE,
+            source_url=YAHOO_FINANCE_URL,
+        )
+    except Exception as error:
+        return ProviderResult(
+            category="financial_conditions",
+            rows=[],
+            raw_text="",
+            source=YAHOO_VOLATILITY_SOURCE,
+            source_url=YAHOO_FINANCE_URL,
+            status="FETCH_FAILED",
+            notes=str(error),
+        )
+
+
 def _hkex_provider(
     session: requests.Session, end: date
 ) -> ProviderResult:
@@ -774,6 +849,7 @@ def build_default_providers(
     data_dir: str | Path = "data",
     environ: Mapping[str, str] | None = None,
     session: requests.Session | None = None,
+    yahoo_downloader: Callable[..., Any] | None = None,
 ) -> dict[str, ContextProvider]:
     if end < start:
         raise ValueError("Report end must not precede start")
@@ -789,6 +865,10 @@ def build_default_providers(
     )
     eia_config = _config(root / "capital_weekly_eia_series.csv")
     financial_config = _config(root / "capital_weekly_financial_conditions.csv")
+    yahoo_volatility_config = load_yahoo_volatility_config(
+        root / "capital_weekly_yahoo_volatility.csv"
+    )
+    yahoo_download = yahoo_downloader or _default_yahoo_download
 
     fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
@@ -819,6 +899,9 @@ def build_default_providers(
         "fred_financial_conditions": lambda: _fred_provider(
             client, end, financial_config
         ),
+        "yahoo_volatility_signals": lambda: _yahoo_volatility_provider(
+            yahoo_download, end, yahoo_volatility_config
+        ),
         "hkex_microstructure": lambda: _hkex_provider(client, end),
         "sse_microstructure": lambda: _sse_provider(client, end),
         "szse_microstructure": lambda: _szse_provider(client, end),
@@ -837,6 +920,11 @@ def build_default_providers(
             "daily",
             "optional",
         ),
+        "yahoo_volatility_signals": (
+            "financial_conditions",
+            "daily",
+            "optional",
+        ),
         "hkex_microstructure": ("market_internals", "daily", "required"),
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
@@ -851,7 +939,7 @@ def build_default_providers(
                 provider_version="1.0.0",
                 schema_version="context-metric-v1",
                 frequency=frequency,
-                freshness_days=None,
+                freshness_days=7 if name == "yahoo_volatility_signals" else None,
             ),
             fetch=fetchers[name],
         )

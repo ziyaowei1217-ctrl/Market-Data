@@ -889,14 +889,57 @@ class StagedValidationTests(unittest.TestCase):
 
     def test_rejects_fetch_failed_from_a_registered_optional_provider(self):
         path = self.outputs["weekly_context"] / "source_log.csv"
+        for provider, category in (
+            ("sec_company_events", "company_events"),
+            ("fred_financial_conditions", "financial_conditions"),
+        ):
+            with self.subTest(provider=provider):
+                row = fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider=provider,
+                    category=category,
+                    requiredness="optional",
+                    status="FETCH_FAILED",
+                    observations="0",
+                    as_of_date="2026-08-09",
+                )
+                write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "FETCH_FAILED",
+                ):
+                    validate_staged_week(self.root, self.window)
+
+    def test_accepts_fetch_failed_from_optional_yahoo_volatility_provider(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
         row = fixture_row(
             CATEGORY_FIELDS["source_log"],
-            provider="sec_company_events",
-            category="company_events",
+            provider="yahoo_volatility_signals",
+            category="financial_conditions",
             requiredness="optional",
             status="FETCH_FAILED",
             observations="0",
             as_of_date="2026-08-09",
+            source="Yahoo Finance (Cboe indices)",
+            source_url="https://finance.yahoo.com/",
+        )
+        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+        validate_staged_week(self.root, self.window)
+
+    def test_rejects_fetch_failed_from_required_yahoo_volatility_provider(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        row = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="yahoo_volatility_signals",
+            category="financial_conditions",
+            requiredness="required",
+            status="FETCH_FAILED",
+            observations="0",
+            as_of_date="2026-08-09",
+            source="Yahoo Finance (Cboe indices)",
+            source_url="https://finance.yahoo.com/",
         )
         write_csv(path, CATEGORY_FIELDS["source_log"], [row])
 

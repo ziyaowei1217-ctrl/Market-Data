@@ -164,7 +164,13 @@ SOURCE_LOG_NUMERIC_COLUMNS = (
 )
 SUCCESS_SOURCE_STATUSES = frozenset({"OK"})
 CONTEXT_SOURCE_STATUSES = frozenset(
-    {"OK", "NOT_CONFIGURED", "INSUFFICIENT_DATA", "POINT_IN_TIME_UNAVAILABLE"}
+    {
+        "OK",
+        "NOT_CONFIGURED",
+        "INSUFFICIENT_DATA",
+        "POINT_IN_TIME_UNAVAILABLE",
+        "FETCH_FAILED",
+    }
 )
 CONTEXT_OPTIONAL_STATUS_POLICIES = {
     "NOT_CONFIGURED": frozenset(
@@ -182,6 +188,9 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
             ("eia_commodities", "commodity_fundamentals"),
             ("fred_financial_conditions", "financial_conditions"),
         }
+    ),
+    "FETCH_FAILED": frozenset(
+        {("yahoo_volatility_signals", "financial_conditions")}
     ),
 }
 CONTEXT_REQUIREDNESS_VALUES = frozenset({"required", "optional"})
