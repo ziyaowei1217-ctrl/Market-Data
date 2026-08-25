@@ -991,6 +991,8 @@ def _strict_json_object(path: Path, root: Path) -> dict:
 
 def _source_manifest(release_root: Path) -> tuple[dict, WeekWindow, int]:
     root = Path(release_root)
+    if root.is_symlink() or not root.is_dir():
+        raise ReleaseValidationError("Source release root must be a regular directory")
     manifest = _strict_json_object(root / "manifest.json", root)
     if manifest.get("status") != "complete":
         raise ReleaseValidationError("Source release manifest is not complete")
