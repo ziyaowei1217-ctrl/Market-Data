@@ -206,7 +206,7 @@ class YahooVolatilityTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         load_yahoo_volatility_config(path)
 
-    def test_rejects_disjoint_term_dates(self):
+    def test_disjoint_unrelated_term_dates_do_not_block_available_pairs(self):
         histories = extract_yahoo_close_histories(
             yahoo_frame(), config_rows(), date(2026, 8, 9)
         )
@@ -217,12 +217,15 @@ class YahooVolatilityTests(unittest.TestCase):
             histories["vix_9d"].index == date(2026, 8, 7)
         ]
 
-        with self.assertRaisesRegex(ValueError, "no common date"):
-            calculate_yahoo_volatility_metrics(
-                histories, config_rows(), date(2026, 8, 9)
-            )
+        metrics = calculate_yahoo_volatility_metrics(
+            histories, config_rows(), date(2026, 8, 9)
+        )
 
-    def test_rejects_stale_skew(self):
+        by_code = {row["metric_code"]: row for row in metrics}
+        self.assertEqual(by_code["vix_1m_3m_spread"]["value"], -4.0)
+        self.assertEqual(by_code["vix_9d_1m_spread"]["value"], -2.0)
+
+    def test_stale_skew_does_not_block_fresh_vix_rows(self):
         frame = pd.DataFrame(
             {
                 ("^VIX9D", "Close"): [14.0, 13.0],
@@ -237,16 +240,16 @@ class YahooVolatilityTests(unittest.TestCase):
             frame, config_rows(), date(2026, 8, 16)
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            "SKEW date 2026-08-06 has lag 10 days versus target Sunday "
-            "2026-08-16; allowed range is 0..7 days",
-        ):
-            calculate_yahoo_volatility_metrics(
-                histories, config_rows(), date(2026, 8, 16)
-            )
+        metrics = calculate_yahoo_volatility_metrics(
+            histories, config_rows(), date(2026, 8, 16)
+        )
 
-    def test_rejects_stale_term_structure_when_skew_is_fresh(self):
+        self.assertNotIn(
+            "cboe_skew_level", {row["metric_code"] for row in metrics}
+        )
+        self.assertIn("vix_1m_level", {row["metric_code"] for row in metrics})
+
+    def test_stale_term_structure_does_not_block_fresh_skew(self):
         frame = pd.DataFrame(
             {
                 ("^VIX9D", "Close"): [14.0, float("nan")],
@@ -261,14 +264,13 @@ class YahooVolatilityTests(unittest.TestCase):
             frame, config_rows(), date(2026, 8, 20)
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            "term structure date 2026-08-07 has lag 13 days versus target "
-            "Sunday 2026-08-20; allowed range is 0..7 days",
-        ):
-            calculate_yahoo_volatility_metrics(
-                histories, config_rows(), date(2026, 8, 20)
-            )
+        metrics = calculate_yahoo_volatility_metrics(
+            histories, config_rows(), date(2026, 8, 20)
+        )
+
+        self.assertEqual(
+            [row["metric_code"] for row in metrics], ["cboe_skew_level"]
+        )
 
     def test_rejects_zero_vix3m_denominator(self):
         frame = yahoo_frame()
@@ -300,12 +302,11 @@ class YahooVolatilityTests(unittest.TestCase):
                 frame, config_rows(), date(2026, 8, 9)
             )
 
-    def test_rejects_empty_future_only_and_missing_ticker_histories(self):
+    def test_rejects_empty_and_future_only_histories(self):
         columns = yahoo_frame().columns
         invalid_frames = {
             "empty": pd.DataFrame(columns=columns),
             "future only": yahoo_frame().iloc[[-1]],
-            "missing ticker": yahoo_frame().drop(columns=[("^SKEW", "Close")]),
         }
         for label, frame in invalid_frames.items():
             with self.subTest(label=label):
@@ -313,6 +314,28 @@ class YahooVolatilityTests(unittest.TestCase):
                     extract_yahoo_close_histories(
                         frame, config_rows(), date(2026, 8, 9)
                     )
+
+    def test_missing_tickers_preserve_available_histories_and_metrics(self):
+        frame = yahoo_frame().drop(
+            columns=[
+                ("^VIX9D", "Close"),
+                ("^VIX3M", "Close"),
+                ("^VIX6M", "Close"),
+            ]
+        )
+
+        histories = extract_yahoo_close_histories(
+            frame, config_rows(), date(2026, 8, 9)
+        )
+        metrics = calculate_yahoo_volatility_metrics(
+            histories, config_rows(), date(2026, 8, 9)
+        )
+
+        self.assertEqual(set(histories), {"vix_1m", "skew"})
+        self.assertEqual(
+            [row["metric_code"] for row in metrics],
+            ["vix_1m_level", "cboe_skew_level"],
+        )
 
     def test_extracts_field_first_multi_level_columns(self):
         frame = yahoo_frame()
