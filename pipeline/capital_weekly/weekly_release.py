@@ -474,22 +474,22 @@ def build_pipeline_specs(
     definitions = (
         (
             "equity_indices",
-            "pipeline/scripts/fetch_equity_indices.py",
+            "pipeline.indices",
             f"capital_weekly_equity_indices_python_{end_stamp}",
         ),
         (
             "equity_sectors",
-            "pipeline/scripts/fetch_equity_sectors.py",
+            "pipeline.sectors",
             f"capital_weekly_equity_sectors_python_{end_stamp}",
         ),
         (
             "gics_sectors",
-            "pipeline/scripts/fetch_gics_sectors.py",
+            "pipeline.gics",
             f"capital_weekly_gics_sectors_python_{end_stamp}",
         ),
         (
             "macro_assets",
-            "pipeline/scripts/fetch_macro_assets.py",
+            "pipeline.macro",
             f"capital_weekly_macro_assets_python_{end_stamp}",
         ),
     )
@@ -501,6 +501,7 @@ def build_pipeline_specs(
                 name=name,
                 command=(
                     sys.executable,
+                    "-m",
                     script,
                     "--output-dir",
                     output_dir,
@@ -516,7 +517,8 @@ def build_pipeline_specs(
             name="weekly_context",
             command=(
                 sys.executable,
-                "pipeline/scripts/fetch_weekly_context.py",
+                "-m",
+                "pipeline.context",
                 "--output-dir",
                 context_output,
                 "--start-date",
@@ -1364,9 +1366,14 @@ def _write_status(path: Path, status: dict) -> None:
 
 
 @contextmanager
-def release_write_lock(outputs: Path, *, operation: str):
-    outputs.mkdir(parents=True, exist_ok=True)
-    lock_path = outputs / ".capital_weekly_refresh.lock"
+def release_write_lock(
+    lock_root: Path,
+    *,
+    operation: str,
+    lock_name: str = ".capital_weekly_refresh.lock",
+):
+    lock_root.mkdir(parents=True, exist_ok=True)
+    lock_path = lock_root / lock_name
     lock_file = lock_path.open("a+")
     acquired = False
     try:
@@ -1385,21 +1392,107 @@ def release_write_lock(outputs: Path, *, operation: str):
         lock_file.close()
 
 
-def run_weekly_release(
+def _stage_latest_cache(
+    staging_cache: Path,
+    specs: tuple[PipelineSpec, ...],
+    release: dict,
+) -> None:
+    staging_cache.mkdir(parents=True, exist_ok=False)
+    by_pipeline = {spec.name: Path(spec.output_dir) for spec in specs}
+    sources = {
+        "indices": by_pipeline["equity_indices"] / "raw",
+        "sectors": by_pipeline["equity_sectors"] / "raw",
+        "gics": by_pipeline["gics_sectors"] / "raw",
+        "macro": by_pipeline["macro_assets"] / "raw",
+        "context": by_pipeline["weekly_context"].parent
+        / f".{by_pipeline['weekly_context'].name}.raw",
+    }
+    for public_name, source in sources.items():
+        destination = staging_cache / public_name
+        if source.is_dir():
+            shutil.copytree(source, destination)
+        else:
+            destination.mkdir()
+    _atomic_write_json(
+        staging_cache / "cache.json",
+        {
+            "schema_version": OUTPUT_SCHEMA_VERSION,
+            "release_id": release["release_id"],
+            "as_of_date": release["as_of_date"],
+            "status": "complete",
+            "pipelines": list(sources),
+        },
+    )
+
+
+def _publish_output_cache_pair(
+    staging_output: Path,
+    output: Path,
+    staging_cache: Path,
+    cache: Path,
+    finalize: Callable[[], None] | None = None,
+) -> None:
+    transaction_id = uuid.uuid4().hex
+    output_backup = output.with_name(f".{output.name}.backup-{transaction_id}")
+    cache_backup = cache.with_name(f".{cache.name.lstrip('.')}.backup-{transaction_id}")
+    output_backed_up = False
+    cache_backed_up = False
+    output_published = False
+    cache_published = False
+    try:
+        if output.exists():
+            os.replace(output, output_backup)
+            output_backed_up = True
+        if cache.exists():
+            os.replace(cache, cache_backup)
+            cache_backed_up = True
+        os.replace(staging_output, output)
+        output_published = True
+        os.replace(staging_cache, cache)
+        cache_published = True
+        if finalize is not None:
+            finalize()
+    except Exception:
+        if cache_published and cache.exists():
+            os.replace(cache, staging_cache)
+        if cache_backed_up and cache_backup.exists():
+            os.replace(cache_backup, cache)
+        if output_published and output.exists():
+            os.replace(output, staging_output)
+        if output_backed_up and output_backup.exists():
+            os.replace(output_backup, output)
+        raise
+    for backup in (output_backup, cache_backup):
+        if backup.exists():
+            try:
+                shutil.rmtree(backup)
+            except OSError as error:
+                try:
+                    warnings.warn(
+                        f"Published latest release, but backup cleanup failed: {error}",
+                        RuntimeWarning,
+                    )
+                except RuntimeWarning:
+                    pass
+
+
+def run_latest_release(
     project_root: Path,
     now_hkt: datetime | None = None,
     status_path: Path | None = None,
     runner=subprocess.run,
 ) -> Path:
     root = Path(project_root).resolve()
-    outputs = root / "outputs"
-    outputs.mkdir(parents=True, exist_ok=True)
+    pipeline_root = root / "pipeline"
+    state_root = pipeline_root / ".state"
+    staging_root = pipeline_root / ".staging"
+    destination = root / "output"
+    cache = pipeline_root / ".cache"
     window = latest_finished_week(now_hkt)
-    destination = outputs / window.week_id
     status_file = (
         Path(status_path)
         if status_path is not None
-        else outputs / ".capital-weekly-refresh" / "status.json"
+        else state_root / "status.json"
     )
     started = datetime.now(HONG_KONG)
     job_id = f"{started:%Y%m%dT%H%M%S}-{uuid.uuid4().hex[:6]}"
@@ -1416,10 +1509,18 @@ def run_weekly_release(
         "finished_at": None,
         "error": None,
     }
-    with release_write_lock(outputs, operation=f"refresh for {window.week_id}"):
-        staging_week = Path(
-            tempfile.mkdtemp(prefix=f".{window.week_id}.staging-", dir=outputs)
-        )
+    with release_write_lock(
+        state_root,
+        operation=f"refresh for {window.week_id}",
+        lock_name="refresh.lock",
+    ):
+        staging_root.mkdir(parents=True, exist_ok=True)
+        staging_job = staging_root / job_id
+        staging_job.mkdir()
+        staging_week = staging_job / "week"
+        staging_week.mkdir()
+        staging_output = staging_job / "output"
+        staging_cache = staging_job / "cache"
         try:
             _write_status(status_file, status)
             specs = build_pipeline_specs(staging_week, window)
@@ -1453,6 +1554,12 @@ def run_weekly_release(
             manifest = validate_staged_week(staging_week, window)
             manifest["pipelines"] = pipeline_runs
             _atomic_write_json(staging_week / "manifest.json", manifest)
+            status["current_pipeline"] = "output"
+            _write_status(status_file, status)
+            release = build_output_bundle(staging_week, staging_output)
+            status["current_pipeline"] = "cache"
+            _write_status(status_file, status)
+            _stage_latest_cache(staging_cache, specs, release)
             status["current_pipeline"] = "publish"
             _write_status(status_file, status)
 
@@ -1467,7 +1574,13 @@ def run_weekly_release(
                 _write_status(status_file, succeeded_status)
                 status.update(succeeded_status)
 
-            _publish_directory(staging_week, destination, finalize_release)
+            _publish_output_cache_pair(
+                staging_output,
+                destination,
+                staging_cache,
+                cache,
+                finalize_release,
+            )
             return destination
         except Exception as error:
             status.update(
@@ -1480,8 +1593,11 @@ def run_weekly_release(
             _write_status(status_file, status)
             raise
         finally:
-            if staging_week.exists():
-                shutil.rmtree(staging_week)
+            if staging_job.exists():
+                shutil.rmtree(staging_job)
+
+
+run_weekly_release = run_latest_release
 
 
 __all__ = [
@@ -1497,6 +1613,7 @@ __all__ = [
     "ReleasePipelineError",
     "ReleaseValidationError",
     "WeekWindow",
+    "_publish_output_cache_pair",
     "_publish_directory",
     "build_output_bundle",
     "build_pipeline_specs",
@@ -1504,6 +1621,7 @@ __all__ = [
     "file_manifest",
     "latest_finished_week",
     "release_write_lock",
+    "run_latest_release",
     "run_weekly_release",
     "release_datasets_for_contract",
     "safe_error_reason",

@@ -5,12 +5,11 @@ from contextlib import redirect_stderr, redirect_stdout
 from datetime import date, datetime
 import fcntl
 import hashlib
-import importlib.util
+import importlib
 import io
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 from tempfile import TemporaryDirectory
 import unittest
@@ -23,10 +22,9 @@ from pipeline.capital_weekly.weekly_release import (
     ReleaseAlreadyRunning,
     ReleasePipelineError,
     ReleaseValidationError,
-    _publish_directory,
     build_pipeline_specs,
     latest_finished_week,
-    run_weekly_release,
+    run_latest_release,
     validate_staged_week,
 )
 
@@ -1141,24 +1139,42 @@ class StagedValidationTests(unittest.TestCase):
 
 class FakePipelineRunner:
     PIPELINES = {
-        "fetch_equity_indices.py": "equity_indices",
-        "fetch_equity_sectors.py": "equity_sectors",
-        "fetch_gics_sectors.py": "gics_sectors",
-        "fetch_macro_assets.py": "macro_assets",
-        "fetch_weekly_context.py": "weekly_context",
+        "pipeline.indices": "equity_indices",
+        "pipeline.sectors": "equity_sectors",
+        "pipeline.gics": "gics_sectors",
+        "pipeline.macro": "macro_assets",
+        "pipeline.context": "weekly_context",
     }
 
-    def __init__(self, fail_pipeline: str | None = None):
+    def __init__(self, fail_pipeline: str | None = None, generation: str = "current"):
         self.fail_pipeline = fail_pipeline
+        self.generation = generation
         self.calls = []
 
     def __call__(self, command, *, check, cwd):
-        pipeline = self.PIPELINES[Path(command[1]).name]
+        pipeline = self.PIPELINES[command[2]]
         self.calls.append((tuple(command), check, Path(cwd)))
         if pipeline == self.fail_pipeline:
             raise subprocess.CalledProcessError(2, command)
         output = Path(command[command.index("--output-dir") + 1])
         write_valid_pipeline_output(pipeline, output)
+        raw = (
+            output.parent / f".{output.name}.raw"
+            if pipeline == "weekly_context"
+            else output / "raw"
+        )
+        raw.mkdir(parents=True, exist_ok=True)
+        (raw / "generation.txt").write_text(self.generation, encoding="utf-8")
+
+
+def directory_bytes(root: Path) -> dict[str, bytes]:
+    if not root.exists():
+        return {}
+    return {
+        path.relative_to(root).as_posix(): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
 
 
 class ReleaseOrchestrationTests(unittest.TestCase):
@@ -1166,16 +1182,15 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.temporary = TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.project_root = Path(self.temporary.name).resolve()
-        (self.project_root / "outputs").mkdir()
         self.status_path = self.project_root / "state" / "refresh-status.json"
         self.now = datetime(
             2026, 8, 11, 13, 25, tzinfo=ZoneInfo("Asia/Hong_Kong")
         )
 
-    def test_success_publishes_manifest_and_atomic_succeeded_status(self):
+    def test_success_publishes_stable_output_and_atomic_succeeded_status(self):
         runner = FakePipelineRunner()
 
-        published = run_weekly_release(
+        published = run_latest_release(
             self.project_root,
             now_hkt=self.now,
             status_path=self.status_path,
@@ -1184,36 +1199,30 @@ class ReleaseOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(
             published,
-            self.project_root / "outputs" / "week_20260803-20260809",
+            self.project_root / "output",
         )
-        manifest = json.loads((published / "manifest.json").read_text())
-        self.assertEqual(manifest["manifest_schema_version"], 2)
-        self.assertEqual(manifest["dataset_contract_version"], 2)
-        self.assertEqual(manifest["publication_mode"], "coordinated")
-        self.assertEqual(manifest["week_id"], "week_20260803-20260809")
-        self.assertGreater(len(manifest["files"]), 5)
+        manifest = json.loads((published / "release.json").read_text())
+        self.assertEqual(manifest["schema_version"], "1.0")
+        self.assertEqual(manifest["source_week_id"], "week_20260803-20260809")
+        self.assertEqual(manifest["status"], "complete")
+        self.assertEqual(
+            {path.name for path in published.iterdir()},
+            {
+                "indices.json",
+                "sectors.json",
+                "gics.json",
+                "macro.json",
+                "context.json",
+                "release.json",
+            },
+        )
+        self.assertFalse(any(published.glob("week_*")))
         self.assertEqual(
             [pipeline["name"] for pipeline in manifest["pipelines"]],
-            [
-                "equity_indices",
-                "equity_sectors",
-                "gics_sectors",
-                "macro_assets",
-                "weekly_context",
-            ],
+            ["indices", "sectors", "gics", "macro", "context"],
         )
         for pipeline in manifest["pipelines"]:
-            self.assertEqual(pipeline["status"], "succeeded")
-            self.assertTrue(pipeline["started_at"])
-            self.assertTrue(pipeline["finished_at"])
-            self.assertGreaterEqual(pipeline["elapsed_ms"], 0)
-        manifest_paths = {item["path"] for item in manifest["files"]}
-        published_paths = {
-            path.relative_to(published).as_posix()
-            for path in published.rglob("*")
-            if path.is_file() and path.name != "manifest.json"
-        }
-        self.assertEqual(manifest_paths, published_paths)
+            self.assertEqual(pipeline["status"], "complete")
         json.dumps(manifest, allow_nan=False)
         status = json.loads(self.status_path.read_text())
         self.assertEqual(
@@ -1245,8 +1254,12 @@ class ReleaseOrchestrationTests(unittest.TestCase):
             self.assertTrue(check)
             self.assertEqual(cwd, self.project_root)
         self.assertEqual(list(self.status_path.parent.glob(".*.tmp")), [])
+        staging_root = self.project_root / "pipeline" / ".staging"
+        self.assertFalse(staging_root.exists() and any(staging_root.iterdir()))
+        cache = self.project_root / "pipeline" / ".cache"
         self.assertEqual(
-            list((self.project_root / "outputs").glob(".week_*.staging-*")), []
+            {path.name for path in cache.iterdir()},
+            {"indices", "sectors", "gics", "macro", "context", "cache.json"},
         )
 
     def test_status_uses_execution_clock_not_the_window_override_clock(self):
@@ -1263,7 +1276,7 @@ class ReleaseOrchestrationTests(unittest.TestCase):
             "pipeline.capital_weekly.weekly_release.datetime",
             FixedExecutionDateTime,
         ):
-            run_weekly_release(
+            run_latest_release(
                 self.project_root,
                 now_hkt=self.now,
                 status_path=self.status_path,
@@ -1277,52 +1290,78 @@ class ReleaseOrchestrationTests(unittest.TestCase):
     def test_default_status_file_matches_the_refresh_api_location(self):
         runner = FakePipelineRunner()
 
-        run_weekly_release(
+        run_latest_release(
             self.project_root,
             now_hkt=self.now,
             runner=runner,
         )
 
-        status_path = (
-            self.project_root
-            / "outputs"
-            / ".capital-weekly-refresh"
-            / "status.json"
-        )
+        status_path = self.project_root / "pipeline" / ".state" / "status.json"
         self.assertTrue(status_path.is_file())
         self.assertEqual(json.loads(status_path.read_text())["status"], "succeeded")
-        self.assertFalse(
-            (self.project_root / "outputs" / "capital_weekly_refresh_status.json").exists()
+
+    def test_two_successes_replace_the_same_files_and_keep_only_latest_cache(self):
+        first = run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="first"),
+        )
+        first_names = {path.name for path in first.iterdir()}
+        first_release_id = json.loads((first / "release.json").read_text())["release_id"]
+
+        second = run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="second"),
         )
 
+        self.assertEqual(first, second)
+        self.assertEqual({path.name for path in second.iterdir()}, first_names)
+        self.assertNotEqual(
+            json.loads((second / "release.json").read_text())["release_id"],
+            first_release_id,
+        )
+        cache = self.project_root / "pipeline" / ".cache"
+        for pipeline in ("indices", "sectors", "gics", "macro", "context"):
+            self.assertEqual(
+                (cache / pipeline / "generation.txt").read_text(),
+                "second",
+            )
+        self.assertNotIn(b"first", b"".join(directory_bytes(cache).values()))
+
     def test_pipeline_failure_preserves_prior_release_and_names_pipeline(self):
-        published = self.project_root / "outputs" / "week_20260803-20260809"
-        published.mkdir()
-        (published / "prior-marker.txt").write_text("old complete week")
+        run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="prior"),
+        )
+        published = self.project_root / "output"
+        cache = self.project_root / "pipeline" / ".cache"
+        prior_output = directory_bytes(published)
+        prior_cache = directory_bytes(cache)
         runner = FakePipelineRunner(fail_pipeline="equity_sectors")
 
         with self.assertRaisesRegex(ReleasePipelineError, "equity_sectors"):
-            run_weekly_release(
+            run_latest_release(
                 self.project_root,
                 now_hkt=self.now,
                 status_path=self.status_path,
                 runner=runner,
             )
 
-        self.assertEqual(
-            (published / "prior-marker.txt").read_text(), "old complete week"
-        )
-        self.assertFalse((published / "manifest.json").exists())
-        self.assertEqual({path.name for path in published.iterdir()}, {"prior-marker.txt"})
+        self.assertEqual(directory_bytes(published), prior_output)
+        self.assertEqual(directory_bytes(cache), prior_cache)
         status = json.loads(self.status_path.read_text())
         self.assertEqual(status["status"], "failed")
         self.assertEqual(status["current_pipeline"], "equity_sectors")
         self.assertIn("equity_sectors", status["error"])
         self.assertEqual(status["completed"], 1)
         self.assertEqual(len(runner.calls), 2)
-        self.assertEqual(
-            list((self.project_root / "outputs").glob(".week_*.staging-*")), []
-        )
+        staging_root = self.project_root / "pipeline" / ".staging"
+        self.assertFalse(staging_root.exists() and any(staging_root.iterdir()))
 
     def test_status_hides_absolute_paths_from_unexpected_errors(self):
         secret_path = self.project_root / "private" / "credentials.txt"
@@ -1331,7 +1370,7 @@ class ReleaseOrchestrationTests(unittest.TestCase):
             raise OSError(2, "No such file or directory", secret_path)
 
         with self.assertRaises(OSError):
-            run_weekly_release(
+            run_latest_release(
                 self.project_root,
                 now_hkt=self.now,
                 status_path=self.status_path,
@@ -1342,69 +1381,83 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertIn("credentials.txt", status["error"])
         self.assertNotIn(str(self.project_root), status["error"])
 
-    def test_publish_swap_failure_rolls_the_prior_release_back(self):
-        destination = self.project_root / "outputs" / "week_fixture"
-        destination.mkdir()
-        (destination / "prior-marker.txt").write_text("old")
-        staging = self.project_root / "outputs" / ".week_fixture.staging"
-        staging.mkdir()
-        (staging / "new-marker.txt").write_text("new")
+    def test_output_replacement_failure_rolls_output_and_cache_back(self):
+        run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="prior"),
+        )
+        destination = self.project_root / "output"
+        cache = self.project_root / "pipeline" / ".cache"
+        prior_output = directory_bytes(destination)
+        prior_cache = directory_bytes(cache)
         real_replace = os.replace
 
-        def fail_new_release_swap(source, target):
-            if Path(source) == staging and Path(target) == destination:
-                raise OSError("simulated swap failure")
+        def fail_output_swap(source, target):
+            if Path(source).name == "output" and Path(target) == destination:
+                raise OSError("simulated output swap failure")
             real_replace(source, target)
 
         with patch(
             "pipeline.capital_weekly.weekly_release.os.replace",
-            side_effect=fail_new_release_swap,
+            side_effect=fail_output_swap,
         ):
-            with self.assertRaisesRegex(OSError, "simulated swap failure"):
-                _publish_directory(staging, destination)
-
-        self.assertEqual((destination / "prior-marker.txt").read_text(), "old")
-        self.assertFalse((destination / "new-marker.txt").exists())
-
-    def test_backup_cleanup_failure_does_not_mark_a_published_week_failed(self):
-        destination = (
-            self.project_root / "outputs" / "week_20260803-20260809"
-        )
-        destination.mkdir()
-        (destination / "prior-marker.txt").write_text("old")
-        runner = FakePipelineRunner()
-        real_rmtree = shutil.rmtree
-
-        def fail_only_backup_cleanup(path, *args, **kwargs):
-            if ".week_20260803-20260809.backup-" in Path(path).name:
-                raise OSError("simulated backup cleanup failure")
-            return real_rmtree(path, *args, **kwargs)
-
-        with patch(
-            "pipeline.capital_weekly.weekly_release.shutil.rmtree",
-            side_effect=fail_only_backup_cleanup,
-        ):
-            with self.assertWarnsRegex(RuntimeWarning, "backup cleanup failure"):
-                published = run_weekly_release(
+            with self.assertRaisesRegex(OSError, "simulated output swap failure"):
+                run_latest_release(
                     self.project_root,
                     now_hkt=self.now,
                     status_path=self.status_path,
-                    runner=runner,
+                    runner=FakePipelineRunner(generation="new"),
                 )
 
-        self.assertEqual(published, destination)
-        self.assertTrue((destination / "manifest.json").exists())
-        self.assertFalse((destination / "prior-marker.txt").exists())
-        status = json.loads(self.status_path.read_text())
-        self.assertEqual(status["status"], "succeeded")
-        self.assertIsNone(status["error"])
+        self.assertEqual(directory_bytes(destination), prior_output)
+        self.assertEqual(directory_bytes(cache), prior_cache)
 
-    def test_final_status_write_failure_rolls_the_published_week_back(self):
-        destination = self.project_root / "outputs" / "week_20260803-20260809"
-        destination.mkdir()
-        prior_marker = destination / "prior-marker.txt"
-        prior_marker.write_text("old")
-        runner = FakePipelineRunner()
+    def test_cache_replacement_failure_rolls_output_and_cache_back(self):
+        run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="prior"),
+        )
+        destination = self.project_root / "output"
+        cache = self.project_root / "pipeline" / ".cache"
+        prior_output = directory_bytes(destination)
+        prior_cache = directory_bytes(cache)
+        real_replace = os.replace
+
+        def fail_cache_swap(source, target):
+            if Path(source).name == "cache" and Path(target) == cache:
+                raise OSError("simulated cache swap failure")
+            real_replace(source, target)
+
+        with patch(
+            "pipeline.capital_weekly.weekly_release.os.replace",
+            side_effect=fail_cache_swap,
+        ):
+            with self.assertRaisesRegex(OSError, "simulated cache swap failure"):
+                run_latest_release(
+                    self.project_root,
+                    now_hkt=self.now,
+                    status_path=self.status_path,
+                    runner=FakePipelineRunner(generation="new"),
+                )
+
+        self.assertEqual(directory_bytes(destination), prior_output)
+        self.assertEqual(directory_bytes(cache), prior_cache)
+
+    def test_final_status_write_failure_rolls_output_and_cache_back(self):
+        run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="prior"),
+        )
+        destination = self.project_root / "output"
+        cache = self.project_root / "pipeline" / ".cache"
+        prior_output = directory_bytes(destination)
+        prior_cache = directory_bytes(cache)
         real_atomic_write_json = weekly_release_module._atomic_write_json
 
         def fail_succeeded_status(path, payload):
@@ -1417,29 +1470,30 @@ class ReleaseOrchestrationTests(unittest.TestCase):
             side_effect=fail_succeeded_status,
         ):
             with self.assertRaisesRegex(OSError, "simulated final status failure"):
-                run_weekly_release(
+                run_latest_release(
                     self.project_root,
                     now_hkt=self.now,
                     status_path=self.status_path,
-                    runner=runner,
+                    runner=FakePipelineRunner(generation="new"),
                 )
 
-        self.assertTrue(prior_marker.is_file())
-        self.assertEqual(prior_marker.read_text(), "old")
-        self.assertFalse((destination / "manifest.json").exists())
+        self.assertEqual(directory_bytes(destination), prior_output)
+        self.assertEqual(directory_bytes(cache), prior_cache)
         status = json.loads(self.status_path.read_text())
         self.assertEqual(status["status"], "failed")
         self.assertEqual(status["current_pipeline"], "publish")
 
     def test_held_lock_rejects_a_second_release_without_running_pipelines(self):
-        lock_path = self.project_root / "outputs" / ".capital_weekly_refresh.lock"
+        state = self.project_root / "pipeline" / ".state"
+        state.mkdir(parents=True)
+        lock_path = state / "refresh.lock"
         lock_file = lock_path.open("a+")
         self.addCleanup(lock_file.close)
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         runner = FakePipelineRunner()
 
         with self.assertRaises(ReleaseAlreadyRunning):
-            run_weekly_release(
+            run_latest_release(
                 self.project_root,
                 now_hkt=self.now,
                 status_path=self.status_path,
@@ -1453,11 +1507,7 @@ class ReleaseOrchestrationTests(unittest.TestCase):
 class CliWrapperTests(unittest.TestCase):
     @staticmethod
     def load_cli_module():
-        script = Path(__file__).resolve().parents[1] / "scripts" / "refresh_capital_weekly.py"
-        spec = importlib.util.spec_from_file_location("refresh_capital_weekly_cli", script)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+        return importlib.import_module("pipeline.refresh")
 
     def test_as_of_override_ends_on_supplied_sunday_and_prints_release(self):
         module = self.load_cli_module()
@@ -1465,7 +1515,7 @@ class CliWrapperTests(unittest.TestCase):
 
         def release_runner(project_root, *, now_hkt, status_path):
             calls.append((project_root, now_hkt, status_path))
-            return project_root / "outputs" / "week_20260803-20260809"
+            return project_root / "output"
 
         stdout = io.StringIO()
         with redirect_stdout(stdout):
@@ -1482,12 +1532,12 @@ class CliWrapperTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(len(calls), 1)
         project_root, override_now, status_path = calls[0]
-        self.assertEqual(project_root, Path(module.__file__).resolve().parents[2])
+        self.assertEqual(project_root, Path(module.__file__).resolve().parents[1])
         self.assertEqual(latest_finished_week(override_now).end, date(2026, 8, 9))
         self.assertEqual(status_path, Path("/tmp/capital-weekly-test-status.json"))
         self.assertEqual(
             stdout.getvalue().strip(),
-            str(project_root / "outputs" / "week_20260803-20260809"),
+            str(project_root / "output"),
         )
 
     def test_validation_failure_exits_nonzero_with_the_error(self):
