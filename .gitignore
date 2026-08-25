@@ -14,9 +14,13 @@ venv/
 !.env.example
 
 node_modules
-scripts/node_modules
+pipeline/scripts/node_modules
 
 outputs/
+output/
+pipeline/.cache/
+pipeline/.staging/
+pipeline/.state/
 交付文件/
 _运行文件/
 tmp/

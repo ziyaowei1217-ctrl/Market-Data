@@ -39,7 +39,7 @@ and the constrained `yfinance` 1.x client for optional Yahoo volatility
 signals.
 
 ```bash
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r pipeline/requirements.txt
 ```
 
 The Python acquisition and CSV stages are portable. The workbook builder and
@@ -52,7 +52,7 @@ or a machine-specific symlink.
 - `EIA_API_KEY`: enables the optional EIA commodity-fundamentals provider.
   Without it, the source log records `NOT_CONFIGURED`.
 - `SEC_USER_AGENT`: enables SEC requests for companies listed in
-  `data/capital_weekly_company_watchlist.csv`. Use a descriptive value that
+  `pipeline/config/capital_weekly_company_watchlist.csv`. Use a descriptive value that
   includes an organization and contact address.
 
 No credentials are stored in the repository.
@@ -81,13 +81,13 @@ Run all five pipelines, validate the staged bundle, generate a manifest, and
 atomically publish the latest finished week:
 
 ```bash
-python3 scripts/refresh_capital_weekly.py
+python3 pipeline/scripts/refresh_capital_weekly.py
 ```
 
 To reproduce an eligible historical Sunday explicitly:
 
 ```bash
-python3 scripts/refresh_capital_weekly.py --as-of-date 2026-08-09
+python3 pipeline/scripts/refresh_capital_weekly.py --as-of-date 2026-08-09
 ```
 
 The coordinator applies the target Sunday cutoff before snapshot returns and
@@ -108,23 +108,23 @@ The acquisition scripts can be run independently when diagnosing one domain.
 Use a temporary output directory and an explicit cutoff for market histories:
 
 ```bash
-python3 scripts/fetch_equity_indices.py \
+python3 pipeline/scripts/fetch_equity_indices.py \
   --as-of-date 2026-08-09 \
   --output-dir outputs/manual-equity-indices
 
-python3 scripts/fetch_equity_sectors.py \
+python3 pipeline/scripts/fetch_equity_sectors.py \
   --as-of-date 2026-08-09 \
   --output-dir outputs/manual-equity-sectors
 
-python3 scripts/fetch_gics_sectors.py \
+python3 pipeline/scripts/fetch_gics_sectors.py \
   --as-of-date 2026-08-09 \
   --output-dir outputs/manual-gics-sectors
 
-python3 scripts/fetch_macro_assets.py \
+python3 pipeline/scripts/fetch_macro_assets.py \
   --as-of-date 2026-08-09 \
   --output-dir outputs/manual-macro-assets
 
-python3 scripts/fetch_weekly_context.py \
+python3 pipeline/scripts/fetch_weekly_context.py \
   --start-date 2026-08-03 \
   --end-date 2026-08-09 \
   --output-dir outputs/manual-weekly-context
@@ -140,7 +140,7 @@ Inspect legacy week directories without modifying them or making network
 requests:
 
 ```bash
-python3 scripts/migrate_capital_weekly_releases.py --dry-run
+python3 pipeline/scripts/migrate_capital_weekly_releases.py --dry-run
 ```
 
 The dry run reports each week as `migratable`, `already-valid`, `skipped`, or
@@ -155,8 +155,8 @@ The builder selects the newest correctly named weekly directory under
 `outputs/`:
 
 ```bash
-node scripts/build_weekly_workbooks.mjs outputs tmp/workbook-previews
-node scripts/verify_weekly_workbooks.mjs outputs/week_20260803-20260809
+node pipeline/scripts/build_weekly_workbooks.mjs outputs tmp/workbook-previews
+node pipeline/scripts/verify_weekly_workbooks.mjs outputs/week_20260803-20260809
 ```
 
 It produces:
@@ -168,7 +168,7 @@ It produces:
 
 ## Configuration
 
-The `data/` directory contains the tracked universes and provider settings.
+The `pipeline/config/` directory contains the tracked universes and provider settings.
 Edit configuration deliberately and retain provider/source metadata for every
 new row. The company watchlist is empty by default.
 
@@ -176,7 +176,7 @@ new row. The company watchlist is empty by default.
 
 ```bash
 python3 -m unittest -v
-node --test tests/test_verify_weekly_workbooks.mjs
+node --test pipeline/tests/test_verify_weekly_workbooks.mjs
 ```
 
 Tests use fixtures and mocks; they do not require a live weekly fetch.
