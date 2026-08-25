@@ -35,6 +35,58 @@ SUPPORTED_DATASET_CONTRACT_VERSIONS = frozenset(
     {LEGACY_DATASET_CONTRACT_VERSION, DATASET_CONTRACT_VERSION}
 )
 PUBLICATION_MODES = frozenset({"coordinated", "migrated"})
+OUTPUT_SCHEMA_VERSION = "1.0"
+OUTPUT_BUSINESS_FILES = (
+    "indices.json",
+    "sectors.json",
+    "gics.json",
+    "macro.json",
+    "context.json",
+)
+OUTPUT_FILES = frozenset((*OUTPUT_BUSINESS_FILES, "release.json"))
+OUTPUT_TABLES = {
+    "indices": (
+        "equity_indices",
+        (("indices", "02_equity_indices.csv"),),
+    ),
+    "sectors": (
+        "equity_sectors",
+        (
+            ("sectors", "03_equity_sectors.csv"),
+            ("divergence", "sector_divergence.csv"),
+        ),
+    ),
+    "gics": (
+        "gics_sectors",
+        (("sectors", "03_gics_sectors.csv"),),
+    ),
+    "macro": (
+        "macro_assets",
+        (
+            ("fixed_income", "fixed_income.csv"),
+            ("policy_rates", "policy_rates.csv"),
+            ("money_market", "money_market.csv"),
+            ("foreign_exchange", "foreign_exchange.csv"),
+            ("commodities", "commodities.csv"),
+            ("divergence", "macro_divergence.csv"),
+        ),
+    ),
+    "context": (
+        "weekly_context",
+        tuple(
+            (category, f"{category}.csv")
+            for category in (
+                "events",
+                "economic_releases",
+                "financial_conditions",
+                "market_internals",
+                "positioning_flows",
+                "company_events",
+                "commodity_fundamentals",
+            )
+        ),
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -917,6 +969,307 @@ def validate_staged_week(
     )
 
 
+def _strict_json_object(path: Path, root: Path) -> dict:
+    _ensure_regular_contained_file(path, root)
+
+    def reject_constant(value: str):
+        raise ValueError(f"non-standard JSON constant {value}")
+
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=reject_constant,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        raise ReleaseValidationError(f"Invalid strict JSON file: {path.name}") from error
+    if not isinstance(payload, dict):
+        raise ReleaseValidationError(f"JSON root must be an object: {path.name}")
+    return payload
+
+
+def _source_manifest(release_root: Path) -> tuple[dict, WeekWindow, int]:
+    root = Path(release_root)
+    manifest = _strict_json_object(root / "manifest.json", root)
+    if manifest.get("status") != "complete":
+        raise ReleaseValidationError("Source release manifest is not complete")
+    try:
+        start = date.fromisoformat(manifest["week_start"])
+        end = date.fromisoformat(manifest["week_end"])
+        week_id = str(manifest["week_id"])
+        contract_version = int(manifest["dataset_contract_version"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ReleaseValidationError("Source release manifest identity is invalid") from error
+    window = WeekWindow(start, end, week_id)
+    if end - start != timedelta(days=6) or week_id != f"week_{start:%Y%m%d}-{end:%Y%m%d}":
+        raise ReleaseValidationError("Source release week identity is inconsistent")
+    release_datasets_for_contract(contract_version)
+
+    entries = manifest.get("files")
+    if not isinstance(entries, list):
+        raise ReleaseValidationError("Source release file manifest is invalid")
+    expected_paths: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ReleaseValidationError("Source release file manifest is invalid")
+        relative = entry.get("path")
+        expected_hash = entry.get("sha256")
+        if (
+            not isinstance(relative, str)
+            or not relative
+            or relative in expected_paths
+            or not isinstance(expected_hash, str)
+        ):
+            raise ReleaseValidationError("Source release file manifest is invalid")
+        path = root / relative
+        try:
+            path.relative_to(root)
+        except ValueError as error:
+            raise ReleaseValidationError("Source release file path escapes its root") from error
+        _ensure_regular_contained_file(path, root)
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
+            raise ReleaseValidationError(f"Source release hash mismatch: {relative}")
+        expected_paths.add(relative)
+    actual_paths = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and path != root / "manifest.json"
+    }
+    if actual_paths != expected_paths:
+        raise ReleaseValidationError("Source release files do not match its manifest")
+
+    validate_staged_week(
+        root,
+        window,
+        dataset_contract_version=contract_version,
+    )
+    return manifest, window, contract_version
+
+
+def _typed_csv_rows(path: Path, dataset: DatasetSpec) -> list[dict]:
+    rows: list[dict] = []
+    try:
+        with path.open(newline="", encoding="utf-8-sig") as handle:
+            reader = csv.DictReader(handle, strict=True)
+            for raw in reader:
+                row = {}
+                for key, value in raw.items():
+                    if value == "":
+                        row[key] = None
+                    elif key in dataset.numeric_columns:
+                        try:
+                            number = float(value)
+                        except ValueError as error:
+                            raise ReleaseValidationError(
+                                f"Invalid output number: {dataset.filename}.{key}"
+                            ) from error
+                        if not math.isfinite(number):
+                            raise ReleaseValidationError(
+                                f"Non-finite output value: {dataset.filename}.{key}"
+                            )
+                        row[key] = (
+                            int(number)
+                            if number.is_integer()
+                            and key.endswith(
+                                ("count", "rank", "order", "observations", "elapsed_ms")
+                            )
+                            else number
+                        )
+                    else:
+                        row[key] = value
+                rows.append(row)
+    except csv.Error as error:
+        raise ReleaseValidationError(
+            f"{dataset.filename} contains malformed CSV: {error}"
+        ) from error
+    return rows
+
+
+def _new_output_release_id() -> str:
+    generated = datetime.now(HONG_KONG)
+    return f"{generated:%Y%m%dT%H%M%S%z}-{uuid.uuid4().hex[:6]}"
+
+
+def build_output_bundle(
+    release_root: Path,
+    destination: Path,
+    *,
+    release_id: str | None = None,
+) -> dict:
+    """Convert one complete staged-week release into five stable JSON files."""
+    source_root = Path(release_root)
+    source_manifest, window, contract_version = _source_manifest(source_root)
+    output_root = Path(destination)
+    if output_root.is_symlink():
+        raise ReleaseValidationError("Output root must not be a symbolic link")
+    output_root.mkdir(parents=True, exist_ok=True)
+    if any(output_root.iterdir()):
+        raise ReleaseValidationError("Output destination must be empty")
+
+    identity = release_id or _new_output_release_id()
+    if not identity.strip():
+        raise ReleaseValidationError("Output release_id must not be blank")
+    generated_at = datetime.now(HONG_KONG).isoformat(timespec="seconds")
+    pipeline_dirs = {
+        spec.name: Path(spec.output_dir)
+        for spec in build_pipeline_specs(source_root, window)
+    }
+    datasets = {
+        (dataset.pipeline, dataset.filename): dataset
+        for dataset in release_datasets_for_contract(contract_version)
+    }
+    pipeline_entries = []
+    file_entries = []
+    for public_name, (source_pipeline, table_files) in OUTPUT_TABLES.items():
+        tables = {}
+        row_counts = {}
+        for table_name, filename in table_files:
+            dataset = datasets.get((source_pipeline, filename))
+            if dataset is None:
+                if public_name == "context" and table_name == "economic_releases":
+                    rows = []
+                else:
+                    raise ReleaseValidationError(
+                        f"Output table is not registered: {source_pipeline}/{filename}"
+                    )
+            else:
+                rows = _typed_csv_rows(
+                    pipeline_dirs[source_pipeline] / filename,
+                    dataset,
+                )
+            tables[table_name] = rows
+            row_counts[table_name] = len(rows)
+        source_dataset = datasets[(source_pipeline, "source_log.csv")]
+        source_log = _typed_csv_rows(
+            pipeline_dirs[source_pipeline] / "source_log.csv",
+            source_dataset,
+        )
+        document = {
+            "schema_version": OUTPUT_SCHEMA_VERSION,
+            "release_id": identity,
+            "as_of_date": window.end.isoformat(),
+            "pipeline": public_name,
+            "status": "complete",
+            "tables": tables,
+            "source_log": source_log,
+        }
+        filename = f"{public_name}.json"
+        path = output_root / filename
+        _atomic_write_json(path, document)
+        pipeline_entries.append(
+            {
+                "name": public_name,
+                "status": "complete",
+                "file": filename,
+                "rows": {**row_counts, "source_log": len(source_log)},
+            }
+        )
+        file_entries.append(
+            {
+                "name": filename,
+                "bytes": path.stat().st_size,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+
+    release = {
+        "schema_version": OUTPUT_SCHEMA_VERSION,
+        "release_id": identity,
+        "as_of_date": window.end.isoformat(),
+        "generated_at": generated_at,
+        "status": "complete",
+        "source_week_id": source_manifest["week_id"],
+        "pipelines": pipeline_entries,
+        "files": file_entries,
+    }
+    _atomic_write_json(output_root / "release.json", release)
+    return validate_output_bundle(output_root)
+
+
+def validate_output_bundle(output_root: Path) -> dict:
+    root = Path(output_root)
+    if root.is_symlink() or not root.is_dir():
+        raise ReleaseValidationError("Output root must be a regular directory")
+    paths = list(root.iterdir())
+    if any(path.is_symlink() or not path.is_file() for path in paths):
+        raise ReleaseValidationError("Output bundle may contain only regular files")
+    names = {path.name for path in paths}
+    if names != OUTPUT_FILES:
+        missing = sorted(OUTPUT_FILES - names)
+        extra = sorted(names - OUTPUT_FILES)
+        detail = ", ".join(
+            part
+            for part in (
+                f"missing: {', '.join(missing)}" if missing else "",
+                f"extra: {', '.join(extra)}" if extra else "",
+            )
+            if part
+        )
+        raise ReleaseValidationError(f"Unexpected output files ({detail})")
+
+    release = _strict_json_object(root / "release.json", root)
+    identity = release.get("release_id")
+    as_of_date = release.get("as_of_date")
+    if (
+        release.get("schema_version") != OUTPUT_SCHEMA_VERSION
+        or release.get("status") != "complete"
+        or not isinstance(identity, str)
+        or not identity.strip()
+        or not isinstance(as_of_date, str)
+    ):
+        raise ReleaseValidationError("release.json identity or status is invalid")
+    try:
+        date.fromisoformat(as_of_date)
+    except ValueError as error:
+        raise ReleaseValidationError("release.json as_of_date is invalid") from error
+
+    entries = release.get("files")
+    if not isinstance(entries, list):
+        raise ReleaseValidationError("release.json file list is invalid")
+    by_name = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("name"), str):
+            raise ReleaseValidationError("release.json file entry is invalid")
+        name = entry["name"]
+        if name in by_name:
+            raise ReleaseValidationError(f"Duplicate release file entry: {name}")
+        by_name[name] = entry
+    if set(by_name) != set(OUTPUT_BUSINESS_FILES):
+        raise ReleaseValidationError("release.json must hash exactly five business files")
+
+    for name in OUTPUT_BUSINESS_FILES:
+        document = _strict_json_object(root / name, root)
+        expected_pipeline = name.removesuffix(".json")
+        if (
+            document.get("schema_version") != OUTPUT_SCHEMA_VERSION
+            or document.get("release_id") != identity
+            or document.get("as_of_date") != as_of_date
+            or document.get("pipeline") != expected_pipeline
+            or document.get("status") != "complete"
+            or not isinstance(document.get("tables"), dict)
+            or not isinstance(document.get("source_log"), list)
+        ):
+            raise ReleaseValidationError(f"Output identity mismatch: {name}")
+        actual_hash = hashlib.sha256((root / name).read_bytes()).hexdigest()
+        if by_name[name].get("sha256") != actual_hash:
+            raise ReleaseValidationError(f"Output hash mismatch: {name}")
+        if by_name[name].get("bytes") != (root / name).stat().st_size:
+            raise ReleaseValidationError(f"Output size mismatch: {name}")
+
+    pipelines = release.get("pipelines")
+    if not isinstance(pipelines, list):
+        raise ReleaseValidationError("release.json pipeline list is invalid")
+    pipeline_names = {
+        entry.get("name")
+        for entry in pipelines
+        if isinstance(entry, dict)
+        and entry.get("status") == "complete"
+        and entry.get("file") == f"{entry.get('name')}.json"
+    }
+    if pipeline_names != set(OUTPUT_TABLES):
+        raise ReleaseValidationError("release.json pipeline statuses are incomplete")
+    return release
+
+
 def _atomic_write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary: Path | None = None
@@ -1136,6 +1489,8 @@ __all__ = [
     "DATASET_CONTRACT_VERSION",
     "LEGACY_DATASET_CONTRACT_VERSION",
     "MANIFEST_SCHEMA_VERSION",
+    "OUTPUT_BUSINESS_FILES",
+    "OUTPUT_SCHEMA_VERSION",
     "RELEASE_DATASETS",
     "SUPPORTED_DATASET_CONTRACT_VERSIONS",
     "ReleaseAlreadyRunning",
@@ -1143,6 +1498,7 @@ __all__ = [
     "ReleaseValidationError",
     "WeekWindow",
     "_publish_directory",
+    "build_output_bundle",
     "build_pipeline_specs",
     "build_release_manifest",
     "file_manifest",
@@ -1152,4 +1508,5 @@ __all__ = [
     "release_datasets_for_contract",
     "safe_error_reason",
     "validate_staged_week",
+    "validate_output_bundle",
 ]
