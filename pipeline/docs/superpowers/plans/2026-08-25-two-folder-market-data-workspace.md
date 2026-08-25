@@ -8,7 +8,14 @@
 
 **Tech Stack:** Python 3 standard library, pandas, unittest, Node.js built-in test runner, JSON, Git worktrees.
 
-**Spec:** `docs/superpowers/specs/2026-08-25-two-folder-market-data-workspace-design.md`
+**Spec:** `pipeline/docs/superpowers/specs/2026-08-25-two-folder-market-data-workspace-design.md`
+
+**Implementation status (2026-08-25):** Completed inline on `main` at the
+user's explicit request. The production workspace now has only `pipeline/` and
+`output/` as visible directories. The initial output was converted offline
+from `week_20260803-20260809`; no live provider refresh or frontend change was
+performed. Historical steps and expected RED statements below are retained as
+the execution record.
 
 ## Global Constraints
 
@@ -636,7 +643,7 @@ Run:
 ```bash
 python3 -m unittest -v
 node --test pipeline/tests/test_verify_weekly_workbooks.mjs
-python3 -c 'from pathlib import Path; from pipeline.common import validate_output_bundle; validate_output_bundle(Path("output"))'
+python3 -c 'from pathlib import Path; from pipeline.capital_weekly.weekly_release import validate_output_bundle; validate_output_bundle(Path("output"))'
 git diff --check
 ```
 

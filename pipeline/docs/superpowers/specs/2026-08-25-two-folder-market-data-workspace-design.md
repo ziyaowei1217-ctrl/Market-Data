@@ -92,10 +92,13 @@ focused internal implementation modules.
 | `pipeline/macro.py` | Fetch, normalize, clean, and validate fixed income, policy rates, money market, FX, commodities, and macro divergence. |
 | `pipeline/context.py` | Fetch, normalize, clean, and validate events, economic releases, financial conditions, internals, positioning, company events, and commodity fundamentals. |
 
-`pipeline/common.py` owns shared date truncation, null normalization, numeric
-validation, stable ordering, deduplication, source metadata, hashing, and JSON
-serialization. `pipeline/config.json` consolidates the existing versioned
-universe and provider configuration without embedding business lists in code.
+`pipeline/common.py` owns consolidated configuration loading and explicit CSV
+compatibility for deterministic diagnostics. The focused domain modules retain
+date truncation and calculation logic. `pipeline/capital_weekly/weekly_release.py`
+owns strict CSV-to-JSON typing, release identity, hashing, bundle validation,
+and paired publication. `pipeline/config.json` consolidates the existing
+versioned universe and provider configuration without embedding business lists
+in code.
 
 `pipeline/refresh.py` is the only coordinated publication entrypoint. Single
 pipeline entrypoints remain useful for diagnosis but cannot directly replace

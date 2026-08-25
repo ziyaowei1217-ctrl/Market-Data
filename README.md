@@ -1,196 +1,121 @@
 # Capital Weekly Market Data
 
-Capital Weekly Market Data is a public-data pipeline for producing an auditable
-weekly cross-asset research pack. It collects global equity indices, A/H/US
-sector data, US GICS sector proxies, macro assets, and weekly market context.
-The coordinated release applies a point-in-time cutoff, validates the complete
-Monday-to-Sunday bundle, and publishes a new week only when every required
-pipeline succeeds.
+这是 Capital Weekly 的市场数据后端。工作区只保留两个可见业务目录：
 
-Generated snapshots and workbooks are intentionally excluded from Git. Local
-snapshots remain under `outputs/week_YYYYMMDD-YYYYMMDD/`, where the Capital
-Weekly frontend can read them through `MARKET_DATA_ROOT`. Do not delete
-published weeks merely to make the repository clean.
+```text
+market data/
+├── pipeline/   # 五条数据管线、统一配置、测试与工程文档
+└── output/     # 最近一次完整成功发布的固定 JSON 文件
+```
 
-## Pipeline
+本仓库不包含前端。未来前端应作为独立的相邻仓库创建，并只读取
+`output/` 的稳定契约。
 
-The coordinated release runs five acquisition stages:
+## 五条管线与固定产出
 
-1. Global equity indices — 20 configured indices.
-2. Cross-market sectors — 34 A/H/US sector rows plus divergence summaries.
-3. US GICS sectors — 11 Sector SPDR ETF proxies.
-4. Macro assets — fixed income, policy rates, money markets, commodities, FX,
-   real yields, breakevens, and cross-sectional divergence.
-5. Weekly context — events, positioning, financial conditions, market
-   internals, exchange microstructure, selected SEC filings, optional EIA
-   fundamentals, and point-in-time economic releases.
+| 管线入口 | 固定产出 | 主要内容 |
+| --- | --- | --- |
+| `python3 -m pipeline.indices` | `output/indices.json` | 20 个全球股指与来源日志 |
+| `python3 -m pipeline.sectors` | `output/sectors.json` | 34 个 A/H/美股行业、分化与来源日志 |
+| `python3 -m pipeline.gics` | `output/gics.json` | 11 个美国 GICS 行业代理与来源日志 |
+| `python3 -m pipeline.macro` | `output/macro.json` | 固收、政策利率、货币市场、外汇、商品与分化 |
+| `python3 -m pipeline.context` | `output/context.json` | 事件、经济发布、金融条件、市场内部、持仓与可选背景 |
 
-Every bundle includes normalized CSV files and source logs so users can review
-provider status, observation dates, quality flags, and source URLs.
+`output/release.json` 最后写入，记录共同的 `release_id`、截止日期、
+五条管线状态，以及五个业务 JSON 的 SHA-256。消费者只有在六个文件
+齐全、发布身份一致且哈希全部匹配时才能接受这一代数据。
 
-## Requirements
+刷新不会创建带日期的新目录。完整验证成功后，它会覆盖同名的六个
+文件；任何抓取、清洗、验证、输出替换、缓存替换或最终状态写入失败，
+都会保留上一代 `output/` 和上一代缓存不变。
 
-- Python 3.10 or newer
-- Node.js for workbook packaging
-- `@oai/artifact-tool` supplied by the Codex workspace runtime
+## 安装与配置
 
-The Python requirements include `pypdf` for official policy-document parsing
-and the constrained `yfinance` 1.x client for optional Yahoo volatility
-signals.
+要求 Python 3.10 或更新版本。Node.js 只用于保留的工作簿兼容测试。
 
 ```bash
 python3 -m pip install -r pipeline/requirements.txt
 ```
 
-The Python acquisition and CSV stages are portable. The workbook builder and
-verifier currently depend on the Codex-bundled `@oai/artifact-tool`; ensure
-your Node environment can resolve that package. Do not commit `node_modules`
-or a machine-specific symlink.
+所有资产范围和提供方设置已合并到 `pipeline/config.json`。JSON 中的
+配置值保留为字符串，由各管线在读取后转换所需类型。不要重新拆成多份
+CSV；新增配置时应同时保留唯一身份、单位、提供方和来源元数据。
 
-## Optional environment variables
+可选环境变量：
 
-- `EIA_API_KEY`: enables the optional EIA commodity-fundamentals provider.
-  Without it, the source log records `NOT_CONFIGURED`.
-- `SEC_USER_AGENT`: enables SEC requests for companies listed in
-  `pipeline/config/capital_weekly_company_watchlist.csv`. Use a descriptive value that
-  includes an organization and contact address.
+- `EIA_API_KEY`：启用 EIA 商品基本面提供方；缺失时记录
+  `NOT_CONFIGURED`。
+- `SEC_USER_AGENT`：启用公司 watchlist 的 SEC 请求；值应包含机构和
+  联系方式。
 
-No credentials are stored in the repository.
+凭证不得写入仓库。Yahoo 波动率信号属于可选的本地研究数据源，失败会
+进入来源日志，但不会静默伪造数据。
 
-### Optional Yahoo volatility signals
+## 正式刷新
 
-The weekly-context pipeline uses `yfinance` to request `^VIX9D`, `^VIX`,
-`^VIX3M`, `^VIX6M`, and `^SKEW`. It publishes observed levels plus registered
-1M–3M and 9D–1M term calculations into `financial_conditions.csv`.
-
-Yahoo Finance is an optional public research source for this local desktop
-workflow. Its failure remains visible in `source_log.csv` but does not block an
-otherwise complete week. The provider does not publish option-chain history,
-ETF-flow proxies, or generated regime labels.
-
-`yfinance` is not affiliated with or endorsed by Yahoo. Yahoo data is subject
-to Yahoo's personal-use terms, so this integration remains limited to the
-approved local desktop research workflow.
-
-`EIA_API_KEY` enables the existing free EIA commodity-fundamentals provider.
-Keep the key in the process environment; never place it in repository files.
-
-## Coordinated weekly refresh
-
-Run all five pipelines, validate the staged bundle, generate a manifest, and
-atomically publish the latest finished week:
+运行五条管线，应用最近一个已结束周日的时间截断，清洗、验证并原位发布：
 
 ```bash
-python3 pipeline/scripts/refresh_capital_weekly.py
+python3 -m pipeline.refresh
 ```
 
-To reproduce an eligible historical Sunday explicitly:
+重现一个已经结束的周日：
 
 ```bash
-python3 pipeline/scripts/refresh_capital_weekly.py --as-of-date 2026-08-09
+python3 -m pipeline.refresh --as-of-date 2026-08-23
 ```
 
-The coordinator applies the target Sunday cutoff before snapshot returns and
-registered derived series are calculated. It writes a manifest containing the
-week identity, dataset contract, pipeline status, row counts, hashes, and
-validation results. A pipeline, validation, manifest, or final-status failure
-leaves the previous complete week active.
+正式刷新会访问公开数据源。除非明确需要，不要为了测试运行真实刷新。
+自动化测试全部使用确定性夹具、假历史和假运行器。
 
-Point the local frontend server at this repository with:
+运行状态位于 `pipeline/.state/status.json`，单飞锁位于
+`pipeline/.state/refresh.lock`。中间数据只出现在
+`pipeline/.staging/`，成功后会清理。最近一次成功的原始响应保存在
+`pipeline/.cache/`，下一次成功刷新会整体替换它，不累计历史缓存。
+
+## 无网络离线初始化
+
+仅在从旧工作区一次性初始化时使用：
 
 ```bash
-export MARKET_DATA_ROOT="/path/to/market-data"
+python3 -m pipeline.refresh --from-existing /path/to/legacy/outputs
 ```
 
-## Individual pipeline diagnostics
+该命令只扫描名称严格匹配 `week_YYYYMMDD-YYYYMMDD` 的直接子目录，
+要求 manifest 完整、日期自洽、源文件哈希一致，并重新运行发布校验。
+它跳过失败周、草稿、临时导出、损坏目录和符号链接，不调用任何数据
+提供方，也不联网。
 
-The acquisition scripts can be run independently when diagnosing one domain.
-Use a temporary output directory and an explicit cutoff for market histories:
+## 单管线诊断
+
+单管线入口用于定位某一数据域的问题，不能直接替换正式 `output/`。
+诊断时应把临时结果写到系统临时目录或 `pipeline/.staging/`：
 
 ```bash
-python3 pipeline/scripts/fetch_equity_indices.py \
-  --as-of-date 2026-08-09 \
-  --output-dir outputs/manual-equity-indices
-
-python3 pipeline/scripts/fetch_equity_sectors.py \
-  --as-of-date 2026-08-09 \
-  --output-dir outputs/manual-equity-sectors
-
-python3 pipeline/scripts/fetch_gics_sectors.py \
-  --as-of-date 2026-08-09 \
-  --output-dir outputs/manual-gics-sectors
-
-python3 pipeline/scripts/fetch_macro_assets.py \
-  --as-of-date 2026-08-09 \
-  --output-dir outputs/manual-macro-assets
-
-python3 pipeline/scripts/fetch_weekly_context.py \
-  --start-date 2026-08-03 \
-  --end-date 2026-08-09 \
-  --output-dir outputs/manual-weekly-context
+python3 -m pipeline.indices \
+  --as-of-date 2026-08-23 \
+  --output-dir /tmp/capital-weekly-indices
 ```
 
-These commands may access live public providers. Automated tests use
-deterministic fixtures, fake histories, and fake runners instead; they do not
-perform a real refresh.
+其余入口为 `pipeline.sectors`、`pipeline.gics`、`pipeline.macro` 和
+`pipeline.context`。这些命令可能访问真实公开数据源。
 
-## Historical release migration
-
-Inspect legacy week directories without modifying them or making network
-requests:
-
-```bash
-python3 pipeline/scripts/migrate_capital_weekly_releases.py --dry-run
-```
-
-The dry run reports each week as `migratable`, `already-valid`, `skipped`, or
-`failed`. After review, omit `--dry-run` to repair only registered blank
-optional-table headers, validate the matching historical contract, and publish
-through the rollback-safe swap. Migration never invents or backfills business
-records.
-
-## Build and verify the workbooks
-
-The builder selects the newest correctly named weekly directory under
-`outputs/`:
-
-```bash
-node pipeline/scripts/build_weekly_workbooks.mjs outputs tmp/workbook-previews
-node pipeline/scripts/verify_weekly_workbooks.mjs outputs/week_20260803-20260809
-```
-
-It produces:
-
-- `01_股票指数_20260803-20260809.xlsx`
-- `02_跨市场行业_20260803-20260809.xlsx`
-- `03_宏观资产_20260803-20260809.xlsx`
-- `04_事件与市场背景_20260803-20260809.xlsx`
-
-## Configuration
-
-The `pipeline/config/` directory contains the tracked universes and provider settings.
-Edit configuration deliberately and retain provider/source metadata for every
-new row. The company watchlist is empty by default.
-
-## Tests
+## 验证
 
 ```bash
 python3 -m unittest -v
 node --test pipeline/tests/test_verify_weekly_workbooks.mjs
+python3 -c 'from pathlib import Path; from pipeline.capital_weekly.weekly_release import validate_output_bundle; validate_output_bundle(Path("output"))'
 ```
 
-Tests use fixtures and mocks; they do not require a live weekly fetch.
+发布数据遵循以下原则：先应用 `as_of_date`，缺失值使用 `null`，拒绝
+`NaN` 和无穷值，保留单位、观测日期、来源 URL 与 QC/来源状态。可选
+context 集合即使为空也保留其数组名称。
 
-## Data and usage notes
-
-- Public providers can change schemas, delay observations, or block automated
-  requests.
-- US GICS rows use tradable ETF proxies rather than official index values.
-- A generated file is not proof that every source succeeded; review source
-  logs and the release manifest before relying on a snapshot.
-- Confirm licensing and redistribution terms before publishing generated data.
-- This project is a research-data tool, not investment advice.
+公开提供方可能改变结构、延迟观测或限制自动请求。GICS 行业使用可交易
+ETF 代理，不等同于官方指数值。使用或再分发前应确认来源许可。本项目是
+研究数据工具，不构成投资建议。
 
 ## License
 
-MIT. See `LICENSE`.
+MIT，见 `LICENSE`。
