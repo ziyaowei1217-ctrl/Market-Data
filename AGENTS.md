@@ -28,9 +28,9 @@
 
 - Follow TDD for behavior changes and show the expected RED before implementation.
 - Run focused unittest modules followed by `python3 -m unittest -v`.
-- Run `node --test pipeline/tests/test_verify_weekly_workbooks.mjs` while the workbook compatibility tests remain present.
+- Run `node --test pipeline/internal/tests/test_verify_weekly_workbooks.mjs` while the workbook compatibility tests remain present.
 - Validate the active output with
-  `pipeline.capital_weekly.weekly_release.validate_output_bundle` before
+  `pipeline.internal.capital_weekly.weekly_release.validate_output_bundle` before
   cleanup or completion.
 - Do not switch branches, rebase, reset, or merge other work inside an execution chat.
 - Preserve unrelated dirty or untracked files and archive them recoverably before cleanup.

@@ -14,7 +14,7 @@ venv/
 !.env.example
 
 node_modules
-pipeline/scripts/node_modules
+pipeline/internal/scripts/node_modules
 
 outputs/
 output/

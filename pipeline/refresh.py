@@ -10,7 +10,7 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from pipeline.capital_weekly.weekly_release import (
+from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseAlreadyRunning,
     ReleasePipelineError,
     ReleaseValidationError,

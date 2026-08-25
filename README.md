@@ -4,7 +4,7 @@
 
 ```text
 market data/
-├── pipeline/   # 五条数据管线、统一配置、测试与工程文档
+├── pipeline/   # 五条公开管线入口；维护文件集中在 internal/
 └── output/     # 最近一次完整成功发布的固定 JSON 文件
 ```
 
@@ -104,8 +104,8 @@ python3 -m pipeline.indices \
 
 ```bash
 python3 -m unittest -v
-node --test pipeline/tests/test_verify_weekly_workbooks.mjs
-python3 -c 'from pathlib import Path; from pipeline.capital_weekly.weekly_release import validate_output_bundle; validate_output_bundle(Path("output"))'
+node --test pipeline/internal/tests/test_verify_weekly_workbooks.mjs
+python3 -c 'from pathlib import Path; from pipeline.internal.capital_weekly.weekly_release import validate_output_bundle; validate_output_bundle(Path("output"))'
 ```
 
 发布数据遵循以下原则：先应用 `as_of_date`，缺失值使用 `null`，拒绝
