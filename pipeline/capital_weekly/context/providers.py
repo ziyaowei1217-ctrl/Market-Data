@@ -599,6 +599,25 @@ def _yahoo_volatility_provider(
             for item in config
             if item.metric_code not in published_codes
         ]
+        unavailable_calculations = [
+            code
+            for code in (
+                "vix_1m_3m_spread",
+                "vix_1m_3m_ratio",
+                "vix_9d_1m_spread",
+            )
+            if code not in published_codes
+        ]
+        notes = []
+        if unavailable_roles:
+            notes.append(
+                "missing or stale roles: " + ", ".join(unavailable_roles)
+            )
+        if unavailable_calculations:
+            notes.append(
+                "omitted calculations due to missing inputs or no fresh common "
+                "date: " + ", ".join(unavailable_calculations)
+            )
         rows = [
             {
                 "as_of_date": metric["as_of_date"],
@@ -621,12 +640,7 @@ def _yahoo_volatility_provider(
             raw_text=raw_text,
             source=YAHOO_VOLATILITY_SOURCE,
             source_url=YAHOO_FINANCE_URL,
-            notes=(
-                "partial publication; missing or stale roles: "
-                + ", ".join(unavailable_roles)
-                if unavailable_roles
-                else ""
-            ),
+            notes="; ".join(notes),
         )
     except Exception as error:
         return ProviderResult(

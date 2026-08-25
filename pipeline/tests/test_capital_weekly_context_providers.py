@@ -229,6 +229,42 @@ class ContextProviderTests(unittest.TestCase):
         self.assertIn("vix_3m", result.notes)
         self.assertIn("vix_6m", result.notes)
 
+    def test_yahoo_volatility_provider_audits_omitted_pair_calculations(self):
+        def disjoint_download(**_kwargs):
+            return pd.DataFrame(
+                {
+                    ("^VIX9D", "Close"): [14.0, None, None, None, None],
+                    ("^VIX", "Close"): [None, 16.0, None, None, None],
+                    ("^VIX3M", "Close"): [None, None, 20.0, None, None],
+                    ("^VIX6M", "Close"): [None, None, None, 22.0, None],
+                    ("^SKEW", "Close"): [None, None, None, None, 145.0],
+                },
+                index=pd.to_datetime(
+                    [
+                        "2026-08-03", "2026-08-04", "2026-08-05",
+                        "2026-08-06", "2026-08-07",
+                    ]
+                ),
+            )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            result = build_default_providers(
+                start=date(2026, 8, 3),
+                end=date(2026, 8, 9),
+                data_dir=data_dir,
+                environ={},
+                yahoo_downloader=disjoint_download,
+            )["yahoo_volatility_signals"].fetch()
+
+        self.assertEqual(result.status, "OK")
+        self.assertEqual(len(result.rows), 5)
+        self.assertIn("vix_1m_3m_spread", result.notes)
+        self.assertIn("vix_1m_3m_ratio", result.notes)
+        self.assertIn("vix_9d_1m_spread", result.notes)
+        self.assertIn("no fresh common date", result.notes)
+
     def test_yahoo_failure_returns_auditable_optional_result(self):
         def unavailable(**_kwargs):
             raise RuntimeError("Yahoo unavailable")
