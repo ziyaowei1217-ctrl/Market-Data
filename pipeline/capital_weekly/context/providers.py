@@ -593,6 +593,12 @@ def _yahoo_volatility_provider(
         histories = extract_yahoo_close_histories(frame, config, end)
         raw_text = serialize_yahoo_close_histories(histories, config)
         metrics = calculate_yahoo_volatility_metrics(histories, config, end)
+        published_codes = {metric["metric_code"] for metric in metrics}
+        unavailable_roles = [
+            item.role
+            for item in config
+            if item.metric_code not in published_codes
+        ]
         rows = [
             {
                 "as_of_date": metric["as_of_date"],
@@ -615,6 +621,12 @@ def _yahoo_volatility_provider(
             raw_text=raw_text,
             source=YAHOO_VOLATILITY_SOURCE,
             source_url=YAHOO_FINANCE_URL,
+            notes=(
+                "partial publication; missing or stale roles: "
+                + ", ".join(unavailable_roles)
+                if unavailable_roles
+                else ""
+            ),
         )
     except Exception as error:
         return ProviderResult(

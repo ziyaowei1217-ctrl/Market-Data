@@ -13,7 +13,6 @@ import pandas as pd
 
 
 REQUIRED_ROLES = frozenset({"vix_9d", "vix_1m", "vix_3m", "vix_6m", "skew"})
-TERM_ROLES = ("vix_9d", "vix_1m", "vix_3m", "vix_6m")
 CONFIG_FIELDS = ("metric_code", "metric_name", "ticker", "unit", "role")
 
 
@@ -66,7 +65,7 @@ def _close_column(frame: pd.DataFrame, ticker: str, configured_count: int):
             return candidate
     if configured_count == 1 and "Close" in frame.columns:
         return "Close"
-    raise ValueError(f"Yahoo volatility history is missing Close for {ticker}")
+    return None
 
 
 def extract_yahoo_close_histories(
@@ -82,6 +81,8 @@ def extract_yahoo_close_histories(
     histories: dict[str, pd.Series] = {}
     for item in configured:
         column = _close_column(frame, item.ticker, len(configured))
+        if column is None:
+            continue
         history = pd.Series(
             frame[column].to_numpy(),
             index=pd.Index(normalized_dates),
@@ -89,12 +90,14 @@ def extract_yahoo_close_histories(
         )
         history = history.loc[history.index <= as_of_date].dropna().sort_index()
         if history.empty:
-            raise ValueError(f"Yahoo volatility history is empty for {item.ticker}")
+            continue
         if not all(math.isfinite(float(value)) for value in history):
             raise ValueError(
                 f"Yahoo volatility history contains a non-finite value for {item.ticker}"
             )
         histories[item.role] = history
+    if not histories:
+        raise ValueError("Yahoo volatility history has no usable configured series")
     return histories
 
 
@@ -106,27 +109,19 @@ def calculate_yahoo_volatility_metrics(
 ) -> list[dict[str, Any]]:
     configured = tuple(series)
     role_map = {item.role: item for item in configured}
-    common_dates = set(histories[TERM_ROLES[0]].index)
-    for role in TERM_ROLES[1:]:
-        common_dates &= set(histories[role].index)
-    if not common_dates:
-        raise ValueError("Yahoo volatility term indices have no common date")
-    term_date = max(common_dates)
-    skew_date = max(histories["skew"].index)
-    for label, observed in (("term structure", term_date), ("SKEW", skew_date)):
-        lag = (as_of_date - observed).days
-        if lag < 0 or lag > max_lag_days:
-            raise ValueError(
-                f"Yahoo {label} date {observed.isoformat()} has lag {lag} days "
-                f"versus target Sunday {as_of_date.isoformat()}; allowed range "
-                f"is 0..{max_lag_days} days"
-            )
 
-    observed_dates = {role: term_date for role in TERM_ROLES}
-    observed_dates["skew"] = skew_date
+    def is_fresh(observed: date) -> bool:
+        lag = (as_of_date - observed).days
+        return 0 <= lag <= max_lag_days
+
     rows = []
     for item in configured:
-        observed = observed_dates[item.role]
+        history = histories.get(item.role)
+        if history is None or history.empty:
+            continue
+        observed = max(history.index)
+        if not is_fresh(observed):
+            continue
         value = float(histories[item.role].loc[observed])
         rows.append(
             {
@@ -140,39 +135,61 @@ def calculate_yahoo_volatility_metrics(
             }
         )
 
-    vix_9d = float(histories["vix_9d"].loc[term_date])
-    vix_1m = float(histories["vix_1m"].loc[term_date])
-    vix_3m = float(histories["vix_3m"].loc[term_date])
-    if vix_3m == 0:
-        raise ValueError("Yahoo VIX3M denominator must not be zero")
-    rows.extend(
-        [
-            {
-                "metric_code": "vix_1m_3m_spread",
-                "metric_name": "VIX 1M minus 3M spread",
-                "as_of_date": term_date,
-                "value": vix_1m - vix_3m,
-                "unit": "index_points",
-                "source_url": yahoo_history_url(role_map["vix_3m"].ticker),
-            },
-            {
-                "metric_code": "vix_1m_3m_ratio",
-                "metric_name": "VIX 1M to 3M ratio",
-                "as_of_date": term_date,
-                "value": vix_1m / vix_3m,
-                "unit": "ratio",
-                "source_url": yahoo_history_url(role_map["vix_3m"].ticker),
-            },
+    def common_date(left: str, right: str) -> date | None:
+        if left not in histories or right not in histories:
+            return None
+        matched = set(histories[left].index) & set(histories[right].index)
+        if not matched:
+            return None
+        observed = max(matched)
+        return observed if is_fresh(observed) else None
+
+    one_three_date = common_date("vix_1m", "vix_3m")
+    if one_three_date is not None:
+        vix_1m = float(histories["vix_1m"].loc[one_three_date])
+        vix_3m = float(histories["vix_3m"].loc[one_three_date])
+        if vix_3m == 0:
+            raise ValueError("Yahoo VIX3M denominator must not be zero")
+        rows.extend(
+            [
+                {
+                    "metric_code": "vix_1m_3m_spread",
+                    "metric_name": "VIX 1M minus 3M spread",
+                    "as_of_date": one_three_date,
+                    "value": vix_1m - vix_3m,
+                    "unit": "index_points",
+                    "source_url": yahoo_history_url(role_map["vix_3m"].ticker),
+                },
+                {
+                    "metric_code": "vix_1m_3m_ratio",
+                    "metric_name": "VIX 1M to 3M ratio",
+                    "as_of_date": one_three_date,
+                    "value": vix_1m / vix_3m,
+                    "unit": "ratio",
+                    "source_url": yahoo_history_url(role_map["vix_3m"].ticker),
+                },
+            ]
+        )
+
+    nine_one_date = common_date("vix_9d", "vix_1m")
+    if nine_one_date is not None:
+        vix_9d = float(histories["vix_9d"].loc[nine_one_date])
+        vix_1m = float(histories["vix_1m"].loc[nine_one_date])
+        rows.append(
             {
                 "metric_code": "vix_9d_1m_spread",
                 "metric_name": "VIX 9D minus 1M spread",
-                "as_of_date": term_date,
+                "as_of_date": nine_one_date,
                 "value": vix_9d - vix_1m,
                 "unit": "index_points",
                 "source_url": yahoo_history_url(role_map["vix_1m"].ticker),
-            },
-        ]
-    )
+            }
+        )
+    if not rows:
+        raise ValueError(
+            "Yahoo volatility history has no fresh observations on or before "
+            f"{as_of_date.isoformat()}"
+        )
     if any(not math.isfinite(float(row["value"])) for row in rows):
         raise ValueError("Yahoo volatility calculation produced a non-finite value")
     return rows
@@ -187,6 +204,8 @@ def serialize_yahoo_close_histories(
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(("date", "ticker", "close"))
     for role in ("vix_9d", "vix_1m", "vix_3m", "vix_6m", "skew"):
+        if role not in histories:
+            continue
         ticker = role_map[role].ticker
         for observed, value in histories[role].sort_index().items():
             writer.writerow((observed.isoformat(), ticker, repr(float(value))))

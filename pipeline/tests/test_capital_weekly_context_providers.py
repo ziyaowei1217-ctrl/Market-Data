@@ -196,6 +196,39 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(result.source, "Yahoo Finance (Cboe indices)")
         self.assertEqual(result.source_url, "https://finance.yahoo.com/")
 
+    def test_yahoo_volatility_provider_keeps_fresh_independent_series(self):
+        def partial_download(**_kwargs):
+            return pd.DataFrame(
+                {
+                    ("^VIX9D", "Close"): [float("nan")],
+                    ("^VIX", "Close"): [16.0],
+                    ("^VIX3M", "Close"): [float("nan")],
+                    ("^VIX6M", "Close"): [float("nan")],
+                    ("^SKEW", "Close"): [145.0],
+                },
+                index=pd.to_datetime(["2026-08-07"]),
+            )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            result = build_default_providers(
+                start=date(2026, 8, 3),
+                end=date(2026, 8, 9),
+                data_dir=data_dir,
+                environ={},
+                yahoo_downloader=partial_download,
+            )["yahoo_volatility_signals"].fetch()
+
+        self.assertEqual(result.status, "OK")
+        self.assertEqual(
+            [row["metric_code"] for row in result.rows],
+            ["vix_1m_level", "cboe_skew_level"],
+        )
+        self.assertIn("vix_9d", result.notes)
+        self.assertIn("vix_3m", result.notes)
+        self.assertIn("vix_6m", result.notes)
+
     def test_yahoo_failure_returns_auditable_optional_result(self):
         def unavailable(**_kwargs):
             raise RuntimeError("Yahoo unavailable")
@@ -219,7 +252,7 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(result.source_url, "https://finance.yahoo.com/")
         self.assertIn("Yahoo unavailable", result.notes)
 
-    def test_yahoo_stale_failure_preserves_normalized_raw_history(self):
+    def test_yahoo_stale_legs_preserve_fresh_rows_and_normalized_raw_history(self):
         def stale_download(**_kwargs):
             return pd.DataFrame(
                 {
@@ -245,11 +278,16 @@ class ContextProviderTests(unittest.TestCase):
 
             result = provider.fetch()
 
-        self.assertEqual(result.status, "FETCH_FAILED")
-        self.assertEqual(result.rows, [])
+        self.assertEqual(result.status, "OK")
+        self.assertEqual(
+            [row["metric_code"] for row in result.rows],
+            ["vix_1m_level", "cboe_skew_level"],
+        )
         self.assertIn("2026-07-17,^VIX9D,14.0", result.raw_text)
         self.assertIn("2026-08-07,^SKEW,145.0", result.raw_text)
-        self.assertIn("lag 23 days", result.notes)
+        self.assertIn("vix_9d", result.notes)
+        self.assertIn("vix_3m", result.notes)
+        self.assertIn("vix_6m", result.notes)
 
     def test_yahoo_failure_preserves_unrelated_context_rows_and_audit(self):
         def unavailable(**_kwargs):
