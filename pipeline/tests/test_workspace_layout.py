@@ -18,7 +18,7 @@ class WorkspaceLayoutTests(unittest.TestCase):
             with self.subTest(module=module):
                 importlib.import_module(f"pipeline.{module}")
 
-    def test_tracked_source_directories_are_collapsed_under_pipeline(self):
+    def test_only_target_visible_directories_remain(self):
         root = self.workspace_root()
         visible = {
             path.name
@@ -26,10 +26,7 @@ class WorkspaceLayoutTests(unittest.TestCase):
             if path.is_dir() and not path.name.startswith(".")
         }
 
-        self.assertIn("pipeline", visible)
-        self.assertFalse(
-            {"capital_weekly", "data", "scripts", "tests", "docs"} & visible
-        )
+        self.assertEqual(visible, {"pipeline", "output"})
 
 
 if __name__ == "__main__":
