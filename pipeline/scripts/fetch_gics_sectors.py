@@ -20,8 +20,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--universe",
-        default="pipeline/config/capital_weekly_gics_sectors.csv",
-        help="CSV universe config path.",
+        default=None,
+        help="Optional CSV universe override; defaults to pipeline/config.json.",
     )
     parser.add_argument(
         "--output-dir",

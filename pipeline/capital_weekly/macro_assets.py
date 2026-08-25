@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import io
 import json
 import math
@@ -19,10 +18,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from pipeline.common import load_config_rows
+
 from pipeline.capital_weekly.returns import calculate_macro_snapshot, parse_date
 
 
-DEFAULT_UNIVERSE_PATH = Path("pipeline/config/capital_weekly_macro_assets.csv")
+DEFAULT_UNIVERSE_PATH = None
 MAX_PROVIDER_PAGES = 100
 
 
@@ -52,15 +53,14 @@ class MacroAssetConfig:
 
 
 def load_macro_asset_universe(
-    path: str | Path = DEFAULT_UNIVERSE_PATH,
+    path: str | Path | None = DEFAULT_UNIVERSE_PATH,
 ) -> list[MacroAssetConfig]:
-    with Path(path).open(newline="", encoding="utf-8") as file:
-        return [
-            MacroAssetConfig(
-                **{**row, "sort_order": int(row["sort_order"])},
-            )
-            for row in csv.DictReader(file)
-        ]
+    return [
+        MacroAssetConfig(
+            **{**row, "sort_order": int(row["sort_order"])},
+        )
+        for row in load_config_rows("macro", path)
+    ]
 
 
 def _normalized_values(
@@ -1028,7 +1028,7 @@ def _source_audit_metadata(
 
 
 def fetch_macro_assets(
-    universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

@@ -186,7 +186,7 @@ class MacroAsOfTests(unittest.TestCase):
             fetch_cli.main()
 
         fetcher.assert_called_once_with(
-            "pipeline/config/capital_weekly_macro_assets.csv",
+            None,
             raw_dir=None,
             as_of_date=date(2026, 8, 2),
         )

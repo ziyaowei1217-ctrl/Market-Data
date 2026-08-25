@@ -31,13 +31,19 @@ def yahoo_history_url(ticker: str) -> str:
 
 
 def load_yahoo_volatility_config(
-    path: str | Path,
+    source: str | Path | Iterable[Mapping[str, str]],
 ) -> tuple[YahooVolatilitySeries, ...]:
-    with Path(path).open(encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if tuple(reader.fieldnames or ()) != CONFIG_FIELDS:
+    if isinstance(source, (str, Path)):
+        with Path(source).open(encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if tuple(reader.fieldnames or ()) != CONFIG_FIELDS:
+                raise ValueError("Yahoo volatility config has an invalid header")
+            configured_rows = [dict(row) for row in reader]
+    else:
+        configured_rows = [dict(row) for row in source]
+        if configured_rows and tuple(configured_rows[0]) != CONFIG_FIELDS:
             raise ValueError("Yahoo volatility config has an invalid header")
-        rows = tuple(YahooVolatilitySeries(**dict(row)) for row in reader)
+    rows = tuple(YahooVolatilitySeries(**row) for row in configured_rows)
 
     if {row.role for row in rows} != REQUIRED_ROLES or len(rows) != len(
         REQUIRED_ROLES

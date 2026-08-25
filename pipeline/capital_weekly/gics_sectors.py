@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -8,12 +7,14 @@ from typing import Any
 
 import pandas as pd
 
+from pipeline.common import load_config_rows
+
 from .equity_indices import _session, fetch_history, source_url
 from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
-DEFAULT_UNIVERSE_PATH = Path("pipeline/config/capital_weekly_gics_sectors.csv")
+DEFAULT_UNIVERSE_PATH = None
 
 
 @dataclass(frozen=True)
@@ -42,9 +43,8 @@ class SectorConfig:
         return self.sector_name_en
 
 
-def load_sector_universe(path: str | Path = DEFAULT_UNIVERSE_PATH) -> list[SectorConfig]:
-    with Path(path).open(newline="", encoding="utf-8") as file:
-        return [SectorConfig(**row) for row in csv.DictReader(file)]
+def load_sector_universe(path: str | Path | None = DEFAULT_UNIVERSE_PATH) -> list[SectorConfig]:
+    return [SectorConfig(**row) for row in load_config_rows("gics", path)]
 
 
 def _series_for_returns(history: pd.DataFrame) -> list[dict[str, Any]]:
@@ -89,7 +89,7 @@ def _snapshot_row(config: SectorConfig, snapshot: Any, url: str) -> dict[str, An
 
 
 def fetch_gics_sectors(
-    universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

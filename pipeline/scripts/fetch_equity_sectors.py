@@ -41,7 +41,7 @@ def _publish_directory(staging_dir: Path, output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fetch A/H/US equity-sector data.")
-    parser.add_argument("--universe", default="pipeline/config/capital_weekly_equity_sectors.csv")
+    parser.add_argument("--universe", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--no-raw-cache", action="store_true")
     parser.add_argument(

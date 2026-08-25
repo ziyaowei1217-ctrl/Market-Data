@@ -14,6 +14,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from pipeline.common import load_config_rows
+
 try:
     import yfinance as yf
 except ImportError:
@@ -848,7 +850,7 @@ def build_default_providers(
     *,
     start: date,
     end: date,
-    data_dir: str | Path = "pipeline/config",
+    data_dir: str | Path | None = None,
     environ: Mapping[str, str] | None = None,
     session: requests.Session | None = None,
     yahoo_downloader: Callable[..., Any] | None = None,
@@ -856,20 +858,25 @@ def build_default_providers(
     if end < start:
         raise ValueError("Report end must not precede start")
     settings = dict(os.environ if environ is None else environ)
-    root = Path(data_dir)
     client = session or _session()
+    if data_dir is None:
+        cftc_rows = load_config_rows("context.cftc_contracts")
+        watchlist_rows = load_config_rows("context.company_watchlist")
+        eia_config = load_config_rows("context.eia_series")
+        financial_config = load_config_rows("context.financial_conditions")
+        yahoo_rows = load_config_rows("context.yahoo_volatility")
+    else:
+        root = Path(data_dir)
+        cftc_rows = _config(root / "capital_weekly_cftc_contracts.csv")
+        watchlist_rows = _config(root / "capital_weekly_company_watchlist.csv")
+        eia_config = _config(root / "capital_weekly_eia_series.csv")
+        financial_config = _config(root / "capital_weekly_financial_conditions.csv")
+        yahoo_rows = _config(root / "capital_weekly_yahoo_volatility.csv")
     cftc_config = {
-        row["contract_code"]: row["metric_code"]
-        for row in _config(root / "capital_weekly_cftc_contracts.csv")
+        row["contract_code"]: row["metric_code"] for row in cftc_rows
     }
-    watchlist = load_company_watchlist(
-        (root / "capital_weekly_company_watchlist.csv").read_text(encoding="utf-8")
-    )
-    eia_config = _config(root / "capital_weekly_eia_series.csv")
-    financial_config = _config(root / "capital_weekly_financial_conditions.csv")
-    yahoo_volatility_config = load_yahoo_volatility_config(
-        root / "capital_weekly_yahoo_volatility.csv"
-    )
+    watchlist = load_company_watchlist(watchlist_rows)
+    yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
 
     fetchers: dict[str, Callable[[], ProviderResult]] = {

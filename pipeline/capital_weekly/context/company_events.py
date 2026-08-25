@@ -4,7 +4,7 @@ import csv
 import io
 import json
 from datetime import date
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 
 MATERIAL_FORMS = {"8-K", "10-Q", "10-K", "6-K", "20-F"}
@@ -92,13 +92,21 @@ def parse_sec_submissions(
     return rows
 
 
-def load_company_watchlist(text: str) -> list[dict[str, str]]:
-    reader = csv.DictReader(io.StringIO(text))
+def load_company_watchlist(
+    source: str | Iterable[Mapping[str, str]],
+) -> list[dict[str, str]]:
     required = {"ticker", "cik", "company_name", "enabled"}
-    if reader.fieldnames is None or not required.issubset(reader.fieldnames):
-        raise ValueError("Company watchlist missing required columns")
+    if isinstance(source, str):
+        reader = csv.DictReader(io.StringIO(source))
+        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
+            raise ValueError("Company watchlist missing required columns")
+        configured_rows = reader
+    else:
+        configured_rows = [dict(row) for row in source]
+        if configured_rows and not required.issubset(configured_rows[0]):
+            raise ValueError("Company watchlist missing required columns")
     rows = []
-    for raw in reader:
+    for raw in configured_rows:
         if str(raw["enabled"]).strip().lower() not in {"1", "true", "yes", "y"}:
             continue
         rows.append(

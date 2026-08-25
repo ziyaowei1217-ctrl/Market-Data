@@ -43,7 +43,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fetch fixed-income, commodity, foreign-exchange, and other macro assets."
     )
-    parser.add_argument("--universe", default="pipeline/config/capital_weekly_macro_assets.csv")
+    parser.add_argument("--universe", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--as-of-date", type=date.fromisoformat, default=None)
     parser.add_argument("--no-raw-cache", action="store_true")

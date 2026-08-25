@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import os
 import tempfile
 from dataclasses import asdict, dataclass
@@ -9,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+from pipeline.common import load_config_rows
 
 from .equity_indices import (
     _drop_unfinished_current_day,
@@ -20,7 +21,7 @@ from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
-DEFAULT_UNIVERSE_PATH = Path("pipeline/config/capital_weekly_equity_sectors.csv")
+DEFAULT_UNIVERSE_PATH = None
 
 
 @dataclass(frozen=True)
@@ -43,13 +44,12 @@ class EquitySectorConfig:
 
 
 def load_sector_universe(
-    path: str | Path = DEFAULT_UNIVERSE_PATH,
+    path: str | Path | None = DEFAULT_UNIVERSE_PATH,
 ) -> list[EquitySectorConfig]:
-    with Path(path).open(newline="", encoding="utf-8") as file:
-        rows = []
-        for raw in csv.DictReader(file):
-            raw["sort_order"] = int(raw["sort_order"])
-            rows.append(EquitySectorConfig(**raw))
+    rows = []
+    for raw in load_config_rows("sectors", path):
+        raw["sort_order"] = int(raw["sort_order"])
+        rows.append(EquitySectorConfig(**raw))
     return rows
 
 
@@ -162,7 +162,7 @@ def _atomic_write_text(path: Path, text: str) -> None:
 
 
 def fetch_equity_sectors(
-    universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

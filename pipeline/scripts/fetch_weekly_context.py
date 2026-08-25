@@ -24,7 +24,11 @@ def main() -> None:
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--start-date", type=date.fromisoformat, default=None)
     parser.add_argument("--end-date", type=date.fromisoformat, default=None)
-    parser.add_argument("--data-dir", default="pipeline/config")
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Optional legacy CSV config directory; defaults to pipeline/config.json.",
+    )
     parser.add_argument(
         "--providers",
         default=None,

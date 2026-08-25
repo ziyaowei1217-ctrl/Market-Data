@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import io
 import json
 import math
@@ -16,11 +15,13 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from pipeline.common import load_config_rows
+
 from .history import truncate_history_as_of
 from .returns import calculate_return_snapshot
 
 
-DEFAULT_UNIVERSE_PATH = Path("pipeline/config/capital_weekly_equity_indices.csv")
+DEFAULT_UNIVERSE_PATH = None
 FTSE_RUSSELL_2000_YTD_URL = (
     "https://research.ftserussell.com/products/russell-index-values/home/"
     "getfile?id=valuesytd_US2000.csv"
@@ -40,9 +41,8 @@ class IndexConfig:
     notes: str = ""
 
 
-def load_index_universe(path: str | Path = DEFAULT_UNIVERSE_PATH) -> list[IndexConfig]:
-    with Path(path).open(newline="", encoding="utf-8") as file:
-        configs = [IndexConfig(**row) for row in csv.DictReader(file)]
+def load_index_universe(path: str | Path | None = DEFAULT_UNIVERSE_PATH) -> list[IndexConfig]:
+    configs = [IndexConfig(**row) for row in load_config_rows("indices", path)]
     seen: set[str] = set()
     for config in configs:
         if config.ticker in seen:
@@ -419,7 +419,7 @@ def _snapshot_row(config: IndexConfig, snapshot: Any, source: str, url: str) -> 
 
 
 def fetch_equity_indices(
-    universe_path: str | Path = DEFAULT_UNIVERSE_PATH,
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

@@ -1,2 +1,0 @@
-metric_code,metric_name,route,frequency,series,expected_unit
-eia_weekly_petroleum_wtestus1,EIA weekly petroleum series WTESTUS1,petroleum/sum/sndw,weekly,WTESTUS1,Thousand Barrels
