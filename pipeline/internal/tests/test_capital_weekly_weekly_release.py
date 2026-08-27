@@ -963,6 +963,140 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "UST2Y"):
             validate_staged_week(self.root, self.window)
 
+    def test_accepts_every_registered_treasury_calculation(self):
+        path = self.outputs["macro_assets"] / "fixed_income.csv"
+        rows = [
+            fixture_row(MACRO_FIELDS, series_code=code)
+            for code in (
+                "UST2Y",
+                "UST5Y",
+                "UST10Y",
+                "UST_REAL5Y",
+                "UST_REAL10Y",
+            )
+        ]
+        rows.extend(
+            [
+                fixture_row(
+                    MACRO_FIELDS,
+                    series_code="UST10Y2Y",
+                    provider="calculated",
+                    source_url=(
+                        "calculated:UST10Y-UST2Y "
+                        "(shared Treasury observation dates)"
+                    ),
+                ),
+                fixture_row(
+                    MACRO_FIELDS,
+                    series_code="US_BE5Y",
+                    provider="calculated",
+                    source_url=(
+                        "calculated:UST5Y-UST_REAL5Y "
+                        "(shared Treasury observation dates)"
+                    ),
+                ),
+                fixture_row(
+                    MACRO_FIELDS,
+                    series_code="US_BE10Y",
+                    provider="calculated",
+                    source_url=(
+                        "calculated:UST10Y-UST_REAL10Y "
+                        "(shared Treasury observation dates)"
+                    ),
+                ),
+                fixture_row(
+                    MACRO_FIELDS,
+                    series_code="US_5Y5Y",
+                    provider="calculated",
+                    source_url=(
+                        "calculated:5Y5Y from US_BE5Y and US_BE10Y "
+                        "(shared Treasury observation dates)"
+                    ),
+                ),
+            ]
+        )
+        write_csv(path, MACRO_FIELDS, rows)
+
+        manifest = validate_staged_week(self.root, self.window)
+
+        entry = next(
+            item
+            for item in manifest["files"]
+            if item["path"].endswith("fixed_income.csv")
+        )
+        self.assertEqual(entry["rows"], len(rows))
+
+    def test_each_new_treasury_calculation_requires_its_dependency(self):
+        path = self.outputs["macro_assets"] / "fixed_income.csv"
+        observed_rows = [
+            fixture_row(MACRO_FIELDS, series_code=code)
+            for code in (
+                "UST2Y",
+                "UST5Y",
+                "UST10Y",
+                "UST_REAL5Y",
+                "UST_REAL10Y",
+            )
+        ]
+        calculated_rows = [
+            fixture_row(
+                MACRO_FIELDS,
+                series_code="UST10Y2Y",
+                provider="calculated",
+                source_url=(
+                    "calculated:UST10Y-UST2Y "
+                    "(shared Treasury observation dates)"
+                ),
+            ),
+            fixture_row(
+                MACRO_FIELDS,
+                series_code="US_BE5Y",
+                provider="calculated",
+                source_url=(
+                    "calculated:UST5Y-UST_REAL5Y "
+                    "(shared Treasury observation dates)"
+                ),
+            ),
+            fixture_row(
+                MACRO_FIELDS,
+                series_code="US_BE10Y",
+                provider="calculated",
+                source_url=(
+                    "calculated:UST10Y-UST_REAL10Y "
+                    "(shared Treasury observation dates)"
+                ),
+            ),
+            fixture_row(
+                MACRO_FIELDS,
+                series_code="US_5Y5Y",
+                provider="calculated",
+                source_url=(
+                    "calculated:5Y5Y from US_BE5Y and US_BE10Y "
+                    "(shared Treasury observation dates)"
+                ),
+            ),
+        ]
+        cases = (
+            ("US_BE5Y", "UST_REAL5Y"),
+            ("US_BE10Y", "UST_REAL10Y"),
+            ("US_5Y5Y", "US_BE10Y"),
+        )
+
+        for series_code, missing_dependency in cases:
+            with self.subTest(series_code=series_code):
+                rows = [
+                    row
+                    for row in observed_rows + calculated_rows
+                    if row["series_code"] != missing_dependency
+                ]
+                write_csv(path, MACRO_FIELDS, rows)
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    missing_dependency,
+                ):
+                    validate_staged_week(self.root, self.window)
+
     def test_rejects_a_non_http_source_reference(self):
         path = self.outputs["gics_sectors"] / "03_gics_sectors.csv"
         row = fixture_row(

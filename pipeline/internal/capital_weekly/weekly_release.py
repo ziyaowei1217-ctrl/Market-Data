@@ -23,6 +23,7 @@ import re
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+from .macro_assets import CALCULATED_SOURCE_REFERENCES
 from .weekly_context import CATEGORY_FIELDS
 
 
@@ -248,10 +249,22 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
 CONTEXT_REQUIREDNESS_VALUES = frozenset({"required", "optional"})
 ACCEPTED_QC_FLAGS = frozenset({"OK", "INSUFFICIENT_DATA"})
 CALCULATED_SOURCE_POLICIES = {
-    "calculated:UST10Y-UST2Y (shared Treasury observation dates)": (
+    CALCULATED_SOURCE_REFERENCES["UST10Y2Y"]: (
         "series_code",
         ("UST10Y", "UST2Y"),
-    )
+    ),
+    CALCULATED_SOURCE_REFERENCES["US_BE5Y"]: (
+        "series_code",
+        ("UST5Y", "UST_REAL5Y"),
+    ),
+    CALCULATED_SOURCE_REFERENCES["US_BE10Y"]: (
+        "series_code",
+        ("UST10Y", "UST_REAL10Y"),
+    ),
+    CALCULATED_SOURCE_REFERENCES["US_5Y5Y"]: (
+        "series_code",
+        ("US_BE5Y", "US_BE10Y"),
+    ),
 }
 
 
@@ -739,32 +752,51 @@ def _source_reference_error(
     column: str,
     rows: list[dict[str, str]],
 ) -> str | None:
-    value = (row.get(column) or "").strip()
-    if _contains_http_url(value):
-        return None
-    policy = CALCULATED_SOURCE_POLICIES.get(value)
-    provider_is_valid = (
-        "provider" not in row
-        or (row.get("provider") or "").strip().lower() == "calculated"
-    )
-    if not provider_is_valid or not policy:
-        return "must contain an HTTP(S) URL or registered calculation reference"
-    identity_column, dependencies = policy
-    missing_dependencies = [
-        dependency
-        for dependency in dependencies
-        if not any(
-            (candidate.get(identity_column) or "").strip() == dependency
-            and _contains_http_url((candidate.get(column) or "").strip())
-            for candidate in rows
+    def resolve(
+        candidate: dict[str, str],
+        visiting: set[tuple[str, str]],
+    ) -> str | None:
+        value = (candidate.get(column) or "").strip()
+        if _contains_http_url(value):
+            return None
+        policy = CALCULATED_SOURCE_POLICIES.get(value)
+        provider_is_valid = (
+            "provider" not in candidate
+            or (candidate.get("provider") or "").strip().lower()
+            == "calculated"
         )
-    ]
-    if missing_dependencies:
-        return (
-            "registered calculation is missing HTTP(S) dependencies: "
-            + ", ".join(missing_dependencies)
-        )
-    return None
+        if not provider_is_valid or not policy:
+            return "must contain an HTTP(S) URL or registered calculation reference"
+        identity_column, dependencies = policy
+        identity_value = (candidate.get(identity_column) or "").strip()
+        identity = (identity_column, identity_value)
+        if identity in visiting:
+            return f"contains calculated dependency cycle: {identity_value or value}"
+        visiting.add(identity)
+        try:
+            missing_dependencies = []
+            for dependency in dependencies:
+                dependency_row = next(
+                    (
+                        item
+                        for item in rows
+                        if (item.get(identity_column) or "").strip()
+                        == dependency
+                    ),
+                    None,
+                )
+                if dependency_row is None or resolve(dependency_row, visiting):
+                    missing_dependencies.append(dependency)
+            if missing_dependencies:
+                return (
+                    "registered calculation is missing HTTP(S) dependencies: "
+                    + ", ".join(missing_dependencies)
+                )
+            return None
+        finally:
+            visiting.remove(identity)
+
+    return resolve(row, set())
 
 
 def _validate_row(

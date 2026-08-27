@@ -11,9 +11,11 @@ import unittest
 from unittest.mock import patch
 
 import pandas as pd
+import requests
 
 from pipeline.internal.capital_weekly.macro_assets import (
     _atomic_write_bytes,
+    _session,
     _parse_fred_csv,
     _parse_sina_fx_day_kline,
     _parse_treasury_csv,
@@ -36,6 +38,37 @@ from pipeline.internal.capital_weekly.macro_assets import (
 
 
 class MacroAssetUniverseTests(unittest.TestCase):
+    def test_fred_overrides_the_browser_user_agent_with_requests_default(self):
+        self.assertEqual(
+            _session().headers["User-Agent"],
+            "Mozilla/5.0 (capital-weekly research)",
+        )
+        config = self._config("fred", "DFEDTARL")
+        session = unittest.mock.Mock(
+            _macro_attempt_trace=[],
+            _macro_raw_parts=[],
+        )
+        response = unittest.mock.Mock(
+            content=(
+                b"observation_date,DFEDTARL\n"
+                b"2026-07-10,3.50\n"
+            ),
+            text="observation_date,DFEDTARL\n2026-07-10,3.50\n",
+        )
+        response.raise_for_status.return_value = None
+        session.get.return_value = response
+
+        _fetch_config_history(
+            config,
+            session,
+            as_of_date=date(2026, 8, 23),
+        )
+
+        self.assertEqual(
+            session.get.call_args.kwargs["headers"],
+            {"User-Agent": requests.utils.default_user_agent()},
+        )
+
     def _assert_policy_universe_semantics(self, universe):
         for item in universe:
             if item.series_code != "ECB_MLF":
@@ -236,6 +269,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         session.get.side_effect = responses
         _fetch_config_history(self._config("hkma", "disc_win_base_rate"), session)
         self.assertEqual(session.get.call_count, 2)
+        self.assertIn("pagesize=1000", session.get.call_args_list[0].args[0])
         self.assertIn("offset=1", session.get.call_args.args[0])
 
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
@@ -251,6 +285,55 @@ class MacroAssetUniverseTests(unittest.TestCase):
         history, _, _ = _fetch_config_history(self._config("boj_api", "FM01:STRDCLUCON"), session)
         self.assertEqual([row["date"] for row in history], [date(2026, 7, 9), date(2026, 7, 10)])
         self.assertIn("startPosition=2", session.get.call_args.args[0])
+
+    def test_hkma_falls_back_to_official_daily_pages_when_api_is_unavailable(self):
+        def daily_page(day, value):
+            text = (
+                f'<meta name="date" content="{day.isoformat()}T00:00:00+08:00">'
+                f'<p>Date and Time (日期和時間) : 18:30, '
+                f'{day.strftime("%d/%m/%Y")}</p>'
+                '<div>Base Rate (基本利率) :</div>'
+                f'<div>{value:.2f}%</div>'
+            )
+            response = unittest.mock.Mock(
+                content=text.encode("utf-8"),
+                text=text,
+            )
+            response.raise_for_status.return_value = None
+            return response
+
+        session = unittest.mock.Mock(
+            _macro_attempt_trace=[],
+            _macro_raw_parts=[],
+        )
+        session.get.side_effect = [
+            requests.ConnectionError("HKMA API unavailable"),
+            daily_page(date(2026, 8, 21), 4.00),
+            daily_page(date(2026, 8, 20), 4.00),
+            daily_page(date(2026, 8, 14), 4.00),
+            daily_page(date(2026, 7, 31), 4.25),
+            daily_page(date(2025, 12, 31), 4.50),
+        ]
+
+        history, raw, provenance = _fetch_config_history(
+            self._config("hkma", "disc_win_base_rate"),
+            session,
+            as_of_date=date(2026, 8, 21),
+        )
+
+        self.assertEqual(
+            history,
+            [
+                {"date": date(2025, 12, 31), "value": 4.50},
+                {"date": date(2026, 7, 31), "value": 4.25},
+                {"date": date(2026, 8, 14), "value": 4.00},
+                {"date": date(2026, 8, 20), "value": 4.00},
+                {"date": date(2026, 8, 21), "value": 4.00},
+            ],
+        )
+        self.assertIn(b"Base Rate", raw)
+        self.assertIn("www.hkma.gov.hk", provenance)
+        self.assertEqual(session.get.call_count, 6)
 
     def test_boj_repeated_next_position_fails_instead_of_looping(self):
         payload = {"RESULTSET": [{"SURVEY_DATES": ["2026-07-09"], "VALUES": ["0.01"]}], "NEXTPOSITION": 2}

@@ -8,6 +8,7 @@ from ..weekly_context import ProviderResult
 
 
 EIA_SOURCE_URL = "https://api.eia.gov/v2/"
+EIA_UNIT_CODES = {"MBBL": "Thousand Barrels"}
 
 
 def parse_eia_series(
@@ -29,7 +30,8 @@ def parse_eia_series(
         if period in seen:
             raise ValueError(f"Duplicate EIA period: {period}")
         seen.add(period)
-        unit = str(raw.get("unit", "")).strip()
+        raw_unit = str(raw.get("unit") or raw.get("units") or "").strip()
+        unit = EIA_UNIT_CODES.get(raw_unit, raw_unit)
         if unit != expected_unit:
             raise ValueError(
                 f"Unexpected EIA unit for {metric_code}: {unit!r}; "

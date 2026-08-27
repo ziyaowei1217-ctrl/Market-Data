@@ -281,10 +281,13 @@ def _response_bytes(response) -> bytes:
     return response.content if hasattr(response, "content") else response.text.encode("utf-8")
 
 
-def _get(session, url: str):
+def _get(session, url: str, *, headers: dict[str, str] | None = None):
     attempt = {"method": "GET", "url": url, "status": "attempting"}
     session._macro_attempt_trace.append(attempt)
-    response = session.get(url, timeout=(5, 25))
+    request_options = {"timeout": (5, 25)}
+    if headers is not None:
+        request_options["headers"] = headers
+    response = session.get(url, **request_options)
     session._macro_raw_parts.append(_response_bytes(response))
     response.raise_for_status()
     attempt["status"] = "completed"
@@ -313,6 +316,85 @@ def _parse_hibor_json(text: str, field: str) -> list[dict]:
     if raw.get("isHoliday") or raw.get(field) in (None, ""):
         return []
     return [{"date": parse_date(raw["date"]), "value": float(raw[field])}]
+
+
+def _parse_hkma_daily_page(text: str, expected_date: date) -> dict:
+    published_dates = re.findall(
+        r"Date and Time\s*\([^<]*\)\s*:\s*\d{1,2}:\d{2},\s*"
+        r"(\d{2}/\d{2}/\d{4})",
+        text,
+        flags=re.I,
+    )
+    expected_display = expected_date.strftime("%d/%m/%Y")
+    if expected_display not in published_dates:
+        raise ValueError(
+            f"HKMA daily page did not publish data for {expected_date.isoformat()}"
+        )
+    rate_matches = re.findall(
+        r"Base Rate\s*\([^<]*\)\s*:</div>\s*"
+        r"<div>\s*([0-9]+(?:\.[0-9]+)?)%\s*</div>",
+        text,
+        flags=re.I,
+    )
+    if len(rate_matches) != 1:
+        raise ValueError("HKMA daily page did not contain one Base Rate")
+    value = float(rate_matches[0])
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("HKMA daily page Base Rate must be finite and non-negative")
+    return {"date": expected_date, "value": value}
+
+
+def _hkma_daily_page_url(day: date) -> str:
+    return (
+        "https://www.hkma.gov.hk/eng/data-publications-and-research/"
+        "data-and-statistics/daily-monetary-statistics/"
+        f"{day.year}/{day.month:02d}/ms-{day.strftime('%Y%m%d')}/"
+    )
+
+
+def _fetch_hkma_daily_page_history(
+    session: requests.Session,
+    today: date,
+    failed_api_url: str,
+) -> tuple[list[dict], bytes, str]:
+    page_urls = []
+
+    def latest_on_or_before(target: date) -> dict:
+        for days_back in range(11):
+            candidate = target - timedelta(days=days_back)
+            url = _hkma_daily_page_url(candidate)
+            response = _get(session, url)
+            try:
+                point = _parse_hkma_daily_page(response.text, candidate)
+            except ValueError:
+                continue
+            page_urls.append(url)
+            return point
+        raise ValueError(
+            "HKMA daily pages did not contain a published value on or before "
+            f"{target.isoformat()}"
+        )
+
+    latest = latest_on_or_before(today)
+    latest_date = latest["date"]
+    anchors = [
+        latest,
+        latest_on_or_before(latest_date - timedelta(days=1)),
+        latest_on_or_before(latest_date - timedelta(days=7)),
+        latest_on_or_before(latest_date.replace(day=1) - timedelta(days=1)),
+        latest_on_or_before(
+            latest_date.replace(month=1, day=1) - timedelta(days=1)
+        ),
+    ]
+    history = sorted(
+        {point["date"]: point for point in anchors}.values(),
+        key=lambda point: point["date"],
+    )
+    return (
+        history,
+        b"\n".join(session._macro_raw_parts),
+        " | ".join([f"{failed_api_url} [failed]", *page_urls]),
+    )
 
 
 def _parse_lpr_xlsx(content: bytes, field: str) -> list[dict]:
@@ -669,7 +751,11 @@ def _fetch_config_history(
     if config.provider == "fred":
         url = (f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={config.provider_symbol}"
                f"&cosd={start.isoformat()}&coed={today.isoformat()}")
-        response = _get(session, url)
+        response = _get(
+            session,
+            url,
+            headers={"User-Agent": requests.utils.default_user_agent()},
+        )
         return _parse_fred_csv(response.text, config.provider_symbol), _response_bytes(response), url
     if config.provider == "yahoo_chart":
         symbol = requests.utils.quote(config.provider_symbol, safe="")
@@ -768,28 +854,35 @@ def _fetch_config_history(
     if config.provider == "hkma":
         base = ("https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/"
                 "daily-figures-interbank-liquidity")
+        page_size = 1000
         history, contents, urls, offset = [], [], [], 0
         seen_offsets = set()
-        for _ in range(MAX_PROVIDER_PAGES):
-            if offset in seen_offsets:
-                raise ValueError(f"HKMA pagination repeated offset {offset}")
-            seen_offsets.add(offset)
-            url = f"{base}?from={start.isoformat()}&to={today.isoformat()}&offset={offset}"
-            content, text = cached("GET", url)
-            raw = json.loads(text); records = raw.get("result", {}).get("records", [])
-            history.extend(_parse_hkma_json(text, config.provider_symbol))
-            contents.append(content); urls.append(url)
-            total = raw.get("header", {}).get("total_count")
-            if not records or (total is not None and offset + len(records) >= int(total)):
-                break
-            if total is None and len(records) < 100:
-                break
-            next_offset = raw.get("header", {}).get("next_offset", offset + len(records))
-            if int(next_offset) <= offset:
-                raise ValueError(f"HKMA pagination repeated offset {next_offset}")
-            offset = int(next_offset)
-        else:
-            raise ValueError(f"HKMA pagination exceeded {MAX_PROVIDER_PAGES} pages")
+        try:
+            for _ in range(MAX_PROVIDER_PAGES):
+                if offset in seen_offsets:
+                    raise ValueError(f"HKMA pagination repeated offset {offset}")
+                seen_offsets.add(offset)
+                url = (
+                    f"{base}?from={start.isoformat()}&to={today.isoformat()}"
+                    f"&pagesize={page_size}&offset={offset}"
+                )
+                content, text = cached("GET", url)
+                raw = json.loads(text); records = raw.get("result", {}).get("records", [])
+                history.extend(_parse_hkma_json(text, config.provider_symbol))
+                contents.append(content); urls.append(url)
+                total = raw.get("header", {}).get("total_count")
+                if not records or (total is not None and offset + len(records) >= int(total)):
+                    break
+                if total is None and len(records) < page_size:
+                    break
+                next_offset = raw.get("header", {}).get("next_offset", offset + len(records))
+                if int(next_offset) <= offset:
+                    raise ValueError(f"HKMA pagination repeated offset {next_offset}")
+                offset = int(next_offset)
+            else:
+                raise ValueError(f"HKMA pagination exceeded {MAX_PROVIDER_PAGES} pages")
+        except requests.RequestException:
+            return _fetch_hkma_daily_page_history(session, today, url)
         return _carry_forward_business_daily(history, today), b"\n".join(contents), " | ".join(urls)
     if config.provider == "boc_valet":
         symbols = "V39079,AVG.INTWO"

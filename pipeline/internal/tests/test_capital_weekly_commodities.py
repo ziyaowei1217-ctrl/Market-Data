@@ -39,6 +39,31 @@ class CommodityFundamentalTests(unittest.TestCase):
         self.assertEqual(rows[-1]["value"], 425000.0)
         self.assertEqual(rows[-1]["unit"], "Thousand Barrels")
 
+    def test_eia_parser_accepts_the_current_plural_units_code(self):
+        payload = {
+            "response": {
+                "data": [
+                    {
+                        "period": "2026-08-21",
+                        "value": "415401",
+                        "series-description": (
+                            "U.S. Ending Stocks excluding SPR of Crude Oil "
+                            "and Petroleum Products (Thousand Barrels)"
+                        ),
+                        "units": "MBBL",
+                    }
+                ]
+            }
+        }
+
+        rows = parse_eia_series(
+            json.dumps(payload),
+            metric_code="eia_weekly_petroleum_wtestus1",
+            expected_unit="Thousand Barrels",
+        )
+
+        self.assertEqual(rows[0]["unit"], "Thousand Barrels")
+
     def test_eia_parser_rejects_unexpected_units_and_duplicate_periods(self):
         wrong_unit = {
             "response": {
