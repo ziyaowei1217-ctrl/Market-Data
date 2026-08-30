@@ -2654,6 +2654,36 @@ def _metric_descriptor(
     return descriptor
 
 
+def _validate_metric_descriptor_identity(
+    row: dict,
+    descriptor: dict,
+    label: str,
+) -> tuple[str, str, str, str, str | None, str]:
+    metric_code = _required_row_text(row, "metric_code", label)
+    participant = str(row.get("participant_class") or "").strip() or None
+    actual = {
+        "commodity_code": _required_row_text(row, "commodity_code", label),
+        "commodity_family": _required_row_text(row, "commodity_family", label),
+        "metric_role": _required_row_text(row, "metric_role", label),
+        "measurement_kind": _required_row_text(row, "measurement_kind", label),
+        "participant_class": participant,
+        "unit": _required_row_text(row, "unit", label),
+    }
+    for field, value in actual.items():
+        if value != descriptor[field]:
+            raise ReleaseValidationError(
+                f"{label} {field} is mismapped for {metric_code}"
+            )
+    return (
+        str(actual["commodity_code"]),
+        str(actual["commodity_family"]),
+        str(actual["metric_role"]),
+        str(actual["measurement_kind"]),
+        participant,
+        str(actual["unit"]),
+    )
+
+
 def _parse_v2_array(value: object, field: str) -> list[str]:
     if isinstance(value, list):
         parsed = value
@@ -2926,26 +2956,9 @@ def _validate_commodity_research_v2(
                 f"{registry.get(code) or 'configured identity'}"
             )
         descriptor = _metric_descriptor(row, config, descriptors, window)
-        participant = str(row.get("participant_class") or "").strip() or None
-        role = _required_row_text(row, "metric_role", label)
-        kind = _required_row_text(row, "measurement_kind", label)
-        for field, actual in (
-            ("commodity_code", code),
-            ("commodity_family", family),
-            ("metric_role", role),
-            ("measurement_kind", kind),
-            ("participant_class", participant),
-        ):
-            expected = descriptor[field]
-            if actual != expected:
-                raise ReleaseValidationError(
-                    f"{label} {field} is mismapped for {row.get('metric_code')}"
-                )
-        unit = _required_row_text(row, "unit", label)
-        if descriptor["unit"] and unit != descriptor["unit"]:
-            raise ReleaseValidationError(
-                f"{label} unit is mismapped for {row.get('metric_code')}"
-            )
+        code, family, role, kind, participant, unit = (
+            _validate_metric_descriptor_identity(row, descriptor, label)
+        )
         provider = descriptor["provider"]
         policy = providers[provider]
         _require_policy_provenance(row, policy, label)
@@ -3057,6 +3070,11 @@ def _validate_commodity_research_v2(
                 f"requires {required_family}"
             )
         descriptor = _metric_descriptor(row, config, descriptors, window)
+        _validate_metric_descriptor_identity(
+            row,
+            descriptor,
+            "commodity context base row",
+        )
         provider = descriptor["provider"]
         _require_policy_provenance(
             row,

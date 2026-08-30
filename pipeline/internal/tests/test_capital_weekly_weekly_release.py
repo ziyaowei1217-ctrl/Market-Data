@@ -3406,6 +3406,40 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(ReleaseValidationError, expected):
                     self._validate()
 
+    def test_non_ok_tagged_context_rows_match_exact_metric_descriptor(self):
+        cases = (
+            (
+                "non_ok_descriptor_code",
+                r"commodity context base row.*commodity_code.*eia_crude_stocks_ex_spr_change",
+            ),
+            (
+                "non_ok_descriptor_family",
+                r"context commodity base row WTI family natural_gas.*refined_products",
+            ),
+            (
+                "non_ok_descriptor_role",
+                r"commodity context base row.*metric_role.*eia_crude_stocks_ex_spr_change",
+            ),
+            (
+                "non_ok_descriptor_kind",
+                r"commodity context base row.*measurement_kind.*eia_crude_stocks_ex_spr_change",
+            ),
+            (
+                "non_ok_descriptor_participant",
+                r"commodity context base row.*participant_class.*eia_crude_stocks_ex_spr_change",
+            ),
+            (
+                "non_ok_descriptor_unit",
+                r"commodity context base row.*unit.*eia_crude_stocks_ex_spr_change",
+            ),
+        )
+        for mutation, expected in cases:
+            with self.subTest(mutation=mutation):
+                self._reset()
+                self._apply_mutation(mutation)
+                with self.assertRaisesRegex(ReleaseValidationError, expected):
+                    self._validate()
+
     def test_contract_three_rejects_table_driven_cross_table_mutations(self):
         cases = (
             ("code_family", r"code-family.*WTI.*refined_products"),
@@ -3805,7 +3839,16 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 CATEGORY_FIELDS["commodity_fundamentals"],
                 context_rows,
             )
-        elif mutation in {"non_ok_unknown_metric", "non_ok_corrupt_provenance"}:
+        elif mutation in {
+            "non_ok_unknown_metric",
+            "non_ok_corrupt_provenance",
+            "non_ok_descriptor_code",
+            "non_ok_descriptor_family",
+            "non_ok_descriptor_role",
+            "non_ok_descriptor_kind",
+            "non_ok_descriptor_participant",
+            "non_ok_descriptor_unit",
+        }:
             context_path = (
                 self.outputs["weekly_context"] / "commodity_fundamentals.csv"
             )
@@ -3813,9 +3856,21 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
             row = self._non_ok_context_row()
             if mutation == "non_ok_unknown_metric":
                 row["metric_code"] = "rogue_non_ok_metric"
-            else:
+            elif mutation == "non_ok_corrupt_provenance":
                 row["source"] = "Impostor"
                 row["source_url"] = "https://example.com/not-eia"
+            elif mutation == "non_ok_descriptor_code":
+                row["commodity_code"] = "BRENT"
+            elif mutation == "non_ok_descriptor_family":
+                row["commodity_family"] = "natural_gas"
+            elif mutation == "non_ok_descriptor_role":
+                row["metric_role"] = "positioning"
+            elif mutation == "non_ok_descriptor_kind":
+                row["measurement_kind"] = "supply"
+            elif mutation == "non_ok_descriptor_participant":
+                row["participant_class"] = "producer"
+            else:
+                row["unit"] = "BBL"
             context_rows.append(row)
             write_csv(
                 context_path,
