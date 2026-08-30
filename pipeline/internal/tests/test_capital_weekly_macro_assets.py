@@ -28,6 +28,7 @@ from pipeline.internal.capital_weekly.macro_assets import (
     _parse_boj_policy_announcement, _parse_pboc_omo_announcement,
     _parse_rbi_current_rate, _parse_rbi_history,
     _parse_rate_xlsx,
+    _discover_world_bank_monthly_url,
     _fetch_config_history,
     MacroAssetConfig,
     align_series_histories,
@@ -346,6 +347,23 @@ class MacroAssetUniverseTests(unittest.TestCase):
             _fetch_config_history(config, session)
 
         self.assertEqual(session.get.call_count, 1)
+
+    def test_world_bank_discovery_rejects_misleading_monthly_link_labels(self):
+        for label in ("Monthly historical archive", "Monthly price forecast"):
+            with self.subTest(label=label):
+                page = (
+                    '<a href="https://thedocs.worldbank.org/official/'
+                    f'CMO-Historical-Data-Monthly.xlsx">{label}</a>'
+                )
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "official monthly workbook link",
+                ):
+                    _discover_world_bank_monthly_url(
+                        page,
+                        "https://www.worldbank.org/en/research/commodity-markets",
+                    )
 
     def test_monthly_price_cutoff_uses_latest_month_end_on_or_before_as_of(self):
         with tempfile.TemporaryDirectory() as directory:

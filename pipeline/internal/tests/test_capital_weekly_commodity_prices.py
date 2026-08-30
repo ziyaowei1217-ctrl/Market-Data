@@ -31,7 +31,12 @@ WORLD_BANK_COLUMNS = {
 }
 
 
-def _world_bank_fixture(*, omit: str | None = None) -> bytes:
+def _world_bank_fixture(
+    *,
+    omit: str | None = None,
+    duplicate: str | None = None,
+    invalid: tuple[str, object] | None = None,
+) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Monthly Prices"
@@ -39,11 +44,25 @@ def _world_bank_fixture(*, omit: str | None = None) -> bytes:
     sheet.append(["Monthly Prices"])
     sheet.append(["Updated 2026-08-04"])
     labels = [label for label in WORLD_BANK_COLUMNS if label != omit]
+    if duplicate is not None:
+        labels.append(duplicate)
     sheet.append(["Date", *labels])
-    sheet.append(["", *(WORLD_BANK_COLUMNS[label] for label in labels)])
+    sheet.append([
+        "",
+        *(
+            WORLD_BANK_COLUMNS[label]
+            if label in WORLD_BANK_COLUMNS
+            else WORLD_BANK_COLUMNS[label.strip().title()]
+            for label in labels
+        ),
+    ])
     sheet.append(["2026M05", *(float(index) for index in range(1, len(labels) + 1))])
     sheet.append([datetime(2026, 6, 1), *(float(index) + 0.5 for index in range(1, len(labels) + 1))])
-    sheet.append(["2026M07", *(float("nan") if index == 1 else float(index) + 1.0 for index in range(1, len(labels) + 1))])
+    july_values = [float(index) + 1.0 for index in range(1, len(labels) + 1)]
+    if invalid is not None:
+        invalid_label, invalid_value = invalid
+        july_values[labels.index(invalid_label)] = invalid_value
+    sheet.append(["2026M07", *july_values])
     stream = io.BytesIO()
     workbook.save(stream)
     return stream.getvalue()
@@ -156,6 +175,7 @@ class WorldBankPriceParserTests(unittest.TestCase):
             [
                 {"date": date(2026, 5, 31), "value": 1.0, "unit": "$/mmbtu"},
                 {"date": date(2026, 6, 30), "value": 1.5, "unit": "$/mmbtu"},
+                {"date": date(2026, 7, 31), "value": 2.0, "unit": "$/mmbtu"},
             ],
         )
         self.assertEqual(
@@ -176,6 +196,31 @@ class WorldBankPriceParserTests(unittest.TestCase):
                 _world_bank_fixture(),
                 {"Gold": "$/kg"},
             )
+
+    def test_rejects_duplicate_normalized_requested_headers(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "duplicate requested column.*Gold",
+        ):
+            parse_world_bank_monthly_prices(
+                _world_bank_fixture(duplicate="  GOLD  "),
+                {"Gold": "$/toz"},
+            )
+
+    def test_rejects_malformed_or_nonfinite_requested_values_on_dated_rows(self):
+        for label, invalid_value in (
+            ("malformed", "not-a-number"),
+            ("nonfinite", float("nan")),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Invalid World Bank value.*Gold.*2026-07-31",
+                ):
+                    parse_world_bank_monthly_prices(
+                        _world_bank_fixture(invalid=("Gold", invalid_value)),
+                        {"Gold": "$/toz"},
+                    )
 
 
 if __name__ == "__main__":

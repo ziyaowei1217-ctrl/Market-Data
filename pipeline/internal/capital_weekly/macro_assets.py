@@ -334,7 +334,7 @@ def _discover_world_bank_monthly_url(text: str, page_url: str) -> str:
         label = " ".join(_plain_html(raw_label).casefold().split())
         indicates_monthly_prices = (
             label == "monthly prices"
-            or ("monthly" in label and ("historical" in label or "price" in label))
+            or all(term in label for term in ("monthly", "historical", "price"))
         )
         if not indicates_monthly_prices:
             continue

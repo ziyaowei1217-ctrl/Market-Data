@@ -114,12 +114,21 @@ def parse_world_bank_monthly_prices(
         column_indexes: dict[str, int] = {}
         for row_index, row in enumerate(rows):
             normalized = [_normalized_label(cell) for cell in row]
-            positions = {
-                label: normalized.index(label)
-                for label in requested
-                if label in normalized
-            }
             if any(value in {"date", "month"} for value in normalized):
+                positions = {}
+                for label, (source_label, _) in requested.items():
+                    matches = [
+                        index
+                        for index, value in enumerate(normalized)
+                        if value == label
+                    ]
+                    if len(matches) > 1:
+                        raise ValueError(
+                            "World Bank workbook has duplicate requested column: "
+                            f"{source_label}"
+                        )
+                    if matches:
+                        positions[label] = matches[0]
                 header_index = row_index
                 column_indexes = positions
                 break
@@ -167,13 +176,22 @@ def parse_world_bank_monthly_prices(
             for normalized, column_index in column_indexes.items():
                 label, _ = requested[normalized]
                 if column_index >= len(row):
-                    continue
+                    raise ValueError(
+                        f"Invalid World Bank value for {label} on "
+                        f"{observation_date.isoformat()}"
+                    )
                 try:
                     value = float(row[column_index])
-                except (TypeError, ValueError):
-                    continue
+                except (TypeError, ValueError) as error:
+                    raise ValueError(
+                        f"Invalid World Bank value for {label} on "
+                        f"{observation_date.isoformat()}"
+                    ) from error
                 if not math.isfinite(value):
-                    continue
+                    raise ValueError(
+                        f"Invalid World Bank value for {label} on "
+                        f"{observation_date.isoformat()}"
+                    )
                 if observation_date in seen_dates[label]:
                     raise ValueError(
                         f"Duplicate World Bank date for {label}: "
