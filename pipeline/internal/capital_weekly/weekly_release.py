@@ -23,17 +23,26 @@ import re
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
-from .macro_assets import CALCULATED_SOURCE_REFERENCES
+from .macro_assets import (
+    CALCULATED_SERIES,
+    CALCULATED_SOURCE_REFERENCES,
+    CORRELATION_SPECS,
+)
 from .weekly_context import CATEGORY_FIELDS
 
 
 HONG_KONG = ZoneInfo("Asia/Hong_Kong")
 COORDINATOR_VERSION = "1"
-MANIFEST_SCHEMA_VERSION = 2
+MANIFEST_SCHEMA_VERSION = 3
 LEGACY_DATASET_CONTRACT_VERSION = 1
-DATASET_CONTRACT_VERSION = 2
+POINT_IN_TIME_DATASET_CONTRACT_VERSION = 2
+DATASET_CONTRACT_VERSION = 3
 SUPPORTED_DATASET_CONTRACT_VERSIONS = frozenset(
-    {LEGACY_DATASET_CONTRACT_VERSION, DATASET_CONTRACT_VERSION}
+    {
+        LEGACY_DATASET_CONTRACT_VERSION,
+        POINT_IN_TIME_DATASET_CONTRACT_VERSION,
+        DATASET_CONTRACT_VERSION,
+    }
 )
 PUBLICATION_MODES = frozenset({"coordinated", "migrated"})
 OUTPUT_SCHEMA_VERSION = "1.0"
@@ -69,6 +78,8 @@ OUTPUT_TABLES = {
             ("money_market", "money_market.csv"),
             ("foreign_exchange", "foreign_exchange.csv"),
             ("commodities", "commodities.csv"),
+            ("liquidity", "liquidity.csv"),
+            ("cross_asset", "cross_asset.csv"),
             ("divergence", "macro_divergence.csv"),
         ),
     ),
@@ -176,6 +187,12 @@ MACRO_COLUMNS = (
     "change_unit", "sort_order", "notes", *RETURN_DATE_COLUMNS,
     *RETURN_NUMERIC_COLUMNS, "qc_flag", *RANK_COLUMNS,
 )
+MACRO_V3_COLUMNS = (
+    *MACRO_COLUMNS,
+    "calculation_id", "formula_version", "input_series_codes",
+    "known_as_of", "window_observations", "minimum_observations",
+    "correlation_observations",
+)
 SECTOR_DIVERGENCE_COLUMNS = (
     "market", "market_cn", "horizon", "horizon_cn", "valid_count",
     "positive_count", "flat_count", "negative_count", "breadth_ratio",
@@ -210,6 +227,13 @@ MACRO_SOURCE_LOG_COLUMNS = (
     "series_code", "sort_order", "source", "status", "error", "observations",
     "latest_date", "latest_value", "source_url", "elapsed_ms",
     "raw_cache_status", "raw_cache_error",
+)
+MACRO_SOURCE_LOG_V3_COLUMNS = (
+    *MACRO_SOURCE_LOG_COLUMNS,
+    "provider", "provider_symbol", "source_tier", "requiredness",
+    "provider_version", "schema_version", "frequency", "freshness_days",
+    "known_as_of", "warnings", "calculation_id", "formula_version",
+    "input_series_codes",
 )
 SOURCE_LOG_NUMERIC_COLUMNS = (
     "observations", "latest_value", "daily_base_value", "weekly_base_value",
@@ -249,23 +273,21 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
 CONTEXT_REQUIREDNESS_VALUES = frozenset({"required", "optional"})
 ACCEPTED_QC_FLAGS = frozenset({"OK", "INSUFFICIENT_DATA"})
 CALCULATED_SOURCE_POLICIES = {
-    CALCULATED_SOURCE_REFERENCES["UST10Y2Y"]: (
+    CALCULATED_SOURCE_REFERENCES[series_code]: (
         "series_code",
-        ("UST10Y", "UST2Y"),
-    ),
-    CALCULATED_SOURCE_REFERENCES["US_BE5Y"]: (
-        "series_code",
-        ("UST5Y", "UST_REAL5Y"),
-    ),
-    CALCULATED_SOURCE_REFERENCES["US_BE10Y"]: (
-        "series_code",
-        ("UST10Y", "UST_REAL10Y"),
-    ),
-    CALCULATED_SOURCE_REFERENCES["US_5Y5Y"]: (
-        "series_code",
-        ("US_BE5Y", "US_BE10Y"),
-    ),
+        tuple(definition[0]),
+    )
+    for series_code, definition in CALCULATED_SERIES.items()
 }
+CALCULATED_SOURCE_POLICIES.update(
+    {
+        CALCULATED_SOURCE_REFERENCES[series_code]: (
+            "series_code",
+            spec.input_codes,
+        )
+        for series_code, spec in CORRELATION_SPECS.items()
+    }
+)
 
 
 def _dataset(
@@ -353,9 +375,14 @@ RELEASE_DATASETS = (
         _dataset(
             "macro_assets",
             filename,
-            MACRO_COLUMNS,
-            require_valid_row=True,
-            date_columns=RETURN_DATE_COLUMNS,
+            MACRO_V3_COLUMNS,
+            require_valid_row=filename not in {
+                "commodities.csv", "foreign_exchange.csv",
+            },
+            allow_empty=filename in {
+                "commodities.csv", "foreign_exchange.csv",
+            },
+            date_columns=(*RETURN_DATE_COLUMNS, "known_as_of"),
             numeric_columns=("sort_order", *RETURN_NUMERIC_COLUMNS, *RANK_COLUMNS),
             source_url_column="source_url",
             qc_column="qc_flag",
@@ -370,6 +397,34 @@ RELEASE_DATASETS = (
     ),
     _dataset(
         "macro_assets",
+        "liquidity.csv",
+        MACRO_V3_COLUMNS,
+        require_valid_row=True,
+        date_columns=(*RETURN_DATE_COLUMNS, "known_as_of"),
+        numeric_columns=(
+            "sort_order", *RETURN_NUMERIC_COLUMNS, *RANK_COLUMNS,
+            "window_observations", "minimum_observations",
+            "correlation_observations",
+        ),
+        source_url_column="source_url",
+        qc_column="qc_flag",
+    ),
+    _dataset(
+        "macro_assets",
+        "cross_asset.csv",
+        MACRO_V3_COLUMNS,
+        allow_empty=True,
+        date_columns=(*RETURN_DATE_COLUMNS, "known_as_of"),
+        numeric_columns=(
+            "sort_order", *RETURN_NUMERIC_COLUMNS, *RANK_COLUMNS,
+            "window_observations", "minimum_observations",
+            "correlation_observations",
+        ),
+        source_url_column="source_url",
+        qc_column="qc_flag",
+    ),
+    _dataset(
+        "macro_assets",
         "macro_divergence.csv",
         MACRO_DIVERGENCE_COLUMNS,
         numeric_columns=(
@@ -381,12 +436,15 @@ RELEASE_DATASETS = (
     _dataset(
         "macro_assets",
         "source_log.csv",
-        MACRO_SOURCE_LOG_COLUMNS,
-        date_columns=("latest_date",),
-        numeric_columns=("sort_order", "observations", "latest_value", "elapsed_ms"),
+        MACRO_SOURCE_LOG_V3_COLUMNS,
+        date_columns=("latest_date", "known_as_of"),
+        numeric_columns=(
+            "sort_order", "observations", "latest_value", "elapsed_ms",
+            "freshness_days",
+        ),
         source_url_column="source_url",
         status_column="status",
-        accepted_statuses=SUCCESS_SOURCE_STATUSES,
+        accepted_statuses=frozenset({"OK", "FETCH_FAILED"}),
     ),
     *(
         _dataset(
@@ -445,11 +503,41 @@ LEGACY_CONTEXT_SOURCE_LOG_COLUMNS = (
 CURRENT_CONTEXT_SOURCE_LOG_ONLY_COLUMNS = frozenset(
     CATEGORY_FIELDS["source_log"]
 ) - frozenset(LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
+VERSION_2_RELEASE_DATASETS = tuple(
+    replace(
+        dataset,
+        required_columns=MACRO_SOURCE_LOG_COLUMNS,
+        date_columns=("latest_date",),
+        numeric_columns=(
+            "sort_order", "observations", "latest_value", "elapsed_ms",
+        ),
+        accepted_statuses=SUCCESS_SOURCE_STATUSES,
+    )
+    if dataset.pipeline == "macro_assets" and dataset.filename == "source_log.csv"
+    else replace(
+        dataset,
+        required_columns=MACRO_COLUMNS,
+        allow_empty=False,
+        require_valid_row=True,
+        date_columns=RETURN_DATE_COLUMNS,
+        numeric_columns=("sort_order", *RETURN_NUMERIC_COLUMNS, *RANK_COLUMNS),
+    )
+    if dataset.pipeline == "macro_assets" and dataset.filename in {
+        "fixed_income.csv", "commodities.csv", "foreign_exchange.csv",
+        "policy_rates.csv", "money_market.csv",
+    }
+    else dataset
+    for dataset in RELEASE_DATASETS
+    if not (
+        dataset.pipeline == "macro_assets"
+        and dataset.filename in {"liquidity.csv", "cross_asset.csv"}
+    )
+)
 LEGACY_RELEASE_DATASETS = tuple(
     replace(dataset, required_columns=LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
     if dataset.pipeline == "weekly_context" and dataset.filename == "source_log.csv"
     else dataset
-    for dataset in RELEASE_DATASETS
+    for dataset in VERSION_2_RELEASE_DATASETS
     if not (
         dataset.pipeline == "weekly_context"
         and dataset.filename == "economic_releases.csv"
@@ -462,6 +550,8 @@ def release_datasets_for_contract(
 ) -> tuple[DatasetSpec, ...]:
     if dataset_contract_version == LEGACY_DATASET_CONTRACT_VERSION:
         return LEGACY_RELEASE_DATASETS
+    if dataset_contract_version == POINT_IN_TIME_DATASET_CONTRACT_VERSION:
+        return VERSION_2_RELEASE_DATASETS
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         return RELEASE_DATASETS
     raise ReleaseValidationError(
@@ -813,14 +903,25 @@ def _validate_row(
         and spec.pipeline == "weekly_context"
         and spec.filename == "source_log.csv"
     )
+    is_current_macro_source_log = (
+        dataset_contract_version == DATASET_CONTRACT_VERSION
+        and spec.pipeline == "macro_assets"
+        and spec.filename == "source_log.csv"
+    )
     requiredness = ""
-    if is_current_context_source_log:
+    source_tier = ""
+    if is_current_context_source_log or is_current_macro_source_log:
         requiredness = (row.get("requiredness") or "").strip()
         if requiredness not in CONTEXT_REQUIREDNESS_VALUES:
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} requiredness must be required or optional"
             )
-        raw_latest_known_as_of = (row.get("latest_known_as_of") or "").strip()
+        source_tier = (row.get("source_tier") or "").strip()
+        raw_latest_known_as_of = (
+            (row.get("latest_known_as_of") or "").strip()
+            if is_current_context_source_log
+            else ""
+        )
         if raw_latest_known_as_of:
             try:
                 latest_known_as_of = datetime.fromisoformat(
@@ -855,19 +956,31 @@ def _validate_row(
             (row.get("provider") or "").strip(),
             (row.get("category") or "").strip(),
         )
-        status_is_accepted = status in spec.accepted_statuses and (
-            status == "OK"
-            or (
-                optional_identity in CONTEXT_OPTIONAL_STATUS_POLICIES.get(
-                    status,
-                    frozenset(),
+        if is_current_macro_source_log:
+            if source_tier not in {"official", "public_proxy"}:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} source_tier must be "
+                    "official or public_proxy"
                 )
-                and (
-                    not is_current_context_source_log
-                    or requiredness == "optional"
+            status_is_accepted = status == "OK" or (
+                status == "FETCH_FAILED"
+                and requiredness == "optional"
+                and source_tier == "public_proxy"
+            )
+        else:
+            status_is_accepted = status in spec.accepted_statuses and (
+                status == "OK"
+                or (
+                    optional_identity in CONTEXT_OPTIONAL_STATUS_POLICIES.get(
+                        status,
+                        frozenset(),
+                    )
+                    and (
+                        not is_current_context_source_log
+                        or requiredness == "optional"
+                    )
                 )
             )
-        )
         if not status_is_accepted:
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} has unacceptable status: {status or 'blank'}"
@@ -965,9 +1078,24 @@ def validate_staged_week(
         spec.name: Path(spec.output_dir)
         for spec in build_pipeline_specs(release_root, window)
     }
+    loaded_datasets: list[tuple[DatasetSpec, Path, list[dict[str, str]]]] = []
     for dataset in release_datasets_for_contract(dataset_contract_version):
         path = pipeline_dirs[dataset.pipeline] / dataset.filename
         rows = _read_dataset(path, dataset)
+        loaded_datasets.append((dataset, path, rows))
+
+    macro_source_registry = [
+        row
+        for dataset, _, rows in loaded_datasets
+        if dataset.pipeline == "macro_assets"
+        for row in rows
+    ]
+    for dataset, path, rows in loaded_datasets:
+        source_rows = (
+            macro_source_registry
+            if dataset.pipeline == "macro_assets"
+            else rows
+        )
         for row_number, row in enumerate(rows, start=2):
             _validate_row(
                 path,
@@ -975,7 +1103,7 @@ def validate_staged_week(
                 row,
                 dataset,
                 window,
-                rows,
+                source_rows,
                 dataset_contract_version,
             )
         if dataset.require_valid_row and not any(
@@ -1638,6 +1766,7 @@ __all__ = [
     "PipelineSpec",
     "DATASET_CONTRACT_VERSION",
     "LEGACY_DATASET_CONTRACT_VERSION",
+    "POINT_IN_TIME_DATASET_CONTRACT_VERSION",
     "MANIFEST_SCHEMA_VERSION",
     "OUTPUT_BUSINESS_FILES",
     "OUTPUT_SCHEMA_VERSION",

@@ -13,6 +13,7 @@ from unittest.mock import patch
 import pandas as pd
 import requests
 
+from pipeline.internal.capital_weekly import macro_assets
 from pipeline.internal.capital_weekly.macro_assets import (
     _atomic_write_bytes,
     _session,
@@ -511,6 +512,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
     def test_every_configured_provider_dispatches(self):
         contracts = {
             "us_treasury": ("GET", "home.treasury.gov"), "fred": ("GET", "fredgraph.csv"),
+            "fred_millions_to_billions": ("GET", "fredgraph.csv"),
             "us_treasury_real": ("GET", "type=daily_treasury_real_yield_curve"),
             "yahoo_chart": ("GET", "query2.finance.yahoo.com"), "china_bond": ("POST", "yield.chinabond.com.cn"),
             "sina_fx": ("GET", "NewForexService.getDayKLine?symbol=fx_susdcnh"),
@@ -527,8 +529,13 @@ class MacroAssetUniverseTests(unittest.TestCase):
         expected_symbols = {
             "us_treasury": {"2-year", "5-year", "10-year", "30-year"},
             "us_treasury_real": {"5-year", "10-year"},
-            "fred": {"BAMLC0A0CM", "BAMLH0A0HYM2", "DFEDTARL", "DFEDTARU", "IORB", "RRPONTSYAWARD"},
-            "yahoo_chart": {"CL=F", "BZ=F", "GC=F", "DX-Y.NYB", "CNY=X", "HKD=X", "BTC-USD"}, "china_bond": {"2Y", "5Y", "10Y", "30Y"},
+            "fred": {"BAMLC0A0CM", "BAMLH0A0HYM2", "DFEDTARL", "DFEDTARU", "IORB", "RRPONTSYAWARD", "RRPONTSYD"},
+            "fred_millions_to_billions": {"WALCL", "WTREGEN"},
+            "yahoo_chart": {
+                "CL=F", "BZ=F", "GC=F", "HG=F", "DX-Y.NYB", "CNY=X",
+                "HKD=X", "EURUSD=X", "JPY=X", "GBPUSD=X", "AUDUSD=X",
+                "CAD=X", "CHF=X", "BTC-USD", "SPY", "TLT",
+            }, "china_bond": {"2Y", "5Y", "10Y", "30Y"},
             "sina_fx": {"fx_susdcnh"},
             "pboc_lpr": {"1Y", "5Y+"}, "hkab_hibor": {"1M", "3M"},
             "nyfed_rates": {"EFFR", "SOFR"},
@@ -558,7 +565,14 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 pass
             call = (session.get if method == "GET" else session.post).call_args_list[0]
             self.assertIn(endpoint, call.args[0], provider)
-            self.assertEqual(config.change_unit, "pct" if provider in {"yahoo_chart", "sina_fx"} else "bp", provider)
+            expected_change_unit = (
+                "pct"
+                if provider in {"yahoo_chart", "sina_fx"}
+                else "usd_billions"
+                if provider == "fred_millions_to_billions"
+                else "bp"
+            )
+            self.assertEqual(config.change_unit, expected_change_unit, provider)
 
     def test_configured_administered_boc_rate_carries_but_market_rate_does_not(self):
         text = json.dumps({"observations": [{"d": "2026-07-10", "V39079": {"v": "2.75"}, "AVG.INTWO": {"v": "2.70"}}]})
@@ -851,10 +865,10 @@ class MacroAssetUniverseTests(unittest.TestCase):
             source_log["series_code"] == "US_BE5Y"
         ].iloc[0]
         self.assertEqual(calculated_audit["provider"], "calculated")
-        self.assertEqual(calculated_audit["source_tier"], "public")
+        self.assertEqual(calculated_audit["source_tier"], "official")
         self.assertEqual(calculated_audit["requiredness"], "required")
         self.assertEqual(calculated_audit["provider_version"], "1.0.0")
-        self.assertEqual(calculated_audit["schema_version"], "macro-asset-v2")
+        self.assertEqual(calculated_audit["schema_version"], "macro-asset-v3")
         self.assertEqual(calculated_audit["known_as_of"], "2026-08-07")
         self.assertEqual(calculated_audit["calculation_id"], "breakeven")
         self.assertEqual(calculated_audit["formula_version"], "breakeven-v1")
@@ -916,6 +930,27 @@ class MacroAssetUniverseTests(unittest.TestCase):
         result = _parse_fred_csv(fixture, "BAMLC0A0CM")
 
         self.assertEqual(result, [{"date": date(2026, 7, 9), "value": 0.76}])
+
+    def test_h41_fred_provider_normalizes_millions_to_billions(self):
+        config = self._config("fred_millions_to_billions", "WALCL")
+        response = unittest.mock.Mock(
+            content=b"observation_date,WALCL\n2026-08-05,8100000\n",
+            text="observation_date,WALCL\n2026-08-05,8100000\n",
+        )
+        response.raise_for_status.return_value = None
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        session.get.return_value = response
+
+        history, _, _ = _fetch_config_history(
+            config,
+            session,
+            as_of_date=date(2026, 8, 9),
+        )
+
+        self.assertEqual(
+            history,
+            [{"date": date(2026, 8, 5), "value": 8100.0}],
+        )
 
     def test_yahoo_chart_parser_pairs_timestamps_and_closes_and_drops_nulls(self):
         fixture = json.dumps({"chart": {"result": [{
@@ -1021,25 +1056,43 @@ class MacroAssetUniverseTests(unittest.TestCase):
             [{"date": date(2026, 8, 7), "value": 2.1}],
         )
 
-    def test_universe_has_approved_47_series_and_registered_inflation_calculations(self):
+    def test_universe_has_approved_70_series_and_registered_wave_1_calculations(self):
         universe = load_macro_asset_universe()
 
-        self.assertEqual(len(universe), 47)
+        self.assertEqual(len(universe), 70)
         self.assertEqual(
             len({item.series_code for item in universe}),
             len(universe),
         )
         self.assertEqual(
             sorted(item.sort_order for item in universe),
-            list(range(1, 48)),
+            list(range(1, 71)),
         )
         by_class = {
             asset_class: [item for item in universe if item.asset_class == asset_class]
-            for asset_class in ("fixed_income", "commodity", "foreign_exchange", "policy_rate", "money_market")
+            for asset_class in (
+                "fixed_income",
+                "commodity",
+                "foreign_exchange",
+                "policy_rate",
+                "money_market",
+                "liquidity",
+                "calculation_input",
+                "cross_asset",
+            )
         }
         self.assertEqual(
             {asset_class: len(items) for asset_class, items in by_class.items()},
-            {"fixed_income": 20, "commodity": 4, "foreign_exchange": 4, "policy_rate": 12, "money_market": 7},
+            {
+                "fixed_income": 22,
+                "commodity": 5,
+                "foreign_exchange": 10,
+                "policy_rate": 12,
+                "money_market": 7,
+                "liquidity": 4,
+                "calculation_input": 2,
+                "cross_asset": 8,
+            },
         )
         new_rates = {
             item.series_code: item
@@ -1088,6 +1141,97 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertEqual(sum(item.series_code.startswith("LPR") for item in universe), 2)
         self.assertEqual(sum(item.series_code.startswith("HIBOR") for item in universe), 2)
         self.assertNotIn("PBOC_7D_RR", {item.series_code for item in universe})
+        wave_1_codes = {
+            "UST30Y5Y", "USHY_IG_OAS", "FED_TOTAL_ASSETS", "TGA_BALANCE",
+            "ON_RRP_TAKE_UP", "FED_NET_LIQUIDITY", "COMEX_COPPER", "EUR_USD",
+            "USD_JPY", "GBP_USD", "AUD_USD", "USD_CAD", "USD_CHF",
+            "SPY_CLOSE_PROXY", "TLT_CLOSE_PROXY",
+            "US_STOCK_BOND_CORR_13W", "US_STOCK_BOND_CORR_26W",
+            "EQUITY_USD_CORR_13W", "EQUITY_USD_CORR_26W",
+            "GOLD_REAL_YIELD_CORR_13W", "GOLD_REAL_YIELD_CORR_26W",
+            "OIL_BREAKEVEN_CORR_13W", "OIL_BREAKEVEN_CORR_26W",
+        }
+        self.assertEqual(
+            {item.series_code for item in universe}.intersection(wave_1_codes),
+            wave_1_codes,
+        )
+        configured = {item.series_code: item for item in universe}
+        self.assertEqual(configured["ON_RRP_TAKE_UP"].provider_symbol, "RRPONTSYD")
+        self.assertEqual(
+            configured["FED_NET_LIQUIDITY"].input_series_codes,
+            "FED_TOTAL_ASSETS|TGA_BALANCE|ON_RRP_TAKE_UP",
+        )
+        self.assertEqual(configured["UST30Y5Y"].input_series_codes, "UST30Y|UST5Y")
+        self.assertEqual(
+            configured["USHY_IG_OAS"].input_series_codes,
+            "USHY_OAS|USIG_OAS",
+        )
+        self.assertEqual(
+            (
+                macro_assets.CORRELATION_SPECS[
+                    "US_STOCK_BOND_CORR_13W"
+                ].window,
+                macro_assets.CORRELATION_SPECS[
+                    "US_STOCK_BOND_CORR_13W"
+                ].minimum_observations,
+            ),
+            (65, 52),
+        )
+        self.assertEqual(
+            (
+                macro_assets.CORRELATION_SPECS[
+                    "GOLD_REAL_YIELD_CORR_13W"
+                ].left_transform,
+                macro_assets.CORRELATION_SPECS[
+                    "GOLD_REAL_YIELD_CORR_13W"
+                ].right_transform,
+            ),
+            ("pct_return", "level_change"),
+        )
+
+    def test_macro_source_audit_distinguishes_official_and_optional_proxy_rows(self):
+        header = (
+            "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
+            "source,source_url,frequency,level_unit,change_unit,sort_order,notes\n"
+        )
+        rows = (
+            "fixed_income,credit_spreads,OFFICIAL,官方,Official,fred,OFFICIAL,FRED,"
+            "https://example.test/official,daily,percent,bp,1,Official row\n"
+            "foreign_exchange,foreign_exchange,PROXY,代理,Proxy,yahoo_chart,PROXY=X,"
+            "Yahoo public proxy,https://example.test/proxy,daily,index,pct,2,Proxy row\n"
+        )
+        history = [
+            {"date": date(2025, 12, 31), "value": 100.0},
+            {"date": date(2026, 8, 7), "value": 101.0},
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            universe = Path(directory) / "universe.csv"
+            universe.write_text(header + rows, encoding="utf-8")
+            with patch(
+                "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
+                return_value=(history, b"fixture", "https://example.test/value"),
+            ):
+                _, source_log = fetch_macro_assets(
+                    universe,
+                    as_of_date=date(2026, 8, 9),
+                )
+
+        audit = source_log.set_index("series_code")
+        self.assertEqual(
+            (
+                audit.loc["OFFICIAL", "source_tier"],
+                audit.loc["OFFICIAL", "requiredness"],
+            ),
+            ("official", "required"),
+        )
+        self.assertEqual(
+            (
+                audit.loc["PROXY", "source_tier"],
+                audit.loc["PROXY", "requiredness"],
+            ),
+            ("public_proxy", "optional"),
+        )
 
     def test_policy_semantics_reject_persistent_china_mlf_aliases_but_allow_ecb_mlf(self):
         universe = load_macro_asset_universe()
@@ -1280,6 +1424,103 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 for path in root.rglob("*") if path.is_file()
             }
             self.assertEqual(after, before)
+
+    def test_cli_writes_wave_1_tables_and_omits_failed_optional_business_rows(self):
+        from pipeline.internal.scripts import fetch_macro_assets as fetch_cli
+
+        detail = pd.DataFrame(
+            [
+                {
+                    "asset_class": "liquidity",
+                    "group": "fed_liquidity",
+                    "series_code": "FED_TOTAL_ASSETS",
+                    "name_cn": "美联储总资产",
+                    "level_unit": "usd_billions",
+                    "change_unit": "usd_billions",
+                    "sort_order": 1,
+                    "daily_change": 10.0,
+                    "weekly_change": 20.0,
+                    "mtd_change": 30.0,
+                    "ytd_change": 40.0,
+                    "qc_flag": "OK",
+                },
+                {
+                    "asset_class": "cross_asset",
+                    "group": "cross_asset_correlation",
+                    "series_code": "US_STOCK_BOND_CORR_13W",
+                    "name_cn": "股债相关性",
+                    "level_unit": "correlation",
+                    "change_unit": "correlation_points",
+                    "sort_order": 2,
+                    "daily_change": 0.01,
+                    "weekly_change": 0.02,
+                    "mtd_change": 0.03,
+                    "ytd_change": 0.04,
+                    "qc_flag": "OK",
+                },
+                {
+                    "asset_class": "commodity",
+                    "group": "commodities",
+                    "series_code": "COMEX_COPPER",
+                    "name_cn": "铜代理",
+                    "level_unit": "usd_per_pound",
+                    "change_unit": "pct",
+                    "sort_order": 3,
+                    "daily_change": float("nan"),
+                    "weekly_change": float("nan"),
+                    "mtd_change": float("nan"),
+                    "ytd_change": float("nan"),
+                    "qc_flag": "FETCH_FAILED",
+                },
+                {
+                    "asset_class": "calculation_input",
+                    "group": "correlation_inputs",
+                    "series_code": "SPY_CLOSE_PROXY",
+                    "name_cn": "隐藏输入",
+                    "level_unit": "usd_per_share",
+                    "change_unit": "pct",
+                    "sort_order": 4,
+                    "daily_change": 0.01,
+                    "weekly_change": 0.02,
+                    "mtd_change": 0.03,
+                    "ytd_change": 0.04,
+                    "qc_flag": "OK",
+                },
+            ]
+        )
+        source_log = pd.DataFrame(
+            {
+                "series_code": detail["series_code"],
+                "status": ["OK", "OK", "FETCH_FAILED", "OK"],
+                "requiredness": ["required", "optional", "optional", "optional"],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "pipeline.internal.scripts.fetch_macro_assets.fetch_macro_assets",
+            return_value=(detail, source_log),
+        ), patch.object(
+            os.sys, "argv", ["fetch_macro_assets.py", "--output-dir", directory]
+        ):
+            fetch_cli.main()
+            root = Path(directory)
+            self.assertEqual(
+                pd.read_csv(root / "liquidity.csv")["series_code"].tolist(),
+                ["FED_TOTAL_ASSETS"],
+            )
+            self.assertEqual(
+                pd.read_csv(root / "cross_asset.csv")["series_code"].tolist(),
+                ["US_STOCK_BOND_CORR_13W"],
+            )
+            self.assertTrue(pd.read_csv(root / "commodities.csv").empty)
+            snapshot = json.loads(
+                (root / "macro_assets_snapshot.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(len(snapshot["liquidity"]), 1)
+        self.assertEqual(len(snapshot["cross_asset"]), 1)
+        self.assertEqual(snapshot["commodities"], [])
+        self.assertEqual(len(snapshot["source_log"]), 4)
 
 
 if __name__ == "__main__":

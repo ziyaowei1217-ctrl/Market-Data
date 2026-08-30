@@ -72,6 +72,16 @@ MACRO_FIELDS = [
     "change_unit", "sort_order", "notes", *RETURN_DATE_FIELDS,
     *RETURN_NUMERIC_FIELDS, "qc_flag", *RANK_FIELDS,
 ]
+MACRO_V3_FIELDS = [
+    *MACRO_FIELDS,
+    "calculation_id",
+    "formula_version",
+    "input_series_codes",
+    "known_as_of",
+    "window_observations",
+    "minimum_observations",
+    "correlation_observations",
+]
 SECTOR_DIVERGENCE_FIELDS = [
     "market", "market_cn", "horizon", "horizon_cn", "valid_count",
     "positive_count", "flat_count", "negative_count", "breadth_ratio",
@@ -107,6 +117,22 @@ MACRO_SOURCE_LOG_FIELDS = [
     "latest_date", "latest_value", "source_url", "elapsed_ms",
     "raw_cache_status", "raw_cache_error",
 ]
+MACRO_SOURCE_LOG_V3_FIELDS = [
+    *MACRO_SOURCE_LOG_FIELDS,
+    "provider",
+    "provider_symbol",
+    "source_tier",
+    "requiredness",
+    "provider_version",
+    "schema_version",
+    "frequency",
+    "freshness_days",
+    "known_as_of",
+    "warnings",
+    "calculation_id",
+    "formula_version",
+    "input_series_codes",
+]
 LEGACY_CONTEXT_SOURCE_LOG_FIELDS = [
     "provider",
     "category",
@@ -124,8 +150,12 @@ NUMERIC_FIELDS = set(RETURN_NUMERIC_FIELDS + RANK_FIELDS) | {
     "flat_count", "negative_count", "up_count", "down_count", "breadth_ratio",
     "leader_laggard_spread", "dispersion", "median_return", "median_change",
     "change_range", "value",
+    "window_observations", "minimum_observations", "correlation_observations",
+    "freshness_days",
 }
-DATE_FIELDS = set(RETURN_DATE_FIELDS) | {"as_of_date", "event_date", "report_date"}
+DATE_FIELDS = set(RETURN_DATE_FIELDS) | {
+    "as_of_date", "event_date", "report_date", "known_as_of",
+}
 
 
 def write_csv(path: Path, fields: list[str] | tuple[str, ...], rows: list[dict]) -> None:
@@ -143,7 +173,9 @@ def fixture_row(fields, **overrides) -> dict:
             row[field] = "2026-08-07"
         elif field == "requiredness":
             row[field] = "required"
-        elif field in {"freshness_days", "latest_known_as_of"}:
+        elif field == "source_tier":
+            row[field] = "official"
+        elif field in {"latest_known_as_of"}:
             row[field] = ""
         elif field in NUMERIC_FIELDS:
             row[field] = "1"
@@ -222,9 +254,15 @@ def write_valid_pipeline_output(pipeline: str, output: Path) -> None:
         ):
             write_csv(
                 output / filename,
-                MACRO_FIELDS,
-                [fixture_row(MACRO_FIELDS, series_code=filename)],
+                MACRO_V3_FIELDS,
+                [fixture_row(MACRO_V3_FIELDS, series_code=filename)],
             )
+        write_csv(
+            output / "liquidity.csv",
+            MACRO_V3_FIELDS,
+            [fixture_row(MACRO_V3_FIELDS, series_code="FED_TOTAL_ASSETS")],
+        )
+        write_csv(output / "cross_asset.csv", MACRO_V3_FIELDS, [])
         write_csv(
             output / "macro_divergence.csv",
             MACRO_DIVERGENCE_FIELDS,
@@ -232,8 +270,8 @@ def write_valid_pipeline_output(pipeline: str, output: Path) -> None:
         )
         write_csv(
             output / "source_log.csv",
-            MACRO_SOURCE_LOG_FIELDS,
-            [fixture_row(MACRO_SOURCE_LOG_FIELDS, series_code="MACRO")],
+            MACRO_SOURCE_LOG_V3_FIELDS,
+            [fixture_row(MACRO_SOURCE_LOG_V3_FIELDS, series_code="MACRO")],
         )
         (output / "macro_assets_snapshot.json").write_text("{}", encoding="utf-8")
 
@@ -388,9 +426,137 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "02_equity_indices.csv"):
             validate_staged_week(self.root, self.window)
 
+    def test_contract_v2_keeps_the_pre_wave_1_file_set(self):
+        (self.outputs["macro_assets"] / "liquidity.csv").unlink()
+        (self.outputs["macro_assets"] / "cross_asset.csv").unlink()
+        write_csv(
+            self.outputs["macro_assets"] / "source_log.csv",
+            MACRO_SOURCE_LOG_FIELDS,
+            [fixture_row(MACRO_SOURCE_LOG_FIELDS, series_code="MACRO")],
+        )
+        for filename in (
+            "fixed_income.csv",
+            "commodities.csv",
+            "foreign_exchange.csv",
+            "policy_rates.csv",
+            "money_market.csv",
+        ):
+            write_csv(
+                self.outputs["macro_assets"] / filename,
+                MACRO_FIELDS,
+                [fixture_row(MACRO_FIELDS, series_code=filename)],
+            )
+
+        manifest = validate_staged_week(
+            self.root,
+            self.window,
+            dataset_contract_version=2,
+        )
+
+        self.assertEqual(manifest["dataset_contract_version"], 2)
+
+    def test_optional_macro_proxy_failure_is_audited_without_blocking_release(self):
+        path = self.outputs["macro_assets"] / "source_log.csv"
+        rows = [
+            fixture_row(MACRO_SOURCE_LOG_V3_FIELDS, series_code="OFFICIAL"),
+            fixture_row(
+                MACRO_SOURCE_LOG_V3_FIELDS,
+                series_code="COMEX_COPPER",
+                provider="yahoo_chart",
+                source_tier="public_proxy",
+                requiredness="optional",
+                status="FETCH_FAILED",
+            ),
+        ]
+        write_csv(path, MACRO_SOURCE_LOG_V3_FIELDS, rows)
+
+        validate_staged_week(self.root, self.window)
+
+        rows[1]["requiredness"] = "required"
+        write_csv(path, MACRO_SOURCE_LOG_V3_FIELDS, rows)
+        with self.assertRaisesRegex(ReleaseValidationError, "FETCH_FAILED"):
+            validate_staged_week(self.root, self.window)
+
+    def test_optional_claim_does_not_allow_official_chinabond_failure(self):
+        path = self.outputs["macro_assets"] / "source_log.csv"
+        rows = [
+            fixture_row(MACRO_SOURCE_LOG_V3_FIELDS, series_code="OFFICIAL"),
+            fixture_row(
+                MACRO_SOURCE_LOG_V3_FIELDS,
+                series_code="CGB10Y",
+                provider="china_bond",
+                source_tier="official",
+                requiredness="optional",
+                status="FETCH_FAILED",
+            ),
+        ]
+        write_csv(path, MACRO_SOURCE_LOG_V3_FIELDS, rows)
+
+        with self.assertRaisesRegex(ReleaseValidationError, "FETCH_FAILED"):
+            validate_staged_week(self.root, self.window)
+
+    def test_cross_asset_calculation_resolves_dependencies_from_macro_source_log(self):
+        cross_asset = self.outputs["macro_assets"] / "cross_asset.csv"
+        write_csv(
+            cross_asset,
+            MACRO_V3_FIELDS,
+            [
+                fixture_row(
+                    MACRO_V3_FIELDS,
+                    asset_class="cross_asset",
+                    series_code="US_STOCK_BOND_CORR_13W",
+                    provider="calculated",
+                    source_url=weekly_release_module.CALCULATED_SOURCE_REFERENCES[
+                        "US_STOCK_BOND_CORR_13W"
+                    ],
+                    calculation_id="rolling_correlation",
+                    formula_version="rolling-correlation-v1",
+                    input_series_codes="SPY_CLOSE_PROXY|TLT_CLOSE_PROXY",
+                )
+            ],
+        )
+        source_log = self.outputs["macro_assets"] / "source_log.csv"
+        dependency_rows = [
+            fixture_row(
+                MACRO_SOURCE_LOG_V3_FIELDS,
+                series_code=series_code,
+                provider="yahoo_chart",
+                source_tier="public_proxy",
+                requiredness="optional",
+                source_url=f"https://example.test/{series_code}",
+            )
+            for series_code in ("SPY_CLOSE_PROXY", "TLT_CLOSE_PROXY")
+        ]
+        dependency_rows.append(
+            fixture_row(
+                MACRO_SOURCE_LOG_V3_FIELDS,
+                series_code="US_STOCK_BOND_CORR_13W",
+                provider="calculated",
+                source_tier="public_proxy",
+                requiredness="optional",
+                source_url=weekly_release_module.CALCULATED_SOURCE_REFERENCES[
+                    "US_STOCK_BOND_CORR_13W"
+                ],
+                calculation_id="rolling_correlation",
+                formula_version="rolling-correlation-v1",
+                input_series_codes="SPY_CLOSE_PROXY|TLT_CLOSE_PROXY",
+            )
+        )
+        write_csv(source_log, MACRO_SOURCE_LOG_V3_FIELDS, dependency_rows)
+
+        validate_staged_week(self.root, self.window)
+
+        write_csv(
+            source_log,
+            MACRO_SOURCE_LOG_V3_FIELDS,
+            [dependency_rows[0], dependency_rows[-1]],
+        )
+        with self.assertRaisesRegex(ReleaseValidationError, "TLT_CLOSE_PROXY"):
+            validate_staged_week(self.root, self.window)
+
     def test_rejects_a_required_table_with_only_a_header(self):
         path = self.outputs["macro_assets"] / "fixed_income.csv"
-        write_csv(path, MACRO_FIELDS, [])
+        write_csv(path, MACRO_V3_FIELDS, [])
 
         with self.assertRaisesRegex(ReleaseValidationError, "fixed_income.csv.*empty"):
             validate_staged_week(self.root, self.window)
@@ -469,8 +635,12 @@ class StagedValidationTests(unittest.TestCase):
 
     def test_rejects_a_visible_record_without_a_source_url(self):
         path = self.outputs["macro_assets"] / "commodities.csv"
-        row = fixture_row(MACRO_FIELDS, series_code="COMMODITY", source_url="")
-        write_csv(path, MACRO_FIELDS, [row])
+        row = fixture_row(
+            MACRO_V3_FIELDS,
+            series_code="COMMODITY",
+            source_url="",
+        )
+        write_csv(path, MACRO_V3_FIELDS, [row])
 
         with self.assertRaisesRegex(ReleaseValidationError, "source_url"):
             validate_staged_week(self.root, self.window)
@@ -950,15 +1120,15 @@ class StagedValidationTests(unittest.TestCase):
             "calculated:UST10Y-UST2Y (shared Treasury observation dates)"
         )
         rows = [
-            fixture_row(MACRO_FIELDS, series_code="UST10Y"),
+            fixture_row(MACRO_V3_FIELDS, series_code="UST10Y"),
             fixture_row(
-                MACRO_FIELDS,
+                MACRO_V3_FIELDS,
                 series_code="UST10Y2Y",
                 provider="calculated",
                 source_url=calculated_reference,
             ),
         ]
-        write_csv(path, MACRO_FIELDS, rows)
+        write_csv(path, MACRO_V3_FIELDS, rows)
 
         with self.assertRaisesRegex(ReleaseValidationError, "UST2Y"):
             validate_staged_week(self.root, self.window)
@@ -966,7 +1136,7 @@ class StagedValidationTests(unittest.TestCase):
     def test_accepts_every_registered_treasury_calculation(self):
         path = self.outputs["macro_assets"] / "fixed_income.csv"
         rows = [
-            fixture_row(MACRO_FIELDS, series_code=code)
+            fixture_row(MACRO_V3_FIELDS, series_code=code)
             for code in (
                 "UST2Y",
                 "UST5Y",
@@ -978,7 +1148,7 @@ class StagedValidationTests(unittest.TestCase):
         rows.extend(
             [
                 fixture_row(
-                    MACRO_FIELDS,
+                    MACRO_V3_FIELDS,
                     series_code="UST10Y2Y",
                     provider="calculated",
                     source_url=(
@@ -987,7 +1157,7 @@ class StagedValidationTests(unittest.TestCase):
                     ),
                 ),
                 fixture_row(
-                    MACRO_FIELDS,
+                    MACRO_V3_FIELDS,
                     series_code="US_BE5Y",
                     provider="calculated",
                     source_url=(
@@ -996,7 +1166,7 @@ class StagedValidationTests(unittest.TestCase):
                     ),
                 ),
                 fixture_row(
-                    MACRO_FIELDS,
+                    MACRO_V3_FIELDS,
                     series_code="US_BE10Y",
                     provider="calculated",
                     source_url=(
@@ -1005,7 +1175,7 @@ class StagedValidationTests(unittest.TestCase):
                     ),
                 ),
                 fixture_row(
-                    MACRO_FIELDS,
+                    MACRO_V3_FIELDS,
                     series_code="US_5Y5Y",
                     provider="calculated",
                     source_url=(
@@ -1015,7 +1185,7 @@ class StagedValidationTests(unittest.TestCase):
                 ),
             ]
         )
-        write_csv(path, MACRO_FIELDS, rows)
+        write_csv(path, MACRO_V3_FIELDS, rows)
 
         manifest = validate_staged_week(self.root, self.window)
 
@@ -1029,7 +1199,7 @@ class StagedValidationTests(unittest.TestCase):
     def test_each_new_treasury_calculation_requires_its_dependency(self):
         path = self.outputs["macro_assets"] / "fixed_income.csv"
         observed_rows = [
-            fixture_row(MACRO_FIELDS, series_code=code)
+            fixture_row(MACRO_V3_FIELDS, series_code=code)
             for code in (
                 "UST2Y",
                 "UST5Y",
@@ -1040,7 +1210,7 @@ class StagedValidationTests(unittest.TestCase):
         ]
         calculated_rows = [
             fixture_row(
-                MACRO_FIELDS,
+                MACRO_V3_FIELDS,
                 series_code="UST10Y2Y",
                 provider="calculated",
                 source_url=(
@@ -1049,7 +1219,7 @@ class StagedValidationTests(unittest.TestCase):
                 ),
             ),
             fixture_row(
-                MACRO_FIELDS,
+                MACRO_V3_FIELDS,
                 series_code="US_BE5Y",
                 provider="calculated",
                 source_url=(
@@ -1058,7 +1228,7 @@ class StagedValidationTests(unittest.TestCase):
                 ),
             ),
             fixture_row(
-                MACRO_FIELDS,
+                MACRO_V3_FIELDS,
                 series_code="US_BE10Y",
                 provider="calculated",
                 source_url=(
@@ -1067,7 +1237,7 @@ class StagedValidationTests(unittest.TestCase):
                 ),
             ),
             fixture_row(
-                MACRO_FIELDS,
+                MACRO_V3_FIELDS,
                 series_code="US_5Y5Y",
                 provider="calculated",
                 source_url=(
@@ -1089,7 +1259,7 @@ class StagedValidationTests(unittest.TestCase):
                     for row in observed_rows + calculated_rows
                     if row["series_code"] != missing_dependency
                 ]
-                write_csv(path, MACRO_FIELDS, rows)
+                write_csv(path, MACRO_V3_FIELDS, rows)
 
                 with self.assertRaisesRegex(
                     ReleaseValidationError,
@@ -1143,8 +1313,8 @@ class StagedValidationTests(unittest.TestCase):
 
         manifest = validate_staged_week(self.root, self.window)
 
-        self.assertEqual(manifest["manifest_schema_version"], 2)
-        self.assertEqual(manifest["dataset_contract_version"], 2)
+        self.assertEqual(manifest["manifest_schema_version"], 3)
+        self.assertEqual(manifest["dataset_contract_version"], 3)
         self.assertEqual(manifest["publication_mode"], "coordinated")
         self.assertEqual(manifest["week_start"], "2026-08-03")
         self.assertEqual(manifest["week_end"], "2026-08-09")

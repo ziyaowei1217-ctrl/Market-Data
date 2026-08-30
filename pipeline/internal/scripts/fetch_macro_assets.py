@@ -66,19 +66,45 @@ def main() -> None:
             raw_dir=raw_dir,
             as_of_date=args.as_of_date,
         )
-        ranked = add_macro_ranks(detail)
-        divergence = build_macro_divergence(ranked)
+        optional_codes = (
+            set(
+                source_log.loc[
+                    source_log["requiredness"].eq("optional"),
+                    "series_code",
+                ]
+            )
+            if {"requiredness", "series_code"}.issubset(source_log.columns)
+            else set()
+        )
+        publishable = detail.copy()
+        if {"series_code", "qc_flag"}.issubset(publishable.columns):
+            failed_optional = publishable["series_code"].isin(
+                optional_codes
+            ) & publishable["qc_flag"].eq("FETCH_FAILED")
+            publishable = publishable.loc[~failed_optional].copy()
+        if "asset_class" in publishable:
+            publishable = publishable.loc[
+                ~publishable["asset_class"].eq("calculation_input")
+            ].copy()
+        ranked = add_macro_ranks(publishable)
+        divergence = build_macro_divergence(
+            ranked.loc[~ranked["asset_class"].eq("cross_asset")]
+        )
         fixed_income = ranked.loc[ranked["asset_class"].eq("fixed_income")].copy()
         commodities = ranked.loc[ranked["asset_class"].eq("commodity")].copy()
         foreign_exchange = ranked.loc[ranked["asset_class"].eq("foreign_exchange")].copy()
         policy_rates = ranked.loc[ranked["asset_class"].eq("policy_rate")].copy()
         money_market = ranked.loc[ranked["asset_class"].eq("money_market")].copy()
+        liquidity = ranked.loc[ranked["asset_class"].eq("liquidity")].copy()
+        cross_asset = ranked.loc[ranked["asset_class"].eq("cross_asset")].copy()
 
         fixed_income.to_csv(staging_dir / "fixed_income.csv", index=False)
         commodities.to_csv(staging_dir / "commodities.csv", index=False)
         foreign_exchange.to_csv(staging_dir / "foreign_exchange.csv", index=False)
         policy_rates.to_csv(staging_dir / "policy_rates.csv", index=False)
         money_market.to_csv(staging_dir / "money_market.csv", index=False)
+        liquidity.to_csv(staging_dir / "liquidity.csv", index=False)
+        cross_asset.to_csv(staging_dir / "cross_asset.csv", index=False)
         divergence.to_csv(staging_dir / "macro_divergence.csv", index=False)
         source_log.to_csv(staging_dir / "source_log.csv", index=False)
         snapshot = {
@@ -88,6 +114,8 @@ def main() -> None:
             "foreign_exchange": strict_records(foreign_exchange),
             "policy_rates": strict_records(policy_rates),
             "money_market": strict_records(money_market),
+            "liquidity": strict_records(liquidity),
+            "cross_asset": strict_records(cross_asset),
             "macro_divergence": strict_records(divergence),
             "source_log": strict_records(source_log),
         }
@@ -105,7 +133,16 @@ def main() -> None:
     print(f"configured: {configured}")
     print(f"fetched: {configured - failed}")
     print(f"failed: {failed}")
-    for asset_class in ("fixed_income", "commodity", "foreign_exchange", "policy_rate", "money_market"):
+    for asset_class in (
+        "fixed_income",
+        "commodity",
+        "foreign_exchange",
+        "policy_rate",
+        "money_market",
+        "liquidity",
+        "calculation_input",
+        "cross_asset",
+    ):
         class_rows = detail.loc[detail["asset_class"].eq(asset_class)]
         class_configured = len(class_rows)
         class_failed = int(class_rows["qc_flag"].eq("FETCH_FAILED").sum())

@@ -19,7 +19,10 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from pipeline.internal.common import load_config_rows
-
+from pipeline.internal.capital_weekly.cross_asset import (
+    DailyTransform,
+    rolling_correlation_history,
+)
 from pipeline.internal.capital_weekly.returns import calculate_macro_snapshot, parse_date
 
 
@@ -50,6 +53,20 @@ class MacroAssetConfig:
     calculation_id: str = ""
     formula_version: str = ""
     input_series_codes: str = ""
+
+
+@dataclass(frozen=True)
+class CorrelationSpec:
+    left_code: str
+    right_code: str
+    left_transform: DailyTransform
+    right_transform: DailyTransform
+    window: int
+    minimum_observations: int
+
+    @property
+    def input_codes(self) -> tuple[str, str]:
+        return (self.left_code, self.right_code)
 
 
 def load_macro_asset_universe(
@@ -133,12 +150,30 @@ CALCULATED_SERIES = {
         calculate_five_year_five_year,
         "forward-inflation-v1",
     ),
+    "UST30Y5Y": (
+        ("UST30Y", "UST5Y"),
+        lambda thirty, five: thirty - five,
+        "curve-spread-v1",
+    ),
+    "USHY_IG_OAS": (
+        ("USHY_OAS", "USIG_OAS"),
+        lambda high_yield, investment_grade: high_yield - investment_grade,
+        "credit-spread-differential-v1",
+    ),
+    "FED_NET_LIQUIDITY": (
+        ("FED_TOTAL_ASSETS", "TGA_BALANCE", "ON_RRP_TAKE_UP"),
+        lambda assets, tga, reverse_repo: assets - tga - reverse_repo,
+        "net-liquidity-v1",
+    ),
 }
 CALCULATION_IDS = {
     "UST10Y2Y": "curve_spread",
     "US_BE5Y": "breakeven",
     "US_BE10Y": "breakeven",
     "US_5Y5Y": "five_year_five_year",
+    "UST30Y5Y": "curve_spread",
+    "USHY_IG_OAS": "credit_spread_differential",
+    "FED_NET_LIQUIDITY": "net_liquidity",
 }
 CALCULATED_SOURCE_REFERENCES = {
     "UST10Y2Y": (
@@ -154,7 +189,98 @@ CALCULATED_SOURCE_REFERENCES = {
         "calculated:5Y5Y from US_BE5Y and US_BE10Y "
         "(shared Treasury observation dates)"
     ),
+    "UST30Y5Y": (
+        "calculated:UST30Y-UST5Y (shared Treasury observation dates)"
+    ),
+    "USHY_IG_OAS": (
+        "calculated:USHY_OAS-USIG_OAS (shared FRED observation dates)"
+    ),
+    "FED_NET_LIQUIDITY": (
+        "calculated:FED_TOTAL_ASSETS-TGA_BALANCE-ON_RRP_TAKE_UP "
+        "(shared observation dates; USD billions)"
+    ),
 }
+
+
+def _correlation_spec(
+    left_code: str,
+    right_code: str,
+    left_transform: DailyTransform,
+    right_transform: DailyTransform,
+    window: int,
+) -> CorrelationSpec:
+    return CorrelationSpec(
+        left_code=left_code,
+        right_code=right_code,
+        left_transform=left_transform,
+        right_transform=right_transform,
+        window=window,
+        minimum_observations=52 if window == 65 else 104,
+    )
+
+
+CORRELATION_SPECS = {
+    "US_STOCK_BOND_CORR_13W": _correlation_spec(
+        "SPY_CLOSE_PROXY", "TLT_CLOSE_PROXY", "pct_return", "pct_return", 65
+    ),
+    "US_STOCK_BOND_CORR_26W": _correlation_spec(
+        "SPY_CLOSE_PROXY", "TLT_CLOSE_PROXY", "pct_return", "pct_return", 130
+    ),
+    "EQUITY_USD_CORR_13W": _correlation_spec(
+        "SPY_CLOSE_PROXY", "DXY", "pct_return", "pct_return", 65
+    ),
+    "EQUITY_USD_CORR_26W": _correlation_spec(
+        "SPY_CLOSE_PROXY", "DXY", "pct_return", "pct_return", 130
+    ),
+    "GOLD_REAL_YIELD_CORR_13W": _correlation_spec(
+        "COMEX_GOLD", "UST_REAL10Y", "pct_return", "level_change", 65
+    ),
+    "GOLD_REAL_YIELD_CORR_26W": _correlation_spec(
+        "COMEX_GOLD", "UST_REAL10Y", "pct_return", "level_change", 130
+    ),
+    "OIL_BREAKEVEN_CORR_13W": _correlation_spec(
+        "WTI", "US_BE10Y", "pct_return", "level_change", 65
+    ),
+    "OIL_BREAKEVEN_CORR_26W": _correlation_spec(
+        "WTI", "US_BE10Y", "pct_return", "level_change", 130
+    ),
+}
+
+for _series_code, _spec in CORRELATION_SPECS.items():
+    CALCULATION_IDS[_series_code] = "rolling_correlation"
+    CALCULATED_SOURCE_REFERENCES[_series_code] = (
+        f"calculated:rolling-correlation {_spec.left_code}|{_spec.right_code} "
+        f"{_spec.left_transform}|{_spec.right_transform} "
+        f"window={_spec.window} min={_spec.minimum_observations}"
+    )
+
+
+H41_PUBLICATION_LAG_DAYS = {
+    "FED_TOTAL_ASSETS": 1,
+    "TGA_BALANCE": 1,
+    "FED_NET_LIQUIDITY": 1,
+}
+PUBLIC_PROXY_PROVIDERS = frozenset({"yahoo_chart", "sina_fx"})
+OPTIONAL_CALCULATED_SERIES = frozenset(CORRELATION_SPECS)
+
+
+def _known_as_of_date(series_code: str, observation_date: date) -> date:
+    return observation_date + timedelta(
+        days=H41_PUBLICATION_LAG_DAYS.get(series_code, 0)
+    )
+
+
+def _source_tier(config: MacroAssetConfig) -> str:
+    if (
+        config.provider in PUBLIC_PROXY_PROVIDERS
+        or config.series_code in OPTIONAL_CALCULATED_SERIES
+    ):
+        return "public_proxy"
+    return "official"
+
+
+def _requiredness(config: MacroAssetConfig) -> str:
+    return "optional" if _source_tier(config) == "public_proxy" else "required"
 
 
 def align_curve_spread(
@@ -748,7 +874,7 @@ def _fetch_config_history(
             responses.append(_response_bytes(response))
             urls.append(url)
         return history, b"\n".join(responses), " | ".join(urls)
-    if config.provider == "fred":
+    if config.provider in {"fred", "fred_millions_to_billions"}:
         url = (f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={config.provider_symbol}"
                f"&cosd={start.isoformat()}&coed={today.isoformat()}")
         response = _get(
@@ -756,7 +882,13 @@ def _fetch_config_history(
             url,
             headers={"User-Agent": requests.utils.default_user_agent()},
         )
-        return _parse_fred_csv(response.text, config.provider_symbol), _response_bytes(response), url
+        history = _parse_fred_csv(response.text, config.provider_symbol)
+        if config.provider == "fred_millions_to_billions":
+            history = [
+                {"date": point["date"], "value": point["value"] / 1_000.0}
+                for point in history
+            ]
+        return history, _response_bytes(response), url
     if config.provider == "yahoo_chart":
         symbol = requests.utils.quote(config.provider_symbol, safe="")
         period1 = int(datetime.combine(today - timedelta(days=550), datetime.min.time(), tzinfo=timezone.utc).timestamp())
@@ -1106,10 +1238,10 @@ def _source_audit_metadata(
     return {
         "provider": config.provider,
         "provider_symbol": config.provider_symbol,
-        "source_tier": "public",
-        "requiredness": "required",
+        "source_tier": _source_tier(config),
+        "requiredness": _requiredness(config),
         "provider_version": "1.0.0",
-        "schema_version": "macro-asset-v2",
+        "schema_version": "macro-asset-v3",
         "frequency": config.frequency,
         "freshness_days": freshness_days,
         "known_as_of": known_as_of,
@@ -1139,11 +1271,16 @@ def fetch_macro_assets(
         try:
             if config.provider == "calculated":
                 definition = CALCULATED_SERIES.get(config.series_code)
-                if definition is None:
+                correlation_spec = CORRELATION_SPECS.get(config.series_code)
+                if definition is None and correlation_spec is None:
                     raise ValueError(
                         f"Unknown calculated macro series: {config.series_code}"
                     )
-                input_codes, calculator, formula_version = definition
+                if correlation_spec is not None:
+                    input_codes = correlation_spec.input_codes
+                    formula_version = "rolling-correlation-v1"
+                else:
+                    input_codes, calculator, formula_version = definition
                 declared_inputs = tuple(
                     code
                     for code in config.input_series_codes.split("|")
@@ -1161,11 +1298,22 @@ def fetch_macro_assets(
                     raise ValueError(
                         f"{config.series_code} input_series_codes do not match registry"
                     )
-                history = align_series_histories(
-                    histories,
-                    input_codes,
-                    calculator,
-                )
+                if correlation_spec is not None:
+                    history = rolling_correlation_history(
+                        histories,
+                        correlation_spec.left_code,
+                        correlation_spec.right_code,
+                        correlation_spec.left_transform,
+                        correlation_spec.right_transform,
+                        window=correlation_spec.window,
+                        minimum_observations=correlation_spec.minimum_observations,
+                    )
+                else:
+                    history = align_series_histories(
+                        histories,
+                        input_codes,
+                        calculator,
+                    )
                 raw = json.dumps(history, default=str).encode("utf-8")
                 url = CALCULATED_SOURCE_REFERENCES[config.series_code]
             else:
@@ -1189,7 +1337,10 @@ def fetch_macro_assets(
                 history = [
                     point
                     for point in history
-                    if parse_date(point["date"]) <= as_of_date
+                    if _known_as_of_date(
+                        config.series_code,
+                        parse_date(point["date"]),
+                    ) <= as_of_date
                 ]
             snapshot = calculate_macro_snapshot(history, config.change_unit)
             histories[config.series_code] = history
@@ -1205,6 +1356,25 @@ def fetch_macro_assets(
             detail = asdict(config)
             detail.update(_snapshot_fields(snapshot))
             detail["source_url"] = url
+            known_as_of = _known_as_of_date(
+                config.series_code,
+                snapshot.latest_date,
+            )
+            detail["known_as_of"] = _iso(known_as_of)
+            correlation_spec = CORRELATION_SPECS.get(config.series_code)
+            detail.update(
+                {
+                    "window_observations": None,
+                    "minimum_observations": None,
+                    "correlation_observations": None,
+                }
+            )
+            if correlation_spec is not None:
+                detail["window_observations"] = correlation_spec.window
+                detail["minimum_observations"] = (
+                    correlation_spec.minimum_observations
+                )
+                detail["correlation_observations"] = history[-1]["observations"]
             detail_rows.append(detail)
             source_rows.append({
                 "series_code": config.series_code, "sort_order": config.sort_order,
@@ -1215,7 +1385,7 @@ def fetch_macro_assets(
                 "raw_cache_status": raw_cache_status, "raw_cache_error": raw_cache_error,
                 **_source_audit_metadata(
                     config,
-                    _iso(snapshot.latest_date),
+                    _iso(known_as_of),
                     warnings=raw_cache_error,
                 ),
             })
@@ -1232,7 +1402,16 @@ def fetch_macro_assets(
                 "mtd_base_value", "mtd_change", "ytd_base_date", "ytd_base_value", "ytd_change",
             ):
                 detail[field] = None
-            detail.update({"qc_flag": "FETCH_FAILED", "source_url": url})
+            detail.update(
+                {
+                    "qc_flag": "FETCH_FAILED",
+                    "source_url": url,
+                    "known_as_of": None,
+                    "window_observations": None,
+                    "minimum_observations": None,
+                    "correlation_observations": None,
+                }
+            )
             detail_rows.append(detail)
             source_rows.append({
                 "series_code": config.series_code, "sort_order": config.sort_order,
