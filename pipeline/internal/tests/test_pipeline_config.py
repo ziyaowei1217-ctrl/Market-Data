@@ -26,7 +26,7 @@ EXPECTED_SECTION_HASHES = {
     "macro": "0eeacb67cc492c76d9ca4432c0541a7b4a8b8e8e71fe8b957eacd49385068522",
     "context.cftc_contracts": "364a8589d7fd8c4ac3417d53b380c0cbc6a4fa83adb1cf1d69e172771151d9ef",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "context.eia_series": "4b70fcf93eae8f5059d7b54236ee5942a6aae52f51a67b148e592ed044766c8d",
+    "context.eia_series": "423dd8eb179a532373c6c6c9fbc6ca1b01a7f9892aba03f3ceb919492dea2223",
     "context.usda_psd": "5564caa7c02b63c29c268bdb25ec0e6f62a4d0db7be92ad2638f9645ff3aa21e",
     "context.usda_esr": "333ec1a5244cbcbc5f590c3a601a64e22b38d04209f97e6638f16faa29a6a977",
     "context.metals": "87e3954b387e74667e19be7d5e791b8516f45b6f0f9cb6af84c2ecdac1aca2f3",
@@ -456,6 +456,135 @@ class PipelineConfigTests(unittest.TestCase):
                 },
             },
         )
+
+    def test_eia_storage_series_use_current_official_descriptions(self):
+        rows = load_config_rows("context.eia_series")
+        storage = {
+            row["facets"]["series"]: row["source_description"]
+            for row in rows
+            if row["metric_code"].startswith("eia_ng_storage_")
+        }
+        self.assertEqual(
+            storage,
+            {
+                "NW2_EPG0_SWO_R31_BCF": (
+                    "Weekly East Region Natural Gas Working Underground Storage "
+                    "(Billion Cubic Feet)"
+                ),
+                "NW2_EPG0_SWO_R32_BCF": (
+                    "Weekly Midwest Region Natural Gas Working Underground Storage "
+                    "(Billion Cubic Feet)"
+                ),
+                "NW2_EPG0_SWO_R33_BCF": (
+                    "Weekly South Central  Region Natural Gas Working Underground "
+                    "Storage (Billion Cubic Feet)"
+                ),
+                "NW2_EPG0_SWO_R34_BCF": (
+                    "Weekly Mountain Region Natural Gas Working Underground Storage "
+                    "(Billion Cubic Feet)"
+                ),
+                "NW2_EPG0_SWO_R35_BCF": (
+                    "Weekly Pacific Region Natural Gas Working Underground Storage "
+                    "(Billion Cubic Feet)"
+                ),
+                "NW2_EPG0_SWO_R48_BCF": (
+                    "Weekly Lower 48 States Natural Gas Working Underground Storage "
+                    "(Billion Cubic Feet)"
+                ),
+            },
+        )
+
+    def test_eia_refined_series_use_current_official_descriptions_and_units(self):
+        rows = load_config_rows("context.eia_series")
+        refined = {
+            row["facets"]["series"]: (
+                row["source_description"],
+                row["expected_unit"],
+            )
+            for row in rows
+            if row["provider"] == "eia_refined_products"
+        }
+        expected = (
+            (
+                "WPRSTUS1",
+                "U.S. Propane and Propylene Ending Stocks Excluding Propylene at Terminal (Thousand Barrels)",
+                "MBBL",
+            ),
+            (
+                "WPULEUS3",
+                "U.S. Percent Utilization of Refinery Operable Capacity",
+                "%",
+            ),
+            (
+                "WCRRIUS2",
+                "U.S. Refiner Net Input of Crude Oil (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WGFRPUS2",
+                "U.S. Refiner and Blender Adjusted Net Production of Finished Motor Gasoline (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WDIRPUS2",
+                "U.S. Refiner and Blender Net Production of Distillate Fuel Oil (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WKJRPUS2",
+                "U.S. Refiner and Blender Net Production of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WGFUPUS2",
+                "U.S. Product Supplied of Finished Motor Gasoline (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WDIUPUS2",
+                "U.S. Product Supplied of Distillate Fuel Oil (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WKJUPUS2",
+                "U.S. Product Supplied of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WGTIMUS2",
+                "U.S. Imports of Total Gasoline (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WDIIMUS2",
+                "U.S. Imports of Distillate Fuel Oil (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WKJIMUS2",
+                "U.S. Imports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "W_EPM0F_EEX_NUS-Z00_MBBLD",
+                "U.S. Exports of Total Motor Gasoline (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WDIEXUS2",
+                "U.S. Exports of Total Distillate (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+            (
+                "WKJEXUS2",
+                "U.S. Exports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+                "MBBL/D",
+            ),
+        )
+        self.assertTrue(set(refined).issuperset({item[0] for item in expected}))
+        for series, description, unit in expected:
+            with self.subTest(series=series):
+                self.assertEqual(refined[series], (description, unit))
 
     def test_eia_liquefied_natural_gas_series_use_official_trade_routes(self):
         rows = load_config_rows("context.eia_series")
