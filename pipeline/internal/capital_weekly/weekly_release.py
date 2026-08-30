@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import csv
 import fcntl
 import hashlib
@@ -23,16 +24,27 @@ import re
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+from pipeline.internal import common as common_config
 from pipeline.internal.common import load_config_rows
 from pipeline.internal.common import sanitize_audit_text
 
+from .commodity_research import (
+    METRIC_HISTORY_FIELDS,
+    PRICE_HISTORY_FIELDS,
+    RESEARCH_FACT_FIELDS,
+    build_research_facts,
+    load_formula_specs,
+    stable_record_id,
+    validate_commodity_registry,
+    validate_history_limits,
+)
 from .macro_assets import CALCULATED_SOURCE_REFERENCES
 from .context.common import (
     MEASUREMENT_KIND_VALUES,
     METRIC_ROLE_VALUES,
     PARTICIPANT_CLASS_VALUES,
 )
-from .context.provider_contracts import PROVIDER_PHASES
+from .context.provider_contracts import PROVIDER_PHASES, target_sunday_cutoff
 from .weekly_context import CATEGORY_FIELDS
 
 
@@ -40,9 +52,14 @@ HONG_KONG = ZoneInfo("Asia/Hong_Kong")
 COORDINATOR_VERSION = "1"
 MANIFEST_SCHEMA_VERSION = 2
 LEGACY_DATASET_CONTRACT_VERSION = 1
-DATASET_CONTRACT_VERSION = 2
+COMPATIBILITY_DATASET_CONTRACT_VERSION = 2
+DATASET_CONTRACT_VERSION = 3
 SUPPORTED_DATASET_CONTRACT_VERSIONS = frozenset(
-    {LEGACY_DATASET_CONTRACT_VERSION, DATASET_CONTRACT_VERSION}
+    {
+        LEGACY_DATASET_CONTRACT_VERSION,
+        COMPATIBILITY_DATASET_CONTRACT_VERSION,
+        DATASET_CONTRACT_VERSION,
+    }
 )
 PUBLICATION_MODES = frozenset({"coordinated", "migrated"})
 OUTPUT_SCHEMA_VERSION = "1.0"
@@ -78,6 +95,7 @@ OUTPUT_TABLES = {
             ("money_market", "money_market.csv"),
             ("foreign_exchange", "foreign_exchange.csv"),
             ("commodities", "commodities.csv"),
+            ("commodity_price_history", "commodity_price_history.csv"),
             ("divergence", "macro_divergence.csv"),
         ),
     ),
@@ -93,10 +111,19 @@ OUTPUT_TABLES = {
                 "positioning_flows",
                 "company_events",
                 "commodity_fundamentals",
+                "commodity_metric_history",
+                "commodity_research_facts",
             )
         ),
     ),
 }
+V2_OUTPUT_TABLES = frozenset(
+    {
+        ("macro", "commodity_price_history"),
+        ("context", "commodity_metric_history"),
+        ("context", "commodity_research_facts"),
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -136,6 +163,7 @@ class DatasetSpec:
     date_columns: tuple[str, ...] = ()
     timestamp_columns: tuple[str, ...] = ()
     numeric_columns: tuple[str, ...] = ()
+    json_array_columns: tuple[str, ...] = ()
     source_url_column: str | None = None
     qc_column: str | None = None
     status_column: str | None = None
@@ -438,6 +466,16 @@ RELEASE_DATASETS = (
         status_column="status",
         accepted_statuses=SUCCESS_SOURCE_STATUSES,
     ),
+    _dataset(
+        "macro_assets",
+        "commodity_price_history.csv",
+        PRICE_HISTORY_FIELDS,
+        require_exact_columns=True,
+        date_columns=("as_of_date", "observation_date"),
+        numeric_columns=("value",),
+        source_url_column="source_url",
+        qc_column="qc_flag",
+    ),
     *(
         _dataset(
             "weekly_context",
@@ -478,6 +516,31 @@ RELEASE_DATASETS = (
             require_exact_columns=category == "source_log",
         )
         for category, fields in CATEGORY_FIELDS.items()
+        if category not in {
+            "commodity_metric_history",
+            "commodity_research_facts",
+        }
+    ),
+    _dataset(
+        "weekly_context",
+        "commodity_metric_history.csv",
+        METRIC_HISTORY_FIELDS,
+        require_exact_columns=True,
+        date_columns=("as_of_date", "observation_date"),
+        numeric_columns=("value",),
+        source_url_column="source_url",
+        qc_column="qc_flag",
+    ),
+    _dataset(
+        "weekly_context",
+        "commodity_research_facts.csv",
+        RESEARCH_FACT_FIELDS,
+        require_exact_columns=True,
+        allow_empty=True,
+        date_columns=("as_of_date", "observation_date"),
+        numeric_columns=("value",),
+        json_array_columns=("input_record_ids", "source_urls"),
+        qc_column="qc_flag",
     ),
 )
 
@@ -495,11 +558,23 @@ LEGACY_CONTEXT_SOURCE_LOG_COLUMNS = (
 CURRENT_CONTEXT_SOURCE_LOG_ONLY_COLUMNS = frozenset(
     CATEGORY_FIELDS["source_log"]
 ) - frozenset(LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
+V2_ADDITIVE_DATASETS = frozenset(
+    {
+        ("macro_assets", "commodity_price_history.csv"),
+        ("weekly_context", "commodity_metric_history.csv"),
+        ("weekly_context", "commodity_research_facts.csv"),
+    }
+)
+CONTRACT_TWO_RELEASE_DATASETS = tuple(
+    dataset
+    for dataset in RELEASE_DATASETS
+    if (dataset.pipeline, dataset.filename) not in V2_ADDITIVE_DATASETS
+)
 LEGACY_RELEASE_DATASETS = tuple(
     replace(dataset, required_columns=LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
     if dataset.pipeline == "weekly_context" and dataset.filename == "source_log.csv"
     else dataset
-    for dataset in RELEASE_DATASETS
+    for dataset in CONTRACT_TWO_RELEASE_DATASETS
     if not (
         dataset.pipeline == "weekly_context"
         and dataset.filename == "economic_releases.csv"
@@ -512,6 +587,8 @@ def release_datasets_for_contract(
 ) -> tuple[DatasetSpec, ...]:
     if dataset_contract_version == LEGACY_DATASET_CONTRACT_VERSION:
         return LEGACY_RELEASE_DATASETS
+    if dataset_contract_version == COMPATIBILITY_DATASET_CONTRACT_VERSION:
+        return CONTRACT_TWO_RELEASE_DATASETS
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         return RELEASE_DATASETS
     raise ReleaseValidationError(
@@ -656,7 +733,7 @@ def build_release_manifest(
     *,
     publication_mode: str,
     pipeline_runs: list[dict],
-    dataset_contract_version: int = DATASET_CONTRACT_VERSION,
+    dataset_contract_version: int = COMPATIBILITY_DATASET_CONTRACT_VERSION,
     generated_at: str | None = None,
     migrated_at: str | None = None,
 ) -> dict:
@@ -859,7 +936,7 @@ def _validate_row(
     dataset_contract_version: int,
 ) -> None:
     is_current_context_source_log = (
-        dataset_contract_version == DATASET_CONTRACT_VERSION
+        dataset_contract_version >= COMPATIBILITY_DATASET_CONTRACT_VERSION
         and spec.pipeline == "weekly_context"
         and spec.filename == "source_log.csv"
     )
@@ -984,7 +1061,11 @@ def _validate_row(
     for column in spec.timestamp_columns:
         raw_timestamp = (row.get(column) or "").strip()
         try:
-            timestamp = datetime.fromisoformat(raw_timestamp)
+            timestamp = datetime.fromisoformat(
+                raw_timestamp[:-1] + "+00:00"
+                if raw_timestamp.endswith("Z")
+                else raw_timestamp
+            )
         except ValueError as error:
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} {column} must include a UTC offset"
@@ -1001,7 +1082,11 @@ def _validate_row(
         raw_known_as_of = (row.get("known_as_of") or "").strip()
         if raw_known_as_of:
             try:
-                known_as_of = datetime.fromisoformat(raw_known_as_of)
+                known_as_of = datetime.fromisoformat(
+                    raw_known_as_of[:-1] + "+00:00"
+                    if raw_known_as_of.endswith("Z")
+                    else raw_known_as_of
+                )
             except ValueError as error:
                 raise ReleaseValidationError(
                     f"{path.name} row {row_number} known_as_of must include a UTC offset"
@@ -1090,7 +1175,11 @@ def _validate_row(
         raw_known_as_of = (row.get("known_as_of") or "").strip()
         if raw_known_as_of:
             try:
-                known_as_of = datetime.fromisoformat(raw_known_as_of)
+                known_as_of = datetime.fromisoformat(
+                    raw_known_as_of[:-1] + "+00:00"
+                    if raw_known_as_of.endswith("Z")
+                    else raw_known_as_of
+                )
             except ValueError as error:
                 raise ReleaseValidationError(
                     f"{path.name} row {row_number} known_as_of must include a UTC offset"
@@ -1119,7 +1208,7 @@ def validate_staged_week(
     root: Path,
     window: WeekWindow,
     *,
-    dataset_contract_version: int = DATASET_CONTRACT_VERSION,
+    dataset_contract_version: int = COMPATIBILITY_DATASET_CONTRACT_VERSION,
 ) -> dict:
     release_root = Path(root)
     _validate_dataset_contract_boundary(
@@ -1152,10 +1241,12 @@ def validate_staged_week(
             raise ReleaseValidationError(
                 f"Required table {path.name} has no valid row"
             )
-    if dataset_contract_version == DATASET_CONTRACT_VERSION:
+    if dataset_contract_version >= COMPATIBILITY_DATASET_CONTRACT_VERSION:
         _validate_usda_agriculture_coverage(validated_rows)
         _validate_eia_physical_coverage(validated_rows)
         _validate_configured_commodity_coverage(validated_rows, window)
+    if dataset_contract_version == DATASET_CONTRACT_VERSION:
+        _validate_commodity_research_v2(validated_rows, window)
     pipelines = [
         {
             "name": pipeline.name,
@@ -1791,6 +1882,847 @@ def _validate_usda_agriculture_coverage(
                 )
 
 
+def _research_validation_config() -> dict:
+    try:
+        document = json.loads(
+            Path(common_config.DEFAULT_CONFIG_PATH).read_text(encoding="utf-8")
+        )
+        research = document["commodity_research"]
+        raw_universe = research["universe"]
+        raw_limits = research["history_limits"]
+        raw_providers = research["providers"]
+        raw_facts = research["facts"]
+        macro_rows = document["macro"]
+        context = document["context"]
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError) as error:
+        raise ReleaseValidationError(
+            "Commodity Research V2 validation config is incomplete"
+        ) from error
+    if not isinstance(raw_universe, list) or not all(
+        isinstance(row, dict) for row in raw_universe
+    ):
+        raise ReleaseValidationError(
+            "commodity_research.universe must be an exact row list"
+        )
+    try:
+        registry = validate_commodity_registry({
+            row.get("commodity_code"): row.get("commodity_family")
+            for row in raw_universe
+        })
+        limits = validate_history_limits(raw_limits)
+    except (TypeError, ValueError) as error:
+        raise ReleaseValidationError(str(error)) from error
+    if len(registry) != 19 or set(registry.values()) != set(COMMODITY_RESEARCH_FAMILIES):
+        raise ReleaseValidationError(
+            "commodity_research.universe must declare exact 19-code seven-family coverage"
+        )
+    provider_fields = {
+        "provider",
+        "dataset",
+        "source",
+        "official_host",
+        "frequency",
+        "measurement_kind",
+        "source_url_path_prefix",
+    }
+    if not isinstance(raw_providers, list) or not raw_providers:
+        raise ReleaseValidationError(
+            "commodity_research.providers must be a nonempty row list"
+        )
+    providers: dict[str, dict[str, str]] = {}
+    for raw in raw_providers:
+        if not isinstance(raw, dict) or set(raw) != provider_fields:
+            raise ReleaseValidationError(
+                "commodity_research provider must declare exact validation fields"
+            )
+        row = {field: str(raw.get(field) or "").strip() for field in provider_fields}
+        if any(not value for value in row.values()):
+            raise ReleaseValidationError(
+                "commodity_research provider validation fields must not be blank"
+            )
+        provider = row["provider"]
+        if provider in providers:
+            raise ReleaseValidationError(
+                f"Duplicate commodity_research provider: {provider}"
+            )
+        if row["dataset"] not in {"price_history", "metric_history"}:
+            raise ReleaseValidationError(
+                f"Unsupported commodity research provider dataset: {row['dataset']}"
+            )
+        host = row["official_host"].lower()
+        if host != row["official_host"] or not re.fullmatch(r"[a-z0-9.-]+", host):
+            raise ReleaseValidationError(
+                f"Invalid official host for commodity provider {provider}"
+            )
+        if row["frequency"] != "configured" and row["frequency"] not in limits:
+            raise ReleaseValidationError(
+                f"Invalid frequency for commodity provider {provider}"
+            )
+        if row["measurement_kind"] not in {
+            "configured",
+            *MEASUREMENT_KIND_VALUES,
+        }:
+            raise ReleaseValidationError(
+                f"Invalid measurement kind for commodity provider {provider}"
+            )
+        if not row["source_url_path_prefix"].startswith("/"):
+            raise ReleaseValidationError(
+                f"Invalid source URL path prefix for commodity provider {provider}"
+            )
+        providers[provider] = row
+    if not isinstance(raw_facts, list) or len(raw_facts) != 8:
+        raise ReleaseValidationError(
+            "commodity_research.facts must declare exact eight registered facts"
+        )
+    try:
+        formula_specs = load_formula_specs(common_config.DEFAULT_CONFIG_PATH)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        raise ReleaseValidationError(str(error)) from error
+    return {
+        "document": document,
+        "registry": registry,
+        "limits": limits,
+        "providers": providers,
+        "formula_specs": formula_specs,
+        "fact_rows": {row["fact_code"]: row for row in raw_facts},
+        "macro_rows": macro_rows,
+        "context": context,
+    }
+
+
+def _required_row_text(row: dict, field: str, label: str) -> str:
+    value = row.get(field)
+    normalized = str(value or "").strip()
+    if not normalized:
+        raise ReleaseValidationError(f"{label} {field} must not be blank")
+    return normalized
+
+
+def _finite_row_value(row: dict, label: str) -> float | int:
+    value = row.get("value")
+    if isinstance(value, bool):
+        raise ReleaseValidationError(f"{label} value must be finite")
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as error:
+        raise ReleaseValidationError(f"{label} value must be finite") from error
+    if not math.isfinite(numeric):
+        raise ReleaseValidationError(f"{label} value must be finite")
+    return int(numeric) if numeric.is_integer() else numeric
+
+
+def _canonical_v2_known_as_of(
+    value: object,
+    window: WeekWindow,
+    label: str,
+) -> tuple[datetime | None, str | None]:
+    if value is None or not str(value).strip():
+        return None, None
+    raw = str(value).strip()
+    if not raw.endswith("Z"):
+        raise ReleaseValidationError(f"{label} known_as_of must use canonical UTC Z")
+    try:
+        known = datetime.fromisoformat(raw[:-1] + "+00:00")
+    except ValueError as error:
+        raise ReleaseValidationError(
+            f"{label} known_as_of must use canonical UTC Z"
+        ) from error
+    canonical = known.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z")
+    if canonical != raw:
+        raise ReleaseValidationError(f"{label} known_as_of must use canonical UTC Z")
+    if known > target_sunday_cutoff(window.end):
+        raise ReleaseValidationError(f"{label} known_as_of exceeds target Sunday cutoff")
+    return known, raw
+
+
+def _v2_observation_date(row: dict, window: WeekWindow, label: str) -> date:
+    raw = _required_row_text(row, "observation_date", label)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+        raise ReleaseValidationError(f"{label} observation_date must be canonical")
+    try:
+        observation = date.fromisoformat(raw)
+    except ValueError as error:
+        raise ReleaseValidationError(
+            f"{label} observation_date must be canonical"
+        ) from error
+    if observation > window.end:
+        raise ReleaseValidationError(f"{label} observation_date exceeds as_of_date")
+    return observation
+
+
+def _validate_v2_record_id(
+    row: dict,
+    *,
+    namespace: str,
+    identity: dict,
+    label: str,
+) -> str:
+    record_id = _required_row_text(row, "record_id", label)
+    expected = stable_record_id(namespace, identity)
+    if not re.fullmatch(r"[0-9a-f]{64}", record_id) or record_id != expected:
+        raise ReleaseValidationError(
+            f"record_id does not match {label} identity ({namespace})"
+        )
+    return record_id
+
+
+def _policy_matches_url(policy: dict[str, str], source_url: str) -> bool:
+    parsed = urlparse(source_url)
+    host = (parsed.hostname or "").lower()
+    official = policy["official_host"]
+    return (
+        parsed.scheme.lower() in {"http", "https"}
+        and (host == official or host.endswith(f".{official}"))
+        and parsed.path.startswith(policy["source_url_path_prefix"])
+    )
+
+
+def _require_policy_provenance(
+    row: dict,
+    policy: dict[str, str],
+    label: str,
+) -> str:
+    source = _required_row_text(row, "source", label)
+    source_url = _required_row_text(row, "source_url", label)
+    if source != policy["source"]:
+        raise ReleaseValidationError(
+            f"{label} source must match provider {policy['provider']}"
+        )
+    if not _policy_matches_url(policy, source_url):
+        raise ReleaseValidationError(
+            f"{label} official source host/path must match "
+            f"{policy['official_host']}{policy['source_url_path_prefix']}"
+        )
+    return source_url
+
+
+def _context_status_index(rows: list[dict]) -> dict[str, dict]:
+    index: dict[str, dict] = {}
+    for row in rows:
+        provider = str(row.get("provider") or "").strip()
+        if provider in index:
+            raise ReleaseValidationError(
+                f"configured provider status must be unique for {provider}"
+            )
+        index[provider] = row
+    return index
+
+
+def _metric_descriptors(config: dict) -> dict[str, dict]:
+    providers = config["providers"]
+    registry = config["registry"]
+    context = config["context"]
+    descriptors: dict[str, dict] = {}
+
+    def register(metric_code: str, descriptor: dict) -> None:
+        existing = descriptors.get(metric_code)
+        if existing is not None and existing != descriptor:
+            raise ReleaseValidationError(
+                f"Configured metric identity is ambiguous: {metric_code}"
+            )
+        descriptors[metric_code] = descriptor
+
+    for item in context["eia_series"]:
+        provider = str(item["provider"])
+        if provider not in providers:
+            raise ReleaseValidationError(f"Missing provider policy for {provider}")
+        base = str(item["metric_code"])
+        for suffix, unit in (
+            ("", str(item["expected_unit"])),
+            ("_change", str(item["expected_unit"])),
+            ("_change_pct", "ratio"),
+            ("_seasonal_deviation", str(item["expected_unit"])),
+        ):
+            register(base + suffix, {
+                "provider": provider,
+                "frequency": str(item["frequency"]),
+                "commodity_code": str(item["commodity_code"]),
+                "commodity_family": str(item["commodity_family"]),
+                "metric_role": "physical_fundamental",
+                "measurement_kind": str(item["measurement_kind"]),
+                "participant_class": None,
+                "unit": unit,
+            })
+
+    measurements = [("open_interest", "open_interest", None, "contracts")]
+    for participant in (
+        "producer",
+        "swap_dealer",
+        "managed_money",
+        "other_reportable",
+    ):
+        measurements.extend((
+            (f"{participant}_net", "net_position", participant, "contracts"),
+            (f"{participant}_net_change", "net_position", participant, "contracts"),
+            (f"{participant}_percentile", "percentile", participant, "ratio"),
+        ))
+    for contract in context["cftc_contracts"]:
+        code = str(contract.get("commodity_code") or "").strip()
+        if not code:
+            continue
+        family = str(contract.get("commodity_family") or "").strip()
+        if registry.get(code) != family:
+            raise ReleaseValidationError(
+                f"Configured CFTC code-family mismatch: {code}"
+            )
+        for suffix, kind, participant, unit in measurements:
+            register(f"{code}_{suffix}", {
+                "provider": "cftc_disaggregated",
+                "frequency": "weekly",
+                "commodity_code": code,
+                "commodity_family": family,
+                "metric_role": "positioning",
+                "measurement_kind": kind,
+                "participant_class": participant,
+                "unit": unit,
+            })
+
+    for item in context["metals"]:
+        provider = str(item["provider"])
+        policy = providers.get(provider)
+        if policy is None or policy["measurement_kind"] == "configured":
+            raise ReleaseValidationError(
+                f"Configured metal provider requires an exact measurement kind: {provider}"
+            )
+        kind = policy["measurement_kind"]
+        for metric_code in item["expected_metric_codes"]:
+            register(str(metric_code), {
+                "provider": provider,
+                "frequency": str(item["frequency"]),
+                "commodity_code": str(item["commodity_code"]),
+                "commodity_family": str(item["commodity_family"]),
+                "metric_role": "physical_fundamental",
+                "measurement_kind": kind,
+                "participant_class": None,
+                "unit": str(item["expected_unit"]),
+            })
+    return descriptors
+
+
+def _dynamic_usda_descriptor(row: dict, config: dict) -> dict | None:
+    source_url = str(row.get("source_url") or "").strip()
+    code = str(row.get("commodity_code") or "").strip()
+    family = str(row.get("commodity_family") or "").strip()
+    for provider in ("usda_psd", "usda_esr"):
+        policy = config["providers"][provider]
+        if not _policy_matches_url(policy, source_url):
+            continue
+        mapping = {
+            str(item.get("commodity_code") or "").strip():
+            str(item.get("commodity_family") or "").strip()
+            for item in config["context"][provider]
+        }
+        if mapping.get(code) != family:
+            raise ReleaseValidationError(
+                f"{provider} history code-family identity is unconfigured: {code}"
+            )
+        return {
+            "provider": provider,
+            "frequency": policy["frequency"],
+            "commodity_code": code,
+            "commodity_family": family,
+            "metric_role": "physical_fundamental",
+            "measurement_kind": str(row.get("measurement_kind") or "").strip(),
+            "participant_class": None,
+            "unit": str(row.get("unit") or "").strip(),
+        }
+    return None
+
+
+def _metric_descriptor(row: dict, config: dict, descriptors: dict[str, dict]) -> dict:
+    metric_code = _required_row_text(row, "metric_code", "commodity metric history")
+    descriptor = descriptors.get(metric_code)
+    if descriptor is None:
+        descriptor = _dynamic_usda_descriptor(row, config)
+    if descriptor is None:
+        raise ReleaseValidationError(
+            f"commodity metric history identity is not configured: {metric_code}"
+        )
+    return descriptor
+
+
+def _parse_v2_array(value: object, field: str) -> list[str]:
+    if isinstance(value, list):
+        parsed = value
+    elif isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            try:
+                parsed = ast.literal_eval(value)
+            except (SyntaxError, ValueError) as error:
+                raise ReleaseValidationError(
+                    f"commodity research fact {field} must be an array"
+                ) from error
+    else:
+        parsed = None
+    if not isinstance(parsed, (list, tuple)) or not parsed:
+        raise ReleaseValidationError(
+            f"commodity research fact {field} must be a nonempty array"
+        )
+    normalized = [str(item or "").strip() for item in parsed]
+    if any(not item for item in normalized):
+        raise ReleaseValidationError(
+            f"commodity research fact {field} must contain nonblank strings"
+        )
+    return normalized
+
+
+def _validate_commodity_research_v2(
+    datasets: dict[tuple[str, str], list[dict]],
+    window: WeekWindow,
+) -> None:
+    config = _research_validation_config()
+    registry = config["registry"]
+    limits = config["limits"]
+    providers = config["providers"]
+    price_rows = datasets[("macro_assets", "commodity_price_history.csv")]
+    metric_rows = datasets[("weekly_context", "commodity_metric_history.csv")]
+    fact_rows = datasets[("weekly_context", "commodity_research_facts.csv")]
+    macro_status_rows = datasets[("macro_assets", "source_log.csv")]
+    context_status_rows = datasets[("weekly_context", "source_log.csv")]
+    context_status = _context_status_index(context_status_rows)
+
+    configured_prices: dict[str, dict] = {}
+    for item in config["macro_rows"]:
+        code = str(item.get("commodity_code") or "").strip()
+        family = str(item.get("commodity_family") or "").strip()
+        provider = str(item.get("provider") or "").strip()
+        if not code or family == "digital_asset":
+            continue
+        if registry.get(code) != family or provider not in providers:
+            raise ReleaseValidationError(
+                f"Configured macro commodity identity is invalid: {code}"
+            )
+        series = str(item.get("series_code") or "").strip()
+        if not series or series in configured_prices:
+            raise ReleaseValidationError(
+                f"Configured macro price identity is duplicated: {series}"
+            )
+        configured_prices[series] = item
+
+    macro_status: dict[str, dict] = {}
+    for row in macro_status_rows:
+        series = str(row.get("series_code") or "").strip()
+        if series in macro_status:
+            raise ReleaseValidationError(
+                f"configured macro source status must be unique for {series}"
+            )
+        macro_status[series] = row
+
+    normalized_price: list[dict] = []
+    price_identities: set[tuple] = set()
+    price_groups: dict[tuple[str, str], list[dict]] = {}
+    price_codes: set[str] = set()
+    for row in price_rows:
+        label = "commodity price history"
+        if str(row.get("as_of_date") or "").strip() != window.end.isoformat():
+            raise ReleaseValidationError(f"{label} as_of_date must equal release as_of_date")
+        series = _required_row_text(row, "series_code", label)
+        expected = configured_prices.get(series)
+        if expected is None:
+            code = str(row.get("commodity_code") or "").strip()
+            raise ReleaseValidationError(
+                f"{label} contains unconfigured or excluded code: {code or series}"
+            )
+        code = _required_row_text(row, "commodity_code", label)
+        family = _required_row_text(row, "commodity_family", label)
+        if code == "BTC_USD" or family == "digital_asset":
+            raise ReleaseValidationError("BTC_USD/digital_asset is excluded from V2 history")
+        if code != str(expected["commodity_code"]) or family != registry.get(code):
+            raise ReleaseValidationError(
+                f"commodity price history code-family mismatch: {code} requires "
+                f"{registry.get(code) or 'configured identity'}"
+            )
+        for field, configured_field in (
+            ("price_kind", "price_kind"),
+            ("source", "source"),
+            ("unit", "level_unit"),
+        ):
+            if str(row.get(field) or "").strip() != str(expected.get(configured_field) or "").strip():
+                raise ReleaseValidationError(
+                    f"{label} {field} is mismapped for {series}"
+                )
+        provider = str(expected["provider"])
+        policy = providers[provider]
+        _require_policy_provenance(row, policy, label)
+        status = macro_status.get(series)
+        if status is None or str(status.get("status") or "").strip().upper() != "OK":
+            raise ReleaseValidationError(
+                f"{provider} requires zero V2 rows unless macro status is OK: {series}"
+            )
+        observation = _v2_observation_date(row, window, label)
+        _known, known_text = _canonical_v2_known_as_of(
+            row.get("known_as_of"), window, label
+        )
+        value = _finite_row_value(row, label)
+        if str(row.get("qc_flag") or "").strip() != "OK":
+            raise ReleaseValidationError(f"{label} qc_flag must be OK")
+        identity = {
+            "code": code,
+            "known_as_of": known_text,
+            "observation_date": observation.isoformat(),
+            "series": series,
+        }
+        semantic = tuple(identity.values())
+        if semantic in price_identities:
+            raise ReleaseValidationError(
+                f"commodity price history duplicate semantic identity: {series}"
+            )
+        price_identities.add(semantic)
+        record_id = _validate_v2_record_id(
+            row,
+            namespace="commodity_price_history",
+            identity=identity,
+            label=label,
+        )
+        normalized = {
+            **row,
+            "record_id": record_id,
+            "known_as_of": known_text,
+            "observation_date": observation.isoformat(),
+            "value": value,
+        }
+        normalized_price.append(normalized)
+        price_groups.setdefault((code, series), []).append(normalized)
+        price_codes.add(code)
+
+    actual_price_series = set(price_groups)
+    missing_prices = sorted(
+        series for series, item in configured_prices.items()
+        if (str(item["commodity_code"]), series) not in actual_price_series
+    )
+    if missing_prices:
+        raise ReleaseValidationError(
+            "configured price history is missing: " + ", ".join(missing_prices)
+        )
+    expected_price_order = sorted(
+        normalized_price,
+        key=lambda row: (
+            row["commodity_code"],
+            row["series_code"],
+            row["observation_date"],
+            row["known_as_of"] or "",
+            row["record_id"],
+        ),
+    )
+    if [row["record_id"] for row in normalized_price] != [
+        row["record_id"] for row in expected_price_order
+    ]:
+        changed = next(
+            (
+                row["series_code"]
+                for row, expected in zip(normalized_price, expected_price_order)
+                if row["record_id"] != expected["record_id"]
+            ),
+            "unknown",
+        )
+        raise ReleaseValidationError(f"commodity price history ordering is invalid: {changed}")
+    for (_code, series), rows in price_groups.items():
+        frequency = str(configured_prices[series].get("frequency") or "").strip()
+        limit = limits.get(frequency)
+        if limit is None or len(rows) > limit:
+            raise ReleaseValidationError(
+                f"commodity price history limit exceeds {frequency} {limit}: {series}"
+            )
+
+    descriptors = _metric_descriptors(config)
+    normalized_metric: list[dict] = []
+    metric_identities: set[tuple] = set()
+    metric_groups: dict[tuple, list[dict]] = {}
+    history_ids: dict[str, dict] = {
+        row["record_id"]: row for row in normalized_price
+    }
+    for row in metric_rows:
+        label = "commodity metric history"
+        if str(row.get("as_of_date") or "").strip() != window.end.isoformat():
+            raise ReleaseValidationError(f"{label} as_of_date must equal release as_of_date")
+        code = _required_row_text(row, "commodity_code", label)
+        family = _required_row_text(row, "commodity_family", label)
+        if code == "BTC_USD" or family == "digital_asset":
+            raise ReleaseValidationError("BTC_USD/digital_asset is excluded from V2 history")
+        if registry.get(code) != family:
+            raise ReleaseValidationError(
+                f"commodity metric history code-family mismatch: {code} requires "
+                f"{registry.get(code) or 'configured identity'}"
+            )
+        descriptor = _metric_descriptor(row, config, descriptors)
+        participant = str(row.get("participant_class") or "").strip() or None
+        role = _required_row_text(row, "metric_role", label)
+        kind = _required_row_text(row, "measurement_kind", label)
+        for field, actual in (
+            ("commodity_code", code),
+            ("commodity_family", family),
+            ("metric_role", role),
+            ("measurement_kind", kind),
+            ("participant_class", participant),
+        ):
+            expected = descriptor[field]
+            if actual != expected:
+                raise ReleaseValidationError(
+                    f"{label} {field} is mismapped for {row.get('metric_code')}"
+                )
+        unit = _required_row_text(row, "unit", label)
+        if descriptor["unit"] and unit != descriptor["unit"]:
+            raise ReleaseValidationError(
+                f"{label} unit is mismapped for {row.get('metric_code')}"
+            )
+        provider = descriptor["provider"]
+        policy = providers[provider]
+        _require_policy_provenance(row, policy, label)
+        status = context_status.get(provider)
+        status_value = str((status or {}).get("status") or "").strip().upper()
+        if status_value != "OK":
+            raise ReleaseValidationError(
+                f"{provider} requires zero V2 rows while status is {status_value or 'missing'}"
+            )
+        observation = _v2_observation_date(row, window, label)
+        _known, known_text = _canonical_v2_known_as_of(
+            row.get("known_as_of"), window, label
+        )
+        reference = str(row.get("reference_period") or "").strip() or None
+        value = _finite_row_value(row, label)
+        if str(row.get("qc_flag") or "").strip() != "OK":
+            raise ReleaseValidationError(f"{label} qc_flag must be OK")
+        identity = {
+            "code": code,
+            "known_as_of": known_text,
+            "measurement": kind,
+            "metric": str(row["metric_code"]),
+            "observation_date": observation.isoformat(),
+            "participant": participant,
+            "reference_period": reference,
+            "role": role,
+        }
+        semantic = tuple(identity.values())
+        if semantic in metric_identities:
+            raise ReleaseValidationError(
+                f"commodity metric history duplicate semantic identity: {row['metric_code']}"
+            )
+        metric_identities.add(semantic)
+        record_id = _validate_v2_record_id(
+            row,
+            namespace="commodity_metric_history",
+            identity=identity,
+            label=label,
+        )
+        normalized = {
+            **row,
+            "record_id": record_id,
+            "participant_class": participant,
+            "known_as_of": known_text,
+            "reference_period": reference,
+            "observation_date": observation.isoformat(),
+            "value": value,
+        }
+        normalized_metric.append(normalized)
+        group = (code, str(row["metric_code"]), role, kind, participant)
+        metric_groups.setdefault(group, []).append(normalized)
+        if record_id in history_ids:
+            raise ReleaseValidationError(f"Duplicate V2 history record_id: {record_id}")
+        history_ids[record_id] = normalized
+
+    expected_metric_order = sorted(
+        normalized_metric,
+        key=lambda row: (
+            row["commodity_code"],
+            row["metric_code"],
+            row["metric_role"],
+            row["measurement_kind"],
+            row["participant_class"] or "",
+            row["observation_date"],
+            row["known_as_of"] or "",
+            row["record_id"],
+        ),
+    )
+    if [row["record_id"] for row in normalized_metric] != [
+        row["record_id"] for row in expected_metric_order
+    ]:
+        changed = next(
+            (
+                row["metric_code"]
+                for row, expected in zip(normalized_metric, expected_metric_order)
+                if row["record_id"] != expected["record_id"]
+            ),
+            "unknown",
+        )
+        raise ReleaseValidationError(f"commodity metric history ordering is invalid: {changed}")
+    for group, rows in metric_groups.items():
+        descriptor = _metric_descriptor(rows[0], config, descriptors)
+        frequency = descriptor["frequency"]
+        limit = limits.get(frequency)
+        if limit is None or len(rows) > limit:
+            raise ReleaseValidationError(
+                f"commodity metric history limit exceeds {frequency} {limit}: {group[1]}"
+            )
+
+    base_rows = [
+        *datasets[("weekly_context", "commodity_fundamentals.csv")],
+        *datasets[("weekly_context", "positioning_flows.csv")],
+    ]
+    expected_groups: set[tuple] = set()
+    for row in base_rows:
+        code = str(row.get("commodity_code") or "").strip()
+        family = str(row.get("commodity_family") or "").strip()
+        if code not in registry or family != registry[code]:
+            continue
+        if str(row.get("qc_flag") or "").strip().upper() != "OK":
+            continue
+        try:
+            _metric_descriptor(row, config, descriptors)
+        except ReleaseValidationError:
+            continue
+        expected_groups.add((
+            code,
+            str(row.get("metric_code") or "").strip(),
+            str(row.get("metric_role") or "").strip(),
+            str(row.get("measurement_kind") or "").strip(),
+            str(row.get("participant_class") or "").strip() or None,
+        ))
+    actual_groups = set(metric_groups)
+    if actual_groups != expected_groups:
+        missing = sorted(str(group) for group in expected_groups - actual_groups)
+        extra = sorted(str(group) for group in actual_groups - expected_groups)
+        raise ReleaseValidationError(
+            "commodity metric history exact business-row coverage mismatch; "
+            f"missing={missing}; extra={extra}"
+        )
+
+    history_codes = price_codes | {group[0] for group in metric_groups}
+    if history_codes != set(registry):
+        missing = sorted(set(registry) - history_codes)
+        extra = sorted(history_codes - set(registry))
+        raise ReleaseValidationError(
+            "commodity history exact configured code coverage mismatch; "
+            f"missing={missing}; extra={extra}"
+        )
+
+    normalized_facts: dict[str, dict] = {}
+    fact_identities: set[tuple] = set()
+    for row in fact_rows:
+        label = "commodity research fact"
+        fact_code = _required_row_text(row, "fact_code", label)
+        configured = config["fact_rows"].get(fact_code)
+        if configured is None:
+            raise ReleaseValidationError(f"Unregistered fact_code: {fact_code}")
+        if fact_code in normalized_facts:
+            raise ReleaseValidationError(
+                f"commodity research fact duplicate semantic identity: {fact_code}"
+            )
+        code = _required_row_text(row, "commodity_code", label)
+        family = _required_row_text(row, "commodity_family", label)
+        if code != configured["commodity_code"] or family != registry.get(code):
+            raise ReleaseValidationError(
+                f"commodity research fact code-family mismatch: {fact_code}"
+            )
+        for field, expected_field in (
+            ("fact_kind", "fact_kind"),
+            ("unit", "output_unit"),
+            ("formula_id", "formula_id"),
+            ("formula_version", "version"),
+        ):
+            if str(row.get(field) or "").strip() != str(configured[expected_field]):
+                raise ReleaseValidationError(
+                    f"commodity research fact {field} mismatch: {fact_code}"
+                )
+        if str(row.get("as_of_date") or "").strip() != window.end.isoformat():
+            raise ReleaseValidationError(f"{label} as_of_date must equal release as_of_date")
+        observation = _v2_observation_date(row, window, label)
+        _known, known_text = _canonical_v2_known_as_of(
+            row.get("known_as_of"), window, label
+        )
+        reference = _required_row_text(row, "reference_period", label)
+        value = _finite_row_value(row, label)
+        if str(row.get("qc_flag") or "").strip() != "OK":
+            raise ReleaseValidationError(f"{label} qc_flag must be OK")
+        input_ids = _parse_v2_array(row.get("input_record_ids"), "input_record_ids")
+        orphan = sorted(set(input_ids) - set(history_ids))
+        if orphan:
+            raise ReleaseValidationError(
+                "commodity research fact orphan input_record_id: " + ", ".join(orphan)
+            )
+        if input_ids != sorted(set(input_ids)):
+            raise ReleaseValidationError(
+                f"commodity research fact input_record_ids must be sorted and unique: {fact_code}"
+            )
+        inputs = [history_ids[record_id] for record_id in input_ids]
+        if any(item["commodity_code"] != code for item in inputs):
+            raise ReleaseValidationError(
+                f"commodity research fact inputs have mixed identity: {fact_code}"
+            )
+        source_urls = _parse_v2_array(row.get("source_urls"), "source_urls")
+        expected_urls = sorted({str(item["source_url"]) for item in inputs})
+        if source_urls != expected_urls:
+            raise ReleaseValidationError(
+                f"commodity research fact source_urls mismatch: {fact_code}"
+            )
+        if configured["formula_id"] == "stock_to_use_v1":
+            vintages = {
+                (item.get("known_as_of"), item.get("reference_period"))
+                for item in inputs
+            }
+            if len(vintages) != 1 or any(None in vintage for vintage in vintages):
+                raise ReleaseValidationError(
+                    "stock_to_use_v1 inputs must use the same USDA vintage"
+                )
+        identity = {
+            "commodity_code": code,
+            "fact_code": fact_code,
+            "formula_id": str(row["formula_id"]),
+            "formula_version": str(row["formula_version"]),
+            "known_as_of": known_text,
+            "observation_date": observation.isoformat(),
+            "reference_period": reference,
+        }
+        semantic = tuple(identity.values())
+        if semantic in fact_identities:
+            raise ReleaseValidationError(
+                f"commodity research fact duplicate semantic identity: {fact_code}"
+            )
+        fact_identities.add(semantic)
+        record_id = _validate_v2_record_id(
+            row,
+            namespace="commodity_research_facts",
+            identity=identity,
+            label=label,
+        )
+        normalized_facts[fact_code] = {
+            **row,
+            "record_id": record_id,
+            "value": value,
+            "observation_date": observation.isoformat(),
+            "known_as_of": known_text,
+            "input_record_ids": input_ids,
+            "source_urls": source_urls,
+        }
+
+    try:
+        expected_facts = build_research_facts(
+            normalized_price,
+            normalized_metric,
+            config["formula_specs"],
+            window.end,
+        )
+    except ValueError as error:
+        message = str(error)
+        if "same known_as_of" in message or "same reference_period" in message:
+            message = "stock_to_use_v1 inputs must use the same USDA vintage"
+        raise ReleaseValidationError(message) from error
+    expected_by_code = {row["fact_code"]: row for row in expected_facts}
+    if set(normalized_facts) != set(expected_by_code):
+        raise ReleaseValidationError(
+            "commodity research registered fact coverage mismatch; "
+            f"expected={sorted(expected_by_code)}; actual={sorted(normalized_facts)}"
+        )
+    for fact_code, expected in expected_by_code.items():
+        actual = normalized_facts[fact_code]
+        for field in RESEARCH_FACT_FIELDS:
+            if actual[field] != expected[field]:
+                raise ReleaseValidationError(
+                    f"commodity research formula output mismatch: {fact_code}.{field}"
+                )
+
+
 def _strict_json_object(path: Path, root: Path) -> dict:
     _ensure_regular_contained_file(path, root)
 
@@ -1879,6 +2811,8 @@ def _typed_csv_rows(path: Path, dataset: DatasetSpec) -> list[dict]:
                 for key, value in raw.items():
                     if value == "":
                         row[key] = None
+                    elif key in dataset.json_array_columns:
+                        row[key] = _parse_v2_array(value, key)
                     elif key in dataset.numeric_columns:
                         try:
                             number = float(value)
@@ -1911,6 +2845,24 @@ def _new_output_release_id() -> str:
     return f"{generated:%Y%m%dT%H%M%S%z}-{uuid.uuid4().hex[:6]}"
 
 
+def _output_tables_for_contract(
+    dataset_contract_version: int,
+) -> dict[str, tuple[str, tuple[tuple[str, str], ...]]]:
+    release_datasets_for_contract(dataset_contract_version)
+    return {
+        public_name: (
+            source_pipeline,
+            tuple(
+                (table_name, filename)
+                for table_name, filename in table_files
+                if dataset_contract_version == DATASET_CONTRACT_VERSION
+                or (public_name, table_name) not in V2_OUTPUT_TABLES
+            ),
+        )
+        for public_name, (source_pipeline, table_files) in OUTPUT_TABLES.items()
+    }
+
+
 def build_output_bundle(
     release_root: Path,
     destination: Path,
@@ -1939,9 +2891,10 @@ def build_output_bundle(
         (dataset.pipeline, dataset.filename): dataset
         for dataset in release_datasets_for_contract(contract_version)
     }
+    output_tables = _output_tables_for_contract(contract_version)
     pipeline_entries = []
     file_entries = []
-    for public_name, (source_pipeline, table_files) in OUTPUT_TABLES.items():
+    for public_name, (source_pipeline, table_files) in output_tables.items():
         tables = {}
         row_counts = {}
         for table_name, filename in table_files:
@@ -1967,6 +2920,7 @@ def build_output_bundle(
         )
         document = {
             "schema_version": OUTPUT_SCHEMA_VERSION,
+            "dataset_contract_version": contract_version,
             "release_id": identity,
             "as_of_date": window.end.isoformat(),
             "pipeline": public_name,
@@ -1995,6 +2949,7 @@ def build_output_bundle(
 
     release = {
         "schema_version": OUTPUT_SCHEMA_VERSION,
+        "dataset_contract_version": contract_version,
         "release_id": identity,
         "as_of_date": window.end.isoformat(),
         "generated_at": generated_at,
@@ -2043,6 +2998,17 @@ def validate_output_bundle(output_root: Path) -> dict:
         date.fromisoformat(as_of_date)
     except ValueError as error:
         raise ReleaseValidationError("release.json as_of_date is invalid") from error
+    raw_contract_version = release.get("dataset_contract_version")
+    if raw_contract_version is None:
+        contract_version = COMPATIBILITY_DATASET_CONTRACT_VERSION
+    elif (
+        isinstance(raw_contract_version, bool)
+        or not isinstance(raw_contract_version, int)
+    ):
+        raise ReleaseValidationError("release.json dataset contract is invalid")
+    else:
+        contract_version = raw_contract_version
+    output_tables = _output_tables_for_contract(contract_version)
 
     entries = release.get("files")
     if not isinstance(entries, list):
@@ -2058,11 +3024,20 @@ def validate_output_bundle(output_root: Path) -> dict:
     if set(by_name) != set(OUTPUT_BUSINESS_FILES):
         raise ReleaseValidationError("release.json must hash exactly five business files")
 
+    documents: dict[str, dict] = {}
     for name in OUTPUT_BUSINESS_FILES:
         document = _strict_json_object(root / name, root)
         expected_pipeline = name.removesuffix(".json")
+        document_contract_version = document.get("dataset_contract_version")
+        if document_contract_version is None:
+            document_contract_version = COMPATIBILITY_DATASET_CONTRACT_VERSION
+        expected_tables = {
+            table_name
+            for table_name, _filename in output_tables[expected_pipeline][1]
+        }
         if (
             document.get("schema_version") != OUTPUT_SCHEMA_VERSION
+            or document_contract_version != contract_version
             or document.get("release_id") != identity
             or document.get("as_of_date") != as_of_date
             or document.get("pipeline") != expected_pipeline
@@ -2071,24 +3046,74 @@ def validate_output_bundle(output_root: Path) -> dict:
             or not isinstance(document.get("source_log"), list)
         ):
             raise ReleaseValidationError(f"Output identity mismatch: {name}")
+        if set(document["tables"]) != expected_tables or any(
+            not isinstance(rows, list)
+            for rows in document["tables"].values()
+        ):
+            raise ReleaseValidationError(f"Output table contract mismatch: {name}")
         actual_hash = hashlib.sha256((root / name).read_bytes()).hexdigest()
         if by_name[name].get("sha256") != actual_hash:
             raise ReleaseValidationError(f"Output hash mismatch: {name}")
         if by_name[name].get("bytes") != (root / name).stat().st_size:
             raise ReleaseValidationError(f"Output size mismatch: {name}")
+        documents[expected_pipeline] = document
 
     pipelines = release.get("pipelines")
     if not isinstance(pipelines, list):
         raise ReleaseValidationError("release.json pipeline list is invalid")
-    pipeline_names = {
-        entry.get("name")
-        for entry in pipelines
-        if isinstance(entry, dict)
-        and entry.get("status") == "complete"
-        and entry.get("file") == f"{entry.get('name')}.json"
-    }
-    if pipeline_names != set(OUTPUT_TABLES):
+    pipeline_entries: dict[str, dict] = {}
+    for entry in pipelines:
+        if not isinstance(entry, dict) or not isinstance(entry.get("name"), str):
+            raise ReleaseValidationError("release.json pipeline entry is invalid")
+        name = entry["name"]
+        if name in pipeline_entries:
+            raise ReleaseValidationError(f"Duplicate release pipeline entry: {name}")
+        pipeline_entries[name] = entry
+    if set(pipeline_entries) != set(output_tables):
         raise ReleaseValidationError("release.json pipeline statuses are incomplete")
+    for name, entry in pipeline_entries.items():
+        document = documents[name]
+        expected_rows = {
+            table_name: len(document["tables"][table_name])
+            for table_name, _filename in output_tables[name][1]
+        }
+        expected_rows["source_log"] = len(document["source_log"])
+        if (
+            entry.get("status") != "complete"
+            or entry.get("file") != f"{name}.json"
+            or entry.get("rows") != expected_rows
+        ):
+            raise ReleaseValidationError(
+                f"release.json pipeline status or row counts are invalid: {name}"
+            )
+    if contract_version == DATASET_CONTRACT_VERSION:
+        validation_rows = {
+            ("macro_assets", "commodities.csv"):
+                documents["macro"]["tables"]["commodities"],
+            ("macro_assets", "commodity_price_history.csv"):
+                documents["macro"]["tables"]["commodity_price_history"],
+            ("macro_assets", "source_log.csv"):
+                documents["macro"]["source_log"],
+            ("weekly_context", "commodity_fundamentals.csv"):
+                documents["context"]["tables"]["commodity_fundamentals"],
+            ("weekly_context", "positioning_flows.csv"):
+                documents["context"]["tables"]["positioning_flows"],
+            ("weekly_context", "commodity_metric_history.csv"):
+                documents["context"]["tables"]["commodity_metric_history"],
+            ("weekly_context", "commodity_research_facts.csv"):
+                documents["context"]["tables"]["commodity_research_facts"],
+            ("weekly_context", "source_log.csv"):
+                documents["context"]["source_log"],
+        }
+        end = date.fromisoformat(as_of_date)
+        _validate_commodity_research_v2(
+            validation_rows,
+            WeekWindow(
+                start=end - timedelta(days=6),
+                end=end,
+                week_id=f"week_{end - timedelta(days=6):%Y%m%d}-{end:%Y%m%d}",
+            ),
+        )
     return release
 
 

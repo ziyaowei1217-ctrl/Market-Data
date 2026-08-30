@@ -45,6 +45,92 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_commodity_research_v2_validation_registry_is_exact_and_config_owned(self):
+        document = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+        research = document["commodity_research"]
+        universe = {
+            row["commodity_code"]: row["commodity_family"]
+            for row in research["universe"]
+        }
+        self.assertEqual(universe, {
+            "NATGAS_HH": "natural_gas",
+            "WTI": "refined_products",
+            "BRENT": "refined_products",
+            "RBOB_US": "refined_products",
+            "ULSD_US": "refined_products",
+            "JET_US": "refined_products",
+            "PROPANE_US": "refined_products",
+            "COPPER_COMEX": "copper",
+            "GOLD_COMEX": "gold",
+            "CORN": "grains_oilseeds",
+            "SOYBEANS": "grains_oilseeds",
+            "WHEAT": "grains_oilseeds",
+            "RICE": "grains_oilseeds",
+            "COTTON": "softs",
+            "SUGAR": "softs",
+            "COFFEE": "softs",
+            "COCOA": "softs",
+            "CATTLE": "livestock",
+            "HOGS": "livestock",
+        })
+        self.assertEqual(len(set(universe.values())), 7)
+        self.assertEqual(research["history_limits"], {
+            "daily": 400,
+            "weekly": 160,
+            "monthly": 84,
+            "annual": 12,
+            "marketing_year": 12,
+        })
+        self.assertEqual(
+            {row["formula_id"] for row in research["facts"]},
+            {
+                "absolute_change_v1",
+                "percentage_change_v1",
+                "year_over_year_change_v1",
+                "trailing_percentile_v1",
+                "seasonal_deviation_v1",
+                "stock_to_use_v1",
+                "coverage_count_v1",
+                "freshness_age_days_v1",
+            },
+        )
+        providers = {row["provider"]: row for row in research["providers"]}
+        self.assertEqual(set(providers), {
+            "eia_v2",
+            "world_bank_pink_sheet",
+            "eia_natural_gas",
+            "eia_refined_products",
+            "cftc_disaggregated",
+            "comex_copper_stocks",
+            "comex_gold_stocks",
+            "usgs_copper_structural",
+            "usgs_gold_structural",
+            "usda_psd",
+            "usda_esr",
+        })
+        for provider, row in providers.items():
+            with self.subTest(provider=provider):
+                self.assertEqual(
+                    set(row),
+                    {
+                        "provider", "dataset", "source", "official_host",
+                        "frequency", "measurement_kind",
+                        "source_url_path_prefix",
+                    },
+                )
+                self.assertIn(row["dataset"], {"price_history", "metric_history"})
+                self.assertTrue(row["source"])
+                self.assertRegex(row["official_host"], r"^[a-z0-9.-]+$")
+                self.assertIn(
+                    row["frequency"],
+                    {"configured", "daily", "weekly", "monthly", "annual"},
+                )
+                self.assertIn(
+                    row["measurement_kind"],
+                    {"configured", "inventory", "structural"},
+                )
+                self.assertTrue(row["source_url_path_prefix"].startswith("/"))
+
     def test_every_official_commodity_get_has_an_explicit_complete_policy(self):
         policies = load_commodity_http_policies()
         self.assertEqual(

@@ -8,6 +8,107 @@
       "annual": 12,
       "marketing_year": 12
     },
+    "providers": [
+      {
+        "provider": "eia_v2",
+        "dataset": "price_history",
+        "source": "U.S. Energy Information Administration Open Data",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/opendata/"
+      },
+      {
+        "provider": "world_bank_pink_sheet",
+        "dataset": "price_history",
+        "source": "World Bank Commodity Price Data (Pink Sheet)",
+        "official_host": "worldbank.org",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/en/research/commodity-markets"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "dataset": "metric_history",
+        "source": "U.S. Energy Information Administration",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/v2/"
+      },
+      {
+        "provider": "eia_refined_products",
+        "dataset": "metric_history",
+        "source": "U.S. Energy Information Administration",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/v2/"
+      },
+      {
+        "provider": "cftc_disaggregated",
+        "dataset": "metric_history",
+        "source": "U.S. Commodity Futures Trading Commission",
+        "official_host": "cftc.gov",
+        "frequency": "weekly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/resource/"
+      },
+      {
+        "provider": "comex_copper_stocks",
+        "dataset": "metric_history",
+        "source": "CME Group",
+        "official_host": "cmegroup.com",
+        "frequency": "daily",
+        "measurement_kind": "inventory",
+        "source_url_path_prefix": "/delivery_reports/Copper_Stocks.xls"
+      },
+      {
+        "provider": "comex_gold_stocks",
+        "dataset": "metric_history",
+        "source": "CME Group",
+        "official_host": "cmegroup.com",
+        "frequency": "daily",
+        "measurement_kind": "inventory",
+        "source_url_path_prefix": "/delivery_reports/Gold_Stocks.xls"
+      },
+      {
+        "provider": "usgs_copper_structural",
+        "dataset": "metric_history",
+        "source": "U.S. Geological Survey",
+        "official_host": "usgs.gov",
+        "frequency": "annual",
+        "measurement_kind": "structural",
+        "source_url_path_prefix": "/periodicals/mcs2026/mcs2026-copper.pdf"
+      },
+      {
+        "provider": "usgs_gold_structural",
+        "dataset": "metric_history",
+        "source": "U.S. Geological Survey",
+        "official_host": "usgs.gov",
+        "frequency": "annual",
+        "measurement_kind": "structural",
+        "source_url_path_prefix": "/periodicals/mcs2026/mcs2026-gold.pdf"
+      },
+      {
+        "provider": "usda_psd",
+        "dataset": "metric_history",
+        "source": "USDA Foreign Agricultural Service",
+        "official_host": "fas.usda.gov",
+        "frequency": "monthly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/api/psd/"
+      },
+      {
+        "provider": "usda_esr",
+        "dataset": "metric_history",
+        "source": "USDA Foreign Agricultural Service",
+        "official_host": "fas.usda.gov",
+        "frequency": "weekly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/api/esr/"
+      }
+    ],
     "universe": [
       {"commodity_code": "NATGAS_HH", "commodity_family": "natural_gas"},
       {"commodity_code": "WTI", "commodity_family": "refined_products"},

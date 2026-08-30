@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import csv
+import ast
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 import fcntl
 import hashlib
 import importlib
@@ -17,6 +18,13 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from pipeline.internal.capital_weekly import weekly_release as weekly_release_module
+from pipeline.internal.capital_weekly.commodity_research import (
+    METRIC_HISTORY_FIELDS,
+    PRICE_HISTORY_FIELDS,
+    RESEARCH_FACT_FIELDS,
+    build_research_facts,
+    load_formula_specs,
+)
 from pipeline.internal.capital_weekly.weekly_context import CATEGORY_FIELDS
 from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseAlreadyRunning,
@@ -25,6 +33,7 @@ from pipeline.internal.capital_weekly.weekly_release import (
     build_output_bundle,
     build_pipeline_specs,
     latest_finished_week,
+    release_datasets_for_contract,
     run_latest_release,
     validate_staged_week,
 )
@@ -156,6 +165,35 @@ NUMERIC_FIELDS = set(RETURN_NUMERIC_FIELDS + RANK_FIELDS) | {
     "change_range", "value",
 }
 DATE_FIELDS = set(RETURN_DATE_FIELDS) | {"as_of_date", "event_date", "report_date"}
+
+PRODUCTION_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config.json"
+V2_COMMODITY_UNIVERSE = {
+    "NATGAS_HH": "natural_gas",
+    "WTI": "refined_products",
+    "BRENT": "refined_products",
+    "RBOB_US": "refined_products",
+    "ULSD_US": "refined_products",
+    "JET_US": "refined_products",
+    "PROPANE_US": "refined_products",
+    "COPPER_COMEX": "copper",
+    "GOLD_COMEX": "gold",
+    "CORN": "grains_oilseeds",
+    "SOYBEANS": "grains_oilseeds",
+    "WHEAT": "grains_oilseeds",
+    "RICE": "grains_oilseeds",
+    "COTTON": "softs",
+    "SUGAR": "softs",
+    "COFFEE": "softs",
+    "COCOA": "softs",
+    "CATTLE": "livestock",
+    "HOGS": "livestock",
+}
+V2_CFTC_PARTICIPANTS = (
+    "producer",
+    "swap_dealer",
+    "managed_money",
+    "other_reportable",
+)
 
 
 def write_csv(path: Path, fields: list[str] | tuple[str, ...], rows: list[dict]) -> None:
@@ -762,6 +800,455 @@ def configured_gold_metal_rows() -> list[dict[str, str]]:
             "gold_comex_total_inventory",
         )
     ]
+
+
+def fixture_stable_record_id(namespace: str, identity: dict) -> str:
+    payload = json.dumps(
+        {"identity": identity, "namespace": namespace},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _utc_z(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _price_history_row(config: dict, observation: date, value: float) -> dict:
+    known_as_of = _utc_z(
+        datetime.combine(
+            observation + timedelta(days=1),
+            datetime.min.time(),
+            tzinfo=timezone.utc,
+        )
+    )
+    identity = {
+        "code": config["commodity_code"],
+        "known_as_of": known_as_of,
+        "observation_date": observation.isoformat(),
+        "series": config["series_code"],
+    }
+    return {
+        "record_id": fixture_stable_record_id(
+            "commodity_price_history", identity
+        ),
+        "as_of_date": "2026-08-09",
+        "commodity_code": config["commodity_code"],
+        "commodity_family": config["commodity_family"],
+        "series_code": config["series_code"],
+        "price_kind": config["price_kind"],
+        "observation_date": observation.isoformat(),
+        "known_as_of": known_as_of,
+        "value": value,
+        "unit": config["level_unit"],
+        "source": config["source"],
+        "source_url": config["source_url"],
+        "qc_flag": "OK",
+    }
+
+
+def _metric_history_row(
+    base: dict,
+    *,
+    observation: date | None = None,
+    known_as_of: str | None = None,
+    value: float | None = None,
+) -> dict:
+    observation_date = observation or date.fromisoformat(base["as_of_date"])
+    canonical_known = known_as_of or base["known_as_of"]
+    identity = {
+        "code": base["commodity_code"],
+        "known_as_of": canonical_known,
+        "measurement": base["measurement_kind"],
+        "metric": base["metric_code"],
+        "observation_date": observation_date.isoformat(),
+        "participant": base.get("participant_class") or None,
+        "reference_period": base.get("reference_period") or None,
+        "role": base["metric_role"],
+    }
+    return {
+        "record_id": fixture_stable_record_id(
+            "commodity_metric_history", identity
+        ),
+        "as_of_date": "2026-08-09",
+        "commodity_code": base["commodity_code"],
+        "commodity_family": base["commodity_family"],
+        "metric_code": base["metric_code"],
+        "metric_role": base["metric_role"],
+        "measurement_kind": base["measurement_kind"],
+        "participant_class": base.get("participant_class") or "",
+        "observation_date": observation_date.isoformat(),
+        "known_as_of": canonical_known,
+        "reference_period": base.get("reference_period") or "",
+        "value": value if value is not None else float(base["value"]),
+        "unit": base["unit"],
+        "source": base["source"],
+        "source_url": base["source_url"],
+        "qc_flag": "OK",
+    }
+
+
+def _provider_status(
+    *,
+    provider: str,
+    category: str,
+    requiredness: str,
+    status: str,
+    observations: int,
+    source: str,
+    source_url: str,
+    frequency: str,
+) -> dict:
+    return fixture_row(
+        CATEGORY_FIELDS["source_log"],
+        provider=provider,
+        category=category,
+        requiredness=requiredness,
+        status=status,
+        observations=str(observations),
+        as_of_date="2026-08-09",
+        source=source,
+        source_url=source_url,
+        frequency=frequency,
+        phase="normalized" if status == "OK" else "coverage",
+        error_code="" if status == "OK" else "FIXTURE_UNAVAILABLE",
+    )
+
+
+def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, list[dict]]:
+    config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+    macro_config = [
+        row
+        for row in config["macro"]
+        if row.get("commodity_code")
+        and row.get("commodity_family") != "digital_asset"
+    ]
+    configured_registry = {
+        row["commodity_code"]: row["commodity_family"]
+        for row in config["commodity_research"]["universe"]
+    }
+    if configured_registry != V2_COMMODITY_UNIVERSE:
+        raise AssertionError("production fixture requires the exact 19-code registry")
+
+    price_snapshots = []
+    macro_statuses = []
+    price_history = []
+    for index, item in enumerate(macro_config, start=1):
+        price_snapshots.append(fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            group="commodities",
+            series_code=item["series_code"],
+            provider=item["provider"],
+            provider_symbol=item["provider_symbol"],
+            source=item["source"],
+            source_url=item["source_url"],
+            frequency=item["frequency"],
+            level_unit=item["level_unit"],
+            latest_date="2026-08-07",
+            latest_value=str(100 + index),
+            commodity_code=item["commodity_code"],
+            commodity_family=item["commodity_family"],
+            price_kind=item["price_kind"],
+            known_as_of="2026-08-08T00:00:00Z",
+            provider_route=item.get("provider_route") or "",
+        ))
+        macro_statuses.append(fixture_row(
+            MACRO_SOURCE_LOG_FIELDS,
+            series_code=item["series_code"],
+            source=item["source"],
+            source_url=item["source_url"],
+            latest_date="2026-08-07",
+            latest_value=str(100 + index),
+            observations="1",
+        ))
+        observations = [date(2026, 8, 7)]
+        if item["series_code"] == "WTI":
+            observations = [
+                date(2025, 8, 7),
+                date(2026, 8, 6),
+                date(2026, 8, 7),
+            ]
+        for offset, observation in enumerate(observations):
+            value = 70 + offset if item["series_code"] == "WTI" else 100 + index
+            price_history.append(_price_history_row(item, observation, value))
+    price_history.sort(key=lambda row: (
+        row["commodity_code"],
+        row["series_code"],
+        row["observation_date"],
+        row["known_as_of"],
+        row["record_id"],
+    ))
+
+    fundamentals = []
+    positioning = []
+    context_statuses = []
+    by_provider: dict[str, list[dict]] = {}
+
+    for index, item in enumerate(config["context"]["eia_series"], start=1):
+        row = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-06",
+            category="commodity_fundamentals",
+            metric_code=item["metric_code"],
+            value=str(200 + index),
+            unit=item["expected_unit"],
+            source="U.S. Energy Information Administration",
+            source_url=f"https://api.eia.gov/v2/{item['route']}/data/",
+            commodity_code=item["commodity_code"],
+            commodity_family=item["commodity_family"],
+            metric_role="physical_fundamental",
+            measurement_kind=item["measurement_kind"],
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00Z",
+            reference_period="2026-08-06",
+        )
+        fundamentals.append(row)
+        by_provider.setdefault(item["provider"], []).append(row)
+
+    for contract in config["context"]["cftc_contracts"]:
+        if not contract.get("commodity_code"):
+            continue
+        measurements = [("open_interest", "open_interest", "")]
+        for participant in V2_CFTC_PARTICIPANTS:
+            measurements.extend((
+                (f"{participant}_net", "net_position", participant),
+                (f"{participant}_net_change", "net_position", participant),
+                (f"{participant}_percentile", "percentile", participant),
+            ))
+        for index, (suffix, measurement, participant) in enumerate(measurements):
+            row = fixture_row(
+                CATEGORY_FIELDS["positioning_flows"],
+                as_of_date="2026-08-04",
+                category="positioning_flows",
+                market=contract["market_name"],
+                metric_code=f"{contract['commodity_code']}_{suffix}",
+                value=str(300 + index),
+                unit="ratio" if suffix.endswith("percentile") else "contracts",
+                source="U.S. Commodity Futures Trading Commission",
+                source_url=(
+                    "https://publicreporting.cftc.gov/resource/72hh-3qpy.csv"
+                ),
+                commodity_code=contract["commodity_code"],
+                commodity_family=contract["commodity_family"],
+                metric_role="positioning",
+                measurement_kind=measurement,
+                participant_class=participant,
+                known_as_of="2026-08-07T19:30:00Z",
+                reference_period="2026-08-04",
+            )
+            positioning.append(row)
+    by_provider["cftc_disaggregated"] = positioning
+
+    psd_rows = []
+    for index, item in enumerate(config["context"]["usda_psd"], start=1):
+        attributes = (
+            ("ending_stocks", "inventory", 25.0),
+            ("domestic_use", "demand", 100.0),
+        ) if item["commodity_code"] == "CORN" else (
+            ("production", "supply", float(400 + index)),
+        )
+        for attribute, measurement, value in attributes:
+            row = fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                category="commodity_fundamentals",
+                market="World",
+                metric_code=(
+                    f"usda_psd_{item['commodity_code'].lower()}_00_2026_{attribute}"
+                ),
+                value=str(value),
+                unit=item["unit_names"][0],
+                source="USDA Foreign Agricultural Service",
+                source_url=(
+                    "https://api.fas.usda.gov/api/psd/commodity/fixture/"
+                    "world/year/2026"
+                ),
+                commodity_code=item["commodity_code"],
+                commodity_family=item["commodity_family"],
+                metric_role="physical_fundamental",
+                measurement_kind=measurement,
+                participant_class="",
+                known_as_of="2026-08-07T12:00:00Z",
+                reference_period="2026",
+            )
+            psd_rows.append(row)
+            fundamentals.append(row)
+    by_provider["usda_psd"] = psd_rows
+
+    esr_rows = []
+    for index, item in enumerate(config["context"]["usda_esr"], start=1):
+        row = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-06",
+            category="commodity_fundamentals",
+            market="United States export sales (all destinations)",
+            metric_code=f"usda_esr_{item['commodity_code'].lower()}_2026_net_sales",
+            value=str(500 + index),
+            unit=item["unit_name"],
+            source="USDA Foreign Agricultural Service",
+            source_url=(
+                "https://api.fas.usda.gov/api/esr/exports/commodityCode/"
+                "fixture/allCountries/2026"
+            ),
+            commodity_code=item["commodity_code"],
+            commodity_family=item["commodity_family"],
+            metric_role="physical_fundamental",
+            measurement_kind="trade",
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00Z",
+            reference_period="2026-08-06",
+        )
+        esr_rows.append(row)
+        fundamentals.append(row)
+    by_provider["usda_esr"] = esr_rows
+
+    for provider, rows in by_provider.items():
+        if provider.startswith("eia_"):
+            source = "U.S. Energy Information Administration"
+            source_url = "https://api.eia.gov/v2/"
+            frequency = "weekly"
+            category = "commodity_fundamentals"
+        elif provider == "cftc_disaggregated":
+            source = "U.S. Commodity Futures Trading Commission"
+            source_url = "https://publicreporting.cftc.gov/"
+            frequency = "weekly"
+            category = "positioning_flows"
+        else:
+            source = "USDA Foreign Agricultural Service"
+            source_url = "https://apps.fas.usda.gov/opendatawebV2/"
+            frequency = "monthly" if provider == "usda_psd" else "weekly"
+            category = "commodity_fundamentals"
+        context_statuses.append(_provider_status(
+            provider=provider,
+            category=category,
+            requiredness="required",
+            status="OK",
+            observations=len(rows),
+            source=source,
+            source_url=source_url,
+            frequency=frequency,
+        ))
+    for item in config["context"]["metals"]:
+        context_statuses.append(_provider_status(
+            provider=item["provider"],
+            category="commodity_fundamentals",
+            requiredness="optional",
+            status="POINT_IN_TIME_UNAVAILABLE",
+            observations=0,
+            source=item["source"],
+            source_url=item["source_url"],
+            frequency=item["frequency"],
+        ))
+
+    metric_history = [
+        _metric_history_row(row)
+        for row in (*fundamentals, *positioning)
+    ]
+    managed_base = next(
+        row for row in positioning
+        if row["metric_code"] == "NATGAS_HH_managed_money_net"
+    )
+    for weeks_back in range(1, 52):
+        observation = date(2026, 8, 4) - timedelta(weeks=weeks_back)
+        metric_history.append(_metric_history_row(
+            managed_base,
+            observation=observation,
+            known_as_of=_utc_z(datetime.combine(
+                observation + timedelta(days=3),
+                datetime.min.time(),
+                tzinfo=timezone.utc,
+            )),
+            value=300 - weeks_back,
+        ))
+    storage_base = next(
+        row for row in fundamentals
+        if row["metric_code"] == "eia_ng_storage_lower48"
+    )
+    current_iso_week = date(2026, 8, 6).isocalendar().week
+    for prior_year in range(2021, 2026):
+        observation = date.fromisocalendar(prior_year, current_iso_week, 4)
+        metric_history.append(_metric_history_row(
+            storage_base,
+            observation=observation,
+            known_as_of=_utc_z(datetime.combine(
+                observation + timedelta(days=1),
+                datetime.min.time(),
+                tzinfo=timezone.utc,
+            )),
+            value=180 + prior_year - 2021,
+        ))
+    metric_history.sort(key=lambda row: (
+        row["commodity_code"],
+        row["metric_code"],
+        row["metric_role"],
+        row["measurement_kind"],
+        row["participant_class"],
+        row["observation_date"],
+        row["known_as_of"],
+        row["record_id"],
+    ))
+
+    formula_specs = load_formula_specs(PRODUCTION_CONFIG_PATH)
+    facts = build_research_facts(
+        price_history,
+        [
+            {key: (None if value == "" else value) for key, value in row.items()}
+            for row in metric_history
+        ],
+        formula_specs,
+        date(2026, 8, 9),
+    )
+    if set(fact["fact_code"] for fact in facts) != set(formula_specs):
+        raise AssertionError("complete V2 fixture must emit every registered fact")
+
+    write_csv(outputs["macro_assets"] / "commodities.csv", MACRO_FIELDS, price_snapshots)
+    write_csv(outputs["macro_assets"] / "source_log.csv", MACRO_SOURCE_LOG_FIELDS, macro_statuses)
+    write_csv(
+        outputs["macro_assets"] / "commodity_price_history.csv",
+        PRICE_HISTORY_FIELDS,
+        price_history,
+    )
+    write_csv(
+        outputs["weekly_context"] / "commodity_fundamentals.csv",
+        CATEGORY_FIELDS["commodity_fundamentals"],
+        fundamentals,
+    )
+    write_csv(
+        outputs["weekly_context"] / "positioning_flows.csv",
+        CATEGORY_FIELDS["positioning_flows"],
+        positioning,
+    )
+    write_csv(
+        outputs["weekly_context"] / "source_log.csv",
+        CATEGORY_FIELDS["source_log"],
+        context_statuses,
+    )
+    write_csv(
+        outputs["weekly_context"] / "commodity_metric_history.csv",
+        METRIC_HISTORY_FIELDS,
+        metric_history,
+    )
+    write_csv(
+        outputs["weekly_context"] / "commodity_research_facts.csv",
+        RESEARCH_FACT_FIELDS,
+        [
+            {
+                **fact,
+                "input_record_ids": repr(fact["input_record_ids"]),
+                "source_urls": repr(fact["source_urls"]),
+            }
+            for fact in facts
+        ],
+    )
+    return {
+        "commodity_price_history": price_history,
+        "commodity_metric_history": metric_history,
+        "commodity_research_facts": facts,
+    }
 
 
 class WeekWindowTests(unittest.TestCase):
@@ -2723,6 +3210,277 @@ class StagedValidationTests(unittest.TestCase):
                 self.window,
                 dataset_contract_version=1,
             )
+
+
+class CommodityResearchV2ReleaseTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name) / "week_20260803-20260809"
+        self.window = latest_finished_week(
+            datetime(2026, 8, 11, 10, 0, tzinfo=ZoneInfo("Asia/Hong_Kong"))
+        )
+        self.outputs = write_valid_staged_week(self.root, self.window)
+        self.tables = write_complete_v2_release_fixture(self.outputs)
+
+    def _validate(self) -> dict:
+        return validate_staged_week(
+            self.root,
+            self.window,
+            dataset_contract_version=3,
+        )
+
+    def _reset(self) -> None:
+        self.tables = write_complete_v2_release_fixture(self.outputs)
+
+    def _rewrite(self, table: str, rows: list[dict]) -> None:
+        locations = {
+            "price": (
+                self.outputs["macro_assets"] / "commodity_price_history.csv",
+                PRICE_HISTORY_FIELDS,
+            ),
+            "metric": (
+                self.outputs["weekly_context"] / "commodity_metric_history.csv",
+                METRIC_HISTORY_FIELDS,
+            ),
+            "facts": (
+                self.outputs["weekly_context"] / "commodity_research_facts.csv",
+                RESEARCH_FACT_FIELDS,
+            ),
+        }
+        path, fields = locations[table]
+        write_csv(path, fields, rows)
+
+    def test_contract_three_registers_exact_additive_tables(self):
+        version_two = {
+            (spec.pipeline, spec.filename)
+            for spec in release_datasets_for_contract(2)
+        }
+        version_three = {
+            (spec.pipeline, spec.filename)
+            for spec in release_datasets_for_contract(3)
+        }
+
+        self.assertEqual(
+            version_three - version_two,
+            {
+                ("macro_assets", "commodity_price_history.csv"),
+                ("weekly_context", "commodity_metric_history.csv"),
+                ("weekly_context", "commodity_research_facts.csv"),
+            },
+        )
+
+    def test_complete_contract_three_fixture_has_exact_universe_and_fact_inputs(self):
+        manifest = self._validate()
+
+        self.assertEqual(manifest["dataset_contract_version"], 3)
+        all_history = [
+            *self.tables["commodity_price_history"],
+            *self.tables["commodity_metric_history"],
+        ]
+        self.assertEqual(
+            {row["commodity_code"] for row in all_history},
+            set(V2_COMMODITY_UNIVERSE),
+        )
+        self.assertEqual(
+            {row["commodity_family"] for row in all_history},
+            set(V2_COMMODITY_UNIVERSE.values()),
+        )
+        published_ids = {row["record_id"] for row in all_history}
+        facts = self.tables["commodity_research_facts"]
+        self.assertEqual(len(facts), 8)
+        for fact in facts:
+            with self.subTest(fact_code=fact["fact_code"]):
+                self.assertTrue(fact["input_record_ids"])
+                self.assertLessEqual(set(fact["input_record_ids"]), published_ids)
+
+    def test_contract_three_rejects_table_driven_cross_table_mutations(self):
+        cases = (
+            ("code_family", r"code-family.*WTI.*refined_products"),
+            ("record_id", r"record_id.*commodity price history"),
+            ("duplicate_identity", r"duplicate.*semantic identity"),
+            ("observation_order", r"history ordering.*WTI"),
+            ("history_limit", r"history limit.*daily.*400"),
+            ("future_known_as_of", r"known_as_of.*cutoff"),
+            ("naive_known_as_of", r"known_as_of.*UTC Z"),
+            ("nonfinite_value", r"value must be finite"),
+            ("source_host", r"official source host.*worldbank.org"),
+            ("formula_id", r"formula_id.*wti_absolute_change"),
+            ("formula_version", r"formula_version.*wti_absolute_change"),
+            ("orphan_input", r"orphan input_record_id"),
+            ("mixed_vintage", r"same USDA vintage"),
+            ("provider_residual", r"comex_gold_stocks.*zero V2 rows"),
+            ("missing_configured_code", r"configured price history.*BRENT"),
+            ("btc_inclusion", r"BTC_USD|digital_asset"),
+        )
+        for mutation, expected in cases:
+            with self.subTest(mutation=mutation):
+                self._reset()
+                self._apply_mutation(mutation)
+                with self.assertRaisesRegex(ReleaseValidationError, expected):
+                    self._validate()
+
+    def _apply_mutation(self, mutation: str) -> None:
+        price_rows = read_csv_rows(
+            self.outputs["macro_assets"] / "commodity_price_history.csv"
+        )
+        metric_rows = read_csv_rows(
+            self.outputs["weekly_context"] / "commodity_metric_history.csv"
+        )
+        fact_rows = read_csv_rows(
+            self.outputs["weekly_context"] / "commodity_research_facts.csv"
+        )
+        if mutation == "code_family":
+            next(row for row in price_rows if row["series_code"] == "WTI")[
+                "commodity_family"
+            ] = "gold"
+            self._rewrite("price", price_rows)
+        elif mutation == "record_id":
+            price_rows[0]["record_id"] = "0" * 64
+            self._rewrite("price", price_rows)
+        elif mutation == "duplicate_identity":
+            duplicate = dict(price_rows[0])
+            duplicate["record_id"] = "1" * 64
+            price_rows.insert(1, duplicate)
+            self._rewrite("price", price_rows)
+        elif mutation == "observation_order":
+            indices = [
+                index for index, row in enumerate(price_rows)
+                if row["series_code"] == "WTI"
+            ]
+            price_rows[indices[0]], price_rows[indices[1]] = (
+                price_rows[indices[1]],
+                price_rows[indices[0]],
+            )
+            self._rewrite("price", price_rows)
+        elif mutation == "history_limit":
+            config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+            wti = next(row for row in config["macro"] if row["series_code"] == "WTI")
+            occupied = {
+                row["observation_date"] for row in price_rows
+                if row["series_code"] == "WTI"
+            }
+            observation = date(2024, 1, 1)
+            while sum(row["series_code"] == "WTI" for row in price_rows) <= 400:
+                if observation.isoformat() not in occupied:
+                    price_rows.append(_price_history_row(wti, observation, 50.0))
+                observation += timedelta(days=1)
+            price_rows.sort(key=lambda row: (
+                row["commodity_code"], row["series_code"],
+                row["observation_date"], row["known_as_of"], row["record_id"],
+            ))
+            self._rewrite("price", price_rows)
+        elif mutation in {"future_known_as_of", "naive_known_as_of"}:
+            row = price_rows[0]
+            row["known_as_of"] = (
+                "2026-08-10T00:00:00Z"
+                if mutation == "future_known_as_of"
+                else "2026-08-08T00:00:00"
+            )
+            self._rewrite("price", price_rows)
+        elif mutation == "nonfinite_value":
+            price_rows[0]["value"] = "NaN"
+            self._rewrite("price", price_rows)
+        elif mutation == "source_host":
+            next(
+                row for row in price_rows
+                if row["series_code"] == "COMEX_GOLD"
+            )["source_url"] = "https://notworldbank.org/prices.xlsx"
+            self._rewrite("price", price_rows)
+        elif mutation in {"formula_id", "formula_version"}:
+            row = next(
+                row for row in fact_rows
+                if row["fact_code"] == "wti_absolute_change"
+            )
+            field = "formula_id" if mutation == "formula_id" else "formula_version"
+            row[field] = "unregistered" if field == "formula_id" else "9.9.9"
+            self._rewrite("facts", fact_rows)
+        elif mutation == "orphan_input":
+            row = fact_rows[0]
+            inputs = ast.literal_eval(row["input_record_ids"])
+            inputs[0] = "f" * 64
+            row["input_record_ids"] = repr(inputs)
+            self._rewrite("facts", fact_rows)
+        elif mutation == "mixed_vintage":
+            denominator = next(
+                row for row in metric_rows
+                if row["metric_code"]
+                == "usda_psd_corn_00_2026_domestic_use"
+            )
+            old_id = denominator["record_id"]
+            denominator["known_as_of"] = "2026-08-08T12:00:00Z"
+            identity = {
+                "code": denominator["commodity_code"],
+                "known_as_of": denominator["known_as_of"],
+                "measurement": denominator["measurement_kind"],
+                "metric": denominator["metric_code"],
+                "observation_date": denominator["observation_date"],
+                "participant": denominator["participant_class"] or None,
+                "reference_period": denominator["reference_period"] or None,
+                "role": denominator["metric_role"],
+            }
+            denominator["record_id"] = fixture_stable_record_id(
+                "commodity_metric_history", identity
+            )
+            fact = next(
+                row for row in fact_rows
+                if row["fact_code"] == "corn_world_2026_stock_to_use"
+            )
+            inputs = ast.literal_eval(fact["input_record_ids"])
+            fact["input_record_ids"] = repr([
+                denominator["record_id"] if value == old_id else value
+                for value in inputs
+            ])
+            self._rewrite("metric", metric_rows)
+            self._rewrite("facts", fact_rows)
+        elif mutation == "provider_residual":
+            config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+            metal = next(
+                row for row in config["context"]["metals"]
+                if row["provider"] == "comex_gold_stocks"
+            )
+            base = fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                metric_code=metal["expected_metric_codes"][0],
+                value="1",
+                unit=metal["expected_unit"],
+                source=metal["source"],
+                source_url=metal["source_url"],
+                commodity_code=metal["commodity_code"],
+                commodity_family=metal["commodity_family"],
+                metric_role="physical_fundamental",
+                measurement_kind="inventory",
+                participant_class="",
+                known_as_of="2026-08-07T12:00:00Z",
+                reference_period="2026-08-07",
+            )
+            metric_rows.append(_metric_history_row(base))
+            metric_rows.sort(key=lambda row: (
+                row["commodity_code"], row["metric_code"], row["metric_role"],
+                row["measurement_kind"], row["participant_class"],
+                row["observation_date"], row["known_as_of"], row["record_id"],
+            ))
+            self._rewrite("metric", metric_rows)
+        elif mutation == "missing_configured_code":
+            price_rows = [
+                row for row in price_rows if row["commodity_code"] != "BRENT"
+            ]
+            self._rewrite("price", price_rows)
+        elif mutation == "btc_inclusion":
+            btc = {
+                "series_code": "BTC_USD",
+                "commodity_code": "BTC_USD",
+                "commodity_family": "digital_asset",
+                "price_kind": "vendor_proxy",
+                "level_unit": "usd_per_btc",
+                "source": "Yahoo Finance chart API (public vendor proxy)",
+                "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/BTC-USD",
+            }
+            price_rows.append(_price_history_row(btc, date(2026, 8, 7), 1.0))
+            self._rewrite("price", price_rows)
+        else:
+            raise AssertionError(f"unknown mutation: {mutation}")
 
 
 class FakePipelineRunner:

@@ -19,6 +19,7 @@ from pipeline.internal.capital_weekly.weekly_release import (
 from pipeline.internal.tests.test_capital_weekly_weekly_release import (
     exact_gate_config,
     write_complete_commodity_research_fixture,
+    write_complete_v2_release_fixture,
     write_valid_staged_week,
 )
 
@@ -188,6 +189,86 @@ class LatestJsonOutputTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ReleaseValidationError, "hash mismatch"):
             validate_output_bundle(self.output)
+
+
+class ContractThreeJsonOutputTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.window = WeekWindow(
+            date(2026, 8, 3),
+            date(2026, 8, 9),
+            "week_20260803-20260809",
+        )
+        self.staged_week = self.root / self.window.week_id
+        outputs = write_valid_staged_week(self.staged_week, self.window)
+        write_complete_v2_release_fixture(outputs)
+        manifest = validate_staged_week(
+            self.staged_week,
+            self.window,
+            dataset_contract_version=3,
+        )
+        (self.staged_week / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        self.output = self.root / "output"
+
+    def test_contract_three_publishes_exact_six_files_and_additive_tables(self):
+        release = build_output_bundle(
+            self.staged_week,
+            self.output,
+            release_id="v2-fixture-release",
+        )
+
+        self.assertEqual({path.name for path in self.output.iterdir()}, EXPECTED_FILES)
+        self.assertEqual(release["dataset_contract_version"], 3)
+        macro = json.loads((self.output / "macro.json").read_text(encoding="utf-8"))
+        context = json.loads((self.output / "context.json").read_text(encoding="utf-8"))
+        self.assertEqual(macro["dataset_contract_version"], 3)
+        self.assertEqual(context["dataset_contract_version"], 3)
+        self.assertIn("commodity_price_history", macro["tables"])
+        self.assertIn("commodity_metric_history", context["tables"])
+        self.assertIn("commodity_research_facts", context["tables"])
+        self.assertEqual(
+            set(macro["tables"]) - {
+                "fixed_income", "policy_rates", "money_market",
+                "foreign_exchange", "commodities", "divergence",
+            },
+            {"commodity_price_history"},
+        )
+        self.assertEqual(
+            set(context["tables"]) - {
+                "events", "economic_releases", "financial_conditions",
+                "market_internals", "positioning_flows", "company_events",
+                "commodity_fundamentals",
+            },
+            {"commodity_metric_history", "commodity_research_facts"},
+        )
+
+    def test_contract_three_facts_publish_arrays_resolving_to_history_rows(self):
+        build_output_bundle(self.staged_week, self.output)
+
+        macro = json.loads((self.output / "macro.json").read_text(encoding="utf-8"))
+        context = json.loads((self.output / "context.json").read_text(encoding="utf-8"))
+        history_ids = {
+            row["record_id"]
+            for row in (
+                *macro["tables"]["commodity_price_history"],
+                *context["tables"]["commodity_metric_history"],
+            )
+        }
+        facts = context["tables"]["commodity_research_facts"]
+        self.assertEqual(len(facts), 8)
+        for fact in facts:
+            with self.subTest(fact_code=fact["fact_code"]):
+                self.assertIsInstance(fact["input_record_ids"], list)
+                self.assertIsInstance(fact["source_urls"], list)
+                self.assertTrue(fact["input_record_ids"])
+                self.assertLessEqual(set(fact["input_record_ids"]), history_ids)
+                self.assertTrue(all(url.startswith("https://") for url in fact["source_urls"]))
+        self.assertEqual(validate_output_bundle(self.output)["dataset_contract_version"], 3)
 
 
 if __name__ == "__main__":
