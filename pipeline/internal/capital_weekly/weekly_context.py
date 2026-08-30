@@ -313,19 +313,24 @@ def run_weekly_context(
         run_date,
         audit_secrets=normalized_audit_secrets,
     )
-    if history_limits is None and commodity_registry is None:
-        tables["commodity_metric_history"] = []
-    elif history_limits is None or commodity_registry is None:
+    if history_limits is None or commodity_registry is None:
+        if history_limits is None and commodity_registry is None:
+            if commodity_history_inputs:
+                raise ValueError(
+                    "commodity history requires history_limits and "
+                    "commodity_registry"
+                )
+            tables["commodity_metric_history"] = []
+            return tables
         raise ValueError(
             "history_limits and commodity_registry must be injected together"
         )
-    else:
-        tables["commodity_metric_history"] = bounded_metric_history(
-            commodity_history_inputs,
-            run_date,
-            history_limits,
-            commodity_registry,
-        )
+    tables["commodity_metric_history"] = bounded_metric_history(
+        commodity_history_inputs,
+        run_date,
+        history_limits,
+        commodity_registry,
+    )
     return tables
 
 

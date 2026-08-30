@@ -1005,6 +1005,84 @@ class WeeklyContextTests(unittest.TestCase):
                         **kwargs,
                     )
 
+    def test_noncommodity_context_does_not_require_history_config(self):
+        row = metric("VIX", 18.5)
+        spec = ProviderSpec(
+            name="market_history_without_config",
+            category="market_internals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="1.0.0",
+            schema_version="context-v1",
+            frequency="daily",
+            freshness_days=3,
+        )
+
+        tables = run_weekly_context(
+            {
+                "market_history_without_config": ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="market_internals",
+                        rows=[row],
+                        raw_text="official fixture",
+                        source="Fixture",
+                        source_url="https://example.test/market",
+                    ),
+                )
+            },
+            as_of_date=date(2026, 8, 30),
+        )
+
+        self.assertEqual(tables["market_internals"], normalize_metric_rows([row]))
+        self.assertEqual(tables["commodity_metric_history"], [])
+
+    def test_eligible_commodity_history_rejects_an_absent_config_pair(self):
+        row = metric("EIA_STOCKS", 100.0)
+        row.update(
+            as_of_date=date(2026, 8, 23),
+            category="commodity_fundamentals",
+            frequency="weekly",
+            unit="BCF",
+            commodity_code="NATGAS_HH",
+            commodity_family="natural_gas",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+            participant_class=None,
+            known_as_of="2026-08-23T12:00:00+00:00",
+            reference_period="2026-08-23",
+        )
+        spec = ProviderSpec(
+            name="eia_history_without_config",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="1.0.0",
+            schema_version="commodity-v2",
+            frequency="weekly",
+            freshness_days=10,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "commodity history requires history_limits and commodity_registry",
+        ):
+            run_weekly_context(
+                {
+                    "eia_history_without_config": ContextProvider(
+                        spec,
+                        lambda: ProviderResult(
+                            category="commodity_fundamentals",
+                            rows=[row],
+                            raw_text="official fixture",
+                            source="Fixture",
+                            source_url="https://example.test/eia",
+                        ),
+                    )
+                },
+                as_of_date=date(2026, 8, 30),
+            )
+
     def test_weekly_context_adds_bounded_metric_history_without_changing_existing_arrays(self):
         rows = []
         for observation_date, value in (

@@ -33,6 +33,9 @@ from pipeline.internal.capital_weekly.official_http import (
     OfficialHttpResponse,
     OfficialHttpTrace,
 )
+from pipeline.internal.capital_weekly.macro_assets import (
+    load_commodity_research_config,
+)
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
 from pipeline.internal.common import load_config_rows
 from pipeline.internal.tests.test_capital_weekly_metal_inventories import (
@@ -42,6 +45,7 @@ from pipeline.internal.tests.test_capital_weekly_metal_inventories import (
 
 
 EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
+COMMODITY_RESEARCH_CONFIG = load_commodity_research_config()
 
 
 YAHOO_CONFIG = (
@@ -1014,6 +1018,8 @@ class ContextProviderTests(unittest.TestCase):
                 {"usda_psd": provider},
                 raw_dir=data_dir / "raw",
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         self.assertEqual(tables["source_log"][0]["status"], "OK")
@@ -1240,6 +1246,8 @@ class ContextProviderTests(unittest.TestCase):
                 {"usda_esr": provider},
                 raw_dir=data_dir / "raw",
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         self.assertEqual(tables["source_log"][0]["status"], "OK")
@@ -1411,6 +1419,8 @@ class ContextProviderTests(unittest.TestCase):
                 },
                 raw_dir=raw_dir,
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
             raw_content = b"".join(path.read_bytes() for path in raw_dir.iterdir())
@@ -1541,6 +1551,8 @@ class ContextProviderTests(unittest.TestCase):
                 {"comex_copper_stocks": provider},
                 raw_dir=raw_dir,
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
             self.assertEqual(
@@ -1706,6 +1718,8 @@ class ContextProviderTests(unittest.TestCase):
                     for name in ("comex_copper_stocks", "usgs_gold_structural")
                 },
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         audits = {row["provider"]: row for row in tables["source_log"]}
@@ -1772,6 +1786,8 @@ class ContextProviderTests(unittest.TestCase):
                     for name in ("comex_copper_stocks", "usgs_gold_structural")
                 },
                 as_of_date=date(2026, 8, 30),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         audits = {row["provider"]: row for row in tables["source_log"]}
@@ -1968,6 +1984,8 @@ class ContextProviderTests(unittest.TestCase):
                     "eia_refined_products": providers["eia_refined_products"],
                 },
                 as_of_date=date(2026, 8, 23),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         audits = {row["provider"]: row for row in tables["source_log"]}
@@ -2076,6 +2094,8 @@ class ContextProviderTests(unittest.TestCase):
                     "eia_refined_products": providers["eia_refined_products"],
                 },
                 as_of_date=date(2026, 8, 23),
+                history_limits=COMMODITY_RESEARCH_CONFIG.history_limits,
+                commodity_registry=COMMODITY_RESEARCH_CONFIG.commodity_registry,
             )
 
         audits = {row["provider"]: row for row in tables["source_log"]}

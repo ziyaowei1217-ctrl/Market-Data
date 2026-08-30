@@ -459,7 +459,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
                         "https://www.worldbank.org/en/research/commodity-markets",
                     )
 
-    def test_monthly_price_cutoff_uses_latest_month_end_on_or_before_as_of(self):
+    def test_monthly_price_uses_latest_provider_bounded_month_end(self):
         with tempfile.TemporaryDirectory() as directory:
             universe = Path(directory) / "universe.csv"
             universe.write_text(
@@ -476,9 +476,22 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 {"date": date(2026, 5, 31), "value": 3300.0, "unit": "$/toz"},
                 {"date": date(2026, 6, 30), "value": 9999.0, "unit": "$/toz"},
             ]
+
+            def bounded_fetch(config, session, as_of_date=None):
+                del config, session
+                return (
+                    [
+                        point
+                        for point in history
+                        if point["date"] <= as_of_date
+                    ],
+                    b"workbook",
+                    "https://thedocs.worldbank.org/monthly.xlsx",
+                )
+
             with patch(
                 "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
-                return_value=(history, b"workbook", "https://thedocs.worldbank.org/monthly.xlsx"),
+                side_effect=bounded_fetch,
             ):
                 detail, source = fetch_macro_assets(
                     universe,
@@ -1847,11 +1860,126 @@ class MacroAssetHistoryBundleTests(unittest.TestCase):
                     "FETCH_FAILED",
                 )
                 self.assertIsNone(bundle.detail.loc[0, "latest_value"])
+                self.assertIn(
+                    "known_as_of",
+                    bundle.source_log.loc[0, "error"],
+                )
                 self.assertEqual(
                     bundle.source_log.loc[0, "status"],
                     "FETCH_FAILED",
                 )
                 self.assertTrue(bundle.commodity_price_history.empty)
+
+    def test_config_known_as_of_is_validated_before_snapshot_fallback(self):
+        as_of = date(2026, 8, 30)
+        base_config = self._config(
+            "WTI",
+            "eia_v2",
+            commodity_code="WTI",
+            commodity_family="refined_products",
+            frequency="daily",
+            price_kind="official_cash",
+            level_unit="$/BBL",
+            sort_order=1,
+        )
+        history = [
+            {
+                "date": date(2026, 8, 29),
+                "value": 99.0,
+                "unit": "$/BBL",
+            }
+        ]
+
+        for invalid_known_as_of in (
+            "2026-08-31T00:00:00Z",
+            "2026-08-29T12:00:00",
+        ):
+            with self.subTest(known_as_of=invalid_known_as_of):
+                config = replace(
+                    base_config,
+                    known_as_of=invalid_known_as_of,
+                )
+                with patch.object(
+                    macro_assets_module,
+                    "load_macro_asset_universe",
+                    return_value=[config],
+                ), patch.object(
+                    macro_assets_module,
+                    "_fetch_config_history",
+                    return_value=(
+                        history,
+                        b"official raw",
+                        "https://official.example.test/WTI",
+                    ),
+                ), patch.object(
+                    macro_assets_module,
+                    "calculate_macro_snapshot",
+                    wraps=macro_assets_module.calculate_macro_snapshot,
+                ) as snapshot:
+                    bundle = fetch_macro_asset_bundle(
+                        as_of_date=as_of,
+                        allow_partial=True,
+                    )
+
+                snapshot.assert_not_called()
+                self.assertEqual(
+                    bundle.detail.loc[0, "qc_flag"],
+                    "FETCH_FAILED",
+                )
+                self.assertIsNone(bundle.detail.loc[0, "latest_value"])
+
+    def test_future_observation_fails_instead_of_falling_back_to_older_snapshot(self):
+        as_of = date(2026, 8, 30)
+        config = self._config(
+            "WTI",
+            "eia_v2",
+            commodity_code="WTI",
+            commodity_family="refined_products",
+            frequency="daily",
+            price_kind="official_cash",
+            level_unit="$/BBL",
+            sort_order=1,
+        )
+        history = [
+            {
+                "date": date(2026, 8, 22),
+                "value": 65.0,
+                "unit": "$/BBL",
+            },
+            {
+                "date": date(2026, 8, 29),
+                "value": 70.0,
+                "unit": "$/BBL",
+            },
+            {
+                "date": date(2026, 8, 31),
+                "value": 99.0,
+                "unit": "$/BBL",
+            },
+        ]
+
+        with patch.object(
+            macro_assets_module,
+            "load_macro_asset_universe",
+            return_value=[config],
+        ), patch.object(
+            macro_assets_module,
+            "_fetch_config_history",
+            return_value=(
+                history,
+                b"official raw",
+                "https://official.example.test/WTI",
+            ),
+        ):
+            bundle = fetch_macro_asset_bundle(
+                as_of_date=as_of,
+                allow_partial=True,
+            )
+
+        self.assertEqual(bundle.detail.loc[0, "qc_flag"], "FETCH_FAILED")
+        self.assertIsNone(bundle.detail.loc[0, "latest_value"])
+        self.assertIn("observation_date", bundle.source_log.loc[0, "error"])
+        self.assertTrue(bundle.commodity_price_history.empty)
 
 
 if __name__ == "__main__":

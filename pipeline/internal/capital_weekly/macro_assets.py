@@ -1450,11 +1450,24 @@ def _iso(value):
     return value.isoformat() if value else None
 
 
-def _validate_history_known_as_of(history: Iterable[dict], target_date: date) -> None:
+def _prepare_history_for_snapshot(
+    history: Iterable[dict],
+    target_date: date,
+    fallback_known_as_of: str,
+) -> list[dict]:
     cutoff = target_sunday_cutoff(target_date)
-    for point in history:
-        raw = point.get("known_as_of")
+    prepared = []
+    for raw_point in history:
+        point = dict(raw_point)
+        observation = parse_date(point["date"])
+        if observation > target_date:
+            raise ValueError(
+                "observation_date exceeds as_of_date: "
+                f"{observation.isoformat()} > {target_date.isoformat()}"
+            )
+        raw = point.get("known_as_of") or fallback_known_as_of or None
         if raw is None or not str(raw).strip():
+            prepared.append(point)
             continue
         try:
             known = datetime.fromisoformat(
@@ -1470,6 +1483,13 @@ def _validate_history_known_as_of(history: Iterable[dict], target_date: date) ->
             raise ValueError(
                 f"known_as_of exceeds target Sunday {target_date.isoformat()}"
             )
+        point["known_as_of"] = (
+            known.astimezone(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        prepared.append(point)
+    return prepared
 
 
 def _snapshot_fields(snapshot) -> dict:
@@ -1636,15 +1656,10 @@ def fetch_macro_asset_bundle(
                     history, raw, url = _fetch_config_history(
                         config, session, as_of_date=as_of_date
                     )
-            if as_of_date is not None:
-                history = [
-                    point
-                    for point in history
-                    if parse_date(point["date"]) <= as_of_date
-                ]
-            _validate_history_known_as_of(
+            history = _prepare_history_for_snapshot(
                 history,
                 as_of_date or date.today(),
+                config.known_as_of,
             )
             snapshot = calculate_macro_snapshot(history, config.change_unit)
             if config.provider == "world_bank_pink_sheet":
@@ -1663,9 +1678,7 @@ def fetch_macro_asset_bundle(
             price_histories[config.series_code] = [
                 {
                     **point,
-                    "known_as_of": point.get("known_as_of")
-                    or config.known_as_of
-                    or None,
+                    "known_as_of": point.get("known_as_of") or None,
                     "source": config.source,
                     "source_url": sanitize_audit_text(url),
                     "qc_flag": "OK",
