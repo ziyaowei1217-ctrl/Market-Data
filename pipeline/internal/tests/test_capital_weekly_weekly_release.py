@@ -22,6 +22,7 @@ from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseAlreadyRunning,
     ReleasePipelineError,
     ReleaseValidationError,
+    build_output_bundle,
     build_pipeline_specs,
     latest_finished_week,
     run_latest_release,
@@ -1538,7 +1539,6 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_current_staged_context_source_log_accepts_provider_phase_columns(self):
-        path = self.outputs["weekly_context"] / "source_log.csv"
         row = fixture_row(
             STAGED_CONTEXT_SOURCE_LOG_FIELDS,
             provider="fixture",
@@ -1552,6 +1552,54 @@ class StagedValidationTests(unittest.TestCase):
         merge_context_status_rows(self.outputs, [row])
 
         validate_staged_week(self.root, self.window)
+
+    def test_rejects_invalid_current_context_provider_phase_contract(self):
+        cases = (
+            ("unknown phase", {"phase": "discovery"}, "phase"),
+            ("zero attempts", {"attempts": "0"}, "attempts"),
+            ("negative attempts", {"attempts": "-1"}, "attempts"),
+            ("non_integer attempts", {"attempts": "1.5"}, "attempts"),
+            ("incomplete success phase", {"phase": "retrieve"}, "normalized"),
+            ("retried success", {"attempts": "2"}, "attempts.*1"),
+            ("success error code", {"error_code": "EIA_TIMEOUT"}, "error_code"),
+        )
+        for label, mutation, expected_error in cases:
+            with self.subTest(label=label):
+                row_data = {
+                    "provider": "fixture",
+                    "category": "market_internals",
+                    "status": "OK",
+                    "as_of_date": "2026-08-09",
+                    "phase": "normalized",
+                    "attempts": "1",
+                    "error_code": "",
+                }
+                row_data.update(mutation)
+                row = fixture_row(
+                    STAGED_CONTEXT_SOURCE_LOG_FIELDS,
+                    **row_data,
+                )
+                merge_context_status_rows(self.outputs, [row])
+
+                with self.assertRaisesRegex(ReleaseValidationError, expected_error):
+                    validate_staged_week(self.root, self.window)
+
+    def test_context_source_log_attempts_publish_as_an_integer(self):
+        manifest = validate_staged_week(self.root, self.window)
+        (self.root / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            build_output_bundle(self.root, output, release_id="attempts-fixture")
+            context = json.loads((output / "context.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(context["source_log"])
+        self.assertTrue(
+            all(type(row["attempts"]) is int for row in context["source_log"])
+        )
+        self.assertTrue(all(row["attempts"] == 1 for row in context["source_log"]))
 
     def test_rejects_an_extra_legacy_context_source_log_column(self):
         (self.outputs["weekly_context"] / "economic_releases.csv").unlink()

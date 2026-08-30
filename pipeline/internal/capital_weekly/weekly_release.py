@@ -32,6 +32,7 @@ from .context.common import (
     METRIC_ROLE_VALUES,
     PARTICIPANT_CLASS_VALUES,
 )
+from .context.provider_contracts import PROVIDER_PHASES
 from .weekly_context import CATEGORY_FIELDS
 
 
@@ -236,6 +237,21 @@ MACRO_SOURCE_LOG_COLUMNS = (
 SOURCE_LOG_NUMERIC_COLUMNS = (
     "observations", "latest_value", "daily_base_value", "weekly_base_value",
     "mtd_base_value", "ytd_base_value", "elapsed_ms",
+)
+OUTPUT_INTEGER_COLUMNS = frozenset(
+    {
+        "attempts",
+        "observations",
+        "elapsed_ms",
+        "sort_order",
+        "valid_count",
+        "positive_count",
+        "flat_count",
+        "negative_count",
+        "up_count",
+        "down_count",
+        *RANK_COLUMNS,
+    }
 )
 SUCCESS_SOURCE_STATUSES = frozenset({"OK"})
 CONTEXT_SOURCE_STATUSES = frozenset(
@@ -882,6 +898,44 @@ def _validate_row(
                 raise ReleaseValidationError(
                     f"{path.name} row {row_number} latest_known_as_of "
                     f"exceeds {window.end}"
+                )
+        phase = (row.get("phase") or "").strip()
+        if phase not in PROVIDER_PHASES:
+            raise ReleaseValidationError(
+                f"{path.name} row {row_number} has unsupported provider phase: "
+                f"{phase or 'blank'}"
+            )
+        raw_attempts = (row.get("attempts") or "").strip()
+        try:
+            attempts = float(raw_attempts)
+        except ValueError as error:
+            raise ReleaseValidationError(
+                f"{path.name} row {row_number} attempts must be a positive integer"
+            ) from error
+        if (
+            not math.isfinite(attempts)
+            or not attempts.is_integer()
+            or attempts <= 0
+        ):
+            raise ReleaseValidationError(
+                f"{path.name} row {row_number} attempts must be a positive integer"
+            )
+        status = (row.get("status") or "").strip().upper()
+        if status == "OK":
+            if phase != "normalized":
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} successful provider phase "
+                    "must be normalized"
+                )
+            if attempts != 1:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} successful provider attempts "
+                    "must be 1"
+                )
+            if (row.get("error_code") or "").strip():
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} successful provider error_code "
+                    "must be blank"
                 )
     if spec.status_column:
         status = (row.get(spec.status_column) or "").strip().upper()
@@ -1844,9 +1898,7 @@ def _typed_csv_rows(path: Path, dataset: DatasetSpec) -> list[dict]:
                         row[key] = (
                             int(number)
                             if number.is_integer()
-                            and key.endswith(
-                                ("count", "rank", "order", "observations", "elapsed_ms")
-                            )
+                            and key in OUTPUT_INTEGER_COLUMNS
                             else number
                         )
                     else:
