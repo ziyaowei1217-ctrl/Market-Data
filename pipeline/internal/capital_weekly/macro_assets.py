@@ -50,6 +50,11 @@ class MacroAssetConfig:
     calculation_id: str = ""
     formula_version: str = ""
     input_series_codes: str = ""
+    commodity_code: str = ""
+    commodity_family: str = ""
+    price_kind: str = ""
+    known_as_of: str = ""
+    provider_route: str = ""
 
 
 def load_macro_asset_universe(

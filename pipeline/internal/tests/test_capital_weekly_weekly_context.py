@@ -18,6 +18,7 @@ from pipeline.internal.capital_weekly.weekly_context import (
 from pipeline.internal.capital_weekly.context.provider_contracts import ContextProvider, ProviderSpec
 from pipeline.internal.capital_weekly.context.economic_releases import build_release_row
 from pipeline.internal.capital_weekly.context.economic_releases import derive_price_index_rows
+from pipeline.internal.capital_weekly.context.providers import metric_rows
 
 
 EXPECTED_EMPTY_FIELDS = {
@@ -84,6 +85,18 @@ EXPECTED_EMPTY_FIELDS = {
     ],
 }
 
+COMMODITY_METRIC_FIELD_NAMES = (
+    "commodity_code",
+    "commodity_family",
+    "metric_role",
+    "measurement_kind",
+    "participant_class",
+    "known_as_of",
+    "reference_period",
+)
+EXPECTED_EMPTY_FIELDS["company_events"][11:11] = COMMODITY_METRIC_FIELD_NAMES
+EXPECTED_EMPTY_FIELDS["commodity_fundamentals"].extend(COMMODITY_METRIC_FIELD_NAMES)
+
 
 def metric(code: str, value: float = 1.0) -> dict:
     return {
@@ -140,6 +153,35 @@ class WeeklyContextTests(unittest.TestCase):
 
         self.assertIsNone(rows[0]["value"])
         self.assertEqual(rows[0]["qc_flag"], "INVALID_VALUE")
+
+    def test_normalizes_old_format_metrics_with_empty_commodity_metadata(self):
+        row = normalize_metric_rows([metric("VIX")])[0]
+
+        for field in COMMODITY_METRIC_FIELD_NAMES:
+            with self.subTest(field=field):
+                self.assertIn(field, row)
+                self.assertIsNone(row[field])
+
+    def test_metric_rows_only_merge_registered_commodity_metadata(self):
+        row = metric_rows(
+            as_of_date=date(2026, 7, 24),
+            category="commodity_fundamentals",
+            market="US",
+            source="Fixture",
+            source_url="https://example.test/data",
+            frequency="weekly",
+            values={"inventory": 10.0},
+            units={"inventory": "barrels"},
+            metadata={
+                "commodity_code": "WTI",
+                "measurement_kind": "inventory",
+                "not_contract_metadata": "ignored",
+            },
+        )[0]
+
+        self.assertEqual(row["commodity_code"], "WTI")
+        self.assertEqual(row["measurement_kind"], "inventory")
+        self.assertNotIn("not_contract_metadata", row)
 
     def test_provider_failure_does_not_abort_successful_provider(self):
         def successful():
@@ -597,6 +639,20 @@ class WeeklyContextTests(unittest.TestCase):
                 self.assertEqual(list(empty_table.columns), EXPECTED_EMPTY_FIELDS[category])
                 self.assertTrue(empty_table.empty)
 
+    def test_bundle_publisher_includes_commodity_metadata_headers(self):
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "bundle"
+
+            publish_weekly_context_bundle({}, output)
+
+            for category in ("commodity_fundamentals", "positioning_flows"):
+                with self.subTest(category=category):
+                    with (output / f"{category}.csv").open(
+                        newline="", encoding="utf-8"
+                    ) as file:
+                        header = next(csv.reader(file))
+                    self.assertEqual(header[-7:], list(COMMODITY_METRIC_FIELD_NAMES))
+
     def test_bundle_publisher_preserves_populated_company_event_csv(self):
         with TemporaryDirectory() as directory:
             output = Path(directory) / "bundle"
@@ -630,6 +686,13 @@ class WeeklyContextTests(unittest.TestCase):
                         "source": "Fixture",
                         "source_url": "https://example.test/company-event",
                         "qc_flag": "OK",
+                        "commodity_code": "",
+                        "commodity_family": "",
+                        "metric_role": "",
+                        "measurement_kind": "",
+                        "participant_class": "",
+                        "known_as_of": "",
+                        "reference_period": "",
                         "event_date": "2026-07-24",
                         "ticker": "FIX",
                         "cik": "0000123456",

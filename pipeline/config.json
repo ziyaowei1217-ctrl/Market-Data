@@ -1334,7 +1334,10 @@
       "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "WTI",
+      "commodity_family": "refined_products",
+      "price_kind": "vendor_proxy"
     },
     {
       "asset_class": "commodity",
@@ -1353,7 +1356,10 @@
       "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "BRENT",
+      "commodity_family": "refined_products",
+      "price_kind": "vendor_proxy"
     },
     {
       "asset_class": "commodity",
@@ -1372,7 +1378,10 @@
       "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "GOLD_COMEX",
+      "commodity_family": "gold",
+      "price_kind": "vendor_proxy"
     },
     {
       "asset_class": "policy_rate",
@@ -1828,7 +1837,10 @@
       "notes": "Public vendor-proxy close for BTC/USD; not an official consolidated market price and crypto venues trade continuously.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "BTC_USD",
+      "commodity_family": "digital_asset",
+      "price_kind": "vendor_proxy"
     }
   ],
   "context": {

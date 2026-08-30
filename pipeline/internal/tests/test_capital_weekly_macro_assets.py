@@ -941,6 +941,18 @@ class MacroAssetUniverseTests(unittest.TestCase):
             for code in required - {"BTC_USD"}
         ))
 
+    def test_commodity_taxonomy_is_additive_to_existing_macro_configs(self):
+        universe = load_macro_asset_universe()
+        wti = next(row for row in universe if row.series_code == "WTI")
+
+        self.assertEqual(wti.commodity_code, "WTI")
+        self.assertEqual(wti.commodity_family, "refined_products")
+        self.assertEqual(wti.price_kind, "vendor_proxy")
+        self.assertEqual(
+            next(row for row in universe if row.series_code == "UST2Y").commodity_code,
+            "",
+        )
+
     def test_usd_pairs_retain_report_direction_and_yahoo_history_discards_nulls(self):
         universe = {item.series_code: item for item in load_macro_asset_universe()}
 

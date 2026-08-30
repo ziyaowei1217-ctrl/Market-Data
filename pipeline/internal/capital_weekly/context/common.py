@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Any, Iterable
 
 
-METRIC_FIELDS = (
+BASE_METRIC_FIELDS = (
     "as_of_date",
     "category",
     "metric_code",
@@ -18,6 +18,16 @@ METRIC_FIELDS = (
     "source_url",
     "qc_flag",
 )
+COMMODITY_METRIC_FIELDS = (
+    "commodity_code",
+    "commodity_family",
+    "metric_role",
+    "measurement_kind",
+    "participant_class",
+    "known_as_of",
+    "reference_period",
+)
+METRIC_FIELDS = BASE_METRIC_FIELDS + COMMODITY_METRIC_FIELDS
 
 
 def iso_date(value: Any) -> str:
@@ -30,10 +40,12 @@ def normalize_metric_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]
     normalized = []
     seen = set()
     for raw in rows:
-        missing = [field for field in METRIC_FIELDS if field not in raw]
+        missing = [field for field in BASE_METRIC_FIELDS if field not in raw]
         if missing:
             raise ValueError(f"Metric row missing required fields: {', '.join(missing)}")
         row = dict(raw)
+        for field in COMMODITY_METRIC_FIELDS:
+            row.setdefault(field, None)
         row["as_of_date"] = iso_date(row["as_of_date"])
         key = (
             row["as_of_date"],

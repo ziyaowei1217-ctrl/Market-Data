@@ -142,7 +142,7 @@ def run_weekly_context(
                     raw_content
                 )
             rows_declare_known_as_of = any(
-                "known_as_of" in row for row in rows
+                row.get("known_as_of") is not None for row in rows
             )
             if rows_declare_known_as_of:
                 rows = filter_known_as_of(rows, run_date)

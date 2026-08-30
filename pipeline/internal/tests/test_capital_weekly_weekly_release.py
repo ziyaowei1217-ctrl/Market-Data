@@ -66,11 +66,18 @@ GICS_FIELDS = [
     *RETURN_DATE_FIELDS, *RETURN_NUMERIC_FIELDS, "change_unit", "qc_flag",
     "source_url",
 ]
+COMMODITY_MACRO_FIELDS = [
+    "commodity_code",
+    "commodity_family",
+    "price_kind",
+    "known_as_of",
+    "provider_route",
+]
 MACRO_FIELDS = [
     "asset_class", "group", "series_code", "name_cn", "name_en", "provider",
     "provider_symbol", "source", "source_url", "frequency", "level_unit",
     "change_unit", "sort_order", "notes", *RETURN_DATE_FIELDS,
-    *RETURN_NUMERIC_FIELDS, "qc_flag", *RANK_FIELDS,
+    *RETURN_NUMERIC_FIELDS, "qc_flag", *RANK_FIELDS, *COMMODITY_MACRO_FIELDS,
 ]
 SECTOR_DIVERGENCE_FIELDS = [
     "market", "market_cn", "horizon", "horizon_cn", "valid_count",
@@ -473,6 +480,34 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(path, MACRO_FIELDS, [row])
 
         with self.assertRaisesRegex(ReleaseValidationError, "source_url"):
+            validate_staged_week(self.root, self.window)
+
+    def test_rejects_a_commodity_research_row_without_a_commodity_code(self):
+        path = self.outputs["macro_assets"] / "commodities.csv"
+        row = fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            series_code="WTI",
+            commodity_code="",
+            commodity_family="refined_products",
+        )
+        write_csv(path, MACRO_FIELDS, [row])
+
+        with self.assertRaisesRegex(ReleaseValidationError, "commodity_code"):
+            validate_staged_week(self.root, self.window)
+
+    def test_rejects_a_commodity_research_row_with_an_unsupported_family(self):
+        path = self.outputs["macro_assets"] / "commodities.csv"
+        row = fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            series_code="WTI",
+            commodity_code="WTI",
+            commodity_family="unknown_family",
+        )
+        write_csv(path, MACRO_FIELDS, [row])
+
+        with self.assertRaisesRegex(ReleaseValidationError, "commodity_family"):
             validate_staged_week(self.root, self.window)
 
     def test_rejects_a_non_finite_numeric_value(self):

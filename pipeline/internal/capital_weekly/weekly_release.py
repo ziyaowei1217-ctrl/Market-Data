@@ -175,7 +175,18 @@ MACRO_COLUMNS = (
     "provider_symbol", "source", "source_url", "frequency", "level_unit",
     "change_unit", "sort_order", "notes", *RETURN_DATE_COLUMNS,
     *RETURN_NUMERIC_COLUMNS, "qc_flag", *RANK_COLUMNS,
+    "commodity_code", "commodity_family", "price_kind", "known_as_of",
+    "provider_route",
 )
+COMMODITY_RESEARCH_FAMILIES = frozenset({
+    "natural_gas",
+    "refined_products",
+    "copper",
+    "gold",
+    "grains_oilseeds",
+    "softs",
+    "livestock",
+})
 SECTOR_DIVERGENCE_COLUMNS = (
     "market", "market_cn", "horizon", "horizon_cn", "valid_count",
     "positive_count", "flat_count", "negative_count", "breadth_ratio",
@@ -937,6 +948,39 @@ def _validate_row(
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} {column} must be finite"
             )
+    family = (row.get("commodity_family") or "").strip()
+    commodity_code = (row.get("commodity_code") or "").strip()
+    is_macro_commodity = (
+        spec.pipeline == "macro_assets"
+        and (row.get("asset_class") or "").strip() == "commodity"
+        and family != "digital_asset"
+    )
+    is_context_commodity = (
+        spec.pipeline == "weekly_context"
+        and spec.filename in {"commodity_fundamentals.csv", "positioning_flows.csv"}
+        and any(
+            (row.get(field) or "").strip()
+            for field in (
+                "commodity_code",
+                "commodity_family",
+                "metric_role",
+                "measurement_kind",
+                "participant_class",
+                "known_as_of",
+                "reference_period",
+            )
+        )
+    )
+    if not (is_macro_commodity or is_context_commodity):
+        return
+    if not commodity_code:
+        raise ReleaseValidationError(
+            f"{path.name} row {row_number} Commodity Research row requires commodity_code"
+        )
+    if family not in COMMODITY_RESEARCH_FAMILIES:
+        raise ReleaseValidationError(
+            f"{path.name} row {row_number} commodity_family is unsupported: {family or 'blank'}"
+        )
 
 
 def _is_valid_core_row(row: dict[str, str], spec: DatasetSpec) -> bool:

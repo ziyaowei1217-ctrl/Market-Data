@@ -22,6 +22,7 @@ except ImportError:
     yf = None
 
 from .provider_contracts import ContextProvider, ProviderResult, ProviderSpec
+from .common import COMMODITY_METRIC_FIELDS
 from .commodities import (
     EIA_SOURCE_URL,
     calculate_weekly_change,
@@ -129,7 +130,12 @@ def metric_rows(
     units: Mapping[str, str],
     names: Mapping[str, str] | None = None,
     qc_flag: str = "OK",
+    metadata: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    commodity_metadata = {
+        field: (metadata or {}).get(field)
+        for field in COMMODITY_METRIC_FIELDS
+    }
     return [
         {
             "as_of_date": as_of_date,
@@ -143,6 +149,7 @@ def metric_rows(
             "source": source,
             "source_url": source_url,
             "qc_flag": qc_flag,
+            **commodity_metadata,
         }
         for code, value in values.items()
     ]
@@ -631,6 +638,7 @@ def _yahoo_volatility_provider(
                 "source": YAHOO_VOLATILITY_SOURCE,
                 "source_url": metric["source_url"],
                 "qc_flag": "OK",
+                **{field: None for field in COMMODITY_METRIC_FIELDS},
             }
             for metric in metrics
         ]

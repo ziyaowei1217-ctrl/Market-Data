@@ -19,7 +19,7 @@ EXPECTED_SECTION_HASHES = {
     "indices": "52d1af58519dc5d542eb220f108b3242052c5cb9312eeb1ac7ded0ccbc0bc146",
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
-    "macro": "dca30483c3c5570d92c0c750f0e823820690f53d5ca244605935513af9a422a2",
+    "macro": "3af0dc58b4fd12c729a36bc151baf7aab343aa2250181081ecc3d23f9a2e5705",
     "context.cftc_contracts": "0c1ddb309a3898b93a6ff5e9cba3f34a77e1e3cdb12338deee3c5efdd1d66a75",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
