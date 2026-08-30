@@ -984,6 +984,134 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(tables["source_log"][0]["status"], "FETCH_FAILED")
         self.assertIn("does not match", tables["source_log"][0]["notes"])
 
+    def test_weekly_context_adds_bounded_metric_history_without_changing_existing_arrays(self):
+        rows = []
+        for observation_date, value in (
+            (date(2026, 8, 16), 100.0),
+            (date(2026, 8, 23), 105.0),
+        ):
+            row = metric("EIA_STOCKS", value)
+            row.update(
+                as_of_date=observation_date,
+                category="commodity_fundamentals",
+                frequency="weekly",
+                unit="BCF",
+                commodity_code="NATGAS_HH",
+                commodity_family="natural_gas",
+                metric_role="physical_fundamental",
+                measurement_kind="inventory",
+                participant_class=None,
+                known_as_of=f"{observation_date.isoformat()}T12:00:00+00:00",
+                reference_period=observation_date.isoformat(),
+            )
+            rows.append(row)
+        spec = ProviderSpec(
+            name="eia_history",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="1.0.0",
+            schema_version="commodity-v2",
+            frequency="weekly",
+            freshness_days=10,
+        )
+
+        tables = run_weekly_context(
+            {
+                "eia_history": ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="commodity_fundamentals",
+                        rows=rows,
+                        raw_text="official fixture",
+                        source="Fixture",
+                        source_url="https://example.test/eia",
+                    ),
+                )
+            },
+            as_of_date=date(2026, 8, 30),
+            history_limits={
+                "daily": 400,
+                "weekly": 160,
+                "monthly": 84,
+                "annual": 12,
+                "marketing_year": 12,
+            },
+        )
+
+        self.assertEqual(
+            tables["commodity_fundamentals"],
+            normalize_metric_rows(rows),
+        )
+        self.assertEqual(len(tables["commodity_metric_history"]), 2)
+        self.assertEqual(
+            [row["value"] for row in tables["commodity_metric_history"]],
+            [100.0, 105.0],
+        )
+        for category in (
+            "events",
+            "economic_releases",
+            "market_internals",
+            "positioning_flows",
+            "company_events",
+            "financial_conditions",
+        ):
+            with self.subTest(category=category):
+                self.assertEqual(tables[category], [])
+
+    def test_non_ok_provider_status_cannot_emit_metric_history_rows(self):
+        row = metric("EIA_STOCKS", 100.0)
+        row.update(
+            as_of_date=date(2026, 8, 23),
+            category="commodity_fundamentals",
+            frequency="weekly",
+            unit="BCF",
+            commodity_code="NATGAS_HH",
+            commodity_family="natural_gas",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+            participant_class=None,
+            known_as_of="2026-08-23T12:00:00+00:00",
+            reference_period="2026-08-23",
+        )
+        spec = ProviderSpec(
+            name="failed_eia_history",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="1.0.0",
+            schema_version="commodity-v2",
+            frequency="weekly",
+            freshness_days=10,
+        )
+
+        tables = run_weekly_context(
+            {
+                "failed_eia_history": ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="commodity_fundamentals",
+                        rows=[row],
+                        raw_text="failed fixture",
+                        source="Fixture",
+                        source_url="https://example.test/eia",
+                        status="FETCH_FAILED",
+                        completed_phase="parse",
+                    ),
+                )
+            },
+            as_of_date=date(2026, 8, 30),
+            history_limits={
+                "daily": 400,
+                "weekly": 160,
+                "monthly": 84,
+                "annual": 12,
+                "marketing_year": 12,
+            },
+        )
+
+        self.assertEqual(tables["commodity_metric_history"], [])
+
     def test_bundle_publisher_writes_all_category_files_and_strict_json(self):
         tables = {
             "events": [],
@@ -992,6 +1120,7 @@ class WeeklyContextTests(unittest.TestCase):
             "positioning_flows": [],
             "company_events": [],
             "commodity_fundamentals": [],
+            "commodity_metric_history": [],
             "financial_conditions": [],
             "source_log": [],
         }
@@ -1007,6 +1136,7 @@ class WeeklyContextTests(unittest.TestCase):
                 "positioning_flows.csv",
                 "company_events.csv",
                 "commodity_fundamentals.csv",
+                "commodity_metric_history.csv",
                 "financial_conditions.csv",
                 "source_log.csv",
                 "weekly_context_snapshot.json",
@@ -1016,6 +1146,13 @@ class WeeklyContextTests(unittest.TestCase):
                 (output / "weekly_context_snapshot.json").read_text(encoding="utf-8")
             )
             self.assertEqual(snapshot["market_internals"][0]["value"], 18.5)
+            with (output / "commodity_metric_history.csv").open(
+                newline="", encoding="utf-8"
+            ) as file:
+                self.assertEqual(
+                    next(csv.reader(file)),
+                    list(CATEGORY_FIELDS["commodity_metric_history"]),
+                )
             for category in (
                 "economic_releases",
                 "company_events",

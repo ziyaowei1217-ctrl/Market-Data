@@ -28,6 +28,11 @@ from pipeline.internal.capital_weekly.commodity_prices import (
     parse_eia_price_series,
     parse_world_bank_monthly_prices,
 )
+from pipeline.internal.capital_weekly.commodity_research import (
+    PRICE_HISTORY_FIELDS,
+    bounded_price_history,
+    load_history_limits,
+)
 from pipeline.internal.capital_weekly.context.eia_commodities import (
     CommodityHttpSpec,
     build_eia_batch_specs,
@@ -73,6 +78,13 @@ class MacroAssetConfig:
     provider_route: str = ""
     freshness_days: str = ""
     source_description: str = ""
+
+
+@dataclass(frozen=True)
+class MacroAssetBundle:
+    detail: pd.DataFrame
+    source_log: pd.DataFrame
+    commodity_price_history: pd.DataFrame
 
 
 def load_macro_asset_universe(
@@ -1477,13 +1489,13 @@ def _source_audit_metadata(
     }
 
 
-def fetch_macro_assets(
+def fetch_macro_asset_bundle(
     universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
     *,
     allow_partial: bool = False,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> MacroAssetBundle:
     session = _session()
     session._macro_official_session = requests.Session()
     if isinstance(getattr(session, "headers", None), Mapping):
@@ -1491,6 +1503,7 @@ def fetch_macro_assets(
     detail_rows = []
     source_rows = []
     histories = {}
+    price_histories = {}
     raw_path = Path(raw_dir) if raw_dir is not None else None
     universe = load_macro_asset_universe(universe_path)
     session._macro_commodity_http = load_commodity_http_policies(
@@ -1579,6 +1592,18 @@ def fetch_macro_assets(
                         f"{freshness_days} calendar days"
                     )
             histories[config.series_code] = history
+            price_histories[config.series_code] = [
+                {
+                    **point,
+                    "known_as_of": point.get("known_as_of")
+                    or config.known_as_of
+                    or None,
+                    "source": config.source,
+                    "source_url": sanitize_audit_text(url),
+                    "qc_flag": "OK",
+                }
+                for point in history
+            ]
             raw_cache_status = "DISABLED"
             raw_cache_error = ""
             if raw_path is not None:
@@ -1653,4 +1678,54 @@ def fetch_macro_assets(
             "Required macro source failure(s) block partial publication: "
             + ", ".join(failures)
         )
-    return detail, source_log
+    config_path = (
+        universe_path
+        if universe_path is not None and Path(universe_path).suffix.lower() == ".json"
+        else None
+    )
+    history_universe = (
+        [
+            config
+            for config in universe
+            if any(
+                (
+                    config.commodity_code,
+                    config.commodity_family,
+                    config.price_kind,
+                )
+            )
+        ]
+        if universe_path is not None
+        and Path(universe_path).suffix.lower() == ".csv"
+        else universe
+    )
+    history_rows = bounded_price_history(
+        price_histories,
+        history_universe,
+        as_of_date or date.today(),
+        load_history_limits(config_path),
+    )
+    return MacroAssetBundle(
+        detail=detail,
+        source_log=source_log,
+        commodity_price_history=pd.DataFrame(
+            history_rows,
+            columns=PRICE_HISTORY_FIELDS,
+        ),
+    )
+
+
+def fetch_macro_assets(
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
+    raw_dir: str | Path | None = None,
+    as_of_date: date | None = None,
+    *,
+    allow_partial: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    bundle = fetch_macro_asset_bundle(
+        universe_path,
+        raw_dir=raw_dir,
+        as_of_date=as_of_date,
+        allow_partial=allow_partial,
+    )
+    return bundle.detail, bundle.source_log

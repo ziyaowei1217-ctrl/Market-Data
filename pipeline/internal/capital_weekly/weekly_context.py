@@ -14,6 +14,12 @@ import pandas as pd
 
 from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
 
+from .commodity_research import (
+    METRIC_HISTORY_FIELDS,
+    bounded_metric_history,
+    load_history_limits,
+)
+
 from .context.common import (
     METRIC_FIELDS,
     normalize_metric_rows,
@@ -40,6 +46,7 @@ CATEGORY_FILES = {
     "positioning_flows": "positioning_flows.csv",
     "company_events": "company_events.csv",
     "commodity_fundamentals": "commodity_fundamentals.csv",
+    "commodity_metric_history": "commodity_metric_history.csv",
     "financial_conditions": "financial_conditions.csv",
     "source_log": "source_log.csv",
 }
@@ -101,6 +108,7 @@ CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {
     "positioning_flows": METRIC_FIELDS,
     "company_events": COMPANY_EVENT_FIELDS,
     "commodity_fundamentals": METRIC_FIELDS,
+    "commodity_metric_history": METRIC_HISTORY_FIELDS,
     "financial_conditions": METRIC_FIELDS,
     "source_log": SOURCE_LOG_FIELDS,
 }
@@ -115,9 +123,11 @@ def run_weekly_context(
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
     audit_secrets: Sequence[str] = (),
+    history_limits: Mapping[str, object] | None = None,
 ) -> dict[str, list[dict]]:
     normalized_audit_secrets = _normalize_audit_secrets(audit_secrets)
     tables = {category: [] for category in CATEGORY_FILES}
+    commodity_history_inputs: list[dict] = []
     raw_path = Path(raw_dir) if raw_dir else None
     if raw_path:
         raw_path.mkdir(parents=True, exist_ok=True)
@@ -234,6 +244,16 @@ def run_weekly_context(
                         row["source_url"],
                         secrets=normalized_audit_secrets,
                     )
+            if (
+                result.status == "OK"
+                and result.category
+                in {"commodity_fundamentals", "positioning_flows"}
+            ):
+                commodity_history_inputs.extend(
+                    row
+                    for row in rows
+                    if row.get("commodity_code") not in (None, "")
+                )
             tables[provider.spec.category].extend(rows)
             tables["source_log"].append(
                 {
@@ -292,6 +312,11 @@ def run_weekly_context(
         tables,
         run_date,
         audit_secrets=normalized_audit_secrets,
+    )
+    tables["commodity_metric_history"] = bounded_metric_history(
+        commodity_history_inputs,
+        run_date,
+        history_limits if history_limits is not None else load_history_limits(),
     )
     return tables
 

@@ -1,5 +1,14 @@
 {
   "schema_version": "1.0",
+  "commodity_research": {
+    "history_limits": {
+      "daily": 400,
+      "weekly": 160,
+      "monthly": 84,
+      "annual": 12,
+      "marketing_year": 12
+    }
+  },
   "indices": [
     {
       "region": "US",

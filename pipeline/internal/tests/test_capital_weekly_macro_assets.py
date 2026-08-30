@@ -36,11 +36,13 @@ from pipeline.internal.capital_weekly.macro_assets import (
     _parse_rate_xlsx,
     _discover_world_bank_monthly_url,
     _fetch_config_history,
+    MacroAssetBundle,
     MacroAssetConfig,
     align_series_histories,
     align_curve_spread,
     calculate_five_year_five_year,
     fetch_macro_assets,
+    fetch_macro_asset_bundle,
     load_macro_asset_universe,
 )
 
@@ -1529,6 +1531,14 @@ class MacroAssetUniverseTests(unittest.TestCase):
             root = Path(directory)
             self.assertTrue((root / "fixed_income.csv").exists())
             self.assertTrue((root / "commodities.csv").exists())
+            self.assertTrue((root / "commodity_price_history.csv").exists())
+            self.assertEqual(
+                (root / "commodity_price_history.csv")
+                .read_text(encoding="utf-8")
+                .splitlines()[0]
+                .split(","),
+                list(macro_assets_module.PRICE_HISTORY_FIELDS),
+            )
             self.assertTrue((root / "foreign_exchange.csv").exists())
             self.assertTrue((root / "macro_divergence.csv").exists())
             self.assertTrue((root / "source_log.csv").exists())
@@ -1541,6 +1551,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
             )
 
         self.assertIsNone(snapshot["commodities"][0]["weekly_change"])
+        self.assertEqual(snapshot["commodity_price_history"], [])
 
     def test_cli_publishes_all_five_asset_classes_and_full_snapshot_contract(self):
         from pipeline.internal.scripts import fetch_macro_assets as fetch_cli
@@ -1668,6 +1679,116 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 for path in root.rglob("*") if path.is_file()
             }
             self.assertEqual(after, before)
+
+
+class MacroAssetHistoryBundleTests(unittest.TestCase):
+    @staticmethod
+    def _config(
+        series_code: str,
+        provider: str,
+        *,
+        commodity_code: str,
+        commodity_family: str,
+        frequency: str,
+        price_kind: str,
+        level_unit: str,
+        sort_order: int,
+    ) -> MacroAssetConfig:
+        return MacroAssetConfig(
+            asset_class="commodity",
+            group="commodities",
+            series_code=series_code,
+            name_cn=series_code,
+            name_en=series_code,
+            provider=provider,
+            provider_symbol=series_code,
+            source="Official fixture" if provider != "yahoo_chart" else "Vendor fixture",
+            source_url="https://official.example.test/data",
+            frequency=frequency,
+            level_unit=level_unit,
+            change_unit="pct",
+            sort_order=sort_order,
+            commodity_code=commodity_code,
+            commodity_family=commodity_family,
+            price_kind=price_kind,
+            freshness_days="45" if provider == "world_bank_pink_sheet" else "",
+        )
+
+    def test_bundle_publishes_only_configured_eia_and_world_bank_histories(self):
+        as_of = date(2026, 8, 30)
+        universe = [
+            self._config(
+                "WTI",
+                "eia_v2",
+                commodity_code="WTI",
+                commodity_family="refined_products",
+                frequency="daily",
+                price_kind="official_cash",
+                level_unit="$/BBL",
+                sort_order=1,
+            ),
+            self._config(
+                "COMEX_GOLD",
+                "world_bank_pink_sheet",
+                commodity_code="GOLD_COMEX",
+                commodity_family="gold",
+                frequency="monthly",
+                price_kind="official_monthly_benchmark",
+                level_unit="$/troy oz",
+                sort_order=2,
+            ),
+            self._config(
+                "BTC_USD",
+                "yahoo_chart",
+                commodity_code="BTC_USD",
+                commodity_family="digital_asset",
+                frequency="daily",
+                price_kind="",
+                level_unit="usd",
+                sort_order=3,
+            ),
+        ]
+
+        def history(config, _session, as_of_date=None):
+            del as_of_date
+            if config.frequency == "monthly":
+                points = [
+                    {"date": date(2026, 7, 31), "value": 3300.0, "unit": config.level_unit},
+                    {"date": date(2026, 8, 29), "value": 3400.0, "unit": config.level_unit},
+                ]
+            else:
+                points = [
+                    {"date": date(2026, 8, 22), "value": 70.0, "unit": config.level_unit},
+                    {"date": date(2026, 8, 29), "value": 75.0, "unit": config.level_unit},
+                ]
+            return points, b"official raw", f"https://official.example.test/{config.series_code}"
+
+        with patch.object(
+            macro_assets_module,
+            "load_macro_asset_universe",
+            return_value=universe,
+        ), patch.object(
+            macro_assets_module,
+            "_fetch_config_history",
+            side_effect=history,
+        ):
+            bundle = fetch_macro_asset_bundle(as_of_date=as_of)
+            legacy = fetch_macro_assets(as_of_date=as_of)
+
+        self.assertIsInstance(bundle, MacroAssetBundle)
+        self.assertEqual(
+            set(bundle.commodity_price_history["commodity_code"]),
+            {"WTI", "GOLD_COMEX"},
+        )
+        self.assertEqual(
+            set(bundle.commodity_price_history["series_code"]),
+            {"WTI", "COMEX_GOLD"},
+        )
+        self.assertNotIn("BTC_USD", set(bundle.commodity_price_history["commodity_code"]))
+        self.assertIs(type(legacy), tuple)
+        self.assertEqual(len(legacy), 2)
+        self.assertIsInstance(legacy[0], pd.DataFrame)
+        self.assertIsInstance(legacy[1], pd.DataFrame)
 
 
 if __name__ == "__main__":
