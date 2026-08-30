@@ -2528,6 +2528,75 @@
         "source_description": "U.S. Exports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       }
     ],
+    "usda_psd": [
+      {
+        "commodity_code": "CORN", "commodity_family": "grains_oilseeds", "commodity_name": "Corn",
+        "country_names": ["World", "United States", "China", "Brazil"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "feed_use": "Feed Dom. Consumption", "industrial_use": "FSI Consumption", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds", "commodity_name": "Oilseed, Soybean",
+        "country_names": ["World", "United States", "Brazil", "China"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "crush": "Crush", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "WHEAT", "commodity_family": "grains_oilseeds", "commodity_name": "Wheat",
+        "country_names": ["World", "United States", "China", "India"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "feed_use": "Feed Dom. Consumption", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "RICE", "commodity_family": "grains_oilseeds", "commodity_name": "Rice, Milled",
+        "country_names": ["World", "China", "India", "United States"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Milled Production", "imports": "MY Imports", "exports": "MY Exports", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "COTTON", "commodity_family": "softs", "commodity_name": "Cotton",
+        "country_names": ["World", "China", "India", "United States"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 480 lb. Bales"]
+      },
+      {
+        "commodity_code": "SUGAR", "commodity_family": "softs", "commodity_name": "Sugar, Centrifugal",
+        "country_names": ["World", "Brazil", "India", "United States"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "COFFEE", "commodity_family": "softs", "commodity_name": "Coffee, Green",
+        "country_names": ["World", "Brazil", "Vietnam", "Colombia"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 60-KG BAGS"]
+      },
+      {
+        "commodity_code": "COCOA", "commodity_family": "softs", "commodity_name": "Cocoa Beans",
+        "country_names": ["World", "Cote d'Ivoire", "Ghana", "Indonesia"], "market_year_offsets": [-1, 0],
+        "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
+        "unit_names": ["1000 MT"]
+      },
+      {
+        "commodity_code": "CATTLE", "commodity_family": "livestock", "commodity_name": "Meat, Beef and Veal",
+        "country_names": ["World", "United States", "Brazil", "China"], "market_year_offsets": [-1, 0],
+        "attributes": {"production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption"},
+        "unit_names": ["1000 MT CWE"]
+      },
+      {
+        "commodity_code": "HOGS", "commodity_family": "livestock", "commodity_name": "Meat, Swine",
+        "country_names": ["World", "China", "United States", "European Union"], "market_year_offsets": [-1, 0],
+        "attributes": {"production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption"},
+        "unit_names": ["1000 MT CWE"]
+      }
+    ],
+    "usda_esr": [
+      {"commodity_code": "CORN", "commodity_family": "grains_oilseeds", "commodity_name": "Corn", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
+      {"commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds", "commodity_name": "Soybeans", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
+      {"commodity_code": "WHEAT", "commodity_family": "grains_oilseeds", "commodity_name": "Wheat - All", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
+      {"commodity_code": "RICE", "commodity_family": "grains_oilseeds", "commodity_name": "Rice - Total", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
+      {"commodity_code": "COTTON", "commodity_family": "softs", "commodity_name": "Cotton - Upland", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Running Bales"}
+    ],
     "metals": [
       {
         "provider": "comex_copper_stocks",

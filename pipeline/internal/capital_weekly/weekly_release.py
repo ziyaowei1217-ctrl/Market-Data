@@ -242,6 +242,8 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
             ("sec_company_events", "company_events"),
             ("eia_natural_gas", "commodity_fundamentals"),
             ("eia_refined_products", "commodity_fundamentals"),
+            ("usda_psd", "commodity_fundamentals"),
+            ("usda_esr", "commodity_fundamentals"),
         }
     ),
     "INSUFFICIENT_DATA": frozenset(
@@ -1042,6 +1044,7 @@ def validate_staged_week(
             )
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_eia_physical_coverage(validated_rows)
+        _validate_usda_agriculture_coverage(validated_rows)
         _validate_metals_core_coverage(validated_rows, window)
     pipelines = [
         {
@@ -1100,6 +1103,103 @@ def _validate_eia_physical_coverage(
                 f"{provider} has no official EIA physical fundamental row "
                 f"for active family {family}"
             )
+
+
+def _validate_usda_agriculture_coverage(
+    datasets: dict[tuple[str, str], list[dict[str, str]]],
+) -> None:
+    source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
+    fundamental_rows = datasets.get(
+        ("weekly_context", "commodity_fundamentals.csv"),
+        [],
+    )
+    configured = {
+        "usda_psd": frozenset({
+            "CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON", "SUGAR",
+            "COFFEE", "COCOA", "CATTLE", "HOGS",
+        }),
+        "usda_esr": frozenset({
+            "CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON",
+        }),
+    }
+    provider_rows = {
+        provider: [
+            row
+            for row in source_rows
+            if (row.get("provider") or "").strip() == provider
+        ]
+        for provider in configured
+    }
+    if not any(provider_rows.values()):
+        return
+    missing_statuses = [
+        provider for provider, rows in provider_rows.items() if not rows
+    ]
+    if missing_statuses:
+        raise ReleaseValidationError(
+            "USDA agriculture capability status missing for: "
+            + ", ".join(sorted(missing_statuses))
+        )
+    duplicate_statuses = [
+        provider for provider, rows in provider_rows.items() if len(rows) != 1
+    ]
+    if duplicate_statuses:
+        raise ReleaseValidationError(
+            "USDA agriculture capability status must be unique for: "
+            + ", ".join(sorted(duplicate_statuses))
+        )
+    statuses = {
+        provider: (rows[0].get("status") or "").strip().upper()
+        for provider, rows in provider_rows.items()
+    }
+    if len(set(statuses.values())) != 1:
+        raise ReleaseValidationError(
+            "USDA PSD and ESR capability statuses must reflect the same key state"
+        )
+    for provider, expected_codes in configured.items():
+        source_row = provider_rows[provider][0]
+        status = statuses[provider]
+        requiredness = (source_row.get("requiredness") or "").strip()
+        provider_prefix = f"{provider}_"
+        rows = [
+            row
+            for row in fundamental_rows
+            if (row.get("metric_code") or "").strip().startswith(provider_prefix)
+        ]
+        if status == "NOT_CONFIGURED":
+            if requiredness != "optional" or rows:
+                raise ReleaseValidationError(
+                    f"{provider} NOT_CONFIGURED must be optional with no rows"
+                )
+            continue
+        if status != "OK" or requiredness != "required":
+            raise ReleaseValidationError(
+                f"{provider} configured capability must be required and OK"
+            )
+        actual_codes = {(row.get("commodity_code") or "").strip() for row in rows}
+        unknown_codes = sorted(actual_codes - expected_codes)
+        if unknown_codes:
+            raise ReleaseValidationError(
+                f"{provider} has unconfigured commodity_code: "
+                + ", ".join(unknown_codes)
+            )
+        missing_codes = sorted(expected_codes - actual_codes)
+        if missing_codes:
+            raise ReleaseValidationError(
+                f"{provider} missing configured commodity_code rows: "
+                + ", ".join(missing_codes)
+            )
+        for row in rows:
+            source = (row.get("source") or "").strip()
+            source_url = (row.get("source_url") or "").strip()
+            host = (urlparse(source_url).hostname or "").lower()
+            if (
+                source != "USDA Foreign Agricultural Service"
+                or host != "api.fas.usda.gov"
+            ):
+                raise ReleaseValidationError(
+                    "USDA row requires official FAS provenance"
+                )
 
 
 def _validate_metals_core_coverage(

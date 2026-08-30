@@ -74,6 +74,12 @@ from .positioning import (
     parse_cftc_tff_csv,
     parse_finra_margin_table,
 )
+from .usda_commodities import (
+    calculate_stock_to_use,
+    parse_esr_records,
+    parse_psd_records,
+    parse_usda_lookup,
+)
 from .volatility import (
     calculate_yahoo_volatility_metrics,
     extract_yahoo_close_histories,
@@ -108,6 +114,8 @@ USGS_COPPER_MCS_URL = (
 USGS_GOLD_MCS_URL = (
     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
 )
+USDA_FAS_API_URL = "https://api.fas.usda.gov"
+USDA_FAS_PORTAL_URL = "https://apps.fas.usda.gov/opendatawebV2/"
 CHICAGO = ZoneInfo("America/Chicago")
 EASTERN = ZoneInfo("America/New_York")
 
@@ -210,6 +218,468 @@ def not_configured_result(
         source_url=source_url,
         status="NOT_CONFIGURED",
         notes=notes,
+    )
+
+
+def _usda_json_value(value: Any, field: str, expected_type: type) -> Any:
+    if isinstance(value, expected_type):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"USDA config {field} must be valid JSON") from error
+        if isinstance(parsed, expected_type):
+            return parsed
+    raise ValueError(f"USDA config {field} must be a {expected_type.__name__}")
+
+
+def _validated_usda_config(
+    rows: list[dict[str, Any]],
+    *,
+    provider: str,
+) -> list[dict[str, Any]]:
+    fields = (
+        (
+            "commodity_code",
+            "commodity_family",
+            "commodity_name",
+            "country_names",
+            "market_year_offsets",
+            "attributes",
+            "unit_names",
+        )
+        if provider == "usda_psd"
+        else (
+            "commodity_code",
+            "commodity_family",
+            "commodity_name",
+            "route",
+            "market_year_offsets",
+            "unit_name",
+        )
+    )
+    if not rows:
+        raise ValueError(f"{provider} requires a configured eligible subset")
+    validated = []
+    seen = set()
+    for raw in rows:
+        item = dict(raw)
+        missing = [field for field in fields if item.get(field) in (None, "")]
+        if missing:
+            raise ValueError(f"{provider} config missing: {', '.join(missing)}")
+        code = str(item["commodity_code"]).strip()
+        family = str(item["commodity_family"]).strip()
+        if family not in {"grains_oilseeds", "softs", "livestock"}:
+            raise ValueError(f"{provider} unsupported agriculture family: {family}")
+        if code in seen:
+            raise ValueError(f"{provider} duplicate commodity_code: {code}")
+        seen.add(code)
+        item["commodity_code"] = code
+        item["commodity_family"] = family
+        item["commodity_name"] = str(item["commodity_name"]).strip()
+        offsets = _usda_json_value(
+            item["market_year_offsets"], "market_year_offsets", list
+        )
+        try:
+            normalized_offsets = [int(value) for value in offsets]
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"{provider} market_year_offsets must contain integers"
+            ) from error
+        if (
+            not normalized_offsets
+            or len(set(normalized_offsets)) != len(normalized_offsets)
+            or any(abs(value) > 5 for value in normalized_offsets)
+        ):
+            raise ValueError(f"{provider} market_year_offsets are invalid")
+        item["market_year_offsets"] = normalized_offsets
+        if provider == "usda_psd":
+            countries = _usda_json_value(item["country_names"], "country_names", list)
+            units = _usda_json_value(item["unit_names"], "unit_names", list)
+            attributes = _usda_json_value(item["attributes"], "attributes", dict)
+            if (
+                not countries
+                or "World" not in countries
+                or len(countries) > 4
+                or len(set(countries)) != len(countries)
+                or not units
+                or len(set(units)) != len(units)
+                or not attributes
+            ):
+                raise ValueError(f"{provider} countries, attributes, or units are invalid")
+            required_attributes = {"production", "imports", "exports", "domestic_use"}
+            if not required_attributes <= set(attributes):
+                raise ValueError(
+                    f"{provider} {code} missing core configured attributes"
+                )
+            item["country_names"] = [str(value).strip() for value in countries]
+            item["unit_names"] = [str(value).strip() for value in units]
+            item["attributes"] = {
+                str(name).strip(): str(display).strip()
+                for name, display in attributes.items()
+            }
+        else:
+            item["route"] = str(item["route"]).strip()
+            if item["route"] != "allCountries":
+                raise ValueError("usda_esr route must be allCountries")
+            item["unit_name"] = str(item["unit_name"]).strip()
+        validated.append(item)
+    return validated
+
+
+def _usda_get_json(
+    session: requests.Session,
+    path: str,
+    api_key: str,
+) -> tuple[str, Any]:
+    url = f"{USDA_FAS_API_URL}{path}"
+    try:
+        response = session.get(
+            url,
+            headers={"API_KEY": api_key, "Accept": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as error:
+        safe = str(error).replace(api_key, "[REDACTED]")
+        raise RuntimeError(safe) from None
+    if not isinstance(payload, (list, dict)):
+        raise ValueError(f"USDA endpoint returned non-record JSON: {path}")
+    return url, payload
+
+
+def _exact_lookup_code(lookup: Mapping[str, str], display: str, kind: str) -> str:
+    if display not in lookup:
+        raise ValueError(f"USDA {kind} lookup has no exact match for {display!r}")
+    return lookup[display]
+
+
+def _eligible_release(
+    payload: Any,
+    *,
+    commodity_code: str,
+    market_year: int,
+    cutoff: datetime,
+) -> str:
+    matching: list[tuple[datetime, str]] = []
+    records = payload if isinstance(payload, list) else payload.get("data", [])
+    if not isinstance(records, list):
+        raise ValueError("USDA release payload must contain records")
+    for record in records:
+        if not isinstance(record, Mapping):
+            raise ValueError("USDA release record must be an object")
+        if str(record.get("commodityCode") or "") != commodity_code:
+            continue
+        try:
+            record_year = int(record.get("marketYear"))
+        except (TypeError, ValueError) as error:
+            raise ValueError("USDA release marketYear must be an integer") from error
+        if record_year != market_year:
+            continue
+        raw = str(record.get("releaseDate") or "").strip()
+        try:
+            released_at = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("USDA releaseDate must be an ISO timestamp") from error
+        if released_at.tzinfo is None or released_at.utcoffset() is None:
+            raise ValueError("USDA releaseDate must include a UTC offset")
+        matching.append((released_at, released_at.isoformat()))
+    if not matching:
+        raise ValueError(
+            f"USDA release lookup missing commodity {commodity_code} market year {market_year}"
+        )
+    latest = max(matching, key=lambda item: item[0])
+    hong_kong = ZoneInfo("Asia/Hong_Kong")
+    if latest[0].astimezone(hong_kong) > cutoff.astimezone(hong_kong):
+        raise ValueError(
+            f"USDA current vintage for {commodity_code} {market_year} is after target Sunday"
+        )
+    return latest[1]
+
+
+def _usda_not_configured(provider: str) -> ProviderResult:
+    label = "PSD" if provider == "usda_psd" else "ESR"
+    return not_configured_result(
+        category="commodity_fundamentals",
+        source="USDA Foreign Agricultural Service",
+        source_url=USDA_FAS_PORTAL_URL,
+        notes=(
+            f"{label} capability NOT_CONFIGURED: USDA_API_KEY is absent; "
+            "obtain a free API key through API.Data.Gov."
+        ),
+    )
+
+
+def _usda_psd_provider(
+    session: requests.Session,
+    end: date,
+    config: list[dict[str, Any]],
+    api_key: str | None,
+) -> ProviderResult:
+    if not api_key:
+        return _usda_not_configured("usda_psd")
+    specs = _validated_usda_config(config, provider="usda_psd")
+    raw_bundle: dict[str, Any] = {"lookups": {}, "releases": {}, "data": {}}
+    lookup_paths = {
+        "commodities": ("/api/psd/commodities", ("commodityName", "commodityCode")),
+        "attributes": (
+            "/api/psd/commodityAttributes",
+            ("attributeName", "attributeId"),
+        ),
+        "countries": ("/api/psd/countries", ("countryName", "countryCode")),
+        "units": ("/api/psd/unitsOfMeasure", ("unitDescription", "unitId")),
+    }
+    lookups: dict[str, dict[str, str]] = {}
+    for kind, (path, fields) in lookup_paths.items():
+        _url, payload = _usda_get_json(session, path, api_key)
+        raw_bundle["lookups"][kind] = payload
+        lookups[kind] = parse_usda_lookup(payload, fields)
+    cutoff = datetime.combine(end, time.max, tzinfo=ZoneInfo("Asia/Hong_Kong"))
+    rows: list[dict[str, Any]] = []
+    for config_item in specs:
+        api_commodity = _exact_lookup_code(
+            lookups["commodities"], config_item["commodity_name"], "commodity"
+        )
+        attributes = {
+            name: _exact_lookup_code(lookups["attributes"], display, "attribute")
+            for name, display in config_item["attributes"].items()
+        }
+        units_by_code = {
+            _exact_lookup_code(lookups["units"], display, "unit"): display
+            for display in config_item["unit_names"]
+        }
+        countries = {
+            display: _exact_lookup_code(lookups["countries"], display, "country")
+            for display in config_item["country_names"]
+        }
+        release_path = f"/api/psd/commodity/{api_commodity}/dataReleaseDates"
+        _release_url, release_payload = _usda_get_json(
+            session, release_path, api_key
+        )
+        raw_bundle["releases"][api_commodity] = release_payload
+        for market_year in (
+            end.year + offset for offset in config_item["market_year_offsets"]
+        ):
+            release_date = _eligible_release(
+                release_payload,
+                commodity_code=api_commodity,
+                market_year=market_year,
+                cutoff=cutoff,
+            )
+            for country_name, country_code in countries.items():
+                if country_name == "World":
+                    data_path = (
+                        f"/api/psd/commodity/{api_commodity}/world/year/{market_year}"
+                    )
+                else:
+                    data_path = (
+                        f"/api/psd/commodity/{api_commodity}/country/"
+                        f"{country_code}/year/{market_year}"
+                    )
+                source_url, payload = _usda_get_json(session, data_path, api_key)
+                data_records = payload if isinstance(payload, list) else payload.get("data", [])
+                if not isinstance(data_records, list):
+                    raise ValueError("USDA PSD data payload must contain records")
+                vintage_records = [
+                    {**dict(record), "releaseDate": record.get("releaseDate") or release_date}
+                    for record in data_records
+                ]
+                raw_bundle["data"][f"{api_commodity}:{country_code}:{market_year}"] = (
+                    vintage_records
+                )
+                parsed = parse_psd_records(
+                    vintage_records,
+                    {
+                        "commodity_code": config_item["commodity_code"],
+                        "commodity_family": config_item["commodity_family"],
+                        "commodity_api_code": api_commodity,
+                        "country_code": country_code,
+                        "country_name": country_name,
+                        "market_year": market_year,
+                        "attributes": attributes,
+                        "units": units_by_code,
+                    },
+                    cutoff,
+                )
+                if not parsed:
+                    raise ValueError(
+                        f"USDA PSD has no eligible rows for {api_commodity} "
+                        f"{country_code} {market_year}"
+                    )
+                ratio = calculate_stock_to_use(parsed)
+                if ratio is not None:
+                    parsed.append(ratio)
+                for record in parsed:
+                    metric_code = (
+                        "usda_psd_"
+                        f"{record['commodity_code'].lower()}_"
+                        f"{record['country_code'].lower()}_"
+                        f"{record['market_year']}_{record['attribute']}"
+                    )
+                    rows.extend(metric_rows(
+                        as_of_date=date.fromisoformat(record["release_date"][:10]),
+                        category="commodity_fundamentals",
+                        market=record["country_name"],
+                        source="USDA Foreign Agricultural Service",
+                        source_url=source_url,
+                        frequency="monthly",
+                        values={metric_code: record["value"]},
+                        units={metric_code: record["unit"]},
+                        names={metric_code: record["attribute"].replace("_", " ")},
+                        metadata={
+                            "commodity_code": record["commodity_code"],
+                            "commodity_family": record["commodity_family"],
+                            "metric_role": "fundamental",
+                            "measurement_kind": record["attribute"],
+                            "participant_class": None,
+                            "known_as_of": record["release_date"],
+                            "reference_period": str(record["market_year"]),
+                        },
+                    ))
+    return ProviderResult(
+        category="commodity_fundamentals",
+        rows=rows,
+        raw_text=json.dumps(raw_bundle, ensure_ascii=False, separators=(",", ":")),
+        source="USDA Foreign Agricultural Service",
+        source_url=USDA_FAS_PORTAL_URL,
+        notes=(
+            "PSD capability ACTIVE; official lookup identities resolved exactly; "
+            "source-native units preserved; NASS cattle/hog inventory detail unavailable."
+        ),
+    )
+
+
+def _usda_esr_provider(
+    session: requests.Session,
+    end: date,
+    config: list[dict[str, Any]],
+    api_key: str | None,
+) -> ProviderResult:
+    if not api_key:
+        return _usda_not_configured("usda_esr")
+    specs = _validated_usda_config(config, provider="usda_esr")
+    raw_bundle: dict[str, Any] = {"lookups": {}, "releases": None, "data": {}}
+    lookup_paths = {
+        "commodities": ("/api/esr/commodities", ("commodityName", "commodityCode")),
+        "countries": ("/api/esr/countries", ("countryName", "countryCode")),
+        "units": ("/api/esr/unitsOfMeasure", ("unitNames", "unitId")),
+    }
+    lookups: dict[str, dict[str, str]] = {}
+    for kind, (path, fields) in lookup_paths.items():
+        _url, payload = _usda_get_json(session, path, api_key)
+        raw_bundle["lookups"][kind] = payload
+        lookups[kind] = parse_usda_lookup(payload, fields)
+    _release_url, release_payload = _usda_get_json(
+        session, "/api/esr/datareleasedates", api_key
+    )
+    raw_bundle["releases"] = release_payload
+    cutoff = datetime.combine(end, time.max, tzinfo=ZoneInfo("Asia/Hong_Kong"))
+    rows: list[dict[str, Any]] = []
+    for config_item in specs:
+        api_commodity = _exact_lookup_code(
+            lookups["commodities"], config_item["commodity_name"], "commodity"
+        )
+        unit_code = _exact_lookup_code(
+            lookups["units"], config_item["unit_name"], "unit"
+        )
+        official_country_codes = frozenset(lookups["countries"].values())
+        for market_year in (
+            end.year + offset for offset in config_item["market_year_offsets"]
+        ):
+            release_date = _eligible_release(
+                release_payload,
+                commodity_code=api_commodity,
+                market_year=market_year,
+                cutoff=cutoff,
+            )
+            data_path = (
+                f"/api/esr/exports/commodityCode/{api_commodity}/"
+                f"allCountries/marketYear/{market_year}"
+            )
+            source_url, payload = _usda_get_json(session, data_path, api_key)
+            data_records = payload if isinstance(payload, list) else payload.get("data", [])
+            if not isinstance(data_records, list):
+                raise ValueError("USDA ESR data payload must contain records")
+            vintage_records = [
+                {
+                    **dict(record),
+                    "marketYear": record.get("marketYear")
+                    if record.get("marketYear") is not None
+                    else market_year,
+                    "releaseDate": record.get("releaseDate") or release_date,
+                }
+                for record in data_records
+            ]
+            unknown_country_codes = sorted({
+                str(
+                    record.get("countryCode")
+                    if record.get("countryCode") is not None
+                    else ""
+                )
+                for record in vintage_records
+            } - official_country_codes)
+            if unknown_country_codes:
+                raise ValueError(
+                    "USDA ESR data contains country codes absent from official lookup: "
+                    + ", ".join(unknown_country_codes)
+                )
+            raw_bundle["data"][f"{api_commodity}:{market_year}"] = vintage_records
+            parsed = parse_esr_records(
+                vintage_records,
+                {
+                    "commodity_code": config_item["commodity_code"],
+                    "commodity_family": config_item["commodity_family"],
+                    "commodity_api_code": api_commodity,
+                    "country_name": "All destinations",
+                    "aggregate_all_countries": True,
+                    "market_year": market_year,
+                    "unit_code": unit_code,
+                    "unit": config_item["unit_name"],
+                },
+                cutoff,
+            )
+            if not parsed:
+                raise ValueError(
+                    f"USDA ESR has no eligible rows for {api_commodity} {market_year}"
+                )
+            for record in parsed:
+                metric_code = (
+                    "usda_esr_"
+                    f"{record['commodity_code'].lower()}_"
+                    f"{record['market_year']}_{record['metric']}"
+                )
+                rows.extend(metric_rows(
+                    as_of_date=date.fromisoformat(record["week_ending_date"]),
+                    category="commodity_fundamentals",
+                    market="United States export sales (all destinations)",
+                    source="USDA Foreign Agricultural Service",
+                    source_url=source_url,
+                    frequency="weekly",
+                    values={metric_code: record["value"]},
+                    units={metric_code: record["unit"]},
+                    names={metric_code: record["metric"].replace("_", " ")},
+                    metadata={
+                        "commodity_code": record["commodity_code"],
+                        "commodity_family": record["commodity_family"],
+                        "metric_role": "fundamental",
+                        "measurement_kind": record["metric"],
+                        "participant_class": None,
+                        "known_as_of": record["release_date"],
+                        "reference_period": record["week_ending_date"],
+                    },
+                ))
+    return ProviderResult(
+        category="commodity_fundamentals",
+        rows=rows,
+        raw_text=json.dumps(raw_bundle, ensure_ascii=False, separators=(",", ":")),
+        source="USDA Foreign Agricultural Service",
+        source_url=USDA_FAS_PORTAL_URL,
+        notes=(
+            "ESR capability ACTIVE; only exact lookup-eligible commodities emitted; "
+            "source-native units preserved."
+        ),
     )
 
 
@@ -1378,6 +1848,8 @@ def build_default_providers(
         cftc_rows = load_config_rows("context.cftc_contracts")
         watchlist_rows = load_config_rows("context.company_watchlist")
         eia_config = load_config_rows("context.eia_series")
+        usda_psd_config = load_config_rows("context.usda_psd")
+        usda_esr_config = load_config_rows("context.usda_esr")
         metal_config = load_config_rows("context.metals")
         financial_config = load_config_rows("context.financial_conditions")
         yahoo_rows = load_config_rows("context.yahoo_volatility")
@@ -1386,6 +1858,10 @@ def build_default_providers(
         cftc_rows = _config(root / "capital_weekly_cftc_contracts.csv")
         watchlist_rows = _config(root / "capital_weekly_company_watchlist.csv")
         eia_config = _config(root / "capital_weekly_eia_series.csv")
+        usda_psd_path = root / "capital_weekly_usda_psd.csv"
+        usda_esr_path = root / "capital_weekly_usda_esr.csv"
+        usda_psd_config = _config(usda_psd_path) if usda_psd_path.exists() else []
+        usda_esr_config = _config(usda_esr_path) if usda_esr_path.exists() else []
         metal_path = root / "capital_weekly_metals.csv"
         metal_config = _config(metal_path) if metal_path.exists() else []
         financial_config = _config(root / "capital_weekly_financial_conditions.csv")
@@ -1426,6 +1902,7 @@ def build_default_providers(
         for name in EIA_PROVIDERS
     }
     eia_key = settings.get("EIA_API_KEY")
+    usda_key = settings.get("USDA_API_KEY")
 
     fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
@@ -1461,6 +1938,18 @@ def build_default_providers(
             eia_key,
             "eia_refined_products",
         ),
+        "usda_psd": lambda: _usda_psd_provider(
+            client,
+            end,
+            usda_psd_config,
+            usda_key,
+        ),
+        "usda_esr": lambda: _usda_esr_provider(
+            client,
+            end,
+            usda_esr_config,
+            usda_key,
+        ),
         "fred_financial_conditions": lambda: _fred_provider(
             client, end, financial_config
         ),
@@ -1487,6 +1976,16 @@ def build_default_providers(
             "commodity_fundamentals",
             "weekly",
             "required" if eia_key else "optional",
+        ),
+        "usda_psd": (
+            "commodity_fundamentals",
+            "monthly",
+            "required" if usda_key else "optional",
+        ),
+        "usda_esr": (
+            "commodity_fundamentals",
+            "weekly",
+            "required" if usda_key else "optional",
         ),
         "fred_financial_conditions": (
             "financial_conditions",
@@ -1576,6 +2075,8 @@ __all__ = [
     "COMEX_GOLD_STOCKS_URL",
     "USGS_COPPER_MCS_URL",
     "USGS_GOLD_MCS_URL",
+    "USDA_FAS_API_URL",
+    "USDA_FAS_PORTAL_URL",
     "build_default_providers",
     "metric_rows",
     "not_configured_result",

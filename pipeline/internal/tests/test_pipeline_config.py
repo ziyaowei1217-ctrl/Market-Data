@@ -24,6 +24,8 @@ EXPECTED_SECTION_HASHES = {
     "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "584aa69dcb4e654c0a924d4688178aa2c474382931e5e04285fc5c0cff9ce149",
+    "context.usda_psd": "078b31245ca20eaced781f4ed9b497b4943c15bea5cfdc8f30a17be8107d0e97",
+    "context.usda_esr": "d35c41e261d4df752b3d6e583cd2eeb28f62d4d005eea56461550853ed4f66d7",
     "context.metals": "de369cdc899001aff4c986425715afbb436ceb88f2b875d43a72d724d5447eb4",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
@@ -40,6 +42,53 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_usda_config_covers_agriculture_groups_with_official_lookup_names(self):
+        psd = load_config_rows("context.usda_psd")
+        esr = load_config_rows("context.usda_esr")
+        expected = {
+            "CORN": "grains_oilseeds",
+            "SOYBEANS": "grains_oilseeds",
+            "WHEAT": "grains_oilseeds",
+            "RICE": "grains_oilseeds",
+            "COTTON": "softs",
+            "SUGAR": "softs",
+            "COFFEE": "softs",
+            "COCOA": "softs",
+            "CATTLE": "livestock",
+            "HOGS": "livestock",
+        }
+
+        self.assertEqual(
+            {row["commodity_code"]: row["commodity_family"] for row in psd},
+            expected,
+        )
+        self.assertEqual(
+            {row["commodity_code"] for row in esr},
+            {"CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON"},
+        )
+        for row in psd:
+            self.assertTrue(row["commodity_name"])
+            self.assertIn("World", row["country_names"])
+            self.assertLessEqual(len(row["country_names"]), 4)
+            self.assertTrue(row["market_year_offsets"])
+            self.assertTrue(row["unit_names"])
+            self.assertIn("production", row["attributes"])
+            self.assertIn("imports", row["attributes"])
+            self.assertIn("exports", row["attributes"])
+            self.assertIn("domestic_use", row["attributes"])
+        for row in esr:
+            self.assertEqual(row["route"], "allCountries")
+            self.assertTrue(row["commodity_name"])
+            self.assertTrue(row["unit_name"])
+
+        providers = build_default_providers(
+            start=date(2026, 8, 24),
+            end=date(2026, 8, 30),
+            environ={},
+        )
+        self.assertEqual(providers["usda_psd"].spec.requiredness, "optional")
+        self.assertEqual(providers["usda_esr"].spec.requiredness, "optional")
+
     def test_metals_use_only_official_supplemental_sources_and_native_units(self):
         rows = load_config_rows("context.metals")
         by_provider = {row["provider"]: row for row in rows}

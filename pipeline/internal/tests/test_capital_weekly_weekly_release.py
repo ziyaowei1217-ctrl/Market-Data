@@ -799,6 +799,167 @@ class StagedValidationTests(unittest.TestCase):
 
         validate_staged_week(self.root, self.window)
 
+    def test_accepts_separate_usda_not_configured_capability_statuses(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="optional",
+                status="NOT_CONFIGURED",
+                observations="0",
+                as_of_date="2026-08-09",
+                source="USDA Foreign Agricultural Service",
+                source_url="https://api.fas.usda.gov/",
+            )
+            for provider in ("usda_psd", "usda_esr")
+        ]
+        write_csv(path, CATEGORY_FIELDS["source_log"], rows)
+
+        validate_staged_week(self.root, self.window)
+
+    def test_usda_capability_status_requires_both_independent_subsections(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        row = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="usda_psd",
+            category="commodity_fundamentals",
+            requiredness="optional",
+            status="NOT_CONFIGURED",
+            observations="0",
+            as_of_date="2026-08-09",
+            source="USDA Foreign Agricultural Service",
+            source_url="https://api.fas.usda.gov/",
+        )
+        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "USDA agriculture capability status missing.*usda_esr",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_active_usda_subsections_require_each_configured_commodity_code(self):
+        source_log = self.outputs["weekly_context"] / "source_log.csv"
+        provider_rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="required",
+                status="OK",
+                observations="1",
+                as_of_date="2026-08-09",
+                source="USDA Foreign Agricultural Service",
+                source_url="https://api.fas.usda.gov/",
+            )
+            for provider in ("usda_psd", "usda_esr")
+        ]
+        write_csv(source_log, CATEGORY_FIELDS["source_log"], provider_rows)
+        fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        only_corn = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            metric_code="usda_psd_corn_world_2026_production",
+            commodity_code="CORN",
+            commodity_family="grains_oilseeds",
+            metric_role="fundamental",
+            measurement_kind="production",
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00-04:00",
+            reference_period="2026",
+            source="USDA Foreign Agricultural Service",
+            source_url="https://api.fas.usda.gov/api/psd/commodity/0440000/world/year/2026",
+        )
+        write_csv(
+            fundamentals,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [only_corn],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "usda_psd.*missing configured commodity_code.*SOYBEANS",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_active_usda_rows_require_exact_codes_and_official_fas_provenance(self):
+        source_log = self.outputs["weekly_context"] / "source_log.csv"
+        provider_rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="required",
+                status="OK",
+                observations="1",
+                as_of_date="2026-08-09",
+                source="USDA Foreign Agricultural Service",
+                source_url="https://api.fas.usda.gov/",
+            )
+            for provider in ("usda_psd", "usda_esr")
+        ]
+        write_csv(source_log, CATEGORY_FIELDS["source_log"], provider_rows)
+        families = {
+            "CORN": "grains_oilseeds",
+            "SOYBEANS": "grains_oilseeds",
+            "WHEAT": "grains_oilseeds",
+            "RICE": "grains_oilseeds",
+            "COTTON": "softs",
+            "SUGAR": "softs",
+            "COFFEE": "softs",
+            "COCOA": "softs",
+            "CATTLE": "livestock",
+            "HOGS": "livestock",
+        }
+        rows = []
+        for index, (commodity_code, family) in enumerate(families.items()):
+            rows.append(fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                metric_code=f"usda_psd_{commodity_code.lower()}_production",
+                commodity_code=commodity_code,
+                commodity_family=family,
+                metric_role="fundamental",
+                measurement_kind="production",
+                participant_class="",
+                known_as_of="2026-08-07T12:00:00-04:00",
+                reference_period="2026",
+                source="USDA Foreign Agricultural Service",
+                source_url=(
+                    "https://example.test/not-usda"
+                    if index == 0
+                    else "https://api.fas.usda.gov/api/psd/commodity/data"
+                ),
+            ))
+        for commodity_code in ("CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON"):
+            rows.append(fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                metric_code=f"usda_esr_{commodity_code.lower()}_net_sales",
+                commodity_code=commodity_code,
+                commodity_family=families[commodity_code],
+                metric_role="fundamental",
+                measurement_kind="net_sales",
+                participant_class="",
+                known_as_of="2026-08-07T08:30:00-04:00",
+                reference_period="2026-07-30",
+                source="USDA Foreign Agricultural Service",
+                source_url="https://api.fas.usda.gov/api/esr/exports/data",
+            ))
+        write_csv(
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            rows,
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "USDA row requires official FAS provenance",
+        ):
+            validate_staged_week(self.root, self.window)
+
     def test_active_eia_families_each_require_a_physical_fundamental_row(self):
         source_log = self.outputs["weekly_context"] / "source_log.csv"
         provider_rows = [

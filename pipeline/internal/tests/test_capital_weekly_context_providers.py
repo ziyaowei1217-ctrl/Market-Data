@@ -70,6 +70,34 @@ class TextSession:
         return TextResponse(self.text)
 
 
+class JsonResponse:
+    encoding = "utf-8"
+    apparent_encoding = "utf-8"
+
+    def __init__(self, payload):
+        self.payload = payload
+        self.text = json.dumps(payload, separators=(",", ":"))
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self.payload
+
+
+class JsonSession:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        response = self.responses[url]
+        if isinstance(response, Exception):
+            raise response
+        return JsonResponse(response)
+
+
 class BinaryResponse:
     def __init__(self, content):
         self.content = content
@@ -117,9 +145,185 @@ def write_provider_configs(data_dir):
     (data_dir / "capital_weekly_yahoo_volatility.csv").write_text(
         YAHOO_CONFIG, encoding="utf-8"
     )
+    (data_dir / "capital_weekly_usda_psd.csv").write_text(
+        "commodity_code,commodity_family,commodity_name,country_names,"
+        "market_year_offsets,attributes,unit_names\n",
+        encoding="utf-8",
+    )
+    (data_dir / "capital_weekly_usda_esr.csv").write_text(
+        "commodity_code,commodity_family,commodity_name,route,"
+        "market_year_offsets,unit_name\n",
+        encoding="utf-8",
+    )
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_usda_families_are_independently_not_configured_before_validation(self):
+        class NoNetworkSession:
+            calls = []
+
+            def get(self, *_args, **_kwargs):
+                raise AssertionError("missing USDA key must not call transport")
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_usda_psd.csv").write_text(
+                "bad,columns\ninvalid,row\n", encoding="utf-8"
+            )
+            (data_dir / "capital_weekly_usda_esr.csv").write_text(
+                "also,bad\ninvalid,row\n", encoding="utf-8"
+            )
+            session = NoNetworkSession()
+            providers = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )
+
+            psd = providers["usda_psd"].fetch()
+            esr = providers["usda_esr"].fetch()
+
+        self.assertEqual(psd.status, "NOT_CONFIGURED")
+        self.assertEqual(esr.status, "NOT_CONFIGURED")
+        self.assertEqual(psd.rows, [])
+        self.assertEqual(esr.rows, [])
+        self.assertEqual(session.calls, [])
+        self.assertEqual(providers["usda_psd"].spec.requiredness, "optional")
+        self.assertEqual(providers["usda_esr"].spec.requiredness, "optional")
+        self.assertNotEqual(psd.notes, esr.notes)
+
+    def test_keyed_usda_families_use_lookups_native_units_and_secretless_audits(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        lookups = json.loads(
+            (fixture_root / "psd_lookups.json").read_text(encoding="utf-8")
+        )
+        psd_records = json.loads(
+            (fixture_root / "psd_records.json").read_text(encoding="utf-8")
+        )
+        esr_records = json.loads(
+            (fixture_root / "esr_records.json").read_text(encoding="utf-8")
+        )
+        base = "https://api.fas.usda.gov"
+        responses = {
+            f"{base}/api/psd/commodities": lookups["commodities"],
+            f"{base}/api/psd/commodityAttributes": lookups["attributes"],
+            f"{base}/api/psd/countries": lookups["countries"],
+            f"{base}/api/psd/unitsOfMeasure": lookups["units"],
+            f"{base}/api/psd/commodity/0440000/dataReleaseDates": [
+                {
+                    "commodityCode": "0440000",
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-12T12:00:00-04:00",
+                }
+            ],
+            f"{base}/api/psd/commodity/0440000/world/year/2026": psd_records,
+            f"{base}/api/esr/commodities": [
+                {"commodityCode": 101, "commodityName": "Corn"}
+            ],
+            f"{base}/api/esr/countries": [
+                {"countryCode": 1220, "countryName": "Canada"},
+                {"countryCode": 2010, "countryName": "Mexico"},
+            ],
+            f"{base}/api/esr/unitsOfMeasure": [
+                {"unitId": 1, "unitNames": "Metric Tons"}
+            ],
+            f"{base}/api/esr/datareleasedates": [
+                {
+                    "commodityCode": 101,
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-27T08:30:00-04:00",
+                }
+            ],
+            f"{base}/api/esr/exports/commodityCode/101/allCountries/marketYear/2026": esr_records,
+        }
+        secret = "usda-secret-test-key"
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            psd_row = {
+                "commodity_code": "CORN",
+                "commodity_family": "grains_oilseeds",
+                "commodity_name": "Corn",
+                "country_names": json.dumps(["World"]),
+                "market_year_offsets": json.dumps([0]),
+                "attributes": json.dumps({
+                    "beginning_stocks": "Beginning Stocks",
+                    "production": "Production",
+                    "imports": "MY Imports",
+                    "exports": "MY Exports",
+                    "feed_use": "Feed Dom. Consumption",
+                    "industrial_use": "Industrial Dom. Consumption",
+                    "domestic_use": "Total Dom. Consumption",
+                    "ending_stocks": "Ending Stocks",
+                }),
+                "unit_names": json.dumps(["1000 MT"]),
+            }
+            with (data_dir / "capital_weekly_usda_psd.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(psd_row))
+                writer.writeheader()
+                writer.writerow(psd_row)
+            esr_row = {
+                "commodity_code": "CORN",
+                "commodity_family": "grains_oilseeds",
+                "commodity_name": "Corn",
+                "route": "allCountries",
+                "market_year_offsets": json.dumps([0]),
+                "unit_name": "Metric Tons",
+            }
+            with (data_dir / "capital_weekly_usda_esr.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=list(esr_row))
+                writer.writeheader()
+                writer.writerow(esr_row)
+            session = JsonSession(responses)
+            providers = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": secret},
+                session=session,
+            )
+            raw_dir = data_dir / "raw"
+            tables = run_weekly_context(
+                {
+                    "usda_psd": providers["usda_psd"],
+                    "usda_esr": providers["usda_esr"],
+                },
+                raw_dir=raw_dir,
+                as_of_date=date(2026, 8, 30),
+            )
+
+            raw_content = b"".join(path.read_bytes() for path in raw_dir.iterdir())
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        self.assertEqual(audits["usda_psd"]["status"], "OK", audits)
+        self.assertEqual(audits["usda_esr"]["status"], "OK", audits)
+        self.assertEqual(audits["usda_psd"]["requiredness"], "required")
+        self.assertEqual(audits["usda_esr"]["requiredness"], "required")
+        self.assertEqual(len(tables["commodity_fundamentals"]), 12)
+        self.assertEqual(
+            {row["unit"] for row in tables["commodity_fundamentals"]},
+            {"1000 MT", "Metric Tons", "ratio"},
+        )
+        self.assertTrue(all(
+            row["source"] == "USDA Foreign Agricultural Service"
+            for row in tables["commodity_fundamentals"]
+        ))
+        self.assertNotIn(secret.encode(), raw_content)
+        self.assertNotIn(secret, json.dumps(tables))
+        self.assertTrue(all(secret not in url for url, _kwargs in session.calls))
+        self.assertTrue(all(
+            kwargs["headers"]["API_KEY"] == secret
+            for _url, kwargs in session.calls
+        ))
+
     def test_comex_copper_keeps_exact_bytes_and_auditable_provenance(self):
         metal_header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
