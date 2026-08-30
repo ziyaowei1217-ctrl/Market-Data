@@ -1073,21 +1073,27 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_exact_gate_non_ok_configured_metal_requires_zero_rows(self):
-        write_exact_gate_fixture(self.outputs)
-        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
-        rows = read_csv_rows(path)
-        residual = configured_gold_metal_rows()[2]
-        residual["source_url"] = (
-            "https://www.cmegroup.com/delivery_reports/Gold_Stocks_Alternate.xls"
-        )
-        rows.append(residual)
-        write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
+        for mutation in ("real_metric_mutated_url", "mutated_metric_exact_url"):
+            with self.subTest(mutation=mutation):
+                write_exact_gate_fixture(self.outputs)
+                path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+                rows = read_csv_rows(path)
+                residual = configured_gold_metal_rows()[2]
+                if mutation == "real_metric_mutated_url":
+                    residual["source_url"] = (
+                        "https://www.cmegroup.com/delivery_reports/"
+                        "Gold_Stocks_Alternate.xls"
+                    )
+                else:
+                    residual["metric_code"] = "gold_comex_wrong_inventory"
+                rows.append(residual)
+                write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
 
-        with self.assertRaisesRegex(
-            ReleaseValidationError,
-            r"comex_gold_stocks FETCH_FAILED.*zero.*exact",
-        ):
-            validate_staged_week(self.root, self.window)
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    r"comex_gold_stocks FETCH_FAILED.*requires zero",
+                ):
+                    validate_staged_week(self.root, self.window)
 
     def test_exact_gate_requires_complete_unique_metal_identities_and_count(self):
         mutations = {

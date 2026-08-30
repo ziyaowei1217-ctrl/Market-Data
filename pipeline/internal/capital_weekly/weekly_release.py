@@ -1535,9 +1535,9 @@ def _validate_configured_commodity_coverage(
                 raise ReleaseValidationError(
                     f"{provider} {status} source-log observations must be zero"
                 )
-            if identity_rows:
+            if provider_rows:
                 raise ReleaseValidationError(
-                    f"{provider} {status} requires zero configured exact metric rows"
+                    f"{provider} {status} requires zero attributed provider rows"
                 )
             continue
         expected_observations = expected["expected_observations"]
