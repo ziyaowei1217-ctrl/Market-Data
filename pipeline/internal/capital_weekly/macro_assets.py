@@ -7,7 +7,7 @@ import os
 import tempfile
 import re
 import html
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -20,6 +20,10 @@ from urllib3.util.retry import Retry
 
 from pipeline.internal.common import load_config_rows
 
+from pipeline.internal.capital_weekly.commodity_prices import (
+    parse_eia_price_series,
+    parse_world_bank_monthly_prices,
+)
 from pipeline.internal.capital_weekly.returns import calculate_macro_snapshot, parse_date
 
 
@@ -286,17 +290,67 @@ def _response_bytes(response) -> bytes:
     return response.content if hasattr(response, "content") else response.text.encode("utf-8")
 
 
-def _get(session, url: str, *, headers: dict[str, str] | None = None):
+def _get(
+    session,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    params: dict[str, object] | None = None,
+):
     attempt = {"method": "GET", "url": url, "status": "attempting"}
     session._macro_attempt_trace.append(attempt)
     request_options = {"timeout": (5, 25)}
     if headers is not None:
         request_options["headers"] = headers
+    if params is not None:
+        request_options["params"] = params
     response = session.get(url, **request_options)
     session._macro_raw_parts.append(_response_bytes(response))
     response.raise_for_status()
     attempt["status"] = "completed"
     return response
+
+
+def _is_official_world_bank_https(url: str) -> bool:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    return (
+        parsed.scheme.lower() == "https"
+        and (host == "worldbank.org" or host.endswith(".worldbank.org"))
+        and parsed.username is None
+        and parsed.password is None
+    )
+
+
+def _discover_world_bank_monthly_url(text: str, page_url: str) -> str:
+    if not _is_official_world_bank_https(page_url):
+        raise ValueError("World Bank commodity page must use an official HTTPS host")
+    candidates = []
+    for href, raw_label in re.findall(
+        r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+        text,
+        flags=re.I | re.S,
+    ):
+        label = " ".join(_plain_html(raw_label).casefold().split())
+        indicates_monthly_prices = (
+            label == "monthly prices"
+            or ("monthly" in label and ("historical" in label or "price" in label))
+        )
+        if not indicates_monthly_prices:
+            continue
+        candidate = urljoin(page_url, html.unescape(href).strip())
+        parsed = urlparse(candidate)
+        if (
+            _is_official_world_bank_https(candidate)
+            and parsed.path.lower().endswith(".xlsx")
+        ):
+            candidates.append(candidate)
+    unique = list(dict.fromkeys(candidates))
+    if len(unique) != 1:
+        raise ValueError(
+            "World Bank commodity page did not expose one official monthly workbook link"
+        )
+    return unique[0]
 
 
 def _post(session, url: str, data=b""):
@@ -762,6 +816,65 @@ def _fetch_config_history(
             headers={"User-Agent": requests.utils.default_user_agent()},
         )
         return _parse_fred_csv(response.text, config.provider_symbol), _response_bytes(response), url
+    if config.provider == "eia_v2":
+        if not re.fullmatch(r"[a-z0-9][a-z0-9/_-]*", config.provider_route):
+            raise ValueError(f"Invalid EIA v2 provider route: {config.provider_route}")
+        api_key = os.environ.get("EIA_API_KEY", "").strip()
+        if not api_key:
+            raise ValueError("EIA_API_KEY is required for official EIA prices")
+        url = f"https://api.eia.gov/v2/{config.provider_route.strip('/')}/data/"
+        response = _get(
+            session,
+            url,
+            params={
+                "api_key": api_key,
+                "frequency": config.frequency,
+                "data[0]": "value",
+                "facets[series][]": config.provider_symbol,
+                "start": start.isoformat(),
+                "end": today.isoformat(),
+                "sort[0][column]": "period",
+                "sort[0][direction]": "asc",
+                "length": 5000,
+            },
+        )
+        return (
+            parse_eia_price_series(
+                response.text,
+                config.provider_symbol,
+                config.level_unit,
+            ),
+            _response_bytes(response),
+            url,
+        )
+    if config.provider == "world_bank_pink_sheet":
+        page_content, page_text = cached("GET", config.source_url)
+        del page_content
+        workbook_url = _discover_world_bank_monthly_url(
+            page_text,
+            config.source_url,
+        )
+        workbook_content, _ = cached("GET", workbook_url)
+        parsed = getattr(session, "_macro_world_bank_prices", None)
+        if not isinstance(parsed, dict):
+            requested_columns = getattr(
+                session,
+                "_macro_world_bank_columns",
+                {config.provider_symbol: config.level_unit},
+            )
+            parsed = parse_world_bank_monthly_prices(
+                workbook_content,
+                requested_columns,
+            )
+            session._macro_world_bank_prices = parsed
+        try:
+            history = parsed[config.provider_symbol]
+        except KeyError as error:
+            raise ValueError(
+                "World Bank workbook was not parsed for requested column: "
+                f"{config.provider_symbol}"
+            ) from error
+        return history, workbook_content, workbook_url
     if config.provider == "yahoo_chart":
         symbol = requests.utils.quote(config.provider_symbol, safe="")
         period1 = int(datetime.combine(today - timedelta(days=550), datetime.min.time(), tzinfo=timezone.utc).timestamp())
@@ -1129,13 +1242,21 @@ def fetch_macro_assets(
     universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
+    *,
+    allow_partial: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     session = _session()
     detail_rows = []
     source_rows = []
     histories = {}
     raw_path = Path(raw_dir) if raw_dir is not None else None
-    for config in load_macro_asset_universe(universe_path):
+    universe = load_macro_asset_universe(universe_path)
+    session._macro_world_bank_columns = {
+        config.provider_symbol: config.level_unit
+        for config in universe
+        if config.provider == "world_bank_pink_sheet"
+    }
+    for config in universe:
         started = datetime.now()
         url = config.source_url
         raw = None
@@ -1253,4 +1374,14 @@ def fetch_macro_assets(
                     warnings=raw_cache_error,
                 ),
             })
-    return pd.DataFrame(detail_rows), pd.DataFrame(source_rows)
+    detail = pd.DataFrame(detail_rows)
+    source_log = pd.DataFrame(source_rows)
+    failures = source_log.loc[
+        source_log["status"].eq("FETCH_FAILED"), "series_code"
+    ].tolist()
+    if failures and not allow_partial:
+        raise ValueError(
+            "Required macro source failure(s) block partial publication: "
+            + ", ".join(failures)
+        )
+    return detail, source_log

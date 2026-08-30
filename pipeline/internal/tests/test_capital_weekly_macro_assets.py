@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import requests
+from openpyxl import Workbook
 
 from pipeline.internal.capital_weekly.macro_assets import (
     _atomic_write_bytes,
@@ -244,6 +245,136 @@ class MacroAssetUniverseTests(unittest.TestCase):
         url = session.get.call_args.args[0]
         self.assertIn("cosd=2025-01-09", url)
         self.assertIn("coed=2026-07-13", url)
+
+    def test_eia_v2_dispatch_uses_route_symbol_and_keeps_key_out_of_provenance(self):
+        config = replace(
+            self._config("eia_v2", "RWTC"),
+            provider_route="petroleum/pri/spt",
+            level_unit="Dollars per Barrel",
+        )
+        text = json.dumps({"response": {"data": [
+            {
+                "period": "2026-07-10",
+                "series": "RWTC",
+                "series-description": "Cushing WTI Spot Price FOB",
+                "unit": "Dollars per Barrel",
+                "value": "68.25",
+            }
+        ]}})
+        response = unittest.mock.Mock(content=text.encode(), text=text)
+        response.raise_for_status.return_value = None
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        session.get.return_value = response
+
+        with patch.dict(os.environ, {"EIA_API_KEY": "test-key"}):
+            history, raw, provenance = _fetch_config_history(
+                config,
+                session,
+                as_of_date=date(2026, 7, 11),
+            )
+
+        self.assertEqual(history[0]["value"], 68.25)
+        self.assertEqual(raw, text.encode())
+        self.assertEqual(
+            provenance,
+            "https://api.eia.gov/v2/petroleum/pri/spt/data/",
+        )
+        self.assertNotIn("test-key", provenance)
+        self.assertEqual(
+            session.get.call_args.kwargs["params"]["facets[series][]"],
+            "RWTC",
+        )
+        self.assertEqual(session.get.call_args.kwargs["params"]["api_key"], "test-key")
+
+    def test_world_bank_workbook_is_discovered_downloaded_once_and_parsed_once(self):
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Monthly Prices"
+        sheet.append(["Monthly Prices"])
+        sheet.append(["Date", "Gold", "Copper"])
+        sheet.append(["", "$/toz", "$/mt"])
+        sheet.append(["2026M06", 2340.5, 9510.0])
+        stream = io.BytesIO()
+        workbook.save(stream)
+        workbook_bytes = stream.getvalue()
+        page = (
+            '<a href="https://thedocs.worldbank.org/official/'
+            'CMO-Historical-Data-Monthly.xlsx">Monthly prices</a>'
+        )
+        page_response = unittest.mock.Mock(content=page.encode(), text=page)
+        page_response.raise_for_status.return_value = None
+        workbook_response = unittest.mock.Mock(content=workbook_bytes, text="")
+        workbook_response.raise_for_status.return_value = None
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        session.get.side_effect = [page_response, workbook_response]
+        session._macro_world_bank_columns = {"Gold": "$/toz", "Copper": "$/mt"}
+        gold = replace(
+            self._config("world_bank_pink_sheet", "Gold"),
+            source_url="https://www.worldbank.org/en/research/commodity-markets",
+            level_unit="$/toz",
+        )
+        copper = replace(gold, provider_symbol="Copper", level_unit="$/mt")
+
+        gold_history, gold_raw, gold_url = _fetch_config_history(gold, session)
+        session._macro_attempt_trace = []
+        session._macro_raw_parts = []
+        copper_history, copper_raw, copper_url = _fetch_config_history(copper, session)
+
+        self.assertEqual(gold_history[0]["value"], 2340.5)
+        self.assertEqual(copper_history[0]["value"], 9510.0)
+        self.assertEqual(gold_raw, workbook_bytes)
+        self.assertEqual(copper_raw, workbook_bytes)
+        self.assertEqual(gold_url, copper_url)
+        self.assertEqual(session.get.call_count, 2)
+
+    def test_world_bank_discovery_rejects_non_world_bank_mirror(self):
+        page = (
+            '<a href="https://mirror.example/CMO-Historical-Data-Monthly.xlsx">'
+            'Monthly prices</a>'
+        )
+        response = unittest.mock.Mock(content=page.encode(), text=page)
+        response.raise_for_status.return_value = None
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        session.get.return_value = response
+        config = replace(
+            self._config("world_bank_pink_sheet", "Gold"),
+            source_url="https://www.worldbank.org/en/research/commodity-markets",
+            level_unit="$/toz",
+        )
+
+        with self.assertRaisesRegex(ValueError, "official monthly workbook link"):
+            _fetch_config_history(config, session)
+
+        self.assertEqual(session.get.call_count, 1)
+
+    def test_monthly_price_cutoff_uses_latest_month_end_on_or_before_as_of(self):
+        with tempfile.TemporaryDirectory() as directory:
+            universe = Path(directory) / "universe.csv"
+            universe.write_text(
+                "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
+                "source,source_url,frequency,level_unit,change_unit,sort_order,notes\n"
+                "commodity,commodities,GOLD,黄金,Gold,world_bank_pink_sheet,Gold,"
+                "World Bank,https://www.worldbank.org/en/research/commodity-markets,"
+                "monthly,$/toz,pct,1,official monthly benchmark\n",
+                encoding="utf-8",
+            )
+            history = [
+                {"date": date(2026, 4, 30), "value": 3200.0, "unit": "$/toz"},
+                {"date": date(2026, 5, 31), "value": 3300.0, "unit": "$/toz"},
+                {"date": date(2026, 6, 30), "value": 9999.0, "unit": "$/toz"},
+            ]
+            with patch(
+                "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
+                return_value=(history, b"workbook", "https://thedocs.worldbank.org/monthly.xlsx"),
+            ):
+                detail, source = fetch_macro_assets(
+                    universe,
+                    as_of_date=date(2026, 6, 15),
+                )
+
+        self.assertEqual(detail.loc[0, "latest_date"], "2026-05-31")
+        self.assertEqual(detail.loc[0, "latest_value"], 3300.0)
+        self.assertEqual(source.loc[0, "observations"], 2)
 
     def test_boe_shared_payload_uses_one_request_and_marks_cache_hit(self):
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
@@ -494,7 +625,11 @@ class MacroAssetUniverseTests(unittest.TestCase):
             response.raise_for_status.side_effect = RuntimeError("403 blocked")
             session.get.return_value = response
             with patch("pipeline.internal.capital_weekly.macro_assets._session", return_value=session):
-                detail, source = fetch_macro_assets(universe, raw_dir)
+                detail, source = fetch_macro_assets(
+                    universe,
+                    raw_dir,
+                    allow_partial=True,
+                )
             self.assertEqual(source.loc[0, "status"], "FETCH_FAILED")
             self.assertEqual(detail.loc[0, "qc_flag"], "FETCH_FAILED")
             self.assertIn("GET https://www.rbnz.govt.nz/", source.loc[0, "source_url"])
@@ -521,6 +656,11 @@ class MacroAssetUniverseTests(unittest.TestCase):
             "boc_valet": ("GET", "V39079,AVG.INTWO"),
             "snb_cube": ("GET", "data.snb.ch/api/cube"), "boj_api": ("GET", "stat-search.boj.or.jp"),
             "chinamoney_frr": ("POST", "FrrHis"),
+            "eia_v2": ("GET", "api.eia.gov/v2"),
+            "world_bank_pink_sheet": (
+                "GET",
+                "worldbank.org/en/research/commodity-markets",
+            ),
         }
         universe = load_macro_asset_universe()
         self.assertEqual(set(contracts), {item.provider for item in universe} - {"calculated"})
@@ -528,7 +668,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
             "us_treasury": {"2-year", "5-year", "10-year", "30-year"},
             "us_treasury_real": {"5-year", "10-year"},
             "fred": {"BAMLC0A0CM", "BAMLH0A0HYM2", "DFEDTARL", "DFEDTARU", "IORB", "RRPONTSYAWARD"},
-            "yahoo_chart": {"CL=F", "BZ=F", "GC=F", "DX-Y.NYB", "CNY=X", "HKD=X", "BTC-USD"}, "china_bond": {"2Y", "5Y", "10Y", "30Y"},
+            "yahoo_chart": {"DX-Y.NYB", "CNY=X", "HKD=X", "BTC-USD"}, "china_bond": {"2Y", "5Y", "10Y", "30Y"},
             "sina_fx": {"fx_susdcnh"},
             "pboc_lpr": {"1Y", "5Y+"}, "hkab_hibor": {"1M", "3M"},
             "nyfed_rates": {"EFFR", "SOFR"},
@@ -538,6 +678,12 @@ class MacroAssetUniverseTests(unittest.TestCase):
             "boc_valet": {"V39079", "AVG.INTWO"},
             "snb_cube": {"snboffzisa:D0=LZ"}, "boj_api": {"FM01:STRDCLUCON"},
             "chinamoney_frr": {"FDR007"},
+            "eia_v2": {"RWTC", "RBRTE", "RNGWHHD"},
+            "world_bank_pink_sheet": {
+                "Gold", "Copper", "Maize", "Soybeans", "Wheat, US SRW",
+                "Rice, Thai 5%", "Cotton, A Index", "Sugar, world",
+                "Coffee, Arabica", "Cocoa", "Beef",
+            },
         }
         self.assertEqual(
             expected_symbols,
@@ -552,13 +698,26 @@ class MacroAssetUniverseTests(unittest.TestCase):
             response.raise_for_status.return_value = None
             session.get.return_value = response
             session.post.return_value = response
-            try:
-                _fetch_config_history(config, session)
-            except Exception:
-                pass
+            with patch.dict(os.environ, {"EIA_API_KEY": "test-key"}):
+                try:
+                    _fetch_config_history(config, session)
+                except Exception:
+                    pass
             call = (session.get if method == "GET" else session.post).call_args_list[0]
             self.assertIn(endpoint, call.args[0], provider)
-            self.assertEqual(config.change_unit, "pct" if provider in {"yahoo_chart", "sina_fx"} else "bp", provider)
+            self.assertEqual(
+                config.change_unit,
+                "pct"
+                if provider
+                in {
+                    "yahoo_chart",
+                    "sina_fx",
+                    "eia_v2",
+                    "world_bank_pink_sheet",
+                }
+                else "bp",
+                provider,
+            )
 
     def test_configured_administered_boc_rate_carries_but_market_rate_does_not(self):
         text = json.dumps({"observations": [{"d": "2026-07-10", "V39079": {"v": "2.75"}, "AVG.INTWO": {"v": "2.70"}}]})
@@ -672,7 +831,10 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 raise RuntimeError("chunk 2 failed")
 
             with patch("pipeline.internal.capital_weekly.macro_assets._fetch_config_history", side_effect=fail_with_trace):
-                _, source_log = fetch_macro_assets(universe)
+                _, source_log = fetch_macro_assets(
+                    universe,
+                    allow_partial=True,
+                )
 
         provenance = source_log.loc[0, "source_url"]
         self.assertIn("POST https://expanded.test/chunk-1 [completed]", provenance)
@@ -697,7 +859,11 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 raise ValueError("malformed CSV")
 
             with patch("pipeline.internal.capital_weekly.macro_assets._fetch_config_history", side_effect=parse_failure):
-                _, source_log = fetch_macro_assets(universe, raw_dir=raw_dir)
+                _, source_log = fetch_macro_assets(
+                    universe,
+                    raw_dir=raw_dir,
+                    allow_partial=True,
+                )
 
             self.assertEqual((raw_dir / "ONE.raw").read_bytes(), b"upstream raw bytes")
 
@@ -718,7 +884,11 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
                 return_value=([{"date": date(2026, 7, 10), "value": 1}], b"valid upstream raw", "https://expanded.test"),
             ):
-                _, source_log = fetch_macro_assets(universe, raw_dir=raw_dir)
+                _, source_log = fetch_macro_assets(
+                    universe,
+                    raw_dir=raw_dir,
+                    allow_partial=True,
+                )
 
             self.assertEqual((raw_dir / "ONE.raw").read_bytes(), b"valid upstream raw")
 
@@ -766,7 +936,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertEqual(source_log.loc[0, "raw_cache_error"], "disk full")
         self.assertNotEqual(detail.loc[0, "qc_flag"], "FETCH_FAILED")
 
-    def test_partial_fetch_failure_still_emits_one_detail_and_source_row_per_config(self):
+    def test_required_fetch_failure_blocks_partial_bundle_but_diagnostics_remain_available(self):
         with tempfile.TemporaryDirectory() as directory:
             universe = Path(directory) / "universe.csv"
             header = (
@@ -791,7 +961,12 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 return history, b"fixture", "https://expanded.test/GOOD"
 
             with patch("pipeline.internal.capital_weekly.macro_assets._fetch_config_history", side_effect=fake_fetch):
-                detail, source_log = fetch_macro_assets(universe)
+                with self.assertRaisesRegex(ValueError, "BAD"):
+                    fetch_macro_assets(universe)
+                detail, source_log = fetch_macro_assets(
+                    universe,
+                    allow_partial=True,
+                )
 
         self.assertEqual(detail["series_code"].tolist(), ["GOOD", "BAD"])
         self.assertEqual(source_log["series_code"].tolist(), ["GOOD", "BAD"])
@@ -947,7 +1122,8 @@ class MacroAssetUniverseTests(unittest.TestCase):
 
         self.assertEqual(wti.commodity_code, "WTI")
         self.assertEqual(wti.commodity_family, "refined_products")
-        self.assertEqual(wti.price_kind, "vendor_proxy")
+        self.assertEqual(wti.price_kind, "official_cash")
+        self.assertEqual(wti.provider, "eia_v2")
         self.assertEqual(
             next(row for row in universe if row.series_code == "UST2Y").commodity_code,
             "",
@@ -1033,17 +1209,17 @@ class MacroAssetUniverseTests(unittest.TestCase):
             [{"date": date(2026, 8, 7), "value": 2.1}],
         )
 
-    def test_universe_has_approved_47_series_and_registered_inflation_calculations(self):
+    def test_universe_has_approved_58_series_and_registered_inflation_calculations(self):
         universe = load_macro_asset_universe()
 
-        self.assertEqual(len(universe), 47)
+        self.assertEqual(len(universe), 58)
         self.assertEqual(
             len({item.series_code for item in universe}),
             len(universe),
         )
         self.assertEqual(
             sorted(item.sort_order for item in universe),
-            list(range(1, 48)),
+            list(range(1, 59)),
         )
         by_class = {
             asset_class: [item for item in universe if item.asset_class == asset_class]
@@ -1051,7 +1227,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         }
         self.assertEqual(
             {asset_class: len(items) for asset_class, items in by_class.items()},
-            {"fixed_income": 20, "commodity": 4, "foreign_exchange": 4, "policy_rate": 12, "money_market": 7},
+            {"fixed_income": 20, "commodity": 15, "foreign_exchange": 4, "policy_rate": 12, "money_market": 7},
         )
         new_rates = {
             item.series_code: item
@@ -1171,7 +1347,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
 
         class_counts = {
             "fixed_income": 20,
-            "commodity": 4,
+            "commodity": 15,
             "foreign_exchange": 4,
             "policy_rate": 12,
             "money_market": 7,
@@ -1225,19 +1401,19 @@ class MacroAssetUniverseTests(unittest.TestCase):
             )
 
             self.assertEqual(len(pd.read_csv(root / "fixed_income.csv")), 20)
-            self.assertEqual(len(pd.read_csv(root / "commodities.csv")), 4)
+            self.assertEqual(len(pd.read_csv(root / "commodities.csv")), 15)
             self.assertEqual(len(pd.read_csv(root / "foreign_exchange.csv")), 4)
             self.assertEqual(len(pd.read_csv(root / "policy_rates.csv")), 12)
             self.assertEqual(len(pd.read_csv(root / "money_market.csv")), 7)
-            self.assertEqual(len(pd.read_csv(root / "source_log.csv")), 47)
+            self.assertEqual(len(pd.read_csv(root / "source_log.csv")), 58)
             self.assertEqual(
                 sum(len(snapshot[key]) for key in (
                     "fixed_income", "commodities", "foreign_exchange", "policy_rates", "money_market"
                 )),
-                47,
+                58,
             )
             self.assertEqual(len(snapshot["macro_divergence"]), 28)
-            self.assertEqual(len(snapshot["source_log"]), 47)
+            self.assertEqual(len(snapshot["source_log"]), 58)
             self.assertLess(
                 abs(snapshot["fixed_income"][1]["daily_change"] - precision_sentinel),
                 1e-12,

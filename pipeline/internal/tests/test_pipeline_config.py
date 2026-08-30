@@ -19,7 +19,7 @@ EXPECTED_SECTION_HASHES = {
     "indices": "52d1af58519dc5d542eb220f108b3242052c5cb9312eeb1ac7ded0ccbc0bc146",
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
-    "macro": "3af0dc58b4fd12c729a36bc151baf7aab343aa2250181081ecc3d23f9a2e5705",
+    "macro": "d8142cb57de706af5a1af2e623a7fca9c5af12acca12f9b38a0c72caf9d03e32",
     "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
@@ -102,13 +102,58 @@ class PipelineConfigTests(unittest.TestCase):
         self.assertEqual(len(load_index_universe()), 20)
         self.assertEqual(len(load_equity_sectors()), 34)
         self.assertEqual(len(load_gics_sectors()), 11)
-        self.assertEqual(len(load_macro_asset_universe()), 47)
+        self.assertEqual(len(load_macro_asset_universe()), 58)
         providers = build_default_providers(
             start=date(2026, 8, 3),
             end=date(2026, 8, 9),
             environ={},
         )
         self.assertIn("yahoo_volatility_signals", providers)
+
+    def test_requested_commodity_prices_use_only_official_eia_or_world_bank_sources(self):
+        rows = load_config_rows("macro")
+        commodity_rows = {
+            row["commodity_code"]: row
+            for row in rows
+            if row.get("commodity_code")
+            and row.get("commodity_family") != "digital_asset"
+        }
+        requested = {
+            "NATGAS_HH",
+            "WTI",
+            "BRENT",
+            "COPPER_COMEX",
+            "GOLD_COMEX",
+            "CORN",
+            "SOYBEANS",
+            "WHEAT",
+            "RICE",
+            "COTTON",
+            "SUGAR",
+            "COFFEE",
+            "COCOA",
+            "CATTLE",
+        }
+
+        self.assertEqual(set(commodity_rows), requested)
+        self.assertTrue(all(
+            row["provider"] in {"eia_v2", "world_bank_pink_sheet"}
+            for row in commodity_rows.values()
+        ))
+        self.assertTrue(all(
+            row["price_kind"]
+            in {"official_cash", "official_monthly_benchmark"}
+            for row in commodity_rows.values()
+        ))
+        self.assertEqual(commodity_rows["WTI"]["provider_symbol"], "RWTC")
+        self.assertEqual(commodity_rows["BRENT"]["provider_symbol"], "RBRTE")
+        self.assertEqual(
+            commodity_rows["NATGAS_HH"]["provider_symbol"],
+            "RNGWHHD",
+        )
+        btc = next(row for row in rows if row.get("commodity_code") == "BTC_USD")
+        self.assertEqual(btc["provider"], "yahoo_chart")
+        self.assertEqual(btc["commodity_family"], "digital_asset")
 
     def test_default_loader_returns_an_independent_copy(self):
         first = load_config_rows("indices")
