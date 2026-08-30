@@ -963,6 +963,18 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
                 date(2026, 8, 6),
                 date(2026, 8, 7),
             ]
+        elif item["series_code"] == "COMEX_GOLD":
+            observations = []
+            for months_before in reversed(range(84)):
+                month_index = 2026 * 12 + 7 - months_before
+                observations.append(date(
+                    month_index // 12,
+                    month_index % 12 + 1,
+                    7,
+                ))
+        raw_observations = (
+            86 if item["series_code"] == "COMEX_GOLD" else len(observations)
+        )
         macro_statuses.append(fixture_row(
             MACRO_SOURCE_LOG_FIELDS,
             series_code=item["series_code"],
@@ -970,7 +982,7 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
             source_url=item["source_url"],
             latest_date="2026-08-07",
             latest_value=str(100 + index),
-            observations=str(len(observations)),
+            observations=str(raw_observations),
         ))
         for offset, observation in enumerate(observations):
             value = 70 + offset if item["series_code"] == "WTI" else 100 + index
@@ -3251,6 +3263,27 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
         path, fields = locations[table]
         write_csv(path, fields, rows)
 
+    def _non_ok_context_row(self) -> dict:
+        return fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-06",
+            category="commodity_fundamentals",
+            market="United States",
+            metric_code="eia_crude_stocks_ex_spr_change",
+            value="1",
+            unit="MBBL",
+            source="U.S. Energy Information Administration",
+            source_url="https://api.eia.gov/v2/petroleum/sum/sndw/data/",
+            commodity_code="WTI",
+            commodity_family="refined_products",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00Z",
+            reference_period="2026-08-06",
+            qc_flag="INSUFFICIENT_DATA",
+        )
+
     def test_contract_three_registers_exact_additive_tables(self):
         version_two = {
             (spec.pipeline, spec.filename)
@@ -3294,13 +3327,92 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 self.assertTrue(fact["input_record_ids"])
                 self.assertLessEqual(set(fact["input_record_ids"]), published_ids)
 
+    def test_price_status_reconciles_raw_count_to_configured_history_limit(self):
+        self._validate()
+
+        gold_history = [
+            row
+            for row in self.tables["commodity_price_history"]
+            if row["series_code"] == "COMEX_GOLD"
+        ]
+        status_rows = read_csv_rows(
+            self.outputs["macro_assets"] / "source_log.csv"
+        )
+        gold_status = next(
+            row for row in status_rows if row["series_code"] == "COMEX_GOLD"
+        )
+        self.assertEqual(len(gold_history), 84)
+        self.assertEqual(gold_status["observations"], "86")
+
+    def test_contract_three_preserves_valid_non_ok_tagged_context_row(self):
+        context_path = (
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        )
+        rows = read_csv_rows(context_path)
+        rows.append(self._non_ok_context_row())
+        write_csv(
+            context_path,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            rows,
+        )
+
+        self._validate()
+
+    def test_price_status_rejects_invalid_bounded_count_relationships(self):
+        cases = (
+            (
+                "price_status_undercount",
+                r"COMEX_GOLD.*raw 83.*expected 83.*published 84",
+            ),
+            (
+                "price_status_premature_truncation",
+                r"COMEX_GOLD.*raw 86.*expected 84.*published 83",
+            ),
+            (
+                "price_history_over_published",
+                r"COMEX_GOLD.*raw 86.*expected 84.*published 85",
+            ),
+            (
+                "price_status_nonintegral",
+                r"COMEX_GOLD.*status observations.*canonical integer",
+            ),
+            (
+                "price_status_non_ok_residual",
+                r"source_log.csv.*unacceptable status.*FETCH_FAILED",
+            ),
+        )
+        for mutation, expected in cases:
+            with self.subTest(mutation=mutation):
+                self._reset()
+                self._apply_mutation(mutation)
+                with self.assertRaisesRegex(ReleaseValidationError, expected):
+                    self._validate()
+
+    def test_non_ok_tagged_context_rows_still_validate_identity_and_provenance(self):
+        cases = (
+            (
+                "non_ok_unknown_metric",
+                r"metric identity is not registered.*rogue_non_ok_metric",
+            ),
+            (
+                "non_ok_corrupt_provenance",
+                r"eia_refined_products.*business row.*source must match provider",
+            ),
+        )
+        for mutation, expected in cases:
+            with self.subTest(mutation=mutation):
+                self._reset()
+                self._apply_mutation(mutation)
+                with self.assertRaisesRegex(ReleaseValidationError, expected):
+                    self._validate()
+
     def test_contract_three_rejects_table_driven_cross_table_mutations(self):
         cases = (
             ("code_family", r"code-family.*WTI.*refined_products"),
             ("record_id", r"record_id.*commodity price history"),
             ("duplicate_identity", r"duplicate.*semantic identity"),
             ("observation_order", r"history ordering.*WTI"),
-            ("history_limit", r"history limit.*daily.*400"),
+            ("history_limit", r"(?:history limit|bounded price history).*daily.*400"),
             ("future_known_as_of", r"known_as_of.*cutoff"),
             ("naive_known_as_of", r"known_as_of.*UTC Z"),
             ("nonfinite_value", r"value must be finite"),
@@ -3313,7 +3425,7 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
             ("unregistered_metric", r"metric identity is not registered.*totally_unregistered_usda_metric"),
             ("status_observation_count", r"cftc_disaggregated.*observations.*208"),
             ("status_provenance", r"cftc_disaggregated.*status provenance"),
-            ("price_status_observation_count", r"WTI.*status observations.*expected 3.*got 0"),
+            ("price_status_observation_count", r"WTI.*OK status observations.*positive.*got 0"),
             ("price_status_provenance", r"WTI.*status provenance"),
             ("usda_evil_country", r"USDA PSD.*country.*evilcountry"),
             ("usda_wrong_reference_period", r"USDA PSD.*reference_period.*2026"),
@@ -3539,16 +3651,63 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
         elif mutation in {
             "price_status_observation_count",
             "price_status_provenance",
+            "price_status_undercount",
+            "price_status_nonintegral",
+            "price_status_non_ok_residual",
         }:
             status_path = self.outputs["macro_assets"] / "source_log.csv"
             status_rows = read_csv_rows(status_path)
-            status = next(row for row in status_rows if row["series_code"] == "WTI")
+            target_series = (
+                "COMEX_GOLD"
+                if mutation in {"price_status_undercount", "price_status_nonintegral"}
+                else "WTI"
+            )
+            status = next(
+                row for row in status_rows if row["series_code"] == target_series
+            )
             if mutation == "price_status_observation_count":
+                status["observations"] = "0"
+            elif mutation == "price_status_undercount":
+                status["observations"] = "83"
+            elif mutation == "price_status_nonintegral":
+                status["observations"] = "86.0"
+            elif mutation == "price_status_non_ok_residual":
+                status["status"] = "FETCH_FAILED"
                 status["observations"] = "0"
             else:
                 status["source"] = "Impostor"
                 status["source_url"] = "https://example.com/prices"
             write_csv(status_path, MACRO_SOURCE_LOG_FIELDS, status_rows)
+        elif mutation in {
+            "price_status_premature_truncation",
+            "price_history_over_published",
+        }:
+            gold_rows = [
+                row for row in price_rows if row["series_code"] == "COMEX_GOLD"
+            ]
+            if mutation == "price_status_premature_truncation":
+                removed = gold_rows[0]
+                price_rows = [
+                    row for row in price_rows if row["record_id"] != removed["record_id"]
+                ]
+            else:
+                config = json.loads(
+                    PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8")
+                )
+                gold = next(
+                    row for row in config["macro"]
+                    if row["series_code"] == "COMEX_GOLD"
+                )
+                price_rows.append(_price_history_row(
+                    gold,
+                    date(2019, 8, 7),
+                    1,
+                ))
+            price_rows.sort(key=lambda row: (
+                row["commodity_code"], row["series_code"],
+                row["observation_date"], row["known_as_of"], row["record_id"],
+            ))
+            self._rewrite("price", price_rows)
         elif mutation in {
             "usda_evil_country",
             "usda_wrong_reference_period",
@@ -3641,6 +3800,23 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                     row for row in context_rows
                     if row["metric_code"] == "eia_crude_stocks_ex_spr"
                 )["commodity_family"] = "gold"
+            write_csv(
+                context_path,
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                context_rows,
+            )
+        elif mutation in {"non_ok_unknown_metric", "non_ok_corrupt_provenance"}:
+            context_path = (
+                self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+            )
+            context_rows = read_csv_rows(context_path)
+            row = self._non_ok_context_row()
+            if mutation == "non_ok_unknown_metric":
+                row["metric_code"] = "rogue_non_ok_metric"
+            else:
+                row["source"] = "Impostor"
+                row["source_url"] = "https://example.com/not-eia"
+            context_rows.append(row)
             write_csv(
                 context_path,
                 CATEGORY_FIELDS["commodity_fundamentals"],

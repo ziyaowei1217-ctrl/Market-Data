@@ -2152,6 +2152,8 @@ def _validate_provider_status(
     expected: int,
     label: str,
     rows_label: str = "business rows",
+    observation_limit: int | None = None,
+    frequency: str | None = None,
 ) -> None:
     source = str(row.get("source") or "").strip()
     source_url = str(row.get("source_url") or "").strip()
@@ -2186,6 +2188,28 @@ def _validate_provider_status(
             f"{label} status observations must be a canonical integer"
         )
     status = str(row.get("status") or "").strip().upper()
+    if observation_limit is not None:
+        if status != "OK":
+            if observations != 0 or expected != 0:
+                raise ReleaseValidationError(
+                    f"{label} non-OK status requires zero raw observations and "
+                    f"zero published {rows_label}: raw {observations}, "
+                    f"published {expected}"
+                )
+            return
+        if observations <= 0:
+            raise ReleaseValidationError(
+                f"{label} OK status observations must be a positive canonical "
+                f"integer: got {observations}"
+            )
+        bounded_expected = min(observations, observation_limit)
+        if expected != bounded_expected:
+            raise ReleaseValidationError(
+                f"{label} bounded price history {frequency or 'configured'} limit "
+                f"{observation_limit} count mismatch: raw {observations}, "
+                f"expected {bounded_expected}, published {expected}"
+            )
+        return
     if observations != expected:
         raise ReleaseValidationError(
             f"{label} status observations must equal attributed {rows_label}: "
@@ -2852,13 +2876,6 @@ def _validate_commodity_research_v2(
             "unknown",
         )
         raise ReleaseValidationError(f"commodity price history ordering is invalid: {changed}")
-    for (_code, series), rows in price_groups.items():
-        frequency = str(configured_prices[series].get("frequency") or "").strip()
-        limit = limits.get(frequency)
-        if limit is None or len(rows) > limit:
-            raise ReleaseValidationError(
-                f"commodity price history limit exceeds {frequency} {limit}: {series}"
-            )
     for series, item in configured_prices.items():
         status = macro_status.get(series)
         if status is None:
@@ -2867,13 +2884,26 @@ def _validate_commodity_research_v2(
             )
         provider = str(item["provider"])
         code = str(item["commodity_code"])
+        frequency = str(item.get("frequency") or "").strip()
+        limit = limits.get(frequency)
+        if limit is None:
+            raise ReleaseValidationError(
+                f"commodity price history limit is missing for {frequency}: {series}"
+            )
+        rows = price_groups[(code, series)]
         _validate_provider_status(
             status,
             providers[provider],
-            len(price_groups[(code, series)]),
+            len(rows),
             f"{provider}/{series}",
             "price history rows",
+            observation_limit=limit,
+            frequency=frequency,
         )
+        if len(rows) > limit:
+            raise ReleaseValidationError(
+                f"commodity price history limit exceeds {frequency} {limit}: {series}"
+            )
 
     descriptors = _metric_descriptors(config)
     normalized_metric: list[dict] = []
@@ -3026,8 +3056,6 @@ def _validate_commodity_research_v2(
                 f"context commodity base row {code} family {family or 'blank'} "
                 f"requires {required_family}"
             )
-        if str(row.get("qc_flag") or "").strip().upper() != "OK":
-            continue
         descriptor = _metric_descriptor(row, config, descriptors, window)
         provider = descriptor["provider"]
         _require_policy_provenance(
@@ -3035,6 +3063,8 @@ def _validate_commodity_research_v2(
             providers[provider],
             f"{provider} business row",
         )
+        if str(row.get("qc_flag") or "").strip().upper() != "OK":
+            continue
         business_counts[provider] = business_counts.get(provider, 0) + 1
         expected_groups.add((
             code,
