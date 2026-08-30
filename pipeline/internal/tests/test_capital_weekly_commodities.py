@@ -1,6 +1,7 @@
 import json
 import unittest
 from datetime import date
+from dataclasses import replace
 
 from pipeline.internal.common import load_config_rows
 from pipeline.internal.capital_weekly.context.commodities import (
@@ -9,6 +10,9 @@ from pipeline.internal.capital_weekly.context.commodities import (
     parse_eia_series,
 )
 from pipeline.internal.capital_weekly.context.eia_commodities import (
+    EiaBatchSpec,
+    build_eia_batch_specs,
+    fetch_eia_batches,
     latest_and_changes,
     parse_eia_metric_series,
 )
@@ -39,6 +43,142 @@ class CommodityFundamentalTests(unittest.TestCase):
         }
         spec.update(overrides)
         return spec
+
+    def test_eia_price_natural_gas_and_petroleum_routes_use_exact_bounded_batches(self):
+        rows = [
+            self.eia_spec(
+                route=route,
+                frequency=frequency,
+                facets={"series": series},
+                metric_code=f"metric_{index}",
+            )
+            for index, (route, frequency, series) in enumerate(
+                (
+                    ("petroleum/pri/spt", "daily", "RWTC"),
+                    ("petroleum/pri/spt", "daily", "RBRTE"),
+                    ("natural-gas/pri/fut", "daily", "RNGWHHD"),
+                    ("natural-gas/sum/snd", "monthly", "N9070US2"),
+                    ("natural-gas/sum/snd", "monthly", "N3010US2"),
+                    ("natural-gas/sum/snd", "monthly", "N3020US2"),
+                    ("petroleum/sum/sndw", "weekly", "WCESTUS1"),
+                    ("petroleum/sum/sndw", "weekly", "WGTSTUS1"),
+                    ("petroleum/sum/sndw", "weekly", "WDISTUS1"),
+                )
+            )
+        ]
+
+        batches = build_eia_batch_specs(
+            rows,
+            request_batch_size=2,
+            page_length=7,
+            start="2026-01-01",
+            end="2026-08-23",
+        )
+
+        self.assertEqual(
+            [(item.route, item.frequency, len(item.facets["series"])) for item in batches],
+            [
+                ("natural-gas/pri/fut", "daily", 1),
+                ("natural-gas/sum/snd", "monthly", 2),
+                ("natural-gas/sum/snd", "monthly", 1),
+                ("petroleum/pri/spt", "daily", 2),
+                ("petroleum/sum/sndw", "weekly", 2),
+                ("petroleum/sum/sndw", "weekly", 1),
+            ],
+        )
+        self.assertTrue(all(item.page_length == 7 for item in batches))
+
+    def test_fetch_eia_batches_validates_metadata_before_paginated_rows_and_coverage(self):
+        specs = [
+            EiaBatchSpec(
+                route="petroleum/pri/spt",
+                facets={"series": ("RWTC", "RBRTE")},
+                frequency="daily",
+                start="2026-08-01",
+                end="2026-08-23",
+                page_length=2,
+            )
+        ]
+        metadata = {
+            "RWTC": {
+                "facets": {"series": "RWTC"},
+                "source_description": "Cushing, OK WTI Spot Price FOB",
+                "expected_unit": "$/BBL",
+            },
+            "RBRTE": {
+                "facets": {"series": "RBRTE"},
+                "source_description": "Europe Brent Spot Price FOB",
+                "expected_unit": "$/BBL",
+            },
+        }
+
+        class Client:
+            def __init__(self):
+                self.calls = []
+
+            def fetch_metadata(self, spec, expected):
+                self.calls.append(("metadata", spec.route, tuple(sorted(expected))))
+
+            def fetch_page(self, spec, *, offset, length):
+                self.calls.append(("page", offset, length))
+                rows = [
+                    {
+                        "period": "2026-08-21",
+                        "series": "RWTC",
+                        "series-description": "Cushing, OK WTI Spot Price FOB",
+                        "units": "$/BBL",
+                        "value": "63.0",
+                    },
+                    {
+                        "period": "2026-08-20",
+                        "series": "RWTC",
+                        "series-description": "Cushing, OK WTI Spot Price FOB",
+                        "units": "$/BBL",
+                        "value": "62.0",
+                    },
+                    {
+                        "period": "2026-08-21",
+                        "series": "RBRTE",
+                        "series-description": "Europe Brent Spot Price FOB",
+                        "units": "$/BBL",
+                        "value": "67.0",
+                    },
+                ]
+                page = rows[offset : offset + length]
+                return {"response": {"total": len(rows), "data": page}}
+
+        client = Client()
+        pages = fetch_eia_batches(client, specs, expected_metadata=metadata)
+
+        self.assertEqual(
+            client.calls,
+            [
+                ("metadata", "petroleum/pri/spt", ("RBRTE", "RWTC")),
+                ("page", 0, 2),
+                ("page", 2, 2),
+            ],
+        )
+        self.assertEqual(sum(len(page["response"]["data"]) for page in pages), 3)
+
+        missing = Client()
+        missing.fetch_page = lambda spec, *, offset, length: {
+            "response": {
+                "total": 1,
+                "data": [{
+                    "period": "2026-08-21",
+                    "series": "RWTC",
+                    "series-description": "Cushing, OK WTI Spot Price FOB",
+                    "units": "$/BBL",
+                    "value": "63.0",
+                }],
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "missing.*RBRTE"):
+            fetch_eia_batches(missing, specs, expected_metadata=metadata)
+
+        duplicate = [specs[0], replace(specs[0], facets={"series": ("RWTC",)})]
+        with self.assertRaisesRegex(ValueError, "duplicate.*RWTC"):
+            fetch_eia_batches(Client(), duplicate, expected_metadata=metadata)
 
     def test_current_lower_48_description_matches_production_config(self):
         spec = next(

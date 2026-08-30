@@ -252,8 +252,9 @@ class MacroAssetUniverseTests(unittest.TestCase):
             self._config("eia_v2", "RWTC"),
             provider_route="petroleum/pri/spt",
             level_unit="Dollars per Barrel",
+            source_description="Cushing WTI Spot Price FOB",
         )
-        text = json.dumps({"response": {"data": [
+        text = json.dumps({"response": {"total": 1, "data": [
             {
                 "period": "2026-07-10",
                 "series": "RWTC",
@@ -262,10 +263,18 @@ class MacroAssetUniverseTests(unittest.TestCase):
                 "value": "68.25",
             }
         ]}})
-        response = unittest.mock.Mock(content=text.encode(), text=text)
-        response.raise_for_status.return_value = None
+        response = unittest.mock.Mock(
+            content=text.encode(), text=text, status_code=200, headers={}
+        )
+        metadata_text = json.dumps(
+            {"response": {"facets": [{"id": "RWTC", "name": "WTI"}]}}
+        )
+        metadata_response = unittest.mock.Mock(
+            content=metadata_text.encode(), text=metadata_text,
+            status_code=200, headers={},
+        )
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
-        session.get.return_value = response
+        session.get.side_effect = [metadata_response, response]
 
         with patch.dict(os.environ, {"EIA_API_KEY": "test-key"}):
             history, raw, provenance = _fetch_config_history(
@@ -275,7 +284,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
             )
 
         self.assertEqual(history[0]["value"], 68.25)
-        self.assertEqual(raw, text.encode())
+        self.assertEqual(raw, metadata_text.encode() + b"\n" + text.encode())
         self.assertEqual(
             provenance,
             "https://api.eia.gov/v2/petroleum/pri/spt/data/",
@@ -283,7 +292,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertNotIn("test-key", provenance)
         self.assertEqual(
             session.get.call_args.kwargs["params"]["facets[series][]"],
-            "RWTC",
+            ["RWTC"],
         )
         self.assertEqual(session.get.call_args.kwargs["params"]["api_key"], "test-key")
 
@@ -302,9 +311,13 @@ class MacroAssetUniverseTests(unittest.TestCase):
             '<a href="https://thedocs.worldbank.org/official/'
             'CMO-Historical-Data-Monthly.xlsx">Monthly prices</a>'
         )
-        page_response = unittest.mock.Mock(content=page.encode(), text=page)
+        page_response = unittest.mock.Mock(
+            content=page.encode(), text=page, status_code=200, headers={}
+        )
         page_response.raise_for_status.return_value = None
-        workbook_response = unittest.mock.Mock(content=workbook_bytes, text="")
+        workbook_response = unittest.mock.Mock(
+            content=workbook_bytes, text="", status_code=200, headers={}
+        )
         workbook_response.raise_for_status.return_value = None
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
         session.get.side_effect = [page_response, workbook_response]
@@ -333,7 +346,9 @@ class MacroAssetUniverseTests(unittest.TestCase):
             '<a href="https://mirror.example/CMO-Historical-Data-Monthly.xlsx">'
             'Monthly prices</a>'
         )
-        response = unittest.mock.Mock(content=page.encode(), text=page)
+        response = unittest.mock.Mock(
+            content=page.encode(), text=page, status_code=200, headers={}
+        )
         response.raise_for_status.return_value = None
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
         session.get.return_value = response
@@ -749,7 +764,12 @@ class MacroAssetUniverseTests(unittest.TestCase):
             session = unittest.mock.Mock()
             session._macro_attempt_trace = []
             session._macro_raw_parts = []
-            response = unittest.mock.Mock(content=b"not a valid official payload", text="not a valid official payload")
+            response = unittest.mock.Mock(
+                content=b"not a valid official payload",
+                text="not a valid official payload",
+                status_code=200,
+                headers={},
+            )
             response.raise_for_status.return_value = None
             session.get.return_value = response
             session.post.return_value = response

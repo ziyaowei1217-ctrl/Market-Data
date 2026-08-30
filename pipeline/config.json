@@ -1338,7 +1338,8 @@
       "commodity_code": "WTI",
       "commodity_family": "refined_products",
       "price_kind": "official_cash",
-      "provider_route": "petroleum/pri/spt"
+      "provider_route": "petroleum/pri/spt",
+      "source_description": "Cushing, OK WTI Spot Price FOB"
     },
     {
       "asset_class": "commodity",
@@ -1361,7 +1362,8 @@
       "commodity_code": "BRENT",
       "commodity_family": "refined_products",
       "price_kind": "official_cash",
-      "provider_route": "petroleum/pri/spt"
+      "provider_route": "petroleum/pri/spt",
+      "source_description": "Europe Brent Spot Price FOB"
     },
     {
       "asset_class": "commodity",
@@ -1866,7 +1868,8 @@
       "commodity_code": "NATGAS_HH",
       "commodity_family": "natural_gas",
       "price_kind": "official_cash",
-      "provider_route": "natural-gas/pri/fut"
+      "provider_route": "natural-gas/pri/fut",
+      "source_description": "Henry Hub Natural Gas Spot Price"
     },
     {
       "asset_class": "commodity",
@@ -2100,6 +2103,59 @@
     }
   ],
   "context": {
+    "commodity_http": [
+      {
+        "provider": "eia", "connect_timeout": 5, "read_timeout": 25,
+        "total_timeout": 90, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10,
+        "request_batch_size": 5, "page_length": 400
+      },
+      {
+        "provider": "world_bank_pink_sheet", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 120, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "cftc_tff", "connect_timeout": 5, "read_timeout": 45,
+        "total_timeout": 120, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "cftc_disaggregated", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 120, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "comex_copper_stocks", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 90, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "comex_gold_stocks", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 90, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "usgs_copper_structural", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 90, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "usgs_gold_structural", "connect_timeout": 5,
+        "read_timeout": 45, "total_timeout": 90, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "usda_psd", "connect_timeout": 5, "read_timeout": 30,
+        "total_timeout": 120, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      },
+      {
+        "provider": "usda_esr", "connect_timeout": 5, "read_timeout": 30,
+        "total_timeout": 120, "max_attempts": 3,
+        "retry_backoff_seconds": [0.5, 1.0], "retry_after_cap": 10
+      }
+    ],
     "cftc_contracts": [
       {
         "contract_code": "13874A",

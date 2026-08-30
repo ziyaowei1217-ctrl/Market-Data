@@ -18,6 +18,11 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from pipeline.internal.common import load_config_rows, sanitize_audit_text
+from pipeline.internal.capital_weekly.official_http import (
+    OfficialHttpError,
+    OfficialHttpPolicy,
+    official_get,
+)
 
 try:
     import yfinance as yf
@@ -28,6 +33,7 @@ from .provider_contracts import (
     ContextProvider,
     PointInTimeUnavailable,
     ProviderResult,
+    ProviderPhaseError,
     ProviderSpec,
     filter_known_as_of,
 )
@@ -37,13 +43,16 @@ from .commodities import (
     eia_not_configured_result,
 )
 from .eia_commodities import (
+    CommodityHttpSpec,
     EIA_FAMILIES,
     EIA_PROVIDERS,
+    build_eia_batch_specs,
+    fetch_eia_batches,
     latest_and_changes,
+    load_commodity_http_policies,
     parse_eia_metric_series,
     period_date,
     validate_eia_spec,
-    validate_facet_metadata,
 )
 from .company_events import load_company_watchlist, parse_sec_submissions
 from .events import (
@@ -160,6 +169,62 @@ def _bytes(session: requests.Session, url: str) -> bytes:
     response = session.get(url, timeout=45)
     response.raise_for_status()
     return response.content
+
+
+def _official_bytes(
+    session: requests.Session,
+    url: str,
+    policy: OfficialHttpPolicy,
+    *,
+    params: Mapping[str, Any] | None = None,
+    headers: Mapping[str, str] | None = None,
+    audit_secrets: tuple[str, ...] = (),
+) -> tuple[bytes, int]:
+    response = official_get(
+        session,
+        url,
+        policy=policy,
+        params=params,
+        headers=headers,
+        audit_secrets=audit_secrets,
+    )
+    return response.body, response.trace.attempts
+
+
+def _official_text(
+    session: requests.Session,
+    url: str,
+    policy: OfficialHttpPolicy,
+    *,
+    params: Mapping[str, Any] | None = None,
+    headers: Mapping[str, str] | None = None,
+    audit_secrets: tuple[str, ...] = (),
+) -> tuple[str, int]:
+    body, attempts = _official_bytes(
+        session,
+        url,
+        policy,
+        params=params,
+        headers=headers,
+        audit_secrets=audit_secrets,
+    )
+    try:
+        return body.decode("utf-8-sig"), attempts
+    except UnicodeDecodeError as error:
+        raise ValueError(f"Official response is not UTF-8 text: {url}") from error
+
+
+def _official_provider_result(fetch: Callable[[], ProviderResult]) -> ProviderResult:
+    try:
+        return fetch()
+    except OfficialHttpError as error:
+        failure_phase = "raw" if error.phase == "schema" else "retrieve"
+        raise ProviderPhaseError(
+            error.code,
+            failure_phase,
+            error.safe_message,
+            error.attempts,
+        ) from None
 
 
 def _config(path: Path) -> list[dict[str, str]]:
@@ -343,25 +408,26 @@ def _usda_get_json(
     session: requests.Session,
     path: str,
     api_key: str,
-) -> tuple[str, Any, bytes]:
+    policy: OfficialHttpPolicy,
+) -> tuple[str, Any, bytes, int]:
     url = f"{USDA_FAS_API_URL}{path}"
     try:
-        response = session.get(
+        content, attempts = _official_bytes(
+            session,
             url,
+            policy,
             headers={"API_KEY": api_key, "Accept": "application/json"},
-            timeout=30,
+            audit_secrets=(api_key,),
         )
-        response.raise_for_status()
-        payload = response.json()
+        payload = json.loads(content.decode("utf-8"))
+    except OfficialHttpError:
+        raise
     except Exception as error:
         safe = sanitize_audit_text(error, secrets=(api_key,))
-        raise RuntimeError(safe) from None
+        raise ValueError(safe) from None
     if not isinstance(payload, (list, dict)):
         raise ValueError(f"USDA endpoint returned non-record JSON: {path}")
-    content = getattr(response, "content", None)
-    if not isinstance(content, bytes):
-        content = response.text.encode("utf-8")
-    return url, payload, content
+    return url, payload, content, attempts
 
 
 def _usda_raw_archive(responses: list[tuple[str, bytes]]) -> bytes:
@@ -534,14 +600,20 @@ def _usda_psd_provider(
     end: date,
     config: list[dict[str, Any]],
     api_key: str | None,
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     if not api_key:
         return _usda_not_configured("usda_psd")
     specs = _validated_usda_config(config, provider="usda_psd")
     raw_responses: list[tuple[str, bytes]] = []
+    transport_attempts = 1
 
     def fetch(path: str) -> tuple[str, Any]:
-        url, payload, content = _usda_get_json(session, path, api_key)
+        nonlocal transport_attempts
+        url, payload, content, attempts = _usda_get_json(
+            session, path, api_key, http.policy
+        )
+        transport_attempts = max(transport_attempts, attempts)
         raw_responses.append((url, content))
         return url, payload
 
@@ -687,6 +759,7 @@ def _usda_psd_provider(
             "PSD capability ACTIVE; official lookup identities resolved exactly; "
             "source-native units preserved; NASS cattle/hog inventory detail unavailable."
         ),
+        attempts=transport_attempts,
     )
 
 
@@ -695,14 +768,20 @@ def _usda_esr_provider(
     end: date,
     config: list[dict[str, Any]],
     api_key: str | None,
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     if not api_key:
         return _usda_not_configured("usda_esr")
     specs = _validated_usda_config(config, provider="usda_esr")
     raw_responses: list[tuple[str, bytes]] = []
+    transport_attempts = 1
 
     def fetch(path: str) -> tuple[str, Any]:
-        url, payload, content = _usda_get_json(session, path, api_key)
+        nonlocal transport_attempts
+        url, payload, content, attempts = _usda_get_json(
+            session, path, api_key, http.policy
+        )
+        transport_attempts = max(transport_attempts, attempts)
         raw_responses.append((url, content))
         return url, payload
 
@@ -832,6 +911,7 @@ def _usda_esr_provider(
             "ESR capability ACTIVE; only exact lookup-eligible commodities emitted; "
             "source-native units preserved."
         ),
+        attempts=transport_attempts,
     )
 
 
@@ -1025,14 +1105,18 @@ def _comex_stocks_provider(
     session: requests.Session,
     end: date,
     raw_spec: Mapping[str, Any],
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     source = str(raw_spec.get("source") or "CME Group").strip()
     source_url = str(raw_spec.get("source_url") or "").strip()
     limitation_note = str(raw_spec.get("limitation_note") or "").strip()
     content = b""
+    attempts = 1
     try:
         spec = _metal_spec(raw_spec)
-        content = _bytes(session, spec["source_url"])
+        content, attempts = _official_bytes(
+            session, spec["source_url"], http.policy
+        )
         parsed = parse_comex_stocks(content, spec)
         signature = comex_schema_signature(content, spec)
         notes = _provenance_notes(
@@ -1104,12 +1188,28 @@ def _comex_stocks_provider(
             source=str(spec["source"]),
             source_url=spec["source_url"],
             notes=notes,
+            attempts=attempts,
         )
     except Exception as error:
+        if isinstance(error, OfficialHttpError):
+            notes = _unverified_provenance_notes(
+                content,
+                limitation_note=limitation_note,
+                detail=error.safe_message,
+            )
+            failure_phase = "raw" if error.phase == "schema" else "retrieve"
+            raise ProviderPhaseError(
+                error.code,
+                failure_phase,
+                notes,
+                error.attempts,
+            ) from None
+        else:
+            detail = str(error)
         notes = _unverified_provenance_notes(
             content,
             limitation_note=limitation_note,
-            detail=str(error),
+            detail=detail,
         )
         return ProviderResult(
             category="commodity_fundamentals",
@@ -1119,6 +1219,7 @@ def _comex_stocks_provider(
             source_url=source_url,
             status="FETCH_FAILED",
             notes=notes,
+            attempts=attempts,
         )
 
 
@@ -1126,11 +1227,13 @@ def _usgs_structural_provider(
     session: requests.Session,
     end: date,
     raw_spec: Mapping[str, Any],
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     source = str(raw_spec.get("source") or "U.S. Geological Survey").strip()
     source_url = str(raw_spec.get("source_url") or "").strip()
     limitation_note = str(raw_spec.get("limitation_note") or "").strip()
     content = b""
+    attempts = 1
     try:
         spec = _metal_spec(raw_spec)
         publication_date = date.fromisoformat(str(spec["publication_date"]))
@@ -1154,7 +1257,9 @@ def _usgs_structural_provider(
                     detail=detail,
                 ),
             )
-        content = _bytes(session, spec["source_url"])
+        content, attempts = _official_bytes(
+            session, spec["source_url"], http.policy
+        )
         parsed = parse_usgs_mcs_pdf(content, spec)
         schema_payload = {
             key: spec[key]
@@ -1227,12 +1332,28 @@ def _usgs_structural_provider(
             source=str(spec["source"]),
             source_url=spec["source_url"],
             notes=notes,
+            attempts=attempts,
         )
     except Exception as error:
+        if isinstance(error, OfficialHttpError):
+            notes = _unverified_provenance_notes(
+                content,
+                limitation_note=limitation_note,
+                detail=error.safe_message,
+            )
+            failure_phase = "raw" if error.phase == "schema" else "retrieve"
+            raise ProviderPhaseError(
+                error.code,
+                failure_phase,
+                notes,
+                error.attempts,
+            ) from None
+        else:
+            detail = str(error)
         notes = _unverified_provenance_notes(
             content,
             limitation_note=limitation_note,
-            detail=str(error),
+            detail=detail,
         )
         return ProviderResult(
             category="commodity_fundamentals",
@@ -1242,6 +1363,7 @@ def _usgs_structural_provider(
             source_url=source_url,
             status="FETCH_FAILED",
             notes=notes,
+            attempts=attempts,
         )
 
 
@@ -1388,13 +1510,16 @@ def _cftc_tff_provider(
     end: date,
     contract_codes: dict[str, str],
     freshness_days: int,
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     parsed = []
     raw_archives = []
+    transport_attempts = 1
     source_url = CFTC_TFF_URL.format(year=end.year)
     for year in range(start.year, end.year + 1):
         source_url = CFTC_TFF_URL.format(year=year)
-        content = _bytes(session, source_url)
+        content, attempts = _official_bytes(session, source_url, http.policy)
+        transport_attempts = max(transport_attempts, attempts)
         raw_archives.append(content)
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             members = [
@@ -1468,6 +1593,7 @@ def _cftc_tff_provider(
         raw_text=b"".join(raw_archives),
         source="U.S. Commodity Futures Trading Commission",
         source_url=source_url,
+        attempts=transport_attempts,
     )
 
 
@@ -1477,6 +1603,7 @@ def _cftc_disaggregated_provider(
     end: date,
     contracts: list[dict[str, str]],
     freshness_days: int,
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     max_window = max(int(spec["percentile_window"]) for spec in contracts)
     history_start = start - timedelta(weeks=max_window)
@@ -1494,7 +1621,9 @@ def _cftc_disaggregated_provider(
         "$order": "cftc_contract_market_code,report_date_as_yyyy_mm_dd",
         "$limit": 50000,
     }
-    text = _text(session, CFTC_DISAGGREGATED_URL, params=params)
+    text, transport_attempts = _official_text(
+        session, CFTC_DISAGGREGATED_URL, http.policy, params=params
+    )
     parsed = parse_cftc_disaggregated_csv(text, contracts)
     eligible = filter_known_as_of(
         [row for row in parsed if row["report_date"] <= end],
@@ -1572,6 +1701,7 @@ def _cftc_disaggregated_provider(
         raw_text=text,
         source="U.S. Commodity Futures Trading Commission",
         source_url=CFTC_DISAGGREGATED_URL,
+        attempts=transport_attempts,
     )
 
 
@@ -1632,66 +1762,167 @@ def _sec_provider(
     )
 
 
+class _OfficialEiaClient:
+    def __init__(
+        self,
+        session: requests.Session,
+        api_key: str,
+        policy: OfficialHttpPolicy,
+    ) -> None:
+        self.session = session
+        self.api_key = api_key
+        self.policy = policy
+        self.raw_bodies: list[bytes] = []
+        self.attempts = 1
+
+    def _get(self, url: str, params: Mapping[str, Any]) -> bytes:
+        body, attempts = _official_bytes(
+            self.session,
+            url,
+            self.policy,
+            params=params,
+            audit_secrets=(self.api_key,),
+        )
+        self.raw_bodies.append(body)
+        self.attempts = max(self.attempts, attempts)
+        return body
+
+    def fetch_metadata(
+        self,
+        spec,
+        expected: Mapping[str, Mapping[str, Any]],
+    ) -> None:
+        wanted: dict[str, set[str]] = {}
+        for item in expected.values():
+            for facet, selected in item["facets"].items():
+                wanted.setdefault(str(facet), set()).add(str(selected))
+        for facet, required in sorted(wanted.items()):
+            identifiers: set[str] = set()
+            offset = 0
+            while not required <= identifiers:
+                body = self._get(
+                    f"{EIA_SOURCE_URL}{spec.route}/facet/{facet}/",
+                    {
+                        "api_key": self.api_key,
+                        "offset": offset,
+                        "length": spec.page_length,
+                    },
+                )
+                try:
+                    payload = json.loads(body.decode("utf-8"))
+                    values = payload.get("response", {}).get("facets")
+                except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                    raise ValueError(
+                        f"EIA facet metadata is invalid for {spec.route}/{facet}"
+                    ) from error
+                if not isinstance(values, list):
+                    raise ValueError(
+                        f"EIA facet metadata is missing for {spec.route}/{facet}"
+                    )
+                identifiers.update(
+                    str(item.get("id") or "").strip()
+                    for item in values
+                    if isinstance(item, Mapping)
+                )
+                response = payload.get("response", {})
+                total = int(response.get("total", len(values)))
+                offset += len(values)
+                if offset >= total:
+                    break
+                if not values:
+                    raise ValueError("EIA facet metadata pagination made no progress")
+            missing = sorted(required - identifiers)
+            if missing:
+                raise ValueError(
+                    f"EIA configured facet is unavailable for {spec.route}/{facet}: "
+                    + ", ".join(missing)
+                )
+
+    def fetch_page(self, spec, *, offset: int, length: int) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "api_key": self.api_key,
+            "frequency": spec.frequency,
+            "data[0]": "value",
+            "start": spec.start,
+            "end": spec.end,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "offset": offset,
+            "length": length,
+        }
+        for facet, values in spec.facets.items():
+            params[f"facets[{facet}][]"] = list(values)
+        body = self._get(f"{EIA_SOURCE_URL}{spec.route}/data/", params)
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("EIA data response is not valid UTF-8 JSON") from error
+        if not isinstance(payload, dict):
+            raise ValueError("EIA data response must be a JSON object")
+        return payload
+
+
 def _eia_provider(
     session: requests.Session,
     end: date,
     series_config: list[dict[str, Any]],
     api_key: str | None,
     provider_name: str,
+    http: CommodityHttpSpec,
 ) -> ProviderResult:
     if not api_key:
         return eia_not_configured_result()
     configured_series = [validate_eia_spec(item) for item in series_config]
     if not configured_series:
         raise ValueError(f"EIA provider {provider_name} has no configured series")
-    rows: list[dict[str, Any]] = []
-    raw: list[str] = []
-    facet_metadata: dict[tuple[str, str], str] = {}
     for item in configured_series:
         if item["provider"] != provider_name:
             raise ValueError(
                 f"EIA family provider {provider_name} received "
                 f"{item['provider']} config"
             )
-        for facet, selected in item["facets"].items():
-            identity = (item["route"], facet)
-            facet_url = f"{EIA_SOURCE_URL}{item['route']}/facet/{facet}/"
-            facet_text = facet_metadata.get(identity)
-            if facet_text is None:
-                facet_text = _text(
-                    session,
-                    facet_url,
-                    params={"api_key": api_key, "length": 5000},
-                )
-                facet_metadata[identity] = facet_text
-                raw.append(facet_text)
-            validate_facet_metadata(
-                facet_text,
-                route=item["route"],
-                facet=facet,
-                expected_value=selected,
-            )
-        url = f"{EIA_SOURCE_URL}{item['route']}/data/"
-        params: dict[str, Any] = {
-            "api_key": api_key,
-            "frequency": item["frequency"],
-            "data[0]": "value",
-            "sort[0][column]": "period",
-            "sort[0][direction]": "desc",
-            "length": 400,
-        }
-        params.update(
+    if http.request_batch_size is None or http.page_length is None:
+        raise ValueError("EIA HTTP policy requires request_batch_size and page_length")
+    batch_specs = build_eia_batch_specs(
+        configured_series,
+        request_batch_size=http.request_batch_size,
+        page_length=http.page_length,
+        start=(end - timedelta(days=550)).isoformat(),
+        end=end.isoformat(),
+    )
+    expected = {
+        str(item["facets"]["series"]): item for item in configured_series
+    }
+    client = _OfficialEiaClient(session, api_key, http.policy)
+    try:
+        pages = fetch_eia_batches(client, batch_specs, expected_metadata=expected)
+    except OfficialHttpError as error:
+        failure_phase = "raw" if error.phase == "schema" else "retrieve"
+        raise ProviderPhaseError(
+            error.code,
+            failure_phase,
+            error.safe_message,
+            error.attempts,
+        ) from None
+
+    raw_rows = [
+        row
+        for payload in pages
+        for row in payload["response"]["data"]
+    ]
+    rows: list[dict[str, Any]] = []
+    for item in configured_series:
+        series = str(item["facets"]["series"])
+        text = json.dumps(
             {
-                f"facets[{facet}][]": selected
-                for facet, selected in item["facets"].items()
-            }
+                "response": {
+                    "data": [
+                        row for row in raw_rows if str(row.get("series") or "") == series
+                    ]
+                }
+            },
+            separators=(",", ":"),
         )
-        text = _text(
-            session,
-            url,
-            params=params,
-        )
-        raw.append(text)
         parsed = parse_eia_metric_series(text, item)
         metrics = latest_and_changes(parsed, end)
         latest_date = period_date(metrics[0]["period"])
@@ -1707,7 +1938,7 @@ def _eia_provider(
                     category="commodity_fundamentals",
                     market="US",
                     source="U.S. Energy Information Administration",
-                    source_url=url,
+                    source_url=f"{EIA_SOURCE_URL}{item['route']}/data/",
                     frequency=item["frequency"],
                     values={metric["metric_code"]: metric["value"]},
                     units={metric["metric_code"]: metric["unit"]},
@@ -1726,9 +1957,10 @@ def _eia_provider(
     return ProviderResult(
         category="commodity_fundamentals",
         rows=rows,
-        raw_text="\n".join(raw),
+        raw_text=b"\n".join(client.raw_bodies),
         source="U.S. Energy Information Administration",
         source_url=EIA_SOURCE_URL,
+        attempts=client.attempts,
     )
 
 
@@ -2127,6 +2359,12 @@ def build_default_providers(
         raise ValueError("Report end must not precede start")
     settings = dict(os.environ if environ is None else environ)
     client = session or _session()
+    if session is None:
+        official_client = requests.Session()
+        official_client.headers.update(client.headers)
+    else:
+        official_client = client
+    commodity_http = load_commodity_http_policies()
     if data_dir is None:
         cftc_rows = load_config_rows("context.cftc_contracts")
         watchlist_rows = load_config_rows("context.company_watchlist")
@@ -2265,31 +2503,43 @@ def build_default_providers(
             watchlist,
             settings.get("SEC_USER_AGENT"),
         ),
-        "eia_natural_gas": lambda: _eia_provider(
-            client,
-            end,
-            eia_by_provider["eia_natural_gas"],
-            eia_key,
-            "eia_natural_gas",
+        "eia_natural_gas": lambda: _official_provider_result(
+            lambda: _eia_provider(
+                official_client,
+                end,
+                eia_by_provider["eia_natural_gas"],
+                eia_key,
+                "eia_natural_gas",
+                commodity_http["eia"],
+            )
         ),
-        "eia_refined_products": lambda: _eia_provider(
-            client,
-            end,
-            eia_by_provider["eia_refined_products"],
-            eia_key,
-            "eia_refined_products",
+        "eia_refined_products": lambda: _official_provider_result(
+            lambda: _eia_provider(
+                official_client,
+                end,
+                eia_by_provider["eia_refined_products"],
+                eia_key,
+                "eia_refined_products",
+                commodity_http["eia"],
+            )
         ),
-        "usda_psd": lambda: _usda_psd_provider(
-            client,
-            end,
-            usda_psd_config,
-            usda_key,
+        "usda_psd": lambda: _official_provider_result(
+            lambda: _usda_psd_provider(
+                official_client,
+                end,
+                usda_psd_config,
+                usda_key,
+                commodity_http["usda_psd"],
+            )
         ),
-        "usda_esr": lambda: _usda_esr_provider(
-            client,
-            end,
-            usda_esr_config,
-            usda_key,
+        "usda_esr": lambda: _official_provider_result(
+            lambda: _usda_esr_provider(
+                official_client,
+                end,
+                usda_esr_config,
+                usda_key,
+                commodity_http["usda_esr"],
+            )
         ),
         "fred_financial_conditions": lambda: _fred_provider(
             client, end, financial_config
@@ -2343,8 +2593,11 @@ def build_default_providers(
         "szse_microstructure": ("market_internals", "daily", "required"),
     }
     if cftc_tff_config:
-        fetchers["cftc_tff"] = lambda: _cftc_tff_provider(
-            client, start, end, cftc_tff_config, cftc_tff_freshness
+        fetchers["cftc_tff"] = lambda: _official_provider_result(
+            lambda: _cftc_tff_provider(
+                official_client, start, end, cftc_tff_config, cftc_tff_freshness,
+                commodity_http["cftc_tff"]
+            )
         )
         definitions["cftc_tff"] = (
             "positioning_flows",
@@ -2352,12 +2605,15 @@ def build_default_providers(
             "required",
         )
     if cftc_disaggregated_config:
-        fetchers["cftc_disaggregated"] = lambda: _cftc_disaggregated_provider(
-            client,
-            start,
-            end,
-            cftc_disaggregated_config,
-            cftc_disaggregated_freshness,
+        fetchers["cftc_disaggregated"] = lambda: _official_provider_result(
+            lambda: _cftc_disaggregated_provider(
+                official_client,
+                start,
+                end,
+                cftc_disaggregated_config,
+                cftc_disaggregated_freshness,
+                commodity_http["cftc_disaggregated"],
+            )
         )
         definitions["cftc_disaggregated"] = (
             "positioning_flows",
@@ -2374,15 +2630,17 @@ def build_default_providers(
             raise ValueError(f"Duplicate context provider name: {name}")
         if name.startswith("comex_"):
             fetchers[name] = lambda item=item: _comex_stocks_provider(
-                client,
+                official_client,
                 end,
                 item,
+                commodity_http[str(item["provider"])],
             )
         else:
             fetchers[name] = lambda item=item: _usgs_structural_provider(
-                client,
+                official_client,
                 end,
                 item,
+                commodity_http[str(item["provider"])],
             )
         definitions[name] = (
             "commodity_fundamentals",

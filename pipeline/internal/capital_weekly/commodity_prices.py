@@ -27,6 +27,8 @@ def parse_eia_price_series(
     text: str,
     series_code: str,
     expected_unit: str,
+    *,
+    expected_description: str | None = None,
 ) -> list[dict]:
     payload = json.loads(text)
     data = payload.get("response", {}).get("data")
@@ -38,6 +40,13 @@ def parse_eia_price_series(
     for raw in data:
         if not isinstance(raw, dict) or raw.get("series") != series_code:
             continue
+        if expected_description is not None:
+            description = str(raw.get("series-description") or "").strip()
+            if description != expected_description:
+                raise ValueError(
+                    f"Unexpected EIA source description for {series_code}: "
+                    f"{description!r}; expected {expected_description!r}"
+                )
         raw_unit = raw.get("unit") or raw.get("units")
         unit = str(raw_unit or "").strip()
         if unit != expected_unit:

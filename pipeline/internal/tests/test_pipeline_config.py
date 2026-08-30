@@ -8,6 +8,9 @@ from datetime import date
 from pathlib import Path
 
 from pipeline.internal.capital_weekly.context.eia_commodities import validate_eia_spec
+from pipeline.internal.capital_weekly.context.eia_commodities import (
+    load_commodity_http_policies,
+)
 from pipeline.internal.capital_weekly.context.providers import build_default_providers
 from pipeline.internal.capital_weekly.equity_indices import load_index_universe
 from pipeline.internal.capital_weekly.equity_sectors import load_sector_universe as load_equity_sectors
@@ -20,7 +23,7 @@ EXPECTED_SECTION_HASHES = {
     "indices": "52d1af58519dc5d542eb220f108b3242052c5cb9312eeb1ac7ded0ccbc0bc146",
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
-    "macro": "359e2d6db04d488d08ce0bdd9634fe76b8483ffe8500364ff2e52a7688320c9b",
+    "macro": "0eeacb67cc492c76d9ca4432c0541a7b4a8b8e8e71fe8b957eacd49385068522",
     "context.cftc_contracts": "364a8589d7fd8c4ac3417d53b380c0cbc6a4fa83adb1cf1d69e172771151d9ef",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "b2930c0607e0161b3de7f5cb53bcc16cbd0e84b9dc2d345298590967d0a8deaa",
@@ -42,6 +45,43 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_every_official_commodity_get_has_an_explicit_complete_policy(self):
+        policies = load_commodity_http_policies()
+        self.assertEqual(
+            set(policies),
+            {
+                "eia",
+                "world_bank_pink_sheet",
+                "cftc_tff",
+                "cftc_disaggregated",
+                "comex_copper_stocks",
+                "comex_gold_stocks",
+                "usgs_copper_structural",
+                "usgs_gold_structural",
+                "usda_psd",
+                "usda_esr",
+            },
+        )
+        for name, item in policies.items():
+            with self.subTest(provider=name):
+                self.assertGreater(item.policy.connect_timeout, 0)
+                self.assertGreater(item.policy.read_timeout, 0)
+                self.assertGreater(item.policy.total_timeout, 0)
+                self.assertGreaterEqual(item.policy.max_attempts, 1)
+                self.assertTrue(item.policy.backoff_seconds)
+        self.assertEqual(policies["eia"].request_batch_size, 5)
+        self.assertEqual(policies["eia"].page_length, 400)
+
+    def test_commodity_http_policy_rejects_missing_keys_instead_of_defaulting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.json"
+            document = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
+            del document["context"]["commodity_http"][0]["total_timeout"]
+            path.write_text(json.dumps(document), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "missing.*total_timeout"):
+                load_commodity_http_policies(path)
+
     def test_usda_config_covers_agriculture_groups_with_official_lookup_names(self):
         psd = load_config_rows("context.usda_psd")
         esr = load_config_rows("context.usda_esr")

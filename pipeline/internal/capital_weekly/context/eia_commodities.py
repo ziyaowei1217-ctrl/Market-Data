@@ -4,9 +4,14 @@ import calendar
 import json
 import math
 import re
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Any, Mapping
+from pathlib import Path
+from typing import Any, Mapping, Sequence
 from zoneinfo import ZoneInfo
+
+from pipeline.internal.capital_weekly.official_http import OfficialHttpPolicy
+from pipeline.internal.common import DEFAULT_CONFIG_PATH
 
 
 HONG_KONG = ZoneInfo("Asia/Hong_Kong")
@@ -40,6 +45,274 @@ EIA_SPEC_FIELDS = frozenset(
     }
 )
 LEGACY_EIA_UNIT_CODES = {"MBBL": "Thousand Barrels"}
+COMMODITY_HTTP_FIELDS = frozenset(
+    {
+        "provider",
+        "connect_timeout",
+        "read_timeout",
+        "total_timeout",
+        "max_attempts",
+        "retry_backoff_seconds",
+        "retry_after_cap",
+    }
+)
+
+
+@dataclass(frozen=True)
+class CommodityHttpSpec:
+    policy: OfficialHttpPolicy
+    request_batch_size: int | None = None
+    page_length: int | None = None
+
+
+@dataclass(frozen=True)
+class EiaBatchSpec:
+    route: str
+    facets: Mapping[str, tuple[str, ...]]
+    frequency: str
+    start: str
+    end: str
+    page_length: int
+
+    def __post_init__(self) -> None:
+        route = str(self.route).strip("/")
+        if not route or not re.fullmatch(r"[a-z0-9][a-z0-9/_-]*", route):
+            raise ValueError(f"Invalid EIA batch route: {self.route!r}")
+        if not str(self.frequency).strip():
+            raise ValueError("EIA batch frequency cannot be blank")
+        if self.page_length <= 0:
+            raise ValueError("EIA page_length must be positive")
+        normalized: dict[str, tuple[str, ...]] = {}
+        for raw_name, raw_values in self.facets.items():
+            name = str(raw_name).strip()
+            values = tuple(str(value).strip() for value in raw_values)
+            if not name or not values or any(not value for value in values):
+                raise ValueError("EIA batch facets cannot contain blanks")
+            if len(values) != len(set(values)):
+                raise ValueError(f"EIA batch facet {name} contains duplicates")
+            normalized[name] = values
+        if "series" not in normalized:
+            raise ValueError("EIA batch requires a series facet")
+        object.__setattr__(self, "route", route)
+        object.__setattr__(self, "facets", normalized)
+
+
+def _positive_number(value: Any, field: str) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"commodity HTTP {field} must be positive") from error
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise ValueError(f"commodity HTTP {field} must be positive")
+    return parsed
+
+
+def _positive_integer(value: Any, field: str) -> int:
+    try:
+        parsed = int(str(value).strip())
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"commodity HTTP {field} must be a positive integer") from error
+    if parsed <= 0:
+        raise ValueError(f"commodity HTTP {field} must be a positive integer")
+    return parsed
+
+
+def _backoff_values(value: Any) -> tuple[float, ...]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError("commodity HTTP retry_backoff_seconds must be a JSON array") from error
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)) or not value:
+        raise ValueError("commodity HTTP retry_backoff_seconds must be a non-empty array")
+    values = tuple(float(item) for item in value)
+    if any(not math.isfinite(item) or item < 0 for item in values):
+        raise ValueError("commodity HTTP retry_backoff_seconds must be finite and nonnegative")
+    return values
+
+
+def load_commodity_http_policies(
+    path: str | Path | None = None,
+) -> dict[str, CommodityHttpSpec]:
+    config_path = Path(path) if path is not None else DEFAULT_CONFIG_PATH
+    document = json.loads(config_path.read_text(encoding="utf-8"))
+    try:
+        rows = document["context"]["commodity_http"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("config missing context.commodity_http") from error
+    if not isinstance(rows, list) or not rows or not all(isinstance(row, Mapping) for row in rows):
+        raise ValueError("context.commodity_http must be a non-empty row list")
+    result: dict[str, CommodityHttpSpec] = {}
+    for raw in rows:
+        missing = sorted(COMMODITY_HTTP_FIELDS - set(raw))
+        if missing:
+            raise ValueError("commodity HTTP config missing: " + ", ".join(missing))
+        provider = str(raw["provider"]).strip()
+        if not provider or provider in result:
+            raise ValueError(f"duplicate or blank commodity HTTP provider: {provider!r}")
+        max_attempts = _positive_integer(raw["max_attempts"], "max_attempts")
+        retry_after_cap = float(raw["retry_after_cap"])
+        if not math.isfinite(retry_after_cap) or retry_after_cap < 0:
+            raise ValueError("commodity HTTP retry_after_cap must be finite and nonnegative")
+        policy = OfficialHttpPolicy(
+            connect_timeout=_positive_number(raw["connect_timeout"], "connect_timeout"),
+            read_timeout=_positive_number(raw["read_timeout"], "read_timeout"),
+            total_timeout=_positive_number(raw["total_timeout"], "total_timeout"),
+            max_attempts=max_attempts,
+            backoff_seconds=_backoff_values(raw["retry_backoff_seconds"]),
+            retry_after_cap=retry_after_cap,
+        )
+        request_batch_size = None
+        page_length = None
+        if provider == "eia":
+            missing_eia = [
+                field for field in ("request_batch_size", "page_length") if field not in raw
+            ]
+            if missing_eia:
+                raise ValueError("EIA commodity HTTP config missing: " + ", ".join(missing_eia))
+            request_batch_size = _positive_integer(raw["request_batch_size"], "request_batch_size")
+            page_length = _positive_integer(raw["page_length"], "page_length")
+        result[provider] = CommodityHttpSpec(policy, request_batch_size, page_length)
+    return result
+
+
+def build_eia_batch_specs(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    request_batch_size: int,
+    page_length: int,
+    start: str,
+    end: str,
+) -> list[EiaBatchSpec]:
+    batch_size = _positive_integer(request_batch_size, "request_batch_size")
+    page_size = _positive_integer(page_length, "page_length")
+    grouped: dict[tuple[str, str], list[str]] = {}
+    seen: set[str] = set()
+    for row in rows:
+        route = str(row.get("route") or "").strip("/")
+        frequency = str(row.get("frequency") or "").strip()
+        facets = parse_facets(row.get("facets"))
+        series = facets.get("series", "")
+        if not series:
+            raise ValueError("EIA configured series requires facets.series")
+        if series in seen:
+            raise ValueError(f"EIA duplicate configured series: {series}")
+        seen.add(series)
+        grouped.setdefault((route, frequency), []).append(series)
+    specs: list[EiaBatchSpec] = []
+    for (route, frequency), series_values in sorted(grouped.items()):
+        for offset in range(0, len(series_values), batch_size):
+            specs.append(
+                EiaBatchSpec(
+                    route=route,
+                    facets={"series": tuple(series_values[offset : offset + batch_size])},
+                    frequency=frequency,
+                    start=str(start),
+                    end=str(end),
+                    page_length=page_size,
+                )
+            )
+    return specs
+
+
+def _eia_payload(value: Any) -> dict[str, Any]:
+    if isinstance(value, Mapping):
+        return dict(value)
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    if isinstance(value, str):
+        try:
+            payload = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError("EIA batch response is not valid JSON") from error
+        if isinstance(payload, Mapping):
+            return dict(payload)
+    raise ValueError("EIA batch response must be a JSON object")
+
+
+def _validate_eia_batch_rows(
+    payload: Mapping[str, Any],
+    expected: Mapping[str, Mapping[str, Any]],
+) -> set[str]:
+    data = payload.get("response", {}).get("data")
+    if not isinstance(data, list):
+        raise ValueError("EIA batch response has no data array")
+    observed: set[str] = set()
+    for row in data:
+        if not isinstance(row, Mapping):
+            raise ValueError("EIA batch data rows must be objects")
+        series = str(row.get("series") or "").strip()
+        if series not in expected:
+            raise ValueError(f"EIA batch returned unexpected series: {series or 'blank'}")
+        metadata = expected[series]
+        facets = parse_facets(metadata.get("facets"))
+        for facet, selected in facets.items():
+            if str(row.get(facet) or "").strip() != selected:
+                raise ValueError(f"Unexpected EIA facet {facet} for {series}")
+        description = str(row.get("series-description") or "").strip()
+        if description != str(metadata.get("source_description") or "").strip():
+            raise ValueError(f"Unexpected EIA source description for {series}")
+        units = {
+            str(row[field]).strip()
+            for field in ("unit", "units")
+            if row.get(field) not in (None, "")
+        }
+        if units != {str(metadata.get("expected_unit") or "").strip()}:
+            raise ValueError(f"Unexpected EIA unit for {series}")
+        observed.add(series)
+    return observed
+
+
+def fetch_eia_batches(
+    client: Any,
+    specs: Sequence[EiaBatchSpec],
+    *,
+    expected_metadata: Mapping[str, Mapping[str, Any]],
+) -> list[dict]:
+    owners: dict[str, int] = {}
+    for index, spec in enumerate(specs):
+        for series in spec.facets["series"]:
+            if series in owners:
+                raise ValueError(f"EIA duplicate batch series: {series}")
+            owners[series] = index
+            if series not in expected_metadata:
+                raise ValueError(f"EIA metadata missing configured series: {series}")
+    expected_keys = set(expected_metadata)
+    if set(owners) != expected_keys:
+        missing = sorted(expected_keys - set(owners))
+        extra = sorted(set(owners) - expected_keys)
+        raise ValueError(f"EIA batch coverage mismatch; missing={missing}; extra={extra}")
+
+    for spec in specs:
+        selected = {series: expected_metadata[series] for series in spec.facets["series"]}
+        client.fetch_metadata(spec, selected)
+
+    pages: list[dict] = []
+    observed: set[str] = set()
+    for spec in specs:
+        selected = {series: expected_metadata[series] for series in spec.facets["series"]}
+        offset = 0
+        while True:
+            payload = _eia_payload(
+                client.fetch_page(spec, offset=offset, length=spec.page_length)
+            )
+            observed.update(_validate_eia_batch_rows(payload, selected))
+            pages.append(payload)
+            response = payload.get("response", {})
+            data = response.get("data", [])
+            try:
+                total = int(response.get("total", len(data)))
+            except (TypeError, ValueError) as error:
+                raise ValueError("EIA response total must be an integer") from error
+            offset += len(data)
+            if offset >= total:
+                break
+            if not data:
+                raise ValueError("EIA pagination stopped before total coverage")
+    missing = sorted(expected_keys - observed)
+    if missing:
+        raise ValueError("EIA batch missing configured series: " + ", ".join(missing))
+    return pages
 
 
 def parse_explicit_bool(value: Any, *, field: str) -> bool:
@@ -394,10 +667,15 @@ def validate_facet_metadata(
 
 
 __all__ = [
+    "CommodityHttpSpec",
+    "EiaBatchSpec",
     "EIA_FAMILIES",
     "EIA_PROVIDERS",
+    "build_eia_batch_specs",
     "calculate_weekly_change",
+    "fetch_eia_batches",
     "latest_and_changes",
+    "load_commodity_http_policies",
     "parse_eia_metric_series",
     "parse_eia_series",
     "parse_facets",

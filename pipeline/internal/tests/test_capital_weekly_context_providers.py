@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 import zipfile
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
 import pandas as pd
@@ -24,6 +25,10 @@ from pipeline.internal.capital_weekly.context.provider_contracts import (
     ContextProvider,
     ProviderResult,
     ProviderSpec,
+)
+from pipeline.internal.capital_weekly.official_http import (
+    OfficialHttpResponse,
+    OfficialHttpTrace,
 )
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
 from pipeline.internal.common import load_config_rows
@@ -57,6 +62,8 @@ CFTC_COLUMNS = (
 class TextResponse:
     encoding = "utf-8"
     apparent_encoding = "utf-8"
+    status_code = 200
+    headers = {}
 
     def __init__(self, text):
         self.text = text
@@ -78,6 +85,8 @@ class TextSession:
 class JsonResponse:
     encoding = "utf-8"
     apparent_encoding = "utf-8"
+    status_code = 200
+    headers = {}
 
     def __init__(self, payload, raw_bytes=None):
         self.payload = payload
@@ -109,6 +118,9 @@ class JsonSession:
 
 
 class BinaryResponse:
+    status_code = 200
+    headers = {}
+
     def __init__(self, content):
         self.content = content
 
@@ -127,6 +139,105 @@ class BinarySession:
         if isinstance(response, Exception):
             raise response
         return BinaryResponse(response)
+
+
+class CommodityProbeTests(unittest.TestCase):
+    def test_eia_probe_is_sanitized_and_leaves_every_product_tree_byte_identical(self):
+        from pipeline.internal.scripts import probe_commodity_sources
+
+        class Client:
+            def fetch_metadata(self, spec, expected):
+                self.route = spec.route
+
+            def fetch_page(self, spec, *, offset, length):
+                self.page = (offset, length)
+                return {
+                    "response": {
+                        "total": 1,
+                        "data": [{
+                            "period": "2026-08-21",
+                            "series": "NW2_EPG0_SWO_R48_BCF",
+                            "duoarea": "R48",
+                            "process": "SWO",
+                            "series-description": "Lower 48 storage",
+                            "units": "BCF",
+                            "value": "3125",
+                        }],
+                    }
+                }
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            paths = {
+                name: root / name
+                for name in ("output", "cache", "staging", "status")
+            }
+            for name, path in paths.items():
+                path.mkdir()
+                (path / "sentinel.bin").write_bytes((name + "\x00\xff").encode("latin1"))
+            before = {
+                str(path.relative_to(root)): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            document = json.loads(
+                (Path(__file__).resolve().parents[2] / "config.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            document["context"]["eia_series"] = [{
+                "provider": "eia_natural_gas",
+                "commodity_code": "NATGAS_HH",
+                "commodity_family": "natural_gas",
+                "route": "natural-gas/stor/wkly",
+                "frequency": "weekly",
+                "facets": {
+                    "duoarea": "R48",
+                    "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R48_BCF",
+                },
+                "metric_code": "eia_ng_storage_lower48",
+                "metric_name": "Lower 48 storage",
+                "measurement_kind": "inventory",
+                "source_description": "Lower 48 storage",
+                "expected_unit": "BCF",
+                "freshness_days": "10",
+            }]
+            document["runtime_paths"] = {name: str(path) for name, path in paths.items()}
+            config_path = root / "probe-config.json"
+            config_path.write_text(json.dumps(document), encoding="utf-8")
+            output = io.StringIO()
+
+            with redirect_stdout(output):
+                exit_code = probe_commodity_sources.main(
+                    [
+                        "--config", str(config_path),
+                        "--as-of", "2026-08-23",
+                        "--provider", "eia",
+                    ],
+                    client=Client(),
+                    environ={"EIA_API_KEY": "probe-secret"},
+                )
+
+            after = {
+                str(path.relative_to(root)): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            }
+            comparable_after = {
+                key: value for key, value in after.items() if key != "probe-config.json"
+            }
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["provider"], "eia")
+        self.assertEqual(payload["phase"], "normalized")
+        self.assertEqual(payload["attempts"], 1)
+        self.assertEqual(payload["series_count"], 1)
+        self.assertEqual(payload["latest_eligible_date"], "2026-08-21")
+        self.assertEqual(payload["routes"], ["natural-gas/stor/wkly"])
+        self.assertNotIn("probe-secret", output.getvalue())
+        self.assertEqual(before, comparable_after)
 
 
 def write_provider_configs(data_dir):
@@ -210,6 +321,73 @@ def corn_esr_config() -> dict:
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_eia_official_transport_uses_config_policy_secret_audit_and_propagates_retry_attempts(self):
+        series = "NW2_EPG0_SWO_R48_BCF"
+        configured = [{
+            "provider": "eia_natural_gas",
+            "commodity_code": "NATGAS_HH",
+            "commodity_family": "natural_gas",
+            "route": "natural-gas/stor/wkly",
+            "frequency": "weekly",
+            "facets": {"duoarea": "R48", "process": "SWO", "series": series},
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_name": "Lower 48 storage",
+            "measurement_kind": "inventory",
+            "source_description": "Lower 48 storage",
+            "expected_unit": "BCF",
+            "freshness_days": "10",
+        }]
+        policy = providers_module.load_commodity_http_policies()["eia"]
+        secret = "retry-audit-secret"
+        calls = []
+
+        def fake_get(session, url, **kwargs):
+            del session
+            calls.append((url, kwargs))
+            if "/facet/" in url:
+                selected = url.rstrip("/").split("/")[-1]
+                ids = {"duoarea": "R48", "process": "SWO", "series": series}
+                body = json.dumps(
+                    {"response": {"facets": [{"id": ids[selected]}]}}
+                ).encode()
+                attempts = 1
+            else:
+                body = json.dumps({"response": {"total": 2, "data": [
+                    {
+                        "period": "2026-08-21", "series": series,
+                        "duoarea": "R48", "process": "SWO",
+                        "series-description": "Lower 48 storage",
+                        "units": "BCF", "value": "3125",
+                    },
+                    {
+                        "period": "2026-08-14", "series": series,
+                        "duoarea": "R48", "process": "SWO",
+                        "series-description": "Lower 48 storage",
+                        "units": "BCF", "value": "3100",
+                    },
+                ]}}).encode()
+                attempts = 2
+            return OfficialHttpResponse(
+                body=body,
+                url=url,
+                headers={},
+                trace=OfficialHttpTrace(attempts, 1, [200], url),
+            )
+
+        with patch.object(providers_module, "official_get", side_effect=fake_get):
+            result = providers_module._eia_provider(
+                object(), date(2026, 8, 23), configured, secret,
+                "eia_natural_gas", policy,
+            )
+
+        self.assertEqual(result.attempts, 2)
+        self.assertEqual(len(result.rows), 3)
+        self.assertTrue(all(kwargs["policy"] == policy.policy for _, kwargs in calls))
+        self.assertTrue(all(kwargs["audit_secrets"] == (secret,) for _, kwargs in calls))
+        data_kwargs = next(kwargs for url, kwargs in calls if url.endswith("/data/"))
+        self.assertEqual(data_kwargs["params"]["offset"], 0)
+        self.assertEqual(data_kwargs["params"]["length"], 400)
+
     def test_metal_specs_require_explicit_freshness_basis_and_holiday_calendar(self):
         configured = {
             row["provider"]: row for row in load_config_rows("context.metals")
@@ -763,11 +941,17 @@ class ContextProviderTests(unittest.TestCase):
                 BinarySession({COMEX_COPPER_STOCKS_URL: b"fixture"}),
                 date(2026, 7, 5),
                 spec,
+                providers_module.load_commodity_http_policies()[
+                    "comex_copper_stocks"
+                ],
             )
             stale = providers_module._comex_stocks_provider(
                 BinarySession({COMEX_COPPER_STOCKS_URL: b"fixture"}),
                 date(2026, 7, 6),
                 spec,
+                providers_module.load_commodity_http_policies()[
+                    "comex_copper_stocks"
+                ],
             )
 
         self.assertEqual(boundary.status, "OK")
@@ -1255,7 +1439,7 @@ class ContextProviderTests(unittest.TestCase):
         )
         self.assertEqual(
             refined_calls[1][1]["params"]["facets[series][]"],
-            "A&B",
+            ["A&B"],
         )
         self.assertNotIn("dummy-key", str(audits))
 

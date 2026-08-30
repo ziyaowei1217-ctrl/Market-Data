@@ -28,6 +28,13 @@ from pipeline.internal.capital_weekly.commodity_prices import (
     parse_eia_price_series,
     parse_world_bank_monthly_prices,
 )
+from pipeline.internal.capital_weekly.context.eia_commodities import (
+    CommodityHttpSpec,
+    build_eia_batch_specs,
+    fetch_eia_batches,
+    load_commodity_http_policies,
+)
+from pipeline.internal.capital_weekly.official_http import official_get
 from pipeline.internal.capital_weekly.returns import calculate_macro_snapshot, parse_date
 
 
@@ -64,6 +71,7 @@ class MacroAssetConfig:
     known_as_of: str = ""
     provider_route: str = ""
     freshness_days: str = ""
+    source_description: str = ""
 
 
 def load_macro_asset_universe(
@@ -314,6 +322,124 @@ def _get(
     response.raise_for_status()
     attempt["status"] = "completed"
     return response
+
+
+def _macro_http_spec(session, provider: str) -> CommodityHttpSpec:
+    policies = getattr(session, "_macro_commodity_http", None)
+    if not isinstance(policies, dict):
+        policies = load_commodity_http_policies()
+        session._macro_commodity_http = policies
+    try:
+        return policies[provider]
+    except KeyError as error:
+        raise ValueError(f"Missing commodity HTTP policy: {provider}") from error
+
+
+def _official_macro_get(
+    session,
+    url: str,
+    provider: str,
+    *,
+    headers: Mapping[str, str] | None = None,
+    params: Mapping[str, object] | None = None,
+    audit_secrets: tuple[str, ...] = (),
+) -> bytes:
+    attempt = {"method": "GET", "url": url, "status": "attempting"}
+    session._macro_attempt_trace.append(attempt)
+    transport_session = getattr(session, "__dict__", {}).get(
+        "_macro_official_session", session
+    )
+    response = official_get(
+        transport_session,
+        url,
+        policy=_macro_http_spec(session, provider).policy,
+        headers=headers,
+        params=params,
+        audit_secrets=audit_secrets,
+    )
+    session._macro_raw_parts.append(response.body)
+    attempt["status"] = "completed"
+    attempt["attempts"] = response.trace.attempts
+    return response.body
+
+
+class _MacroEiaClient:
+    def __init__(self, session, api_key: str, http: CommodityHttpSpec):
+        self.session = session
+        self.api_key = api_key
+        self.http = http
+        self.raw_bodies: list[bytes] = []
+
+    def _get(self, url: str, params: Mapping[str, object]) -> bytes:
+        body = _official_macro_get(
+            self.session,
+            url,
+            "eia",
+            params=params,
+            audit_secrets=(self.api_key,),
+        )
+        self.raw_bodies.append(body)
+        return body
+
+    def fetch_metadata(self, spec, expected):
+        required = set(expected)
+        identifiers: set[str] = set()
+        offset = 0
+        while not required <= identifiers:
+            body = self._get(
+                f"https://api.eia.gov/v2/{spec.route}/facet/series/",
+                {
+                    "api_key": self.api_key,
+                    "offset": offset,
+                    "length": spec.page_length,
+                },
+            )
+            payload = json.loads(body.decode("utf-8"))
+            values = payload.get("response", {}).get("facets")
+            if not isinstance(values, list):
+                raise ValueError(
+                    f"EIA facet metadata is missing for {spec.route}/series"
+                )
+            identifiers.update(
+                str(item.get("id") or "").strip()
+                for item in values
+                if isinstance(item, Mapping)
+            )
+            total = int(payload.get("response", {}).get("total", len(values)))
+            offset += len(values)
+            if offset >= total:
+                break
+            if not values:
+                raise ValueError("EIA facet metadata pagination made no progress")
+        missing = sorted(required - identifiers)
+        if missing:
+            raise ValueError(
+                f"EIA configured facet is unavailable for {spec.route}/series: "
+                + ", ".join(missing)
+            )
+
+    def fetch_page(self, spec, *, offset: int, length: int):
+        params: dict[str, object] = {
+            "api_key": self.api_key,
+            "frequency": spec.frequency,
+            "data[0]": "value",
+            "start": spec.start,
+            "end": spec.end,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "asc",
+            "offset": offset,
+            "length": length,
+        }
+        for facet, values in spec.facets.items():
+            params[f"facets[{facet}][]"] = list(values)
+        body = self._get(
+            f"https://api.eia.gov/v2/{spec.route}/data/",
+            params,
+        )
+        payload = json.loads(body.decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("EIA price response must be a JSON object")
+        return payload
 
 
 def _is_official_world_bank_https(url: str) -> bool:
@@ -827,39 +953,120 @@ def _fetch_config_history(
         api_key = os.environ.get("EIA_API_KEY", "").strip()
         if not api_key:
             raise ValueError("EIA_API_KEY is required for official EIA prices")
+        if not config.source_description.strip():
+            raise ValueError(f"{config.series_code} requires source_description")
+        cached_eia = getattr(session, "_macro_eia_prices", None)
+        if not isinstance(cached_eia, dict):
+            cached_eia = {}
+        if config.provider_symbol not in cached_eia:
+            price_configs = getattr(session, "_macro_eia_configs", None)
+            if not isinstance(price_configs, list) or not price_configs:
+                price_configs = [config]
+            price_configs = [
+                item
+                for item in price_configs
+                if item.provider_route == config.provider_route
+                and item.frequency == config.frequency
+            ]
+            http = _macro_http_spec(session, "eia")
+            if http.request_batch_size is None or http.page_length is None:
+                raise ValueError("EIA HTTP policy requires batching and pagination")
+            batch_rows = [
+                {
+                    "route": item.provider_route,
+                    "frequency": item.frequency,
+                    "facets": {"series": item.provider_symbol},
+                }
+                for item in price_configs
+            ]
+            specs = build_eia_batch_specs(
+                batch_rows,
+                request_batch_size=http.request_batch_size,
+                page_length=http.page_length,
+                start=start.isoformat(),
+                end=today.isoformat(),
+            )
+            expected = {
+                item.provider_symbol: {
+                    "facets": {"series": item.provider_symbol},
+                    "source_description": item.source_description,
+                    "expected_unit": item.level_unit,
+                }
+                for item in price_configs
+            }
+            client = _MacroEiaClient(session, api_key, http)
+            pages = fetch_eia_batches(client, specs, expected_metadata=expected)
+            all_rows = [
+                row
+                for payload in pages
+                for row in payload["response"]["data"]
+            ]
+            fetched = {
+                item.provider_symbol: (
+                    json.dumps(
+                        {"response": {"data": [
+                            row
+                            for row in all_rows
+                            if str(row.get("series") or "") == item.provider_symbol
+                        ]}},
+                        separators=(",", ":"),
+                    ),
+                    b"\n".join(client.raw_bodies),
+                )
+                for item in price_configs
+            }
+            cached_eia.update(fetched)
+            session._macro_eia_prices = cached_eia
+        try:
+            text, raw = cached_eia[config.provider_symbol]
+        except KeyError as error:
+            raise ValueError(
+                f"EIA batch did not cache configured series: {config.provider_symbol}"
+            ) from error
         url = f"https://api.eia.gov/v2/{config.provider_route.strip('/')}/data/"
-        response = _get(
-            session,
-            url,
-            params={
-                "api_key": api_key,
-                "frequency": config.frequency,
-                "data[0]": "value",
-                "facets[series][]": config.provider_symbol,
-                "start": start.isoformat(),
-                "end": today.isoformat(),
-                "sort[0][column]": "period",
-                "sort[0][direction]": "asc",
-                "length": 5000,
-            },
-        )
         return (
             parse_eia_price_series(
-                response.text,
+                text,
                 config.provider_symbol,
                 config.level_unit,
+                expected_description=config.source_description,
             ),
-            _response_bytes(response),
+            raw,
             url,
         )
     if config.provider == "world_bank_pink_sheet":
-        page_content, page_text = cached("GET", config.source_url)
+        def official_cached(url: str) -> tuple[bytes, str]:
+            key = ("OFFICIAL_GET", url)
+            if key not in shared:
+                body = _official_macro_get(
+                    session, url, "world_bank_pink_sheet"
+                )
+                shared[key] = (body, body.decode("utf-8", errors="strict"))
+            else:
+                session._macro_attempt_trace.append(
+                    {"method": "GET", "url": url, "status": "cache_hit"}
+                )
+                session._macro_raw_parts.append(shared[key][0])
+            return shared[key]
+
+        page_content, page_text = official_cached(config.source_url)
         del page_content
         workbook_url = _discover_world_bank_monthly_url(
             page_text,
             config.source_url,
         )
-        workbook_content, _ = cached("GET", workbook_url)
+        key = ("OFFICIAL_GET", workbook_url)
+        if key not in shared:
+            workbook_content = _official_macro_get(
+                session, workbook_url, "world_bank_pink_sheet"
+            )
+            shared[key] = (workbook_content, "")
+        else:
+            workbook_content = shared[key][0]
+            session._macro_attempt_trace.append(
+                {"method": "GET", "url": workbook_url, "status": "cache_hit"}
+            )
+            session._macro_raw_parts.append(workbook_content)
         parsed = getattr(session, "_macro_world_bank_prices", None)
         if not isinstance(parsed, dict):
             requested_columns = getattr(
@@ -1268,11 +1475,20 @@ def fetch_macro_assets(
     allow_partial: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     session = _session()
+    session._macro_official_session = requests.Session()
+    if isinstance(getattr(session, "headers", None), Mapping):
+        session._macro_official_session.headers.update(session.headers)
     detail_rows = []
     source_rows = []
     histories = {}
     raw_path = Path(raw_dir) if raw_dir is not None else None
     universe = load_macro_asset_universe(universe_path)
+    session._macro_commodity_http = load_commodity_http_policies(
+        universe_path if universe_path is not None and Path(universe_path).suffix == ".json" else None
+    )
+    session._macro_eia_configs = [
+        config for config in universe if config.provider == "eia_v2"
+    ]
     session._macro_world_bank_columns = {
         config.provider_symbol: config.level_unit
         for config in universe
@@ -1367,6 +1583,7 @@ def fetch_macro_assets(
                     raw_cache_error = sanitize_audit_text(cache_error)
             detail = asdict(config)
             detail.pop("freshness_days", None)
+            detail.pop("source_description", None)
             detail.update(_snapshot_fields(snapshot))
             detail["source_url"] = sanitize_audit_text(url)
             detail_rows.append(detail)

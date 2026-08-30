@@ -927,11 +927,6 @@ def _validate_row(
                     f"{path.name} row {row_number} successful provider phase "
                     "must be normalized"
                 )
-            if attempts != 1:
-                raise ReleaseValidationError(
-                    f"{path.name} row {row_number} successful provider attempts "
-                    "must be 1"
-                )
             if (row.get("error_code") or "").strip():
                 raise ReleaseValidationError(
                     f"{path.name} row {row_number} successful provider error_code "

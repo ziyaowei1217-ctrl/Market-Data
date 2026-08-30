@@ -213,6 +213,25 @@ class EiaPriceParserTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected EIA unit"):
             parse_eia_price_series(fixture, "RWTC", "Dollars per Barrel")
 
+    def test_rejects_source_description_identity_mismatch_when_configured(self):
+        fixture = json.dumps({
+            "response": {"data": [{
+                "period": "2026-07-01",
+                "series": "RWTC",
+                "series-description": "renamed upstream series",
+                "units": "$/BBL",
+                "value": "68.2",
+            }]}
+        })
+
+        with self.assertRaisesRegex(ValueError, "description"):
+            parse_eia_price_series(
+                fixture,
+                "RWTC",
+                "$/BBL",
+                expected_description="Cushing, OK WTI Spot Price FOB",
+            )
+
     def test_rejects_duplicate_dates_and_nonfinite_values(self):
         cases = {
             "duplicate": [

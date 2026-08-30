@@ -1538,7 +1538,7 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "unexpected columns"):
             validate_staged_week(self.root, self.window)
 
-    def test_current_staged_context_source_log_accepts_provider_phase_columns(self):
+    def test_current_staged_context_source_log_accepts_retried_success(self):
         row = fixture_row(
             STAGED_CONTEXT_SOURCE_LOG_FIELDS,
             provider="fixture",
@@ -1546,7 +1546,7 @@ class StagedValidationTests(unittest.TestCase):
             status="OK",
             as_of_date="2026-08-09",
             phase="normalized",
-            attempts="1",
+            attempts="2",
             error_code="",
         )
         merge_context_status_rows(self.outputs, [row])
@@ -1560,7 +1560,6 @@ class StagedValidationTests(unittest.TestCase):
             ("negative attempts", {"attempts": "-1"}, "attempts"),
             ("non_integer attempts", {"attempts": "1.5"}, "attempts"),
             ("incomplete success phase", {"phase": "retrieve"}, "normalized"),
-            ("retried success", {"attempts": "2"}, "attempts.*1"),
             ("success error code", {"error_code": "EIA_TIMEOUT"}, "error_code"),
         )
         for label, mutation, expected_error in cases:
@@ -1584,7 +1583,18 @@ class StagedValidationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ReleaseValidationError, expected_error):
                     validate_staged_week(self.root, self.window)
 
-    def test_context_source_log_attempts_publish_as_an_integer(self):
+    def test_context_source_log_retried_attempts_publish_as_integer_two(self):
+        row = fixture_row(
+            STAGED_CONTEXT_SOURCE_LOG_FIELDS,
+            provider="retried-fixture",
+            category="market_internals",
+            status="OK",
+            as_of_date="2026-08-09",
+            phase="normalized",
+            attempts="2",
+            error_code="",
+        )
+        merge_context_status_rows(self.outputs, [row])
         manifest = validate_staged_week(self.root, self.window)
         (self.root / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -1595,11 +1605,13 @@ class StagedValidationTests(unittest.TestCase):
             build_output_bundle(self.root, output, release_id="attempts-fixture")
             context = json.loads((output / "context.json").read_text(encoding="utf-8"))
 
-        self.assertTrue(context["source_log"])
-        self.assertTrue(
-            all(type(row["attempts"]) is int for row in context["source_log"])
+        retried = next(
+            row
+            for row in context["source_log"]
+            if row["provider"] == "retried-fixture"
         )
-        self.assertTrue(all(row["attempts"] == 1 for row in context["source_log"]))
+        self.assertIs(type(retried["attempts"]), int)
+        self.assertEqual(retried["attempts"], 2)
 
     def test_rejects_an_extra_legacy_context_source_log_column(self):
         (self.outputs["weekly_context"] / "economic_releases.csv").unlink()
