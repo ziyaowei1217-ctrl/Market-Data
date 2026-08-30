@@ -43,6 +43,8 @@ CSV；新增配置时应同时保留唯一身份、单位、提供方和来源�
 
 可选环境变量：
 
+- `BEA_API_KEY`：启用 BEA GDP、个人收入与支出等官方经济发布表；凭证仅从
+  运行进程环境读取，不进入来源 URL、缓存或发布文件。
 - `EIA_API_KEY`：启用 EIA 商品基本面提供方；缺失时记录
   `NOT_CONFIGURED`。
 - `SEC_USER_AGENT`：启用公司 watchlist 的 SEC 请求；值应包含机构和
