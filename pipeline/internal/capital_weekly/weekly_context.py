@@ -134,7 +134,7 @@ def run_weekly_context(
             result = provider.fetch()
             completed_phase = validate_provider_phase(
                 result.completed_phase,
-                completed=True,
+                completed=result.status == "OK",
             )
             attempts = validate_provider_attempts(result.attempts)
             if result.category != provider.spec.category:

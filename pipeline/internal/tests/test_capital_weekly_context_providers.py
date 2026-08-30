@@ -160,9 +160,10 @@ class CommodityProbeTests(unittest.TestCase):
         }
 
         class Client:
-            def __init__(self, kind, attempts=2):
+            def __init__(self, kind, attempts=2, error_attempts=2):
                 self.kind = kind
                 self.attempts = attempts
+                self.error_attempts = error_attempts
 
             def fetch_metadata(self, _spec, _expected):
                 if self.kind == "metadata_transport":
@@ -170,7 +171,7 @@ class CommodityProbeTests(unittest.TestCase):
                         "HTTP_RETRY_EXHAUSTED",
                         "retrieve",
                         True,
-                        2,
+                        self.error_attempts,
                         "metadata transport exhausted",
                     )
                 if self.kind == "metadata":
@@ -270,6 +271,31 @@ class CommodityProbeTests(unittest.TestCase):
             self.assertEqual(payload["phase"], "config")
             self.assertEqual(payload["attempts"], 1)
             self.assertEqual(payload["error_code"], "EIA_PROBE_ATTEMPTS_INVALID")
+
+            for invalid_attempts in (0, -1, 1.5, True):
+                with self.subTest(official_http_attempts=invalid_attempts):
+                    output = io.StringIO()
+                    with redirect_stdout(output):
+                        exit_code = probe_commodity_sources.main(
+                            [
+                                "--config", str(config_path),
+                                "--as-of", "2026-08-23",
+                                "--provider", "eia",
+                            ],
+                            client=Client(
+                                "metadata_transport",
+                                error_attempts=invalid_attempts,
+                            ),
+                            environ={"EIA_API_KEY": "probe-secret"},
+                        )
+                    payload = json.loads(output.getvalue())
+                    self.assertEqual(exit_code, 1)
+                    self.assertEqual(payload["phase"], "config")
+                    self.assertEqual(payload["attempts"], 1)
+                    self.assertEqual(
+                        payload["error_code"],
+                        "EIA_PROBE_ATTEMPTS_INVALID",
+                    )
 
     def test_eia_probe_is_sanitized_and_leaves_every_product_tree_byte_identical(self):
         from pipeline.internal.scripts import probe_commodity_sources
@@ -620,6 +646,7 @@ class ContextProviderTests(unittest.TestCase):
                     )
                 self.assertEqual(rejected.status, "FETCH_FAILED")
                 self.assertEqual(rejected.attempts, 2)
+                self.assertEqual(rejected.completed_phase, "parse")
                 self.assertEqual(rejected.raw_text, raw)
                 self.assertEqual(len(calls), 1)
 
@@ -675,7 +702,49 @@ class ContextProviderTests(unittest.TestCase):
                     )
                 self.assertEqual(rejected.status, "FETCH_FAILED")
                 self.assertEqual(rejected.attempts, 2)
+                self.assertEqual(rejected.completed_phase, "parse")
                 self.assertEqual(rejected.raw_text, raw)
+                self.assertEqual(len(calls), 1)
+
+    def test_usda_invalid_json_preserves_retry_trace_as_parse_failure(self):
+        policies = providers_module.load_commodity_http_policies()
+
+        for provider, invoke in (
+            (
+                "usda_psd",
+                lambda http: providers_module._usda_psd_provider(
+                    object(), date(2026, 8, 30), [corn_psd_config()],
+                    "usda-secret", http,
+                ),
+            ),
+            (
+                "usda_esr",
+                lambda http: providers_module._usda_esr_provider(
+                    object(), date(2026, 8, 30), [corn_esr_config()],
+                    "usda-secret", http,
+                ),
+            ),
+        ):
+            with self.subTest(provider=provider):
+                calls = []
+
+                def fake_get(_session, url, **kwargs):
+                    calls.append((url, kwargs))
+                    return OfficialHttpResponse(
+                        body=b"not-json\x00\xff",
+                        url=url,
+                        headers={},
+                        trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                    )
+
+                with patch.object(
+                    providers_module, "official_get", side_effect=fake_get
+                ):
+                    with self.assertRaises(ProviderPhaseError) as raised:
+                        invoke(policies[provider])
+
+                self.assertEqual(raised.exception.failure_phase, "parse")
+                self.assertEqual(raised.exception.attempts, 2)
                 self.assertEqual(len(calls), 1)
 
     def test_context_eia_metadata_requires_explicit_total(self):

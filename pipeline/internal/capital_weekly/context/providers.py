@@ -411,6 +411,7 @@ def _usda_get_json(
     path: str,
     api_key: str,
     policy: OfficialHttpPolicy,
+    trace: dict[str, int],
 ) -> tuple[str, Any, bytes, int]:
     url = f"{USDA_FAS_API_URL}{path}"
     try:
@@ -421,6 +422,8 @@ def _usda_get_json(
             headers={"API_KEY": api_key, "Accept": "application/json"},
             audit_secrets=(api_key,),
         )
+        trace["attempts"] = max(trace["attempts"], attempts)
+        trace["requests"] += 1
         payload = json.loads(content.decode("utf-8"))
     except OfficialHttpError:
         raise
@@ -640,11 +643,9 @@ def _usda_psd_provider_impl(
     def fetch(path: str) -> tuple[str, Any]:
         nonlocal transport_attempts
         url, payload, content, attempts = _usda_get_json(
-            session, path, api_key, http.policy
+            session, path, api_key, http.policy, trace
         )
         transport_attempts = max(transport_attempts, attempts)
-        trace["attempts"] = transport_attempts
-        trace["requests"] += 1
         raw_responses.append((url, content))
         return url, payload
 
@@ -837,11 +838,9 @@ def _usda_esr_provider_impl(
     def fetch(path: str) -> tuple[str, Any]:
         nonlocal transport_attempts
         url, payload, content, attempts = _usda_get_json(
-            session, path, api_key, http.policy
+            session, path, api_key, http.policy, trace
         )
         transport_attempts = max(transport_attempts, attempts)
-        trace["attempts"] = transport_attempts
-        trace["requests"] += 1
         raw_responses.append((url, content))
         return url, payload
 
@@ -1174,11 +1173,13 @@ def _comex_stocks_provider(
     limitation_note = str(raw_spec.get("limitation_note") or "").strip()
     content = b""
     attempts = 1
+    completed_phase = "config"
     try:
         spec = _metal_spec(raw_spec)
         content, attempts = _official_bytes(
             session, spec["source_url"], http.policy
         )
+        completed_phase = "parse"
         parsed = parse_comex_stocks(content, spec)
         signature = comex_schema_signature(content, spec)
         notes = _provenance_notes(
@@ -1283,6 +1284,7 @@ def _comex_stocks_provider(
             status="FETCH_FAILED",
             notes=notes,
             attempts=attempts,
+            completed_phase=completed_phase,
         )
 
 
@@ -1297,6 +1299,7 @@ def _usgs_structural_provider(
     limitation_note = str(raw_spec.get("limitation_note") or "").strip()
     content = b""
     attempts = 1
+    completed_phase = "config"
     try:
         spec = _metal_spec(raw_spec)
         publication_date = date.fromisoformat(str(spec["publication_date"]))
@@ -1323,6 +1326,7 @@ def _usgs_structural_provider(
         content, attempts = _official_bytes(
             session, spec["source_url"], http.policy
         )
+        completed_phase = "parse"
         parsed = parse_usgs_mcs_pdf(content, spec)
         schema_payload = {
             key: spec[key]
@@ -1427,6 +1431,7 @@ def _usgs_structural_provider(
             status="FETCH_FAILED",
             notes=notes,
             attempts=attempts,
+            completed_phase=completed_phase,
         )
 
 

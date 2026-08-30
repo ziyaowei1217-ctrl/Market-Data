@@ -138,13 +138,23 @@ class _ProbeAttemptsError(ValueError):
     pass
 
 
-def _probe_attempts(client: Any) -> int:
+def _validated_probe_attempts(attempts: Any) -> int:
     try:
-        return validate_provider_attempts(getattr(client, "attempts"))
-    except (AttributeError, ValueError) as error:
+        return validate_provider_attempts(attempts)
+    except ValueError as error:
         raise _ProbeAttemptsError(
             "probe client attempts must be a positive integer"
         ) from error
+
+
+def _probe_attempts(client: Any) -> int:
+    try:
+        attempts = getattr(client, "attempts")
+    except AttributeError as error:
+        raise _ProbeAttemptsError(
+            "probe client attempts must be a positive integer"
+        ) from error
+    return _validated_probe_attempts(attempts)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -224,19 +234,34 @@ def main(
         print(json.dumps(output, sort_keys=True, separators=(",", ":")))
         return 0
     except OfficialHttpError as error:
-        active_phase = getattr(active_client, "phase", phase)
-        failure_phase = (
-            active_phase
-            if active_phase in {"metadata", "retrieve"}
-            else "raw" if error.phase == "schema" else "retrieve"
-        )
-        output = {
-            "provider": "eia",
-            "phase": failure_phase,
-            "attempts": error.attempts,
-            "error_code": error.code,
-            "error": sanitize_audit_text(error.safe_message, secrets=(api_key,)),
-        }
+        try:
+            attempts = _validated_probe_attempts(error.attempts)
+        except _ProbeAttemptsError as attempts_error:
+            output = {
+                "provider": "eia",
+                "phase": "config",
+                "attempts": 1,
+                "error_code": "EIA_PROBE_ATTEMPTS_INVALID",
+                "error": sanitize_audit_text(
+                    attempts_error, secrets=(api_key,)
+                ),
+            }
+        else:
+            active_phase = getattr(active_client, "phase", phase)
+            failure_phase = (
+                active_phase
+                if active_phase in {"metadata", "retrieve"}
+                else "raw" if error.phase == "schema" else "retrieve"
+            )
+            output = {
+                "provider": "eia",
+                "phase": failure_phase,
+                "attempts": attempts,
+                "error_code": error.code,
+                "error": sanitize_audit_text(
+                    error.safe_message, secrets=(api_key,)
+                ),
+            }
     except _ProbeAttemptsError as error:
         output = {
             "provider": "eia",
