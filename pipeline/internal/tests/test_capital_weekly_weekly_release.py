@@ -4000,7 +4000,7 @@ class FakePipelineRunner:
         write_valid_pipeline_output(pipeline, output)
         if pipeline == "weekly_context":
             release_root = output.parent
-            write_exact_gate_fixture(
+            write_complete_v2_release_fixture(
                 {
                     "macro_assets": next(
                         release_root.glob("capital_weekly_macro_assets_python_*")
@@ -4034,6 +4034,13 @@ class FakeRequiredCommodityProviderFailureRunner(FakePipelineRunner):
                 as_of_date="2026-08-09",
                 source="U.S. Energy Information Administration",
                 source_url="https://api.eia.gov/v2/petroleum/",
+                notes=(
+                    "request failed at "
+                    "https://api.eia.gov/v2/petroleum/?api_key=coordinator-secret"
+                ),
+                phase="retrieve",
+                attempts="3",
+                error_code="EIA_TIMEOUT",
             ),
             *usda_source_rows(status="NOT_CONFIGURED", requiredness="optional"),
         ]
@@ -4059,16 +4066,8 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.now = datetime(
             2026, 8, 11, 13, 25, tzinfo=ZoneInfo("Asia/Hong_Kong")
         )
-        self.config_path = self.project_root / "exact-gate-config.json"
-        self.config_path.write_text(json.dumps(exact_gate_config()), encoding="utf-8")
-        self.config_patcher = patch(
-            "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-            self.config_path,
-        )
-        self.config_patcher.start()
-        self.addCleanup(self.config_patcher.stop)
 
-    def test_success_publishes_stable_output_and_atomic_succeeded_status(self):
+    def test_success_activates_contract_three_and_atomic_succeeded_status(self):
         runner = FakePipelineRunner()
 
         published = run_latest_release(
@@ -4084,6 +4083,7 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         )
         manifest = json.loads((published / "release.json").read_text())
         self.assertEqual(manifest["schema_version"], "1.0")
+        self.assertEqual(manifest["dataset_contract_version"], 3)
         self.assertEqual(manifest["source_week_id"], "week_20260803-20260809")
         self.assertEqual(manifest["status"], "complete")
         self.assertEqual(
@@ -4104,6 +4104,13 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         )
         for pipeline in manifest["pipelines"]:
             self.assertEqual(pipeline["status"], "complete")
+        validated = weekly_release_module.validate_output_bundle(published)
+        self.assertEqual(validated["dataset_contract_version"], 3)
+        macro = json.loads((published / "macro.json").read_text())
+        context = json.loads((published / "context.json").read_text())
+        self.assertTrue(macro["tables"]["commodity_price_history"])
+        self.assertTrue(context["tables"]["commodity_metric_history"])
+        self.assertTrue(context["tables"]["commodity_research_facts"])
         json.dumps(manifest, allow_nan=False)
         status = json.loads(self.status_path.read_text())
         self.assertEqual(
@@ -4120,6 +4127,11 @@ class ReleaseOrchestrationTests(unittest.TestCase):
                 "started_at",
                 "finished_at",
                 "error",
+                "pipeline",
+                "provider",
+                "phase",
+                "attempts",
+                "error_code",
             },
         )
         self.assertEqual(status["status"], "succeeded")
@@ -4129,6 +4141,11 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertEqual(status["total"], 5)
         self.assertIsNone(status["current_pipeline"])
         self.assertIsNone(status["error"])
+        self.assertIsNone(status["pipeline"])
+        self.assertIsNone(status["provider"])
+        self.assertIsNone(status["phase"])
+        self.assertIsNone(status["attempts"])
+        self.assertIsNone(status["error_code"])
         self.assertIsNotNone(status["finished_at"])
         self.assertEqual(len(runner.calls), 5)
         for _command, check, cwd in runner.calls:
@@ -4222,6 +4239,18 @@ class ReleaseOrchestrationTests(unittest.TestCase):
                 "second",
             )
         self.assertNotIn(b"first", b"".join(directory_bytes(cache).values()))
+        self.assertFalse(
+            any(
+                part.startswith("week_") or part in {"history", "historical"}
+                for path in cache.rglob("*")
+                for part in path.relative_to(cache).parts
+            )
+        )
+        cache_identity = json.loads((cache / "cache.json").read_text())
+        self.assertEqual(
+            cache_identity["release_id"],
+            json.loads((second / "release.json").read_text())["release_id"],
+        )
 
     def test_required_commodity_provider_failure_preserves_all_stable_hashes(self):
         run_latest_release(
@@ -4264,6 +4293,14 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertEqual(status["status"], "failed")
         self.assertEqual(status["current_pipeline"], "validation")
         self.assertEqual(status["completed"], 5)
+        self.assertEqual(status.get("pipeline"), "weekly_context")
+        self.assertEqual(status.get("provider"), "eia_refined_products")
+        self.assertEqual(status.get("phase"), "retrieve")
+        self.assertEqual(status.get("attempts"), 3)
+        self.assertEqual(status.get("error_code"), "EIA_TIMEOUT")
+        serialized_status = self.status_path.read_text()
+        self.assertNotIn("coordinator-secret", serialized_status)
+        self.assertNotIn("api_key", serialized_status.lower())
 
     def test_pipeline_failure_preserves_prior_release_and_names_pipeline(self):
         run_latest_release(

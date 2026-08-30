@@ -3727,6 +3727,48 @@ def _write_status(path: Path, status: dict) -> None:
     _atomic_write_json(path, status)
 
 
+def _required_provider_failure_status(
+    specs: tuple[PipelineSpec, ...],
+) -> dict[str, object] | None:
+    context = next((spec for spec in specs if spec.name == "weekly_context"), None)
+    if context is None:
+        return None
+    source_log = Path(context.output_dir) / "source_log.csv"
+    if not source_log.is_file() or source_log.is_symlink():
+        return None
+    try:
+        with source_log.open(newline="", encoding="utf-8-sig") as handle:
+            rows = list(csv.DictReader(handle, strict=True))
+    except (OSError, UnicodeError, csv.Error):
+        return None
+    for row in rows:
+        status = str(row.get("status") or "").strip().upper()
+        if (
+            str(row.get("requiredness") or "").strip() != "required"
+            or status == "OK"
+        ):
+            continue
+        provider = str(row.get("provider") or "").strip()
+        phase = str(row.get("phase") or "").strip()
+        raw_attempts = str(row.get("attempts") or "").strip()
+        error_code = str(row.get("error_code") or "").strip().upper()
+        if not re.fullmatch(r"[a-z0-9_]+", provider):
+            provider = "unknown_provider"
+        if phase not in PROVIDER_PHASES:
+            phase = "retrieve"
+        attempts = int(raw_attempts) if re.fullmatch(r"[1-9][0-9]*", raw_attempts) else 1
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", error_code):
+            error_code = f"PROVIDER_{status}" if status else "PROVIDER_FAILURE"
+        return {
+            "pipeline": "weekly_context",
+            "provider": provider,
+            "phase": phase,
+            "attempts": attempts,
+            "error_code": error_code,
+        }
+    return None
+
+
 @contextmanager
 def release_write_lock(
     lock_root: Path,
@@ -3870,6 +3912,11 @@ def run_latest_release(
         "started_at": started.isoformat(timespec="seconds"),
         "finished_at": None,
         "error": None,
+        "pipeline": None,
+        "provider": None,
+        "phase": None,
+        "attempts": None,
+        "error_code": None,
     }
     with release_write_lock(
         state_root,
@@ -3913,7 +3960,11 @@ def run_latest_release(
 
             status["current_pipeline"] = "validation"
             _write_status(status_file, status)
-            manifest = validate_staged_week(staging_week, window)
+            manifest = validate_staged_week(
+                staging_week,
+                window,
+                dataset_contract_version=DATASET_CONTRACT_VERSION,
+            )
             manifest["pipelines"] = pipeline_runs
             _atomic_write_json(staging_week / "manifest.json", manifest)
             status["current_pipeline"] = "output"
@@ -3945,6 +3996,7 @@ def run_latest_release(
             )
             return destination
         except Exception as error:
+            provider_failure = _required_provider_failure_status(specs)
             status.update(
                 {
                     "status": "failed",
@@ -3952,6 +4004,8 @@ def run_latest_release(
                     "error": safe_error_reason(error),
                 }
             )
+            if provider_failure is not None:
+                status.update(provider_failure)
             _write_status(status_file, status)
             raise
         finally:
