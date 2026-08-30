@@ -2,6 +2,7 @@ import json
 import unittest
 from datetime import date
 
+from pipeline.internal.common import load_config_rows
 from pipeline.internal.capital_weekly.context.commodities import (
     calculate_weekly_change,
     eia_not_configured_result,
@@ -38,6 +39,36 @@ class CommodityFundamentalTests(unittest.TestCase):
         }
         spec.update(overrides)
         return spec
+
+    def test_current_lower_48_description_matches_production_config(self):
+        spec = next(
+            item
+            for item in load_config_rows("context.eia_series")
+            if item["metric_code"] == "eia_ng_storage_lower48"
+        )
+        payload = {
+            "response": {
+                "data": [{
+                    "period": "2026-08-21",
+                    "duoarea": "R48",
+                    "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R48_BCF",
+                    "series-description": (
+                        "Weekly Lower 48 States Natural Gas Working Underground "
+                        "Storage (Billion Cubic Feet)"
+                    ),
+                    "units": "BCF",
+                    "value": "3125",
+                }]
+            }
+        }
+
+        try:
+            rows = parse_eia_metric_series(json.dumps(payload), spec)
+        except ValueError as error:
+            self.fail(str(error))
+
+        self.assertEqual(rows[-1]["metric_code"], "eia_ng_storage_lower48")
 
     def test_metric_parser_requires_exact_facets_description_and_native_unit(self):
         payload = {

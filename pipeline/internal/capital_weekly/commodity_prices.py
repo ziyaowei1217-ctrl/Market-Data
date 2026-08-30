@@ -12,6 +12,12 @@ from datetime import date, datetime
 from openpyxl import load_workbook
 
 
+WORLD_BANK_MONTHLY_PRICE_HEADINGS = frozenset({
+    "monthly prices",
+    "monthly prices in nominal us dollars, 1960 to present",
+})
+
+
 def _normalized_label(value: object) -> str:
     text = unicodedata.normalize("NFKC", str(value or ""))
     return " ".join(text.replace("\xa0", " ").split()).casefold()
@@ -101,7 +107,7 @@ def parse_world_bank_monthly_prices(
         for sheet in workbook.worksheets:
             rows = list(sheet.iter_rows(values_only=True))
             if any(
-                _normalized_label(cell) == "monthly prices"
+                _normalized_label(cell) in WORLD_BANK_MONTHLY_PRICE_HEADINGS
                 for row in rows
                 for cell in row
             ):
@@ -114,21 +120,31 @@ def parse_world_bank_monthly_prices(
         column_indexes: dict[str, int] = {}
         for row_index, row in enumerate(rows):
             normalized = [_normalized_label(cell) for cell in row]
-            if any(value in {"date", "month"} for value in normalized):
-                positions = {}
-                for label, (source_label, _) in requested.items():
-                    matches = [
-                        index
-                        for index, value in enumerate(normalized)
-                        if value == label
-                    ]
-                    if len(matches) > 1:
-                        raise ValueError(
-                            "World Bank workbook has duplicate requested column: "
-                            f"{source_label}"
-                        )
-                    if matches:
-                        positions[label] = matches[0]
+            positions = {}
+            for label, (source_label, _) in requested.items():
+                matches = [
+                    index
+                    for index, value in enumerate(normalized)
+                    if value == label
+                ]
+                if len(matches) > 1:
+                    raise ValueError(
+                        "World Bank workbook has duplicate requested column: "
+                        f"{source_label}"
+                    )
+                if matches:
+                    positions[label] = matches[0]
+            explicit_date_header = any(
+                value in {"date", "month"} for value in normalized
+            )
+            current_blank_date_header = (
+                bool(positions)
+                and bool(normalized)
+                and not normalized[0]
+                and row_index + 2 < len(rows)
+                and _month_end(rows[row_index + 2][0]) is not None
+            )
+            if explicit_date_header or current_blank_date_header:
                 header_index = row_index
                 column_indexes = positions
                 break
@@ -147,9 +163,12 @@ def parse_world_bank_monthly_prices(
 
         header = rows[header_index]
         date_index = next(
-            index
-            for index, value in enumerate(header)
-            if _normalized_label(value) in {"date", "month"}
+            (
+                index
+                for index, value in enumerate(header)
+                if _normalized_label(value) in {"date", "month"}
+            ),
+            0,
         )
         if header_index + 1 >= len(rows):
             raise ValueError("World Bank workbook is missing the unit row")
@@ -158,6 +177,8 @@ def parse_world_bank_monthly_prices(
         for normalized, column_index in column_indexes.items():
             label, expected_unit = requested[normalized]
             unit = str(unit_row[column_index] or "").strip()
+            if re.fullmatch(r"\([^()]+\)", unit):
+                unit = unit[1:-1].strip()
             if unit != expected_unit:
                 raise ValueError(
                     f"Unexpected World Bank unit for {label}: {unit!r}; "
@@ -180,8 +201,11 @@ def parse_world_bank_monthly_prices(
                         f"Invalid World Bank value for {label} on "
                         f"{observation_date.isoformat()}"
                     )
+                raw_value = row[column_index]
+                if isinstance(raw_value, str) and raw_value.strip() == "…":
+                    continue
                 try:
-                    value = float(row[column_index])
+                    value = float(raw_value)
                 except (TypeError, ValueError) as error:
                     raise ValueError(
                         f"Invalid World Bank value for {label} on "

@@ -700,7 +700,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
             "world_bank_pink_sheet": {
                 "Gold", "Copper", "Maize", "Soybeans", "Wheat, US SRW",
                 "Rice, Thai 5%", "Cotton, A Index", "Sugar, world",
-                "Coffee, Arabica", "Cocoa", "Beef",
+                "Coffee, Arabica", "Cocoa", "Beef **",
             },
         }
         self.assertEqual(

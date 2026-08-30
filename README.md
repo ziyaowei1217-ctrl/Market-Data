@@ -41,15 +41,55 @@ python3 -m pip install -r pipeline/requirements.txt
 配置值保留为字符串，由各管线在读取后转换所需类型。不要重新拆成多份
 CSV；新增配置时应同时保留唯一身份、单位、提供方和来源元数据。
 
-可选环境变量：
+环境变量：
 
-- `EIA_API_KEY`：启用 EIA 商品基本面提供方；缺失时记录
-  `NOT_CONFIGURED`。
+- `EIA_API_KEY`：完整正式发布所需。WTI、Brent、Henry Hub 价格以及
+  EIA 天然气和成品油实物指标都使用该凭证；凭证只进入请求参数，不得
+  写入配置、来源 URL、日志或缓存元数据。context 中的 EIA 能力在无
+  凭证时会显示为可选 `NOT_CONFIGURED`，但宏观价格管线仍会阻止不完整
+  发布。
+- `USDA_API_KEY`：启用 USDA FAS PSD 与 ESR 两个农业能力。缺失时两者
+  必须同时保留为可选 `NOT_CONFIGURED`，对应数据数组为空；不得使用替代
+  密钥、镜像来源或旧数据填充。配置后两者都成为 required，并且必须
+  同时成功。
 - `SEC_USER_AGENT`：启用公司 watchlist 的 SEC 请求；值应包含机构和
   联系方式。
 
 凭证不得写入仓库。Yahoo 波动率信号属于可选的本地研究数据源，失败会
 进入来源日志，但不会静默伪造数据。
+
+## Commodity Research 范围与公开来源
+
+Commodity Research 使用七个固定 family：`natural_gas`、
+`refined_products`、`copper`、`gold`、`grains_oilseeds`、`softs` 和
+`livestock`。每条研究记录保留精确的 `commodity_code`/family 配对、
+HTTP(S) 来源、观测日期、原生单位与 QC；数值只能是有限数或 `null`。
+BTC 仅保留为宏观表中的 vendor proxy，不属于 Commodity Research，也
+不会用于商品基本面或实物商品持仓覆盖。
+
+| 能力 | 免费官方来源 | 覆盖与用途 |
+| --- | --- | --- |
+| 能源价格与实物指标 | U.S. EIA Open Data v2 | WTI、Brent、Henry Hub 价格；天然气库存/产消与成品油库存、产量、进出口等 |
+| 月度商品基准 | World Bank Commodity Price Data (Pink Sheet) | 铜、金、谷物油籽、软商品和畜牧的原生月度价格 |
+| 实物商品持仓 | CFTC Disaggregated Commitments of Traders | 能源、金属和农业合约；按 producer、swap dealer、managed money、other reportable 分类 |
+| 可交割金属库存 | CME Group COMEX delivery reports | 铜、金 registered/eligible/total 库存；补充指标，不代替全球库存 |
+| 金属结构数据 | U.S. Geological Survey Mineral Commodity Summaries | 铜、金年度全球矿产量与储量 |
+| 农业供需与出口 | USDA Foreign Agricultural Service PSD/ESR | 配置 `USDA_API_KEY` 后提供供需、库存使用比和出口销售；未配置时明确为空 |
+
+价格、实物基本面和持仓分别保留自己的 `metric_role`；CFTC TFF 的金融
+参与者语义不会与 Disaggregated 实物商品参与者标签混用。所有快照和派生
+变化都先应用 `as_of_date` 与 known-as-of 截断。
+
+来源有不同的时效限制：World Bank 是月度，USGS 是年度结构背景；CFTC
+周二持仓通常周五发布；CME 公开链接只提供最新工作簿，无法证明目标周
+版本时会显示 `POINT_IN_TIME_UNAVAILABLE`。官方提供方也可能更改字段、
+精确系列说明、单位代码或工作簿布局，解析器会失败关闭，不能放宽校验或
+改用非官方镜像来强行发布。
+
+required 来源只接受 `OK`。只有注册为 optional 的特定能力可以使用条件
+状态：缺少凭证为 `NOT_CONFIGURED`，数据不足为 `INSUFFICIENT_DATA`，
+无法证明目标时点版本为 `POINT_IN_TIME_UNAVAILABLE`；`FETCH_FAILED` 只
+允许用于注册的 Yahoo 波动率和 CME/USGS 补充来源。其他失败一律阻止发布。
 
 ## 正式刷新
 
@@ -72,6 +112,10 @@ python3 -m pipeline.refresh --as-of-date 2026-08-23
 `pipeline/.state/refresh.lock`。中间数据只出现在
 `pipeline/.staging/`，成功后会清理。最近一次成功的原始响应保存在
 `pipeline/.cache/`，下一次成功刷新会整体替换它，不累计历史缓存。
+缓存只有 `indices/`、`sectors/`、`gics/`、`macro/`、`context/` 和
+`cache.json` 这一代稳定布局，不创建日期或周次子目录。失败刷新会清理
+staging，并同时保留原六个输出文件和原缓存；消费者继续读取上一代已经
+验证的 `release_id`。
 
 ## 无网络离线初始化
 

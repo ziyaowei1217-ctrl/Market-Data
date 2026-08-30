@@ -349,6 +349,114 @@ def write_valid_staged_week(root: Path, window) -> dict[str, Path]:
     return directories
 
 
+def write_complete_commodity_research_fixture(outputs: dict[str, Path]) -> None:
+    identities = (
+        ("NATGAS_HH", "natural_gas"),
+        ("WTI", "refined_products"),
+        ("COPPER_COMEX", "copper"),
+        ("GOLD_COMEX", "gold"),
+        ("CORN", "grains_oilseeds"),
+        ("COTTON", "softs"),
+        ("CATTLE", "livestock"),
+    )
+    price_rows = []
+    fundamental_rows = []
+    positioning_rows = []
+    for index, (commodity_code, family) in enumerate(identities, start=1):
+        if family in {"natural_gas", "refined_products"}:
+            price_provider = "eia_v2"
+            price_source = "U.S. Energy Information Administration Open Data"
+            price_url = "https://api.eia.gov/v2/"
+            fundamental_source = "U.S. Energy Information Administration"
+            fundamental_url = "https://api.eia.gov/v2/"
+        elif family in {"copper", "gold"}:
+            price_provider = "world_bank_pink_sheet"
+            price_source = "World Bank Commodity Price Data (Pink Sheet)"
+            price_url = "https://www.worldbank.org/en/research/commodity-markets"
+            fundamental_source = "U.S. Geological Survey"
+            fundamental_url = "https://pubs.usgs.gov/periodicals/mcs2026/"
+        else:
+            price_provider = "world_bank_pink_sheet"
+            price_source = "World Bank Commodity Price Data (Pink Sheet)"
+            price_url = "https://www.worldbank.org/en/research/commodity-markets"
+            fundamental_source = "USDA Foreign Agricultural Service"
+            fundamental_url = "https://api.fas.usda.gov/"
+        price_rows.append(fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            group="commodities",
+            series_code=f"{commodity_code}_PRICE",
+            provider=price_provider,
+            source=price_source,
+            source_url=price_url,
+            commodity_code=commodity_code,
+            commodity_family=family,
+            price_kind="official_cash",
+            known_as_of="",
+            latest_value=str(index),
+            qc_flag="OK",
+        ))
+        fundamental_rows.append(fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            category="commodity_fundamentals",
+            metric_code=f"fixture_{commodity_code.lower()}_physical_level",
+            value=str(index),
+            source=fundamental_source,
+            source_url=fundamental_url,
+            qc_flag="OK",
+            commodity_code=commodity_code,
+            commodity_family=family,
+            metric_role="fundamental",
+            measurement_kind="physical_level",
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00-04:00",
+            reference_period="2026-08-07",
+        ))
+        positioning_rows.append(fixture_row(
+            CATEGORY_FIELDS["positioning_flows"],
+            as_of_date="2026-08-04",
+            category="positioning_flows",
+            metric_code=f"fixture_{commodity_code.lower()}_open_interest",
+            value=str(index),
+            source="U.S. Commodity Futures Trading Commission",
+            source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
+            qc_flag="OK",
+            commodity_code=commodity_code,
+            commodity_family=family,
+            metric_role="positioning",
+            measurement_kind="open_interest",
+            participant_class="",
+            known_as_of="2026-08-07T15:30:00-04:00",
+            reference_period="2026-08-04",
+        ))
+    price_rows.append(fixture_row(
+        MACRO_FIELDS,
+        asset_class="commodity",
+        group="commodities",
+        series_code="BTC_USD",
+        provider="yahoo_chart",
+        source="Yahoo Finance chart API (public vendor proxy)",
+        source_url="https://query2.finance.yahoo.com/v8/finance/chart/BTC-USD",
+        commodity_code="BTC_USD",
+        commodity_family="digital_asset",
+        price_kind="vendor_proxy",
+        known_as_of="",
+        qc_flag="OK",
+    ))
+    write_csv(outputs["macro_assets"] / "commodities.csv", MACRO_FIELDS, price_rows)
+    write_csv(
+        outputs["weekly_context"] / "commodity_fundamentals.csv",
+        CATEGORY_FIELDS["commodity_fundamentals"],
+        fundamental_rows,
+    )
+    write_csv(
+        outputs["weekly_context"] / "positioning_flows.csv",
+        CATEGORY_FIELDS["positioning_flows"],
+        positioning_rows,
+    )
+
+
 def write_metal_core_coverage(outputs: dict[str, Path], metals: tuple[str, ...]) -> None:
     identities = {
         "copper": ("COPPER_COMEX", "COPPER_PRICE"),
@@ -624,6 +732,20 @@ class StagedValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ReleaseValidationError, "commodity_family"):
             validate_staged_week(self.root, self.window)
+
+    def test_commodity_divergence_summary_does_not_require_instrument_identity(self):
+        path = self.outputs["macro_assets"] / "macro_divergence.csv"
+        row = fixture_row(
+            MACRO_DIVERGENCE_FIELDS,
+            asset_class="commodity",
+            group="commodities",
+        )
+        write_csv(path, MACRO_DIVERGENCE_FIELDS, [row])
+
+        try:
+            validate_staged_week(self.root, self.window)
+        except ReleaseValidationError as error:
+            self.fail(str(error))
 
     def test_rejects_a_non_finite_numeric_value(self):
         path = self.outputs["gics_sectors"] / "03_gics_sectors.csv"
@@ -1989,6 +2111,29 @@ class FakePipelineRunner:
         (raw / "generation.txt").write_text(self.generation, encoding="utf-8")
 
 
+class FakeRequiredCommodityProviderFailureRunner(FakePipelineRunner):
+    def __call__(self, command, *, check, cwd):
+        super().__call__(command, check=check, cwd=cwd)
+        if self.PIPELINES[command[2]] != "weekly_context":
+            return
+        output = Path(command[command.index("--output-dir") + 1])
+        rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider="eia_refined_products",
+                category="commodity_fundamentals",
+                requiredness="required",
+                status="FETCH_FAILED",
+                observations="0",
+                as_of_date="2026-08-09",
+                source="U.S. Energy Information Administration",
+                source_url="https://api.eia.gov/v2/petroleum/",
+            ),
+            *usda_source_rows(status="NOT_CONFIGURED", requiredness="optional"),
+        ]
+        write_csv(output / "source_log.csv", CATEGORY_FIELDS["source_log"], rows)
+
+
 def directory_bytes(root: Path) -> dict[str, bytes]:
     if not root.exists():
         return {}
@@ -2146,12 +2291,62 @@ class ReleaseOrchestrationTests(unittest.TestCase):
             first_release_id,
         )
         cache = self.project_root / "pipeline" / ".cache"
+        self.assertEqual(
+            set(directory_bytes(cache)),
+            {
+                "cache.json",
+                "indices/generation.txt",
+                "sectors/generation.txt",
+                "gics/generation.txt",
+                "macro/generation.txt",
+                "context/generation.txt",
+            },
+        )
         for pipeline in ("indices", "sectors", "gics", "macro", "context"):
             self.assertEqual(
                 (cache / pipeline / "generation.txt").read_text(),
                 "second",
             )
         self.assertNotIn(b"first", b"".join(directory_bytes(cache).values()))
+
+    def test_required_commodity_provider_failure_preserves_all_stable_hashes(self):
+        run_latest_release(
+            self.project_root,
+            now_hkt=self.now,
+            status_path=self.status_path,
+            runner=FakePipelineRunner(generation="prior"),
+        )
+        published = self.project_root / "output"
+        cache = self.project_root / "pipeline" / ".cache"
+        prior_hashes = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in published.iterdir()
+        }
+        prior_cache = directory_bytes(cache)
+
+        with self.assertRaisesRegex(ReleaseValidationError, "FETCH_FAILED"):
+            run_latest_release(
+                self.project_root,
+                now_hkt=self.now,
+                status_path=self.status_path,
+                runner=FakeRequiredCommodityProviderFailureRunner(
+                    generation="must-not-publish"
+                ),
+            )
+
+        self.assertEqual(
+            {
+                path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in published.iterdir()
+            },
+            prior_hashes,
+        )
+        self.assertEqual(set(prior_hashes), set(weekly_release_module.OUTPUT_FILES))
+        self.assertEqual(directory_bytes(cache), prior_cache)
+        status = json.loads(self.status_path.read_text())
+        self.assertEqual(status["status"], "failed")
+        self.assertEqual(status["current_pipeline"], "validation")
+        self.assertEqual(status["completed"], 5)
 
     def test_pipeline_failure_preserves_prior_release_and_names_pipeline(self):
         run_latest_release(

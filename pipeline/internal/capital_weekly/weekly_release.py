@@ -966,6 +966,7 @@ def _validate_row(
     commodity_code = (row.get("commodity_code") or "").strip()
     is_macro_commodity = (
         spec.pipeline == "macro_assets"
+        and spec.filename == "commodities.csv"
         and (row.get("asset_class") or "").strip() == "commodity"
         and family != "digital_asset"
     )
