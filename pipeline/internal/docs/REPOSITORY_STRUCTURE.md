@@ -157,8 +157,10 @@ Commodity Research V2 使用 `dataset_contract_version: 3`，但仍只发布以�
 所有配置的官方商品 HTTP GET 使用同一有界执行器。连接、读取、总时限、最大尝试
 次数、退避和 `Retry-After` 上限都来自 `pipeline/config.json`；只重试传输错误、
 HTTP 408/425/429 和 5xx，不重试 schema、身份、单位、新鲜度、时间点或覆盖校验。
-刷新状态保留失败的 pipeline、provider、phase、实际 attempts 与稳定
-`error_code`，不写入凭证、原始响应正文或不受控诊断文本。
+刷新状态始终保留失败的 pipeline；只有可信的必需 `weekly_context`
+`source_log` 失败才会保留 provider、phase、实际 attempts 与稳定
+`error_code`。宏观子进程失败不会猜测这些来源字段，而是保持为 `null`。
+状态不写入凭证、原始响应正文或不受控诊断文本。
 
 ## 7. 命令
 

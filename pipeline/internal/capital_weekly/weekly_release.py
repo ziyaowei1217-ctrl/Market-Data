@@ -3758,7 +3758,7 @@ def _required_provider_failure_status(
             phase = "retrieve"
         attempts = int(raw_attempts) if re.fullmatch(r"[1-9][0-9]*", raw_attempts) else 1
         if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,127}", error_code):
-            error_code = f"PROVIDER_{status}" if status else "PROVIDER_FAILURE"
+            error_code = "PROVIDER_FAILURE"
         return {
             "pipeline": "weekly_context",
             "provider": provider,
@@ -3930,6 +3930,7 @@ def run_latest_release(
         staging_week.mkdir()
         staging_output = staging_job / "output"
         staging_cache = staging_job / "cache"
+        specs: tuple[PipelineSpec, ...] = ()
         try:
             _write_status(status_file, status)
             specs = build_pipeline_specs(staging_week, window)

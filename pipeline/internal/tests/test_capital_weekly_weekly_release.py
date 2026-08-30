@@ -4047,6 +4047,21 @@ class FakeRequiredCommodityProviderFailureRunner(FakePipelineRunner):
         write_csv(output / "source_log.csv", CATEGORY_FIELDS["source_log"], rows)
 
 
+class FakeUntrustedRequiredProviderStatusRunner(
+    FakeRequiredCommodityProviderFailureRunner
+):
+    def __call__(self, command, *, check, cwd):
+        super().__call__(command, check=check, cwd=cwd)
+        if self.PIPELINES[command[2]] != "weekly_context":
+            return
+        output = Path(command[command.index("--output-dir") + 1])
+        with (output / "source_log.csv").open(newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
+        rows[0]["status"] = "FETCH_FAILED?api_key=PROBE_SENTINEL"
+        rows[0]["error_code"] = ""
+        write_csv(output / "source_log.csv", CATEGORY_FIELDS["source_log"], rows)
+
+
 def directory_bytes(root: Path) -> dict[str, bytes]:
     if not root.exists():
         return {}
@@ -4302,6 +4317,22 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertNotIn("coordinator-secret", serialized_status)
         self.assertNotIn("api_key", serialized_status.lower())
 
+    def test_required_context_failure_never_derives_status_code_from_raw_status(self):
+        with self.assertRaises(ReleaseValidationError):
+            run_latest_release(
+                self.project_root,
+                now_hkt=self.now,
+                status_path=self.status_path,
+                runner=FakeUntrustedRequiredProviderStatusRunner(),
+            )
+
+        status = json.loads(self.status_path.read_text())
+        self.assertEqual(status["pipeline"], "weekly_context")
+        self.assertEqual(status["error_code"], "PROVIDER_FAILURE")
+        serialized_status = json.dumps(status)
+        self.assertNotIn("PROBE_SENTINEL", serialized_status)
+        self.assertNotIn("?api_key=PROBE_SENTINEL", serialized_status.lower())
+
     def test_pipeline_failure_preserves_prior_release_and_names_pipeline(self):
         run_latest_release(
             self.project_root,
@@ -4333,6 +4364,31 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertEqual(len(runner.calls), 2)
         staging_root = self.project_root / "pipeline" / ".staging"
         self.assertFalse(staging_root.exists() and any(staging_root.iterdir()))
+
+    def test_build_pipeline_specs_failure_preserves_original_exception_and_cleans_staging(self):
+        def fail_build_specs(*_args, **_kwargs):
+            raise RuntimeError("pipeline spec construction sentinel")
+
+        with patch.object(
+            weekly_release_module,
+            "build_pipeline_specs",
+            side_effect=fail_build_specs,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "pipeline spec construction sentinel"):
+                run_latest_release(
+                    self.project_root,
+                    now_hkt=self.now,
+                    status_path=self.status_path,
+                    runner=FakePipelineRunner(),
+                )
+
+        status = json.loads(self.status_path.read_text())
+        self.assertEqual(status["status"], "failed")
+        self.assertIsNone(status["current_pipeline"])
+        self.assertIn("pipeline spec construction sentinel", status["error"])
+        staging_root = self.project_root / "pipeline" / ".staging"
+        self.assertTrue(staging_root.is_dir())
+        self.assertEqual(list(staging_root.iterdir()), [])
 
     def test_status_hides_absolute_paths_from_unexpected_errors(self):
         secret_path = self.project_root / "private" / "credentials.txt"

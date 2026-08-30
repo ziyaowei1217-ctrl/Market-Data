@@ -336,11 +336,28 @@ class CommodityProbeTests(unittest.TestCase):
             for name, path in paths.items():
                 path.mkdir()
                 (path / "sentinel.bin").write_bytes((name + "\x00\xff").encode("latin1"))
-            before = {
-                str(path.relative_to(root)): path.read_bytes()
-                for path in root.rglob("*")
-                if path.is_file()
-            }
+                (path / "empty-topology-sentinel").mkdir()
+
+            def product_tree_snapshot():
+                snapshot = {}
+                for product_root in paths.values():
+                    for path in (product_root, *product_root.rglob("*")):
+                        relative = str(path.relative_to(root))
+                        if path.is_symlink():
+                            snapshot[relative] = ("symlink",)
+                        elif path.is_dir():
+                            snapshot[relative] = ("directory",)
+                        elif path.is_file():
+                            snapshot[relative] = ("file", path.read_bytes())
+                        else:
+                            snapshot[relative] = ("other",)
+                return snapshot
+
+            before = product_tree_snapshot()
+            self.assertEqual(
+                before["output/empty-topology-sentinel"],
+                ("directory",),
+            )
             document = json.loads(
                 (Path(__file__).resolve().parents[2] / "config.json").read_text(
                     encoding="utf-8"
@@ -380,14 +397,10 @@ class CommodityProbeTests(unittest.TestCase):
                     environ={"EIA_API_KEY": "probe-secret"},
                 )
 
-            after = {
-                str(path.relative_to(root)): path.read_bytes()
-                for path in root.rglob("*")
-                if path.is_file()
-            }
-            comparable_after = {
-                key: value for key, value in after.items() if key != "probe-config.json"
-            }
+            after = product_tree_snapshot()
+            self.assertEqual(before, after)
+            (paths["output"] / "topology-mutation").mkdir()
+            self.assertNotEqual(before, product_tree_snapshot())
 
         payload = json.loads(output.getvalue())
         self.assertEqual(exit_code, 0)
@@ -398,7 +411,6 @@ class CommodityProbeTests(unittest.TestCase):
         self.assertEqual(payload["latest_eligible_date"], "2026-08-21")
         self.assertEqual(payload["routes"], ["natural-gas/stor/wkly"])
         self.assertNotIn("probe-secret", output.getvalue())
-        self.assertEqual(before, comparable_after)
 
 
 def write_provider_configs(data_dir):
