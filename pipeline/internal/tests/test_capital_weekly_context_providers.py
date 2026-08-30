@@ -1,4 +1,6 @@
 from datetime import date
+import csv
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -72,7 +74,9 @@ def write_provider_configs(data_dir):
         encoding="utf-8",
     )
     (data_dir / "capital_weekly_eia_series.csv").write_text(
-        "metric_code,metric_name,route,frequency,series,expected_unit\n",
+        "provider,commodity_code,commodity_family,route,frequency,facets,"
+        "metric_code,metric_name,measurement_kind,source_description,"
+        "expected_unit,freshness_days\n",
         encoding="utf-8",
     )
     (data_dir / "capital_weekly_financial_conditions.csv").write_text(
@@ -86,6 +90,137 @@ def write_provider_configs(data_dir):
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_eia_families_are_independently_not_configured_without_key(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_eia_series.csv").write_text(
+                "provider,route\n"
+                "eia_natural_gas,not-queried-without-a-key\n"
+                "eia_refined_products,not-queried-without-a-key\n",
+                encoding="utf-8",
+            )
+            providers = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={},
+            )
+
+        for name in ("eia_natural_gas", "eia_refined_products"):
+            with self.subTest(provider=name):
+                self.assertIn(name, providers)
+                self.assertEqual(providers[name].spec.requiredness, "optional")
+                result = providers[name].fetch()
+                self.assertEqual(result.status, "NOT_CONFIGURED")
+                self.assertEqual(result.rows, [])
+
+    def test_eia_families_use_exact_routes_facets_and_isolate_transport_failure(self):
+        natural = {
+            "provider": "eia_natural_gas",
+            "commodity_code": "NATGAS_HH",
+            "commodity_family": "natural_gas",
+            "route": "natural-gas/stor/wkly",
+            "frequency": "weekly",
+            "facets": json.dumps({"duoarea": "R48", "process": "SWO"}),
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_name": "Lower 48 working gas",
+            "measurement_kind": "physical_level",
+            "source_description": "Lower 48 storage",
+            "expected_unit": "BCF",
+            "freshness_days": "10",
+        }
+        refined = {
+            "provider": "eia_refined_products",
+            "commodity_code": "WTI",
+            "commodity_family": "refined_products",
+            "route": "petroleum/sum/sndw",
+            "frequency": "weekly",
+            "facets": json.dumps({"series": "A&B"}),
+            "metric_code": "eia_crude_stocks_ex_spr",
+            "metric_name": "Crude stocks excluding SPR",
+            "measurement_kind": "physical_level",
+            "source_description": "Crude stocks excluding SPR",
+            "expected_unit": "MBBL",
+            "freshness_days": "10",
+        }
+
+        class EiaSession:
+            def __init__(self):
+                self.calls = []
+
+            def get(self, url, **kwargs):
+                self.calls.append((url, kwargs))
+                if "natural-gas" in url:
+                    raise RuntimeError("natural gas transport failed")
+                if "/facet/series/" in url:
+                    return TextResponse(json.dumps({
+                        "response": {"facets": [{"id": "A&B", "name": "Crude"}]}
+                    }))
+                return TextResponse(json.dumps({
+                    "response": {"data": [
+                        {
+                            "period": "2026-08-21",
+                            "series": "A&B",
+                            "series-description": "Crude stocks excluding SPR",
+                            "units": "MBBL",
+                            "value": "425000",
+                        },
+                        {
+                            "period": "2026-08-14",
+                            "series": "A&B",
+                            "series-description": "Crude stocks excluding SPR",
+                            "units": "MBBL",
+                            "value": "420000",
+                        },
+                    ]}
+                }))
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            fields = list(natural)
+            with (data_dir / "capital_weekly_eia_series.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=fields)
+                writer.writeheader()
+                writer.writerows([natural, refined])
+            session = EiaSession()
+            providers = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={"EIA_API_KEY": "dummy-key"},
+                session=session,
+            )
+            tables = run_weekly_context(
+                {
+                    "eia_natural_gas": providers["eia_natural_gas"],
+                    "eia_refined_products": providers["eia_refined_products"],
+                },
+                as_of_date=date(2026, 8, 23),
+            )
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        self.assertEqual(audits["eia_natural_gas"]["status"], "FETCH_FAILED")
+        self.assertEqual(audits["eia_natural_gas"]["requiredness"], "required")
+        self.assertEqual(audits["eia_refined_products"]["status"], "OK")
+        self.assertEqual(len(tables["commodity_fundamentals"]), 3)
+        refined_calls = [call for call in session.calls if "petroleum" in call[0]]
+        self.assertEqual(
+            [call[0] for call in refined_calls],
+            [
+                "https://api.eia.gov/v2/petroleum/sum/sndw/facet/series/",
+                "https://api.eia.gov/v2/petroleum/sum/sndw/data/",
+            ],
+        )
+        self.assertEqual(
+            refined_calls[1][1]["params"]["facets[series][]"],
+            "A&B",
+        )
+        self.assertNotIn("dummy-key", str(audits))
+
     def test_disaggregated_provider_uses_official_dataset_and_emits_commodity_metadata(self):
         text = CFTC_COLUMNS + (
             "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,500000,"
@@ -238,7 +373,8 @@ class ContextProviderTests(unittest.TestCase):
                 "cftc_disaggregated",
                 "finra_margin",
                 "sec_company_events",
-                "eia_commodities",
+                "eia_natural_gas",
+                "eia_refined_products",
                 "fred_financial_conditions",
                 "yahoo_volatility_signals",
                 "hkex_microstructure",
@@ -248,7 +384,11 @@ class ContextProviderTests(unittest.TestCase):
         )
         self.assertTrue(all(isinstance(provider, ContextProvider) for provider in providers.values()))
         self.assertEqual(providers["sec_company_events"].spec.requiredness, "optional")
-        self.assertEqual(providers["eia_commodities"].spec.requiredness, "optional")
+        self.assertEqual(providers["eia_natural_gas"].spec.requiredness, "optional")
+        self.assertEqual(
+            providers["eia_refined_products"].spec.requiredness,
+            "optional",
+        )
         self.assertEqual(
             providers["fred_financial_conditions"].spec.requiredness, "optional"
         )

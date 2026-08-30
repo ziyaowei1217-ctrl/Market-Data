@@ -733,19 +733,63 @@ class StagedValidationTests(unittest.TestCase):
 
     def test_accepts_not_configured_from_an_optional_context_provider(self):
         path = self.outputs["weekly_context"] / "source_log.csv"
-        row = fixture_row(
-            CATEGORY_FIELDS["source_log"],
-            provider="eia_commodities",
-            category="commodity_fundamentals",
-            requiredness="optional",
-            status="NOT_CONFIGURED",
-            observations="0",
-            as_of_date="2026-08-09",
-            source_url="https://www.eia.gov/opendata/",
-        )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="optional",
+                status="NOT_CONFIGURED",
+                observations="0",
+                as_of_date="2026-08-09",
+                source_url="https://www.eia.gov/opendata/",
+            )
+            for provider in ("eia_natural_gas", "eia_refined_products")
+        ]
+        write_csv(path, CATEGORY_FIELDS["source_log"], rows)
 
         validate_staged_week(self.root, self.window)
+
+    def test_active_eia_families_each_require_a_physical_fundamental_row(self):
+        source_log = self.outputs["weekly_context"] / "source_log.csv"
+        provider_rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="required",
+                status="OK",
+                observations="1",
+                as_of_date="2026-08-09",
+                source="U.S. Energy Information Administration",
+                source_url="https://api.eia.gov/v2/",
+            )
+            for provider in ("eia_natural_gas", "eia_refined_products")
+        ]
+        write_csv(source_log, CATEGORY_FIELDS["source_log"], provider_rows)
+        fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        natural_row = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            commodity_code="NATGAS_HH",
+            commodity_family="natural_gas",
+            metric_role="fundamental",
+            measurement_kind="physical_level",
+            participant_class="",
+            known_as_of="",
+            reference_period="2026-08-07",
+        )
+        write_csv(
+            fundamentals,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [natural_row],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "eia_refined_products.*physical fundamental",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_accepts_insufficient_data_from_an_optional_context_provider(self):
         path = self.outputs["weekly_context"] / "source_log.csv"

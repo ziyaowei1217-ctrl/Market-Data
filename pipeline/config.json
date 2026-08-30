@@ -2328,12 +2328,204 @@
     "company_watchlist": [],
     "eia_series": [
       {
-        "metric_code": "eia_weekly_petroleum_wtestus1",
-        "metric_name": "EIA weekly petroleum series WTESTUS1",
-        "route": "petroleum/sum/sndw",
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
         "frequency": "weekly",
-        "series": "WTESTUS1",
-        "expected_unit": "Thousand Barrels"
+        "facets": {"duoarea": "R48", "process": "SWO"},
+        "metric_code": "eia_ng_storage_lower48",
+        "metric_name": "Lower 48 working gas in underground storage",
+        "measurement_kind": "physical_level",
+        "source_description": "Lower 48 Working Gas in Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R31", "process": "SWO"},
+        "metric_code": "eia_ng_storage_east", "metric_name": "East working gas in underground storage", "measurement_kind": "physical_level",
+        "source_description": "East Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R32", "process": "SWO"},
+        "metric_code": "eia_ng_storage_midwest", "metric_name": "Midwest working gas in underground storage", "measurement_kind": "physical_level",
+        "source_description": "Midwest Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R34", "process": "SWO"},
+        "metric_code": "eia_ng_storage_mountain", "metric_name": "Mountain working gas in underground storage", "measurement_kind": "physical_level",
+        "source_description": "Mountain Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R35", "process": "SWO"},
+        "metric_code": "eia_ng_storage_pacific", "metric_name": "Pacific working gas in underground storage", "measurement_kind": "physical_level",
+        "source_description": "Pacific Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R33", "process": "SWO"},
+        "metric_code": "eia_ng_storage_south_central", "metric_name": "South Central working gas in underground storage", "measurement_kind": "physical_level",
+        "source_description": "South Central Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9070US2"},
+        "metric_code": "eia_ng_dry_production", "metric_name": "U.S. dry natural gas production", "measurement_kind": "physical_level",
+        "source_description": "U.S. Dry Natural Gas Production (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3010US2"},
+        "metric_code": "eia_ng_consumption_residential", "metric_name": "U.S. residential natural gas consumption", "measurement_kind": "physical_level",
+        "source_description": "U.S. Natural Gas Residential Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3020US2"},
+        "metric_code": "eia_ng_consumption_commercial", "metric_name": "U.S. commercial natural gas consumption", "measurement_kind": "physical_level",
+        "source_description": "U.S. Natural Gas Commercial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3035US2"},
+        "metric_code": "eia_ng_consumption_industrial", "metric_name": "U.S. industrial natural gas consumption", "measurement_kind": "physical_level",
+        "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3045US2"},
+        "metric_code": "eia_ng_consumption_electric_power", "metric_name": "U.S. electric-power natural gas consumption", "measurement_kind": "physical_level",
+        "source_description": "U.S. Natural Gas Electric Power Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9103US2"},
+        "metric_code": "eia_ng_lng_imports", "metric_name": "U.S. liquefied natural gas imports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9133US2"},
+        "metric_code": "eia_ng_lng_exports", "metric_name": "U.S. liquefied natural gas exports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Liquefied Natural Gas Exports (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WCESTUS1"},
+        "metric_code": "eia_crude_stocks_ex_spr", "metric_name": "U.S. crude oil stocks excluding SPR", "measurement_kind": "physical_level",
+        "source_description": "U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGTSTUS1"},
+        "metric_code": "eia_gasoline_stocks", "metric_name": "U.S. total motor gasoline stocks", "measurement_kind": "physical_level",
+        "source_description": "U.S. Ending Stocks of Total Gasoline (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDISTUS1"},
+        "metric_code": "eia_distillate_stocks", "metric_name": "U.S. distillate fuel oil stocks", "measurement_kind": "physical_level",
+        "source_description": "U.S. Ending Stocks of Distillate Fuel Oil (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJSTUS1"},
+        "metric_code": "eia_jet_fuel_stocks", "metric_name": "U.S. kerosene-type jet fuel stocks", "measurement_kind": "physical_level",
+        "source_description": "U.S. Ending Stocks of Kerosene-Type Jet Fuel (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "PROPANE_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WPRSTUS1"},
+        "metric_code": "eia_propane_stocks", "metric_name": "U.S. propane and propylene stocks", "measurement_kind": "physical_level",
+        "source_description": "U.S. Ending Stocks of Propane/Propylene (Excl. Propylene at Terminal) (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WPULEUS3"},
+        "metric_code": "eia_refinery_utilization", "metric_name": "U.S. refinery operable utilization", "measurement_kind": "physical_level",
+        "source_description": "U.S. Percent Utilization of Refinery Operable Capacity (Percent)", "expected_unit": "PCT", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WCRRIUS2"},
+        "metric_code": "eia_refinery_crude_inputs", "metric_name": "U.S. refinery crude oil inputs", "measurement_kind": "physical_level",
+        "source_description": "U.S. Inputs of Crude Oil to Refineries (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGFRPUS2"},
+        "metric_code": "eia_gasoline_production", "metric_name": "U.S. finished motor gasoline production", "measurement_kind": "physical_level",
+        "source_description": "U.S. Refinery and Blender Net Production of Finished Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIRPUS2"},
+        "metric_code": "eia_distillate_production", "metric_name": "U.S. distillate fuel oil production", "measurement_kind": "physical_level",
+        "source_description": "U.S. Refinery and Blender Net Production of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJRPUS2"},
+        "metric_code": "eia_jet_fuel_production", "metric_name": "U.S. kerosene-type jet fuel production", "measurement_kind": "physical_level",
+        "source_description": "U.S. Refinery and Blender Net Production of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGFUPUS2"},
+        "metric_code": "eia_gasoline_product_supplied", "metric_name": "U.S. finished motor gasoline product supplied", "measurement_kind": "physical_level",
+        "source_description": "U.S. Product Supplied of Finished Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIUPUS2"},
+        "metric_code": "eia_distillate_product_supplied", "metric_name": "U.S. distillate fuel oil product supplied", "measurement_kind": "physical_level",
+        "source_description": "U.S. Product Supplied of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJUPUS2"},
+        "metric_code": "eia_jet_fuel_product_supplied", "metric_name": "U.S. kerosene-type jet fuel product supplied", "measurement_kind": "physical_level",
+        "source_description": "U.S. Product Supplied of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGTIMUS2"},
+        "metric_code": "eia_gasoline_imports", "metric_name": "U.S. total motor gasoline imports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Imports of Total Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIIMUS2"},
+        "metric_code": "eia_distillate_imports", "metric_name": "U.S. distillate fuel oil imports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Imports of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJIMUS2"},
+        "metric_code": "eia_jet_fuel_imports", "metric_name": "U.S. kerosene-type jet fuel imports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Imports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "W_EPM0F_EEX_NUS-Z00_MBBLD"},
+        "metric_code": "eia_gasoline_exports", "metric_name": "U.S. total motor gasoline exports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Exports of Total Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIEXUS2"},
+        "metric_code": "eia_distillate_exports", "metric_name": "U.S. distillate fuel oil exports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Exports of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJEXUS2"},
+        "metric_code": "eia_jet_fuel_exports", "metric_name": "U.S. kerosene-type jet fuel exports", "measurement_kind": "physical_level",
+        "source_description": "U.S. Exports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       }
     ],
     "financial_conditions": [

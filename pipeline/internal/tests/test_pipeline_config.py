@@ -7,6 +7,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
+from pipeline.internal.capital_weekly.context.eia_commodities import validate_eia_spec
 from pipeline.internal.capital_weekly.context.providers import build_default_providers
 from pipeline.internal.capital_weekly.equity_indices import load_index_universe
 from pipeline.internal.capital_weekly.equity_sectors import load_sector_universe as load_equity_sectors
@@ -22,7 +23,7 @@ EXPECTED_SECTION_HASHES = {
     "macro": "d8142cb57de706af5a1af2e623a7fca9c5af12acca12f9b38a0c72caf9d03e32",
     "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
+    "context.eia_series": "b1c1378337686d8389c25d39d01126a292a26638d633cb9b513b48ddd979fdc0",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
 }
@@ -38,6 +39,55 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_eia_config_covers_independent_physical_fundamental_families(self):
+        rows = load_config_rows("context.eia_series")
+        required_fields = {
+            "provider", "commodity_code", "commodity_family", "route",
+            "frequency", "facets", "metric_code", "metric_name",
+            "measurement_kind", "source_description", "expected_unit",
+            "freshness_days",
+        }
+        self.assertTrue(all(required_fields <= set(row) for row in rows))
+        by_provider = {}
+        for row in rows:
+            by_provider.setdefault(row["provider"], set()).add(row["metric_code"])
+        self.assertEqual(set(by_provider), {
+            "eia_natural_gas", "eia_refined_products",
+        })
+        self.assertEqual(
+            by_provider["eia_natural_gas"],
+            {
+                "eia_ng_storage_lower48", "eia_ng_storage_east",
+                "eia_ng_storage_midwest", "eia_ng_storage_mountain",
+                "eia_ng_storage_pacific", "eia_ng_storage_south_central",
+                "eia_ng_dry_production", "eia_ng_consumption_residential",
+                "eia_ng_consumption_commercial", "eia_ng_consumption_industrial",
+                "eia_ng_consumption_electric_power", "eia_ng_lng_imports",
+                "eia_ng_lng_exports",
+            },
+        )
+        self.assertEqual(
+            by_provider["eia_refined_products"],
+            {
+                "eia_crude_stocks_ex_spr", "eia_gasoline_stocks",
+                "eia_distillate_stocks", "eia_jet_fuel_stocks",
+                "eia_propane_stocks", "eia_refinery_utilization",
+                "eia_refinery_crude_inputs", "eia_gasoline_production",
+                "eia_distillate_production", "eia_jet_fuel_production",
+                "eia_gasoline_product_supplied",
+                "eia_distillate_product_supplied",
+                "eia_jet_fuel_product_supplied", "eia_gasoline_imports",
+                "eia_distillate_imports", "eia_jet_fuel_imports",
+                "eia_gasoline_exports", "eia_distillate_exports",
+                "eia_jet_fuel_exports",
+            },
+        )
+        for row in rows:
+            validate_eia_spec(row)
+            self.assertIsInstance(row["facets"], dict)
+            self.assertTrue(row["facets"])
+            self.assertNotIn(row["measurement_kind"], {"price", "return"})
+
     def test_cftc_contracts_split_financial_and_physical_report_families(self):
         rows = load_config_rows("context.cftc_contracts")
         tff_codes = {

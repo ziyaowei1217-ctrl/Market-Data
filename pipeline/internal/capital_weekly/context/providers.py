@@ -30,9 +30,15 @@ from .provider_contracts import (
 from .common import COMMODITY_METRIC_FIELDS
 from .commodities import (
     EIA_SOURCE_URL,
-    calculate_weekly_change,
     eia_not_configured_result,
-    parse_eia_series,
+)
+from .eia_commodities import (
+    EIA_PROVIDERS,
+    latest_and_changes,
+    parse_eia_metric_series,
+    period_date,
+    validate_eia_spec,
+    validate_facet_metadata,
 )
 from .company_events import load_company_watchlist, parse_sec_submissions
 from .events import (
@@ -529,63 +535,94 @@ def _sec_provider(
 def _eia_provider(
     session: requests.Session,
     end: date,
-    series_config: list[dict[str, str]],
+    series_config: list[dict[str, Any]],
     api_key: str | None,
+    provider_name: str,
 ) -> ProviderResult:
     if not api_key:
         return eia_not_configured_result()
-    rows = []
-    raw = []
-    for item in series_config:
+    configured_series = [validate_eia_spec(item) for item in series_config]
+    if not configured_series:
+        raise ValueError(f"EIA provider {provider_name} has no configured series")
+    rows: list[dict[str, Any]] = []
+    raw: list[str] = []
+    facet_metadata: dict[tuple[str, str], str] = {}
+    for item in configured_series:
+        if item["provider"] != provider_name:
+            raise ValueError(
+                f"EIA family provider {provider_name} received "
+                f"{item['provider']} config"
+            )
+        for facet, selected in item["facets"].items():
+            identity = (item["route"], facet)
+            facet_url = f"{EIA_SOURCE_URL}{item['route']}/facet/{facet}/"
+            facet_text = facet_metadata.get(identity)
+            if facet_text is None:
+                facet_text = _text(
+                    session,
+                    facet_url,
+                    params={"api_key": api_key, "length": 5000},
+                )
+                facet_metadata[identity] = facet_text
+                raw.append(facet_text)
+            validate_facet_metadata(
+                facet_text,
+                route=item["route"],
+                facet=facet,
+                expected_value=selected,
+            )
         url = f"{EIA_SOURCE_URL}{item['route']}/data/"
+        params: dict[str, Any] = {
+            "api_key": api_key,
+            "frequency": item["frequency"],
+            "data[0]": "value",
+            "sort[0][column]": "period",
+            "sort[0][direction]": "desc",
+            "length": 400,
+        }
+        params.update(
+            {
+                f"facets[{facet}][]": selected
+                for facet, selected in item["facets"].items()
+            }
+        )
         text = _text(
             session,
             url,
-            params={
-                "api_key": api_key,
-                "frequency": item["frequency"],
-                "data[0]": "value",
-                "facets[series][]": item["series"],
-                "sort[0][column]": "period",
-                "sort[0][direction]": "desc",
-                "length": 8,
-            },
+            params=params,
         )
         raw.append(text)
-        parsed = [
-            row
-            for row in parse_eia_series(
-                text,
-                metric_code=item["metric_code"],
-                expected_unit=item["expected_unit"],
+        parsed = parse_eia_metric_series(text, item)
+        metrics = latest_and_changes(parsed, end)
+        latest_date = period_date(metrics[0]["period"])
+        if (end - latest_date).days > item["freshness_days"]:
+            raise ValueError(
+                f"EIA series {item['metric_code']} is stale at "
+                f"{metrics[0]['period']}"
             )
-            if date.fromisoformat(row["period"]) <= end
-        ]
-        if len(parsed) < 2:
-            raise ValueError(f"EIA series {item['metric_code']} has fewer than two observations")
-        latest = parsed[-1]
-        change = calculate_weekly_change(parsed)
-        values = {
-            item["metric_code"]: latest["value"],
-            f"{item['metric_code']}_weekly_change": change["change"],
-            f"{item['metric_code']}_weekly_change_pct": change["change_pct"],
-        }
-        rows.extend(
-            metric_rows(
-                as_of_date=date.fromisoformat(latest["period"]),
-                category="commodity_fundamentals",
-                market="US",
-                source="U.S. Energy Information Administration",
-                source_url=url,
-                frequency=item["frequency"],
-                values=values,
-                units={
-                    item["metric_code"]: latest["unit"],
-                    f"{item['metric_code']}_weekly_change": latest["unit"],
-                    f"{item['metric_code']}_weekly_change_pct": "ratio",
-                },
+        for metric in metrics:
+            rows.extend(
+                metric_rows(
+                    as_of_date=period_date(metric["period"]),
+                    category="commodity_fundamentals",
+                    market="US",
+                    source="U.S. Energy Information Administration",
+                    source_url=url,
+                    frequency=item["frequency"],
+                    values={metric["metric_code"]: metric["value"]},
+                    units={metric["metric_code"]: metric["unit"]},
+                    names={metric["metric_code"]: metric["metric_name"]},
+                    metadata={
+                        "commodity_code": item["commodity_code"],
+                        "commodity_family": item["commodity_family"],
+                        "metric_role": "fundamental",
+                        "measurement_kind": metric["measurement_kind"],
+                        "participant_class": None,
+                        "known_as_of": metric.get("known_as_of"),
+                        "reference_period": metric.get("reference_period"),
+                    },
+                )
             )
-        )
     return ProviderResult(
         category="commodity_fundamentals",
         rows=rows,
@@ -1025,6 +1062,26 @@ def build_default_providers(
     watchlist = load_company_watchlist(watchlist_rows)
     yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
+    unknown_eia_providers = sorted(
+        {
+            str(row.get("provider") or "").strip()
+            for row in eia_config
+        }
+        - EIA_PROVIDERS
+    )
+    if unknown_eia_providers:
+        raise ValueError(
+            "Unsupported EIA providers: " + ", ".join(unknown_eia_providers)
+        )
+    eia_by_provider = {
+        name: [
+            row
+            for row in eia_config
+            if str(row.get("provider") or "").strip() == name
+        ]
+        for name in EIA_PROVIDERS
+    }
+    eia_key = settings.get("EIA_API_KEY")
 
     fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
@@ -1046,8 +1103,19 @@ def build_default_providers(
             watchlist,
             settings.get("SEC_USER_AGENT"),
         ),
-        "eia_commodities": lambda: _eia_provider(
-            client, end, eia_config, settings.get("EIA_API_KEY")
+        "eia_natural_gas": lambda: _eia_provider(
+            client,
+            end,
+            eia_by_provider["eia_natural_gas"],
+            eia_key,
+            "eia_natural_gas",
+        ),
+        "eia_refined_products": lambda: _eia_provider(
+            client,
+            end,
+            eia_by_provider["eia_refined_products"],
+            eia_key,
+            "eia_refined_products",
         ),
         "fred_financial_conditions": lambda: _fred_provider(
             client, end, financial_config
@@ -1066,7 +1134,16 @@ def build_default_providers(
         "nasdaq_market_summary": ("market_internals", "daily", "required"),
         "finra_margin": ("positioning_flows", "monthly", "required"),
         "sec_company_events": ("company_events", "event", "optional"),
-        "eia_commodities": ("commodity_fundamentals", "weekly", "optional"),
+        "eia_natural_gas": (
+            "commodity_fundamentals",
+            "mixed",
+            "required" if eia_key else "optional",
+        ),
+        "eia_refined_products": (
+            "commodity_fundamentals",
+            "weekly",
+            "required" if eia_key else "optional",
+        ),
         "fred_financial_conditions": (
             "financial_conditions",
             "daily",

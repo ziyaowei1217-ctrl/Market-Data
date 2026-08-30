@@ -240,7 +240,8 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
     "NOT_CONFIGURED": frozenset(
         {
             ("sec_company_events", "company_events"),
-            ("eia_commodities", "commodity_fundamentals"),
+            ("eia_natural_gas", "commodity_fundamentals"),
+            ("eia_refined_products", "commodity_fundamentals"),
         }
     ),
     "INSUFFICIENT_DATA": frozenset(
@@ -249,7 +250,6 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
     "POINT_IN_TIME_UNAVAILABLE": frozenset(
         {
             ("sec_company_events", "company_events"),
-            ("eia_commodities", "commodity_fundamentals"),
             ("fred_financial_conditions", "financial_conditions"),
         }
     ),
@@ -1009,9 +1009,11 @@ def validate_staged_week(
         spec.name: Path(spec.output_dir)
         for spec in build_pipeline_specs(release_root, window)
     }
+    validated_rows: dict[tuple[str, str], list[dict[str, str]]] = {}
     for dataset in release_datasets_for_contract(dataset_contract_version):
         path = pipeline_dirs[dataset.pipeline] / dataset.filename
         rows = _read_dataset(path, dataset)
+        validated_rows[(dataset.pipeline, dataset.filename)] = rows
         for row_number, row in enumerate(rows, start=2):
             _validate_row(
                 path,
@@ -1028,6 +1030,8 @@ def validate_staged_week(
             raise ReleaseValidationError(
                 f"Required table {path.name} has no valid row"
             )
+    if dataset_contract_version == DATASET_CONTRACT_VERSION:
+        _validate_eia_physical_coverage(validated_rows)
     pipelines = [
         {
             "name": pipeline.name,
@@ -1045,6 +1049,39 @@ def validate_staged_week(
         pipeline_runs=pipelines,
         dataset_contract_version=dataset_contract_version,
     )
+
+
+def _validate_eia_physical_coverage(
+    datasets: dict[tuple[str, str], list[dict[str, str]]],
+) -> None:
+    source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
+    fundamental_rows = datasets.get(
+        ("weekly_context", "commodity_fundamentals.csv"),
+        [],
+    )
+    provider_families = {
+        "eia_natural_gas": "natural_gas",
+        "eia_refined_products": "refined_products",
+    }
+    for provider, family in provider_families.items():
+        active = any(
+            (row.get("provider") or "").strip() == provider
+            and (row.get("status") or "").strip().upper() == "OK"
+            for row in source_rows
+        )
+        if not active:
+            continue
+        covered = any(
+            (row.get("commodity_family") or "").strip() == family
+            and (row.get("metric_role") or "").strip() == "fundamental"
+            and (row.get("measurement_kind") or "").strip()
+            == "physical_level"
+            for row in fundamental_rows
+        )
+        if not covered:
+            raise ReleaseValidationError(
+                f"{provider} has no physical fundamental row for active family {family}"
+            )
 
 
 def _strict_json_object(path: Path, root: Path) -> dict:
