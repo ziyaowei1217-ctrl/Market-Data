@@ -7,6 +7,7 @@ import unittest
 import pandas as pd
 
 from pipeline.internal.capital_weekly.context.providers import (
+    _eia_provider,
     build_default_providers,
     metric_rows,
     not_configured_result,
@@ -14,10 +15,14 @@ from pipeline.internal.capital_weekly.context.providers import (
 from pipeline.internal.capital_weekly.context.common import METRIC_FIELDS
 from pipeline.internal.capital_weekly.context.provider_contracts import (
     ContextProvider,
+    FIXED_REQUIRED_CONTEXT_IDENTITIES,
     ProviderResult,
     ProviderSpec,
 )
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
+from pipeline.internal.capital_weekly.weekly_release import (
+    CONTEXT_OPTIONAL_STATUS_POLICIES,
+)
 from pipeline.internal.tests.test_capital_weekly_fundamentals import (
     company_facts_payload,
 )
@@ -64,6 +69,90 @@ def write_provider_configs(data_dir):
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_fetch_failed_allowlist_has_complete_failure_provenance(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            providers = build_default_providers(
+                start=date(2026, 7, 20),
+                end=date(2026, 7, 26),
+                data_dir=data_dir,
+                environ={},
+            )
+
+        for name, category in CONTEXT_OPTIONAL_STATUS_POLICIES["FETCH_FAILED"]:
+            with self.subTest(provider=name):
+                provider = providers[name]
+                self.assertEqual(provider.spec.category, category)
+                self.assertTrue(provider.spec.failure_source)
+                self.assertTrue(
+                    provider.spec.failure_source_url.startswith("https://")
+                )
+
+    def test_eia_transport_failure_never_leaks_api_key_to_source_log(self):
+        api_key = "private-eia-key"
+
+        class FailingSession:
+            def get(self, url, *, params, headers=None, timeout):
+                raise RuntimeError(f"failed URL {url}?api_key={params['api_key']}")
+
+        spec = ProviderSpec(
+            name="eia_commodities",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="1.0.0",
+            schema_version="context-metric-v1",
+            frequency="weekly",
+            freshness_days=None,
+            failure_source="U.S. Energy Information Administration",
+            failure_source_url="https://api.eia.gov/v2/",
+        )
+        provider = ContextProvider(
+            spec,
+            lambda: _eia_provider(
+                FailingSession(),
+                date(2026, 8, 23),
+                [
+                    {
+                        "metric_code": "eia_weekly_petroleum_wtestus1",
+                        "route": "petroleum/sum/sndw",
+                        "frequency": "weekly",
+                        "series": "WTESTUS1",
+                        "expected_unit": "Thousand Barrels",
+                    }
+                ],
+                api_key,
+            ),
+        )
+
+        tables = run_weekly_context(
+            {"eia_commodities": provider},
+            as_of_date=date(2026, 8, 23),
+        )
+
+        log = tables["source_log"][0]
+        self.assertEqual(log["status"], "FETCH_FAILED")
+        self.assertNotIn(api_key, json.dumps(log))
+
+    def test_fixed_required_identity_registry_matches_registered_required_providers(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            providers = build_default_providers(
+                start=date(2026, 7, 20),
+                end=date(2026, 7, 26),
+                data_dir=data_dir,
+                environ={},
+            )
+
+        registered = {
+            (name, provider.spec.category)
+            for name, provider in providers.items()
+            if provider.spec.requiredness == "required"
+        }
+        self.assertEqual(registered, set(FIXED_REQUIRED_CONTEXT_IDENTITIES))
+
     def test_default_registry_rejects_duplicate_breadth_symbols(self):
         with tempfile.TemporaryDirectory() as temp:
             data_dir = Path(temp)

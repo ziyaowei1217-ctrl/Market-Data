@@ -28,6 +28,9 @@ from .macro_assets import (
     CALCULATED_SOURCE_REFERENCES,
     CORRELATION_SPECS,
 )
+from .capabilities import build_capability_manifest
+from .context.fundamentals import validate_company_fundamental_input_references
+from .context.provider_contracts import FIXED_REQUIRED_CONTEXT_IDENTITIES
 from .weekly_context import CATEGORY_FIELDS
 
 
@@ -36,11 +39,15 @@ COORDINATOR_VERSION = "1"
 MANIFEST_SCHEMA_VERSION = 3
 LEGACY_DATASET_CONTRACT_VERSION = 1
 POINT_IN_TIME_DATASET_CONTRACT_VERSION = 2
-DATASET_CONTRACT_VERSION = 3
+WAVE_1_DATASET_CONTRACT_VERSION = 3
+WAVE_2_DATASET_CONTRACT_VERSION = 4
+DATASET_CONTRACT_VERSION = 5
 SUPPORTED_DATASET_CONTRACT_VERSIONS = frozenset(
     {
         LEGACY_DATASET_CONTRACT_VERSION,
         POINT_IN_TIME_DATASET_CONTRACT_VERSION,
+        WAVE_1_DATASET_CONTRACT_VERSION,
+        WAVE_2_DATASET_CONTRACT_VERSION,
         DATASET_CONTRACT_VERSION,
     }
 )
@@ -95,6 +102,9 @@ OUTPUT_TABLES = {
                 "positioning_flows",
                 "company_events",
                 "commodity_fundamentals",
+                "fund_flows",
+                "company_fundamentals",
+                "capital_markets",
             )
         ),
     ),
@@ -246,6 +256,7 @@ CONTEXT_SOURCE_STATUSES = frozenset(
         "NOT_CONFIGURED",
         "INSUFFICIENT_DATA",
         "POINT_IN_TIME_UNAVAILABLE",
+        "UNAVAILABLE_LICENSED",
         "FETCH_FAILED",
     }
 )
@@ -253,6 +264,10 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
     "NOT_CONFIGURED": frozenset(
         {
             ("sec_company_events", "company_events"),
+            ("sec_company_fundamentals", "company_fundamentals"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
             ("eia_commodities", "commodity_fundamentals"),
         }
     ),
@@ -264,10 +279,27 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
             ("sec_company_events", "company_events"),
             ("eia_commodities", "commodity_fundamentals"),
             ("fred_financial_conditions", "financial_conditions"),
+            ("ishares_ivv_fund", "fund_flows"),
+            ("sec_company_fundamentals", "company_fundamentals"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
         }
     ),
+    "UNAVAILABLE_LICENSED": frozenset(
+        {("ism_manufacturing_pmi", "economic_releases")}
+    ),
     "FETCH_FAILED": frozenset(
-        {("yahoo_volatility_signals", "financial_conditions")}
+        {
+            ("yahoo_volatility_signals", "financial_conditions"),
+            ("yahoo_market_state", "market_internals"),
+            ("hkex_stock_connect_flows", "fund_flows"),
+            ("ishares_ivv_fund", "fund_flows"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
+            ("eia_commodities", "commodity_fundamentals"),
+        }
     ),
 }
 CONTEXT_REQUIREDNESS_VALUES = frozenset({"required", "optional"})
@@ -454,14 +486,25 @@ RELEASE_DATASETS = (
             allow_empty=category != "source_log",
             date_columns=(
                 ("event_date",)
-                if category == "events"
+                if category in {"events", "capital_markets"}
+                else (
+                    "observation_date",
+                    "period_start",
+                    "period_end",
+                    "filing_date",
+                )
+                if category == "company_fundamentals"
                 else ("as_of_date", "event_date", "report_date")
                 if category == "company_events"
                 else ("as_of_date",)
             ),
-            timestamp_columns=("release_at_bjt", "known_as_of")
-            if category == "economic_releases"
-            else (),
+            timestamp_columns=(
+                ("release_at_bjt", "known_as_of")
+                if category == "economic_releases"
+                else ("known_as_of",)
+                if category in {"company_fundamentals", "capital_markets"}
+                else ()
+            ),
             numeric_columns=(
                 "value",
                 "previous_value",
@@ -483,7 +526,8 @@ RELEASE_DATASETS = (
                 if category == "source_log"
                 else frozenset()
             ),
-            require_exact_columns=category == "source_log",
+            require_exact_columns=category
+            in {"source_log", "company_fundamentals", "capital_markets"},
         )
         for category, fields in CATEGORY_FIELDS.items()
     ),
@@ -503,6 +547,23 @@ LEGACY_CONTEXT_SOURCE_LOG_COLUMNS = (
 CURRENT_CONTEXT_SOURCE_LOG_ONLY_COLUMNS = frozenset(
     CATEGORY_FIELDS["source_log"]
 ) - frozenset(LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
+VERSION_4_RELEASE_DATASETS = tuple(
+    dataset
+    for dataset in RELEASE_DATASETS
+    if not (
+        dataset.pipeline == "weekly_context"
+        and dataset.filename
+        in {"company_fundamentals.csv", "capital_markets.csv"}
+    )
+)
+VERSION_3_RELEASE_DATASETS = tuple(
+    dataset
+    for dataset in VERSION_4_RELEASE_DATASETS
+    if not (
+        dataset.pipeline == "weekly_context"
+        and dataset.filename == "fund_flows.csv"
+    )
+)
 VERSION_2_RELEASE_DATASETS = tuple(
     replace(
         dataset,
@@ -527,7 +588,7 @@ VERSION_2_RELEASE_DATASETS = tuple(
         "policy_rates.csv", "money_market.csv",
     }
     else dataset
-    for dataset in RELEASE_DATASETS
+    for dataset in VERSION_3_RELEASE_DATASETS
     if not (
         dataset.pipeline == "macro_assets"
         and dataset.filename in {"liquidity.csv", "cross_asset.csv"}
@@ -552,6 +613,10 @@ def release_datasets_for_contract(
         return LEGACY_RELEASE_DATASETS
     if dataset_contract_version == POINT_IN_TIME_DATASET_CONTRACT_VERSION:
         return VERSION_2_RELEASE_DATASETS
+    if dataset_contract_version == WAVE_1_DATASET_CONTRACT_VERSION:
+        return VERSION_3_RELEASE_DATASETS
+    if dataset_contract_version == WAVE_2_DATASET_CONTRACT_VERSION:
+        return VERSION_4_RELEASE_DATASETS
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         return RELEASE_DATASETS
     raise ReleaseValidationError(
@@ -720,6 +785,7 @@ def build_release_manifest(
         "status": "complete",
         "pipelines": pipeline_runs,
         "files": _published_file_manifests(release_root),
+        "capabilities": build_capability_manifest(release_root, window.end),
         "failures": [],
         "coordinator_version": COORDINATOR_VERSION,
     }
@@ -899,12 +965,17 @@ def _validate_row(
     dataset_contract_version: int,
 ) -> None:
     is_current_context_source_log = (
-        dataset_contract_version == DATASET_CONTRACT_VERSION
+        dataset_contract_version != LEGACY_DATASET_CONTRACT_VERSION
         and spec.pipeline == "weekly_context"
         and spec.filename == "source_log.csv"
     )
     is_current_macro_source_log = (
-        dataset_contract_version == DATASET_CONTRACT_VERSION
+        dataset_contract_version
+        in {
+            WAVE_1_DATASET_CONTRACT_VERSION,
+            WAVE_2_DATASET_CONTRACT_VERSION,
+            DATASET_CONTRACT_VERSION,
+        }
         and spec.pipeline == "macro_assets"
         and spec.filename == "source_log.csv"
     )
@@ -978,6 +1049,10 @@ def _validate_row(
                     and (
                         not is_current_context_source_log
                         or requiredness == "optional"
+                    )
+                    and (
+                        status != "UNAVAILABLE_LICENSED"
+                        or source_tier == "licensed"
                     )
                 )
             )
@@ -1112,6 +1187,22 @@ def validate_staged_week(
             raise ReleaseValidationError(
                 f"Required table {path.name} has no valid row"
             )
+    _validate_required_context_providers(
+        loaded_datasets,
+        dataset_contract_version,
+    )
+    company_fundamental_rows = [
+        row
+        for dataset, _, rows in loaded_datasets
+        if dataset.pipeline == "weekly_context"
+        and dataset.filename == "company_fundamentals.csv"
+        for row in rows
+    ]
+    if company_fundamental_rows:
+        try:
+            validate_company_fundamental_input_references(company_fundamental_rows)
+        except ValueError as error:
+            raise ReleaseValidationError(str(error)) from error
     pipelines = [
         {
             "name": pipeline.name,
@@ -1129,6 +1220,46 @@ def validate_staged_week(
         pipeline_runs=pipelines,
         dataset_contract_version=dataset_contract_version,
     )
+
+
+def _validate_required_context_providers(
+    loaded_datasets: list[tuple[DatasetSpec, Path, list[dict[str, str]]]],
+    dataset_contract_version: int,
+) -> None:
+    if dataset_contract_version != DATASET_CONTRACT_VERSION:
+        return
+    source_rows = next(
+        rows
+        for dataset, _, rows in loaded_datasets
+        if dataset.pipeline == "weekly_context"
+        and dataset.filename == "source_log.csv"
+    )
+    for provider, category in sorted(FIXED_REQUIRED_CONTEXT_IDENTITIES):
+        matches = [
+            row
+            for row in source_rows
+            if (row.get("provider") or "").strip() == provider
+            and (row.get("category") or "").strip() == category
+        ]
+        if not matches:
+            raise ReleaseValidationError(
+                "source_log.csv is missing required context provider "
+                f"{provider} ({category})"
+            )
+        if len(matches) != 1:
+            raise ReleaseValidationError(
+                "source_log.csv requires exactly one required context provider "
+                f"{provider} ({category})"
+            )
+        row = matches[0]
+        if (row.get("requiredness") or "").strip() != "required":
+            raise ReleaseValidationError(
+                f"source_log.csv provider {provider} must be required"
+            )
+        if (row.get("status") or "").strip().upper() != "OK":
+            raise ReleaseValidationError(
+                f"source_log.csv provider {provider} must have status OK"
+            )
 
 
 def _strict_json_object(path: Path, root: Path) -> dict:
@@ -1201,11 +1332,16 @@ def _source_manifest(release_root: Path) -> tuple[dict, WeekWindow, int]:
     if actual_paths != expected_paths:
         raise ReleaseValidationError("Source release files do not match its manifest")
 
-    validate_staged_week(
+    validated_manifest = validate_staged_week(
         root,
         window,
         dataset_contract_version=contract_version,
     )
+    if (
+        "capabilities" in manifest
+        and manifest["capabilities"] != validated_manifest["capabilities"]
+    ):
+        raise ReleaseValidationError("Source release capability audit is invalid")
     return manifest, window, contract_version
 
 
@@ -1262,6 +1398,7 @@ def build_output_bundle(
     """Convert one complete staged-week release into five stable JSON files."""
     source_root = Path(release_root)
     source_manifest, window, contract_version = _source_manifest(source_root)
+    capabilities = build_capability_manifest(source_root, window.end)
     output_root = Path(destination)
     if output_root.is_symlink():
         raise ReleaseValidationError("Output root must not be a symbolic link")
@@ -1289,7 +1426,7 @@ def build_output_bundle(
         for table_name, filename in table_files:
             dataset = datasets.get((source_pipeline, filename))
             if dataset is None:
-                if public_name == "context" and table_name == "economic_releases":
+                if public_name == "context":
                     rows = []
                 else:
                     raise ReleaseValidationError(
@@ -1302,6 +1439,9 @@ def build_output_bundle(
                 )
             tables[table_name] = rows
             row_counts[table_name] = len(rows)
+        if public_name == "context":
+            tables["capability_audit"] = capabilities
+            row_counts["capability_audit"] = len(capabilities)
         source_dataset = datasets[(source_pipeline, "source_log.csv")]
         source_log = _typed_csv_rows(
             pipeline_dirs[source_pipeline] / "source_log.csv",
@@ -1342,6 +1482,7 @@ def build_output_bundle(
         "generated_at": generated_at,
         "status": "complete",
         "source_week_id": source_manifest["week_id"],
+        "capabilities": capabilities,
         "pipelines": pipeline_entries,
         "files": file_entries,
     }
@@ -1418,6 +1559,49 @@ def validate_output_bundle(output_root: Path) -> dict:
             raise ReleaseValidationError(f"Output hash mismatch: {name}")
         if by_name[name].get("bytes") != (root / name).stat().st_size:
             raise ReleaseValidationError(f"Output size mismatch: {name}")
+
+    capabilities = release.get("capabilities")
+    if capabilities is not None:
+        if not isinstance(capabilities, list) or not capabilities:
+            raise ReleaseValidationError("release.json capabilities are invalid")
+        allowed_statuses = {
+            "available",
+            "failed",
+            "not_configured",
+            "unavailable_licensed",
+            "not_applicable",
+        }
+        required_keys = {
+            "capability_id",
+            "module",
+            "label",
+            "status",
+            "reason",
+            "proxy",
+            "evidence_files",
+        }
+        identifiers = []
+        for item in capabilities:
+            if (
+                not isinstance(item, dict)
+                or set(item) != required_keys
+                or not isinstance(item.get("capability_id"), str)
+                or not item["capability_id"]
+                or item.get("status") not in allowed_statuses
+                or not isinstance(item.get("reason"), str)
+                or not item["reason"]
+                or not isinstance(item.get("proxy"), bool)
+                or not isinstance(item.get("evidence_files"), list)
+            ):
+                raise ReleaseValidationError("release.json capabilities are invalid")
+            identifiers.append(item["capability_id"])
+        if len(identifiers) != len(set(identifiers)):
+            raise ReleaseValidationError("release.json capability IDs must be unique")
+        context_document = _strict_json_object(root / "context.json", root)
+        if context_document["tables"].get("capability_audit") != capabilities:
+            raise ReleaseValidationError(
+                "context.json capability audit does not match release.json"
+            )
 
     pipelines = release.get("pipelines")
     if not isinstance(pipelines, list):
@@ -1767,6 +1951,8 @@ __all__ = [
     "DATASET_CONTRACT_VERSION",
     "LEGACY_DATASET_CONTRACT_VERSION",
     "POINT_IN_TIME_DATASET_CONTRACT_VERSION",
+    "WAVE_1_DATASET_CONTRACT_VERSION",
+    "WAVE_2_DATASET_CONTRACT_VERSION",
     "MANIFEST_SCHEMA_VERSION",
     "OUTPUT_BUSINESS_FILES",
     "OUTPUT_SCHEMA_VERSION",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -113,6 +114,14 @@ def _safe_provider_name(name: str) -> str:
     return "".join(character if character.isalnum() or character in "-_" else "_" for character in name)
 
 
+def _safe_provider_error(error: Exception) -> str:
+    return re.sub(
+        r"(?i)((?:api[_-]?key|access[_-]?token|token|secret)=)[^&\s]+",
+        r"\1[REDACTED]",
+        str(error),
+    )
+
+
 def run_weekly_context(
     providers: Mapping[str, ContextProvider],
     raw_dir: str | Path | None = None,
@@ -217,6 +226,7 @@ def run_weekly_context(
                 }
             )
         except Exception as error:
+            safe_error = _safe_provider_error(error)
             tables["source_log"].append(
                 {
                     "provider": provider_name,
@@ -227,7 +237,7 @@ def run_weekly_context(
                     "frequency": provider.spec.frequency,
                     "freshness_days": provider.spec.freshness_days,
                     "latest_known_as_of": None,
-                    "warnings": str(error),
+                    "warnings": safe_error,
                     "category": provider.spec.category,
                     "status": "FETCH_FAILED",
                     "observations": 0,
@@ -235,7 +245,7 @@ def run_weekly_context(
                     "source": provider.spec.failure_source,
                     "source_url": provider.spec.failure_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
-                    "notes": str(error),
+                    "notes": safe_error,
                 }
             )
     _validate_combined_economic_releases(tables, run_date)

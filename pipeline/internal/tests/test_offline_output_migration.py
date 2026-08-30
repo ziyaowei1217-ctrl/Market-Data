@@ -105,6 +105,24 @@ class OfflineOutputMigrationTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "No valid complete week"):
             refresh.select_latest_complete_week(self.outputs)
 
+    def test_tampered_capability_audit_is_not_a_valid_source_week(self):
+        valid = write_complete_week(
+            self.outputs,
+            date(2026, 8, 3),
+            date(2026, 8, 9),
+        )
+        tampered = write_complete_week(
+            self.outputs,
+            date(2026, 8, 10),
+            date(2026, 8, 16),
+        )
+        manifest_path = tampered / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["capabilities"][0]["reason"] = "tampered"
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+        self.assertEqual(refresh.select_latest_complete_week(self.outputs), valid)
+
     def test_cli_offline_conversion_never_calls_pipeline_runner(self):
         source = write_complete_week(
             self.outputs,
@@ -125,6 +143,14 @@ class OfflineOutputMigrationTests(unittest.TestCase):
         self.assertEqual(stdout.getvalue().strip(), str((self.root / "output").resolve()))
         release = validate_output_bundle(self.root / "output")
         self.assertEqual(release["source_week_id"], source.name)
+        self.assertEqual(len(release["files"]), 5)
+        context = json.loads(
+            (self.root / "output" / "context.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            context["tables"]["capability_audit"],
+            release["capabilities"],
+        )
 
 
 if __name__ == "__main__":

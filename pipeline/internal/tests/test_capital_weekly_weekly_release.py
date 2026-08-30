@@ -18,6 +18,9 @@ from zoneinfo import ZoneInfo
 
 from pipeline.internal.capital_weekly import weekly_release as weekly_release_module
 from pipeline.internal.capital_weekly.weekly_context import CATEGORY_FIELDS
+from pipeline.internal.capital_weekly.context.provider_contracts import (
+    FIXED_REQUIRED_CONTEXT_IDENTITIES,
+)
 from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseAlreadyRunning,
     ReleasePipelineError,
@@ -158,12 +161,37 @@ DATE_FIELDS = set(RETURN_DATE_FIELDS) | {
 }
 
 
-def write_csv(path: Path, fields: list[str] | tuple[str, ...], rows: list[dict]) -> None:
+def write_csv(
+    path: Path,
+    fields: list[str] | tuple[str, ...],
+    rows: list[dict],
+    *,
+    complete_context_log: bool = True,
+) -> None:
+    output_rows = list(rows)
+    if complete_context_log and tuple(fields) == CATEGORY_FIELDS["source_log"]:
+        present = {
+            (str(row.get("provider") or ""), str(row.get("category") or ""))
+            for row in output_rows
+        }
+        output_rows.extend(
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category=category,
+                status="OK",
+                requiredness="required",
+                observations="0",
+                as_of_date="2026-08-09",
+            )
+            for provider, category in FIXED_REQUIRED_CONTEXT_IDENTITIES
+            if (provider, category) not in present
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=fields)
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(output_rows)
 
 
 def fixture_row(fields, **overrides) -> dict:
@@ -454,6 +482,31 @@ class StagedValidationTests(unittest.TestCase):
         )
 
         self.assertEqual(manifest["dataset_contract_version"], 2)
+
+    def test_contract_v3_keeps_the_pre_fund_flow_file_set(self):
+        (self.outputs["weekly_context"] / "fund_flows.csv").unlink()
+        (self.outputs["weekly_context"] / "company_fundamentals.csv").unlink()
+        (self.outputs["weekly_context"] / "capital_markets.csv").unlink()
+
+        manifest = validate_staged_week(
+            self.root,
+            self.window,
+            dataset_contract_version=3,
+        )
+
+        self.assertEqual(manifest["dataset_contract_version"], 3)
+
+    def test_contract_v4_keeps_the_pre_company_data_file_set(self):
+        (self.outputs["weekly_context"] / "company_fundamentals.csv").unlink()
+        (self.outputs["weekly_context"] / "capital_markets.csv").unlink()
+
+        manifest = validate_staged_week(
+            self.root,
+            self.window,
+            dataset_contract_version=4,
+        )
+
+        self.assertEqual(manifest["dataset_contract_version"], 4)
 
     def test_optional_macro_proxy_failure_is_audited_without_blocking_release(self):
         path = self.outputs["macro_assets"] / "source_log.csv"
@@ -1314,13 +1367,28 @@ class StagedValidationTests(unittest.TestCase):
         manifest = validate_staged_week(self.root, self.window)
 
         self.assertEqual(manifest["manifest_schema_version"], 3)
-        self.assertEqual(manifest["dataset_contract_version"], 3)
+        self.assertEqual(manifest["dataset_contract_version"], 5)
         self.assertEqual(manifest["publication_mode"], "coordinated")
         self.assertEqual(manifest["week_start"], "2026-08-03")
         self.assertEqual(manifest["week_end"], "2026-08-09")
         self.assertEqual(manifest["timezone"], "Asia/Hong_Kong")
         self.assertEqual(manifest["status"], "complete")
         self.assertEqual(manifest["failures"], [])
+        self.assertEqual(len(manifest["capabilities"]), 79)
+        self.assertEqual(
+            len({item["capability_id"] for item in manifest["capabilities"]}),
+            79,
+        )
+        self.assertTrue(
+            all(
+                set(item) == {
+                    "capability_id", "module", "label", "status", "reason",
+                    "proxy", "evidence_files",
+                }
+                for item in manifest["capabilities"]
+            )
+        )
+        self.assertFalse(any("value" in item for item in manifest["capabilities"]))
         self.assertTrue(manifest["coordinator_version"])
         self.assertEqual(len(manifest["pipelines"]), 5)
         for pipeline in manifest["pipelines"]:
@@ -1441,6 +1509,84 @@ class StagedValidationTests(unittest.TestCase):
             )
 
 
+    def test_current_contract_requires_every_fixed_required_context_provider(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider="fixture",
+                    category="market_internals",
+                )
+            ],
+            complete_context_log=False,
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "missing required context provider.*bea_economic_releases",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_accepts_registered_optional_public_provider_gaps(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        cases = (
+            ("yahoo_market_state", "market_internals", "FETCH_FAILED", "public"),
+            ("hkex_stock_connect_flows", "fund_flows", "FETCH_FAILED", "public"),
+            ("ishares_ivv_fund", "fund_flows", "POINT_IN_TIME_UNAVAILABLE", "public"),
+            ("eia_commodities", "commodity_fundamentals", "FETCH_FAILED", "public"),
+            ("ism_manufacturing_pmi", "economic_releases", "UNAVAILABLE_LICENSED", "licensed"),
+        )
+        for provider, category, status, source_tier in cases:
+            with self.subTest(provider=provider, status=status):
+                row = fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider=provider,
+                    category=category,
+                    source_tier=source_tier,
+                    requiredness="optional",
+                    status=status,
+                    observations="0",
+                    as_of_date="2026-08-09",
+                )
+                write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+                validate_staged_week(self.root, self.window)
+
+    def test_rejects_unavailable_licensed_for_unknown_or_required_provider(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        cases = (
+            ("unknown_provider", "optional", "licensed"),
+            ("ism_manufacturing_pmi", "required", "licensed"),
+            ("ism_manufacturing_pmi", "optional", "public"),
+        )
+        for provider, requiredness, source_tier in cases:
+            with self.subTest(
+                provider=provider,
+                requiredness=requiredness,
+                source_tier=source_tier,
+            ):
+                row = fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider=provider,
+                    category="economic_releases",
+                    source_tier=source_tier,
+                    requiredness=requiredness,
+                    status="UNAVAILABLE_LICENSED",
+                    observations="0",
+                    as_of_date="2026-08-09",
+                )
+                write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "UNAVAILABLE_LICENSED",
+                ):
+                    validate_staged_week(self.root, self.window)
+
+
 class FakePipelineRunner:
     PIPELINES = {
         "pipeline.indices": "equity_indices",
@@ -1509,6 +1655,23 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         self.assertEqual(manifest["schema_version"], "1.0")
         self.assertEqual(manifest["source_week_id"], "week_20260803-20260809")
         self.assertEqual(manifest["status"], "complete")
+        context = json.loads((published / "context.json").read_text())
+        self.assertEqual(
+            set(context["tables"]),
+            {
+                "events",
+                "economic_releases",
+                "financial_conditions",
+                "market_internals",
+                "positioning_flows",
+                "company_events",
+                "commodity_fundamentals",
+                "fund_flows",
+                "company_fundamentals",
+                "capital_markets",
+                "capability_audit",
+            },
+        )
         self.assertEqual(
             {path.name for path in published.iterdir()},
             {

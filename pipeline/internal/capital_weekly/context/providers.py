@@ -1680,6 +1680,37 @@ def build_default_providers(
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
     }
+    failure_sources = {
+        "sec_guidance_proxy": (
+            "SEC EDGAR filing documents",
+            "https://www.sec.gov/edgar/search/",
+        ),
+        "sec_capital_markets": (
+            "SEC EDGAR daily index and filing documents",
+            "https://www.sec.gov/Archives/edgar/daily-index/",
+        ),
+        "hkex_capital_markets": (
+            "Hong Kong Exchanges and Clearing",
+            HKEX_NEW_LISTINGS_URL,
+        ),
+        "eia_commodities": (
+            "U.S. Energy Information Administration",
+            EIA_SOURCE_URL,
+        ),
+        "yahoo_volatility_signals": (
+            YAHOO_VOLATILITY_SOURCE,
+            YAHOO_FINANCE_URL,
+        ),
+        "yahoo_market_state": (
+            "Yahoo Finance (registered sector ETF proxy universe)",
+            YAHOO_FINANCE_URL,
+        ),
+        "ishares_ivv_fund": ("iShares", ISHARES_IVV_URL),
+        "hkex_stock_connect_flows": (
+            "Hong Kong Exchanges and Clearing",
+            "https://www.hkex.com.hk/Mutual-Market/Stock-Connect/Statistics/",
+        ),
+    }
     providers = {
         name: ContextProvider(
             spec=ProviderSpec(
@@ -1707,36 +1738,8 @@ def build_default_providers(
                     }
                     else None
                 ),
-                failure_source=(
-                    "SEC EDGAR filing documents"
-                    if name == "sec_guidance_proxy"
-                    else "SEC EDGAR daily index and filing documents"
-                    if name == "sec_capital_markets"
-                    else "Hong Kong Exchanges and Clearing"
-                    if name == "hkex_capital_markets"
-                    else "Yahoo Finance (registered sector ETF proxy universe)"
-                    if name == "yahoo_market_state"
-                    else "iShares"
-                    if name == "ishares_ivv_fund"
-                    else "Hong Kong Exchanges and Clearing"
-                    if name == "hkex_stock_connect_flows"
-                    else ""
-                ),
-                failure_source_url=(
-                    "https://www.sec.gov/edgar/search/"
-                    if name == "sec_guidance_proxy"
-                    else "https://www.sec.gov/Archives/edgar/daily-index/"
-                    if name == "sec_capital_markets"
-                    else HKEX_NEW_LISTINGS_URL
-                    if name == "hkex_capital_markets"
-                    else YAHOO_FINANCE_URL
-                    if name == "yahoo_market_state"
-                    else ISHARES_IVV_URL
-                    if name == "ishares_ivv_fund"
-                    else "https://www.hkex.com.hk/Mutual-Market/Stock-Connect/Statistics/"
-                    if name == "hkex_stock_connect_flows"
-                    else ""
-                ),
+                failure_source=failure_sources.get(name, ("", ""))[0],
+                failure_source_url=failure_sources.get(name, ("", ""))[1],
             ),
             fetch=fetchers[name],
         )

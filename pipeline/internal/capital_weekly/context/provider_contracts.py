@@ -10,6 +10,26 @@ from zoneinfo import ZoneInfo
 HONG_KONG = ZoneInfo("Asia/Hong_Kong")
 SOURCE_TIERS = frozenset({"public", "licensed"})
 REQUIREDNESS_VALUES = frozenset({"required", "optional"})
+FIXED_REQUIRED_CONTEXT_IDENTITIES = frozenset(
+    {
+        ("bls_calendar", "events"),
+        ("federal_reserve_calendar", "events"),
+        ("fomc_calendar", "events"),
+        ("census_calendar", "events"),
+        ("nasdaq_market_summary", "market_internals"),
+        ("cftc_tff", "positioning_flows"),
+        ("cftc_disaggregated", "positioning_flows"),
+        ("finra_margin", "positioning_flows"),
+        ("hkex_microstructure", "market_internals"),
+        ("sse_microstructure", "market_internals"),
+        ("szse_microstructure", "market_internals"),
+        ("bls_economic_releases", "economic_releases"),
+        ("bea_economic_releases", "economic_releases"),
+        ("census_retail_sales", "economic_releases"),
+        ("census_housing", "economic_releases"),
+        ("census_durable_goods", "economic_releases"),
+    }
+)
 
 
 class PointInTimeUnavailable(RuntimeError):
@@ -101,6 +121,7 @@ def select_capture_at_or_before(
 __all__ = [
     "CaptureMetadata",
     "ContextProvider",
+    "FIXED_REQUIRED_CONTEXT_IDENTITIES",
     "HONG_KONG",
     "PointInTimeUnavailable",
     "ProviderResult",

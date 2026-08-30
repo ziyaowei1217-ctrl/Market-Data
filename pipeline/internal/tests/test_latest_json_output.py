@@ -81,6 +81,17 @@ class LatestJsonOutputTests(unittest.TestCase):
         self.assertIsNone(context["source_log"][0]["freshness_days"])
         self.assertEqual(context["tables"]["events"], [])
         self.assertEqual(context["tables"]["economic_releases"], [])
+        self.assertEqual(context["tables"]["fund_flows"], [])
+        self.assertEqual(context["tables"]["company_fundamentals"], [])
+        self.assertEqual(context["tables"]["capital_markets"], [])
+        release = json.loads(
+            (self.output / "release.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            context["tables"]["capability_audit"],
+            release["capabilities"],
+        )
+        self.assertEqual(len(release["capabilities"]), 79)
         serialized = "\n".join(
             path.read_text(encoding="utf-8") for path in self.output.glob("*.json")
         )
@@ -91,6 +102,7 @@ class LatestJsonOutputTests(unittest.TestCase):
         release = build_output_bundle(self.staged_week, self.output)
 
         entries = {entry["name"]: entry for entry in release["files"]}
+        self.assertEqual(len(entries), 5)
         self.assertEqual(set(entries), EXPECTED_FILES - {"release.json"})
         for name, entry in entries.items():
             self.assertEqual(
@@ -104,6 +116,28 @@ class LatestJsonOutputTests(unittest.TestCase):
         path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
 
         with self.assertRaisesRegex(ReleaseValidationError, "hash mismatch"):
+            validate_output_bundle(self.output)
+
+    def test_capability_audit_must_match_between_context_and_release(self):
+        release = build_output_bundle(self.staged_week, self.output)
+        context_path = self.output / "context.json"
+        context = json.loads(context_path.read_text(encoding="utf-8"))
+        context["tables"]["capability_audit"][0]["reason"] = "tampered"
+        context_path.write_text(
+            json.dumps(context, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        context_entry = next(
+            item for item in release["files"] if item["name"] == "context.json"
+        )
+        context_entry["bytes"] = context_path.stat().st_size
+        context_entry["sha256"] = hashlib.sha256(context_path.read_bytes()).hexdigest()
+        (self.output / "release.json").write_text(
+            json.dumps(release, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ReleaseValidationError, "capability audit"):
             validate_output_bundle(self.output)
 
 
