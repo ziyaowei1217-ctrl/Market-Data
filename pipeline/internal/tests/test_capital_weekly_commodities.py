@@ -9,6 +9,7 @@ from pipeline.internal.capital_weekly.context.commodities import (
     eia_not_configured_result,
     parse_eia_series,
 )
+from pipeline.internal.capital_weekly.context import eia_commodities as eia_module
 from pipeline.internal.capital_weekly.context.eia_commodities import (
     EiaBatchError,
     EiaBatchSpec,
@@ -279,6 +280,50 @@ class CommodityFundamentalTests(unittest.TestCase):
                         page_count=0,
                         requested_length=400,
                     )
+
+    def test_eia_metadata_all_facets_contract_is_exact_and_not_data_pagination(self):
+        facet_ids = [f"SERIES_{index:03d}" for index in range(608)]
+        response = {
+            "facets": [{"id": identifier} for identifier in facet_ids],
+            "totalFacets": 608,
+        }
+        validator = getattr(eia_module, "eia_metadata_facet_ids", None)
+        self.assertIsNotNone(validator)
+        self.assertEqual(validator(response), set(facet_ids))
+
+        malformed = (
+            (
+                "non-integral total",
+                {"facets": [{"id": "A"}], "totalFacets": "1"},
+                "totalFacets",
+            ),
+            (
+                "inconsistent total",
+                {"facets": [{"id": "A"}], "totalFacets": 2},
+                "count",
+            ),
+            (
+                "duplicate identifier",
+                {
+                    "facets": [{"id": "A"}, {"id": "A"}],
+                    "totalFacets": 2,
+                },
+                "duplicate",
+            ),
+            (
+                "ambiguous data response",
+                {
+                    "facets": [{"id": "A"}],
+                    "totalFacets": 1,
+                    "data": [],
+                },
+                "ambiguous",
+            ),
+        )
+        for label, malformed_response, message in malformed:
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(ValueError, message):
+                    validator(malformed_response)
 
     def test_current_lower_48_description_matches_production_config(self):
         spec = next(

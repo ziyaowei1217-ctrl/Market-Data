@@ -344,7 +344,7 @@ class MacroAssetUniverseTests(unittest.TestCase):
         )
         metadata_text = json.dumps(
             {"response": {
-                "total": 1,
+                "totalFacets": 1,
                 "facets": [{"id": "RWTC", "name": "WTI"}],
             }}
         )

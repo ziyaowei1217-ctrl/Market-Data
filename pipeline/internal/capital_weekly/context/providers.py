@@ -48,6 +48,7 @@ from .eia_commodities import (
     EIA_FAMILIES,
     EIA_PROVIDERS,
     build_eia_batch_specs,
+    eia_metadata_facet_ids,
     eia_response_total,
     fetch_eia_batches,
     latest_and_changes,
@@ -1894,48 +1895,22 @@ class _OfficialEiaClient:
             for facet, selected in item["facets"].items():
                 wanted.setdefault(str(facet), set()).add(str(selected))
         for facet, required in sorted(wanted.items()):
-            identifiers: set[str] = set()
-            offset = 0
-            expected_total: int | None = None
-            while not required <= identifiers:
-                body = self._get(
-                    f"{EIA_SOURCE_URL}{spec.route}/facet/{facet}/",
-                    {
-                        "api_key": self.api_key,
-                        "offset": offset,
-                        "length": spec.page_length,
-                    },
-                )
-                try:
-                    payload = json.loads(body.decode("utf-8"))
-                    values = payload.get("response", {}).get("facets")
-                except (UnicodeDecodeError, json.JSONDecodeError) as error:
-                    raise ValueError(
-                        f"EIA facet metadata is invalid for {spec.route}/{facet}"
-                    ) from error
-                if not isinstance(values, list):
-                    raise ValueError(
-                        f"EIA facet metadata is missing for {spec.route}/{facet}"
-                    )
-                identifiers.update(
-                    str(item.get("id") or "").strip()
-                    for item in values
-                    if isinstance(item, Mapping)
-                )
+            body = self._get(
+                f"{EIA_SOURCE_URL}{spec.route}/facet/{facet}/",
+                {
+                    "api_key": self.api_key,
+                    "offset": 0,
+                    "length": spec.page_length,
+                },
+            )
+            try:
+                payload = json.loads(body.decode("utf-8"))
                 response = payload.get("response", {})
-                total = eia_response_total(
-                    response,
-                    offset=offset,
-                    page_count=len(values),
-                    requested_length=spec.page_length,
-                    prior_total=expected_total,
-                )
-                expected_total = total
-                offset += len(values)
-                if offset >= total:
-                    break
-                if not values:
-                    raise ValueError("EIA facet metadata pagination made no progress")
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
+                raise ValueError(
+                    f"EIA facet metadata is invalid for {spec.route}/{facet}"
+                ) from error
+            identifiers = eia_metadata_facet_ids(response)
             missing = sorted(required - identifiers)
             if missing:
                 raise ValueError(

@@ -277,6 +277,30 @@ def eia_response_total(
     return total
 
 
+def eia_metadata_facet_ids(response: Mapping[str, Any]) -> set[str]:
+    if "data" in response or "total" in response or "totalFacets" not in response:
+        raise ValueError("EIA metadata response total fields are ambiguous")
+    total = response["totalFacets"]
+    if isinstance(total, bool) or not isinstance(total, int) or total < 0:
+        raise ValueError("EIA metadata totalFacets must be a non-negative integer")
+    facets = response.get("facets")
+    if not isinstance(facets, list):
+        raise ValueError("EIA metadata response has no facets list")
+    if len(facets) != total:
+        raise ValueError("EIA metadata facet count does not match totalFacets")
+    identifiers: set[str] = set()
+    for item in facets:
+        if not isinstance(item, Mapping):
+            raise ValueError("EIA metadata facets must be objects")
+        identifier = str(item.get("id") or "").strip()
+        if not identifier:
+            raise ValueError("EIA metadata facet identifier is blank")
+        if identifier in identifiers:
+            raise ValueError("EIA metadata contains duplicate facet identifiers")
+        identifiers.add(identifier)
+    return identifiers
+
+
 def _validate_eia_batch_rows(
     payload: Mapping[str, Any],
     expected: Mapping[str, Mapping[str, Any]],

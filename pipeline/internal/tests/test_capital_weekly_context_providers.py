@@ -830,7 +830,7 @@ class ContextProviderTests(unittest.TestCase):
                             "duoarea": "R48", "process": "SWO", "series": series,
                         }
                         return response(
-                            {"response": {"total": 1, "facets": [
+                            {"response": {"totalFacets": 1, "facets": [
                                 {"id": identifiers[facet]}
                             ]}},
                             url,
@@ -879,7 +879,7 @@ class ContextProviderTests(unittest.TestCase):
                 ids = {"duoarea": "R48", "process": "SWO", "series": series}
                 body = json.dumps(
                     {"response": {
-                        "total": 1,
+                        "totalFacets": 1,
                         "facets": [{"id": ids[selected]}],
                     }}
                 ).encode()
@@ -1937,7 +1937,7 @@ class ContextProviderTests(unittest.TestCase):
                 if "/facet/series/" in url:
                     return TextResponse(json.dumps({
                         "response": {
-                            "total": 1,
+                            "totalFacets": 1,
                             "facets": [{"id": "A&B", "name": "Crude"}],
                         }
                     }))
@@ -2048,7 +2048,7 @@ class ContextProviderTests(unittest.TestCase):
                 if "/facet/series/" in url:
                     return TextResponse(json.dumps({
                         "response": {
-                            "total": 1,
+                            "totalFacets": 1,
                             "facets": [{"id": "WCESTUS1", "name": "Crude"}]
                         }
                     }))
