@@ -1,5 +1,6 @@
 from datetime import date
 import csv
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -8,6 +9,7 @@ import unittest
 import pandas as pd
 
 from pipeline.internal.capital_weekly.context.providers import (
+    COMEX_COPPER_STOCKS_URL,
     CFTC_DISAGGREGATED_URL,
     build_default_providers,
     metric_rows,
@@ -20,6 +22,10 @@ from pipeline.internal.capital_weekly.context.provider_contracts import (
     ProviderSpec,
 )
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
+from pipeline.internal.tests.test_capital_weekly_metal_inventories import (
+    COPPER_BIFF8,
+    USGS_GOLD_PDF,
+)
 
 
 YAHOO_CONFIG = (
@@ -61,6 +67,27 @@ class TextSession:
         return TextResponse(self.text)
 
 
+class BinaryResponse:
+    def __init__(self, content):
+        self.content = content
+
+    def raise_for_status(self):
+        return None
+
+
+class BinarySession:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        response = self.responses[url]
+        if isinstance(response, Exception):
+            raise response
+        return BinaryResponse(response)
+
+
 def write_provider_configs(data_dir):
     (data_dir / "capital_weekly_company_watchlist.csv").write_text(
         "ticker,cik,company_name,enabled\n", encoding="utf-8"
@@ -90,6 +117,258 @@ def write_provider_configs(data_dir):
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_comex_copper_keeps_exact_bytes_and_auditable_provenance(self):
+        metal_header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        metal_row = (
+            "comex_copper_stocks,https://www.cmegroup.com/delivery_reports/"
+            "Copper_Stocks.xls,CME Group,COPPER_COMEX,copper,COMEX,daily,7,"
+            "Daily Metal Stocks Report,COPPER - HIGH GRADE,Short Tons,"
+            "DELIVERY POINT,Total Registered (warranted),"
+            "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
+            "deliverable_inventory_proxy; LME not included\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                metal_header + metal_row,
+                encoding="utf-8",
+            )
+            session = BinarySession({COMEX_COPPER_STOCKS_URL: COPPER_BIFF8})
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )["comex_copper_stocks"]
+            raw_dir = data_dir / "raw"
+            tables = run_weekly_context(
+                {"comex_copper_stocks": provider},
+                raw_dir=raw_dir,
+                as_of_date=date(2026, 8, 30),
+            )
+
+            self.assertEqual(
+                (raw_dir / "comex_copper_stocks.raw").read_bytes(),
+                COPPER_BIFF8,
+            )
+
+        self.assertEqual(provider.spec.requiredness, "optional")
+        self.assertEqual(
+            [row["measurement_kind"] for row in tables["commodity_fundamentals"]],
+            ["inventory", "inventory", "inventory"],
+        )
+        self.assertEqual(
+            [row["value"] for row in tables["commodity_fundamentals"]],
+            [15.0, 35.0, 50.0],
+        )
+        audit = tables["source_log"][0]
+        self.assertEqual(audit["source_url"], COMEX_COPPER_STOCKS_URL)
+        self.assertIn(f"bytes={len(COPPER_BIFF8)}", audit["notes"])
+        self.assertIn(
+            f"sha256={hashlib.sha256(COPPER_BIFF8).hexdigest()}",
+            audit["notes"],
+        )
+        self.assertRegex(
+            audit["notes"],
+            r"schema_signature=ole2-biff8:sha256:[0-9a-f]{64}",
+        )
+        self.assertIn("deliverable_inventory_proxy; LME not included", audit["notes"])
+
+    def test_outdated_usgs_table_is_visible_without_transport_or_rows(self):
+        metal_header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        metal_row = (
+            "usgs_gold_structural,https://pubs.usgs.gov/periodicals/mcs2026/"
+            "mcs2026-gold.pdf,U.S. Geological Survey,GOLD_COMEX,gold,World,annual,"
+            "400,,GOLD,\"metric tons, gold content\",,,,,mine_reserves,2025,"
+            "2026-02-06,February 2026,monthly Mineral Industry Survey paused\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                metal_header + metal_row,
+                encoding="utf-8",
+            )
+            session = BinarySession({})
+            provider = build_default_providers(
+                start=date(2027, 3, 22),
+                end=date(2027, 3, 28),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )["usgs_gold_structural"]
+            result = provider.fetch()
+
+        self.assertEqual(session.calls, [])
+        self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(result.rows, [])
+        self.assertIn("more than 400 days", result.notes)
+
+    def test_current_usgs_table_emits_annual_structural_rows(self):
+        url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
+        metal_header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        metal_row = (
+            f"usgs_gold_structural,{url},U.S. Geological Survey,GOLD_COMEX,gold,"
+            "World,annual,400,,GOLD,\"metric tons, gold content\",,,,,mine_reserves,"
+            "2025,2026-02-06,February 2026,"
+            "monthly Mineral Industry Survey paused\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                metal_header + metal_row,
+                encoding="utf-8",
+            )
+            session = BinarySession({url: USGS_GOLD_PDF})
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )["usgs_gold_structural"]
+            result = provider.fetch()
+
+        self.assertEqual(result.status, "OK")
+        self.assertEqual([row["value"] for row in result.rows], [3300.0, 66000.0])
+        self.assertTrue(all(row["measurement_kind"] == "structural" for row in result.rows))
+        self.assertTrue(all(row["as_of_date"] == date(2025, 12, 31) for row in result.rows))
+        self.assertTrue(
+            all(row["known_as_of"].startswith("2026-02-06T23:59:59") for row in result.rows)
+        )
+        self.assertEqual(result.raw_text, USGS_GOLD_PDF)
+        self.assertRegex(
+            result.notes,
+            r"schema_signature=pdf-usgs-mcs-v1:sha256:[0-9a-f]{64}",
+        )
+
+    def test_failed_comex_provider_publishes_no_partial_rows_or_suppresses_usgs(self):
+        copper_url = COMEX_COPPER_STOCKS_URL
+        gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
+        metal_header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        copper_row = (
+            f"comex_copper_stocks,{copper_url},CME Group,COPPER_COMEX,copper,"
+            "COMEX,daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,"
+            "Short Tons,DELIVERY POINT,Total Registered (warranted),"
+            "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
+            "deliverable_inventory_proxy; LME not included\n"
+        )
+        gold_row = (
+            f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
+            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                metal_header + copper_row + gold_row,
+                encoding="utf-8",
+            )
+            session = BinarySession(
+                {copper_url: b"not a workbook", gold_url: USGS_GOLD_PDF}
+            )
+            providers = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )
+            tables = run_weekly_context(
+                {
+                    name: providers[name]
+                    for name in ("comex_copper_stocks", "usgs_gold_structural")
+                },
+                as_of_date=date(2026, 8, 30),
+            )
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        self.assertEqual(audits["comex_copper_stocks"]["status"], "FETCH_FAILED")
+        self.assertEqual(audits["comex_copper_stocks"]["observations"], 0)
+        self.assertEqual(audits["usgs_gold_structural"]["status"], "OK")
+        self.assertEqual(len(tables["commodity_fundamentals"]), 2)
+        self.assertTrue(
+            all(
+                row["commodity_code"] == "GOLD_COMEX"
+                for row in tables["commodity_fundamentals"]
+            )
+        )
+
+    def test_bad_comex_config_fails_only_that_supplemental_provider(self):
+        bad_url = "https://example.test/Copper_Stocks.xls"
+        gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
+        header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        rows = (
+            f"comex_copper_stocks,{bad_url},CME Group,COPPER_COMEX,copper,COMEX,"
+            "daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,Short Tons,"
+            "DELIVERY POINT,Total Registered (warranted),"
+            "Total Eligible (non-warranted),TOTAL COPPER,,,,,limitation\n"
+            f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
+            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                header + rows,
+                encoding="utf-8",
+            )
+            session = BinarySession({gold_url: USGS_GOLD_PDF})
+            providers = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )
+            tables = run_weekly_context(
+                {
+                    name: providers[name]
+                    for name in ("comex_copper_stocks", "usgs_gold_structural")
+                },
+                as_of_date=date(2026, 8, 30),
+            )
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        self.assertEqual(audits["comex_copper_stocks"]["status"], "FETCH_FAILED")
+        self.assertEqual(audits["usgs_gold_structural"]["status"], "OK")
+        self.assertEqual(len(tables["commodity_fundamentals"]), 2)
+
     def test_eia_families_are_independently_not_configured_without_key(self):
         with tempfile.TemporaryDirectory() as temp:
             data_dir = Path(temp)

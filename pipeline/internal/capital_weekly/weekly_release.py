@@ -251,10 +251,20 @@ CONTEXT_OPTIONAL_STATUS_POLICIES = {
         {
             ("sec_company_events", "company_events"),
             ("fred_financial_conditions", "financial_conditions"),
+            ("comex_copper_stocks", "commodity_fundamentals"),
+            ("comex_gold_stocks", "commodity_fundamentals"),
+            ("usgs_copper_structural", "commodity_fundamentals"),
+            ("usgs_gold_structural", "commodity_fundamentals"),
         }
     ),
     "FETCH_FAILED": frozenset(
-        {("yahoo_volatility_signals", "financial_conditions")}
+        {
+            ("yahoo_volatility_signals", "financial_conditions"),
+            ("comex_copper_stocks", "commodity_fundamentals"),
+            ("comex_gold_stocks", "commodity_fundamentals"),
+            ("usgs_copper_structural", "commodity_fundamentals"),
+            ("usgs_gold_structural", "commodity_fundamentals"),
+        }
     ),
 }
 CONTEXT_REQUIREDNESS_VALUES = frozenset({"required", "optional"})
@@ -1032,6 +1042,7 @@ def validate_staged_week(
             )
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_eia_physical_coverage(validated_rows)
+        _validate_metals_core_coverage(validated_rows)
     pipelines = [
         {
             "name": pipeline.name,
@@ -1088,6 +1099,62 @@ def _validate_eia_physical_coverage(
             raise ReleaseValidationError(
                 f"{provider} has no official EIA physical fundamental row "
                 f"for active family {family}"
+            )
+
+
+def _validate_metals_core_coverage(
+    datasets: dict[tuple[str, str], list[dict[str, str]]],
+) -> None:
+    source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
+    price_rows = datasets.get(("macro_assets", "commodities.csv"), [])
+    positioning_rows = datasets.get(
+        ("weekly_context", "positioning_flows.csv"),
+        [],
+    )
+    provider_families = {
+        "comex_copper_stocks": ("copper", "COPPER_COMEX"),
+        "usgs_copper_structural": ("copper", "COPPER_COMEX"),
+        "comex_gold_stocks": ("gold", "GOLD_COMEX"),
+        "usgs_gold_structural": ("gold", "GOLD_COMEX"),
+    }
+    active = {
+        provider_families[(row.get("provider") or "").strip()]
+        for row in source_rows
+        if (row.get("provider") or "").strip() in provider_families
+    }
+    for family, commodity_code in sorted(active):
+        has_world_bank_price = any(
+            (row.get("asset_class") or "").strip() == "commodity"
+            and (row.get("commodity_code") or "").strip() == commodity_code
+            and (row.get("commodity_family") or "").strip() == family
+            and (row.get("provider") or "").strip() == "world_bank_pink_sheet"
+            and (row.get("price_kind") or "").strip()
+            == "official_monthly_benchmark"
+            and (urlparse((row.get("source_url") or "").strip()).hostname or "")
+            .lower()
+            .endswith("worldbank.org")
+            for row in price_rows
+        )
+        if not has_world_bank_price:
+            raise ReleaseValidationError(
+                f"{family} active metals supplemental provider requires an "
+                "official World Bank price"
+            )
+        has_cftc_positioning = any(
+            (row.get("commodity_code") or "").strip() == commodity_code
+            and (row.get("commodity_family") or "").strip() == family
+            and (row.get("metric_role") or "").strip() == "positioning"
+            and (row.get("source") or "").strip()
+            == "U.S. Commodity Futures Trading Commission"
+            and (urlparse((row.get("source_url") or "").strip()).hostname or "")
+            .lower()
+            .endswith("cftc.gov")
+            for row in positioning_rows
+        )
+        if not has_cftc_positioning:
+            raise ReleaseValidationError(
+                f"{family} active metals supplemental provider requires official "
+                "CFTC positioning"
             )
 
 

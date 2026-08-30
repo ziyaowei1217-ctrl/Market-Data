@@ -283,6 +283,53 @@ def write_valid_staged_week(root: Path, window) -> dict[str, Path]:
     return directories
 
 
+def write_metal_core_coverage(outputs: dict[str, Path], metals: tuple[str, ...]) -> None:
+    identities = {
+        "copper": ("COPPER_COMEX", "COPPER_PRICE"),
+        "gold": ("GOLD_COMEX", "COMEX_GOLD"),
+    }
+    prices = []
+    positioning = []
+    for family in metals:
+        commodity_code, series_code = identities[family]
+        prices.append(
+            fixture_row(
+                MACRO_FIELDS,
+                asset_class="commodity",
+                series_code=series_code,
+                provider="world_bank_pink_sheet",
+                source="World Bank Pink Sheet",
+                source_url="https://thedocs.worldbank.org/commodity-prices.xlsx",
+                commodity_code=commodity_code,
+                commodity_family=family,
+                price_kind="official_monthly_benchmark",
+                known_as_of="",
+            )
+        )
+        positioning.append(
+            fixture_row(
+                CATEGORY_FIELDS["positioning_flows"],
+                as_of_date="2026-08-04",
+                category="positioning_flows",
+                commodity_code=commodity_code,
+                commodity_family=family,
+                metric_role="positioning",
+                measurement_kind="open_interest",
+                participant_class="",
+                known_as_of="2026-08-07T15:30:00-04:00",
+                reference_period="2026-08-04",
+                source="U.S. Commodity Futures Trading Commission",
+                source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
+            )
+        )
+    write_csv(outputs["macro_assets"] / "commodities.csv", MACRO_FIELDS, prices)
+    write_csv(
+        outputs["weekly_context"] / "positioning_flows.csv",
+        CATEGORY_FIELDS["positioning_flows"],
+        positioning,
+    )
+
+
 class WeekWindowTests(unittest.TestCase):
     def test_tuesday_targets_the_previous_finished_sunday(self):
         now = datetime(2026, 8, 11, 10, 0, tzinfo=ZoneInfo("Asia/Hong_Kong"))
@@ -1046,6 +1093,52 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(path, CATEGORY_FIELDS["source_log"], [row])
 
         validate_staged_week(self.root, self.window)
+
+    def test_accepts_metal_supplemental_failures_without_weakening_core_coverage(self):
+        write_metal_core_coverage(self.outputs, ("copper", "gold"))
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        providers = (
+            ("comex_copper_stocks", "https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls"),
+            ("comex_gold_stocks", "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls"),
+            ("usgs_copper_structural", "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf"),
+            ("usgs_gold_structural", "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"),
+        )
+        rows = [
+            fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider=provider,
+                category="commodity_fundamentals",
+                requiredness="optional",
+                status="FETCH_FAILED",
+                observations="0",
+                as_of_date="2026-08-09",
+                source_url=url,
+            )
+            for provider, url in providers
+        ]
+        write_csv(path, CATEGORY_FIELDS["source_log"], rows)
+
+        validate_staged_week(self.root, self.window)
+
+    def test_metal_supplemental_failure_cannot_replace_world_bank_price_or_cftc(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        row = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="comex_copper_stocks",
+            category="commodity_fundamentals",
+            requiredness="optional",
+            status="FETCH_FAILED",
+            observations="0",
+            as_of_date="2026-08-09",
+            source_url="https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
+        )
+        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "copper.*World Bank price",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_rejects_fetch_failed_from_required_yahoo_volatility_provider(self):
         path = self.outputs["weekly_context"] / "source_log.csv"

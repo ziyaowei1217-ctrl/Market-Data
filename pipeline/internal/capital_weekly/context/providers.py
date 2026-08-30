@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
+import json
 import os
 import re
 import zipfile
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any, Callable, Mapping
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -53,6 +56,11 @@ from .financial_conditions import (
     parse_fred_components_csv,
 )
 from .market_internals import parse_nasdaq_market_summary
+from .metal_inventories import (
+    comex_schema_signature,
+    parse_comex_stocks,
+    parse_usgs_mcs_pdf,
+)
 from .microstructure import (
     ensure_fresh_market_date,
     parse_hkex_market_highlights,
@@ -88,6 +96,20 @@ SSE_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
 YAHOO_FINANCE_URL = "https://finance.yahoo.com/"
 YAHOO_VOLATILITY_SOURCE = "Yahoo Finance (Cboe indices)"
+COMEX_COPPER_STOCKS_URL = (
+    "https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls"
+)
+COMEX_GOLD_STOCKS_URL = (
+    "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls"
+)
+USGS_COPPER_MCS_URL = (
+    "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf"
+)
+USGS_GOLD_MCS_URL = (
+    "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
+)
+CHICAGO = ZoneInfo("America/Chicago")
+EASTERN = ZoneInfo("America/New_York")
 
 
 def _session() -> requests.Session:
@@ -189,6 +211,312 @@ def not_configured_result(
         status="NOT_CONFIGURED",
         notes=notes,
     )
+
+
+def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
+    item = dict(spec)
+    provider = str(item.get("provider") or "").strip()
+    source_url = str(item.get("source_url") or "").strip()
+    parsed_url = urlparse(source_url)
+    if provider.startswith("comex_"):
+        if (
+            parsed_url.scheme != "https"
+            or parsed_url.hostname != "www.cmegroup.com"
+            or not parsed_url.path.startswith("/delivery_reports/")
+        ):
+            raise ValueError(f"{provider} requires an official CME delivery report URL")
+        required = (
+            "expected_sheet",
+            "commodity_title",
+            "expected_unit",
+            "location_header",
+            "registered_total_label",
+            "eligible_total_label",
+            "combined_total_label",
+        )
+    elif provider.startswith("usgs_"):
+        if (
+            parsed_url.scheme != "https"
+            or parsed_url.hostname != "pubs.usgs.gov"
+            or not parsed_url.path.startswith("/periodicals/mcs")
+            or not parsed_url.path.endswith(".pdf")
+        ):
+            raise ValueError(f"{provider} requires an official USGS MCS PDF URL")
+        required = (
+            "commodity_title",
+            "expected_unit",
+            "table_kind",
+            "reference_year",
+            "publication_date",
+            "publication_month",
+        )
+    else:
+        raise ValueError(f"Unsupported metals provider: {provider or 'blank'}")
+    common = (
+        "source",
+        "commodity_code",
+        "commodity_family",
+        "market",
+        "frequency",
+        "freshness_days",
+        "limitation_note",
+    )
+    missing = [
+        key
+        for key in (*common, *required)
+        if not str(item.get(key) or "").strip()
+    ]
+    if missing:
+        raise ValueError(f"{provider} metals config missing: {', '.join(missing)}")
+    try:
+        freshness_days = int(str(item["freshness_days"]))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{provider} freshness_days must be an integer") from error
+    if freshness_days <= 0:
+        raise ValueError(f"{provider} freshness_days must be positive")
+    item["provider"] = provider
+    item["source_url"] = source_url
+    item["freshness_days"] = freshness_days
+    return item
+
+
+def _provenance_notes(
+    content: bytes,
+    *,
+    schema_signature: str,
+    limitation_note: str,
+) -> str:
+    return (
+        f"bytes={len(content)}; sha256={hashlib.sha256(content).hexdigest()}; "
+        f"schema_signature={schema_signature}; {limitation_note}"
+    )
+
+
+def _known_at_end_of_day(value: date, zone: ZoneInfo) -> str:
+    return datetime.combine(value, time.max, tzinfo=zone).isoformat()
+
+
+def _comex_stocks_provider(
+    session: requests.Session,
+    end: date,
+    raw_spec: Mapping[str, Any],
+) -> ProviderResult:
+    source = str(raw_spec.get("source") or "CME Group").strip()
+    source_url = str(raw_spec.get("source_url") or "").strip()
+    limitation_note = str(raw_spec.get("limitation_note") or "").strip()
+    content = b""
+    try:
+        spec = _metal_spec(raw_spec)
+        content = _bytes(session, spec["source_url"])
+        parsed = parse_comex_stocks(content, spec)
+        signature = comex_schema_signature(content, spec)
+        notes = _provenance_notes(
+            content,
+            schema_signature=signature,
+            limitation_note=str(spec["limitation_note"]),
+        )
+        report_dates = {row["report_date"] for row in parsed}
+        if len(report_dates) != 1:
+            raise ValueError("COMEX workbook has inconsistent report dates")
+        report_date = report_dates.pop()
+        age = (end - report_date).days
+        if report_date > end or age > spec["freshness_days"]:
+            cutoff_note = (
+                f"No COMEX report at or before target within "
+                f"{spec['freshness_days']} calendar days; "
+                f"report_date={report_date.isoformat()}"
+            )
+            return ProviderResult(
+                category="commodity_fundamentals",
+                rows=[],
+                raw_text=content,
+                source=str(spec["source"]),
+                source_url=spec["source_url"],
+                status="POINT_IN_TIME_UNAVAILABLE",
+                notes=f"{notes}; {cutoff_note}",
+            )
+        rows: list[dict[str, Any]] = []
+        for observation in parsed:
+            if observation["scope"] != "exchange":
+                continue
+            inventory_type = str(observation["inventory_type"])
+            metric_code = (
+                f"{str(spec['commodity_code']).lower()}_{inventory_type}_inventory"
+            )
+            rows.extend(
+                metric_rows(
+                    as_of_date=report_date,
+                    category="commodity_fundamentals",
+                    market=str(spec["market"]),
+                    source=str(spec["source"]),
+                    source_url=spec["source_url"],
+                    frequency=str(spec["frequency"]),
+                    values={metric_code: observation["value"]},
+                    units={metric_code: observation["unit"]},
+                    names={
+                        metric_code: (
+                            f"COMEX {spec['commodity_family']} "
+                            f"{inventory_type} inventory"
+                        )
+                    },
+                    metadata={
+                        "commodity_code": spec["commodity_code"],
+                        "commodity_family": spec["commodity_family"],
+                        "metric_role": "fundamental",
+                        "measurement_kind": "inventory",
+                        "participant_class": None,
+                        "known_as_of": _known_at_end_of_day(report_date, CHICAGO),
+                        "reference_period": report_date.isoformat(),
+                    },
+                )
+            )
+        if len(rows) != 3:
+            raise ValueError("COMEX parser did not produce all three exchange totals")
+        return ProviderResult(
+            category="commodity_fundamentals",
+            rows=rows,
+            raw_text=content,
+            source=str(spec["source"]),
+            source_url=spec["source_url"],
+            notes=notes,
+        )
+    except Exception as error:
+        notes = f"{limitation_note}; {error}"
+        if content:
+            notes = (
+                f"bytes={len(content)}; "
+                f"sha256={hashlib.sha256(content).hexdigest()}; "
+                f"schema_signature=unverified; {notes}"
+            )
+        return ProviderResult(
+            category="commodity_fundamentals",
+            rows=[],
+            raw_text=content,
+            source=source,
+            source_url=source_url,
+            status="FETCH_FAILED",
+            notes=notes,
+        )
+
+
+def _usgs_structural_provider(
+    session: requests.Session,
+    end: date,
+    raw_spec: Mapping[str, Any],
+) -> ProviderResult:
+    source = str(raw_spec.get("source") or "U.S. Geological Survey").strip()
+    source_url = str(raw_spec.get("source_url") or "").strip()
+    limitation_note = str(raw_spec.get("limitation_note") or "").strip()
+    content = b""
+    try:
+        spec = _metal_spec(raw_spec)
+        publication_date = date.fromisoformat(str(spec["publication_date"]))
+        age = (end - publication_date).days
+        if publication_date > end or age > spec["freshness_days"]:
+            return ProviderResult(
+                category="commodity_fundamentals",
+                rows=[],
+                raw_text=b"",
+                source=str(spec["source"]),
+                source_url=spec["source_url"],
+                status="POINT_IN_TIME_UNAVAILABLE",
+                notes=(
+                    f"Official USGS table publication {publication_date.isoformat()} "
+                    f"is unavailable or more than {spec['freshness_days']} days before "
+                    f"target Sunday {end.isoformat()}; {spec['limitation_note']}"
+                ),
+            )
+        content = _bytes(session, spec["source_url"])
+        parsed = parse_usgs_mcs_pdf(content, spec)
+        schema_payload = {
+            key: spec[key]
+            for key in (
+                "commodity_title",
+                "expected_unit",
+                "table_kind",
+                "reference_year",
+                "publication_month",
+            )
+        }
+        schema_hash = hashlib.sha256(
+            json.dumps(
+                schema_payload,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        notes = _provenance_notes(
+            content,
+            schema_signature=f"pdf-usgs-mcs-v1:sha256:{schema_hash}",
+            limitation_note=str(spec["limitation_note"]),
+        )
+        reference_date = date(int(str(spec["reference_year"])), 12, 31)
+        if reference_date > end:
+            raise ValueError("USGS reference period exceeds target Sunday")
+        rows: list[dict[str, Any]] = []
+        names = {
+            "mine_production": "world mine production",
+            "reserves": "world reserves",
+        }
+        for observation in parsed:
+            measurement = str(observation["measurement"])
+            metric_code = f"usgs_{spec['commodity_family']}_world_{measurement}"
+            rows.extend(
+                metric_rows(
+                    as_of_date=reference_date,
+                    category="commodity_fundamentals",
+                    market=str(spec["market"]),
+                    source=str(spec["source"]),
+                    source_url=spec["source_url"],
+                    frequency=str(spec["frequency"]),
+                    values={metric_code: observation["value"]},
+                    units={metric_code: observation["unit"]},
+                    names={
+                        metric_code: (
+                            f"USGS {spec['commodity_family']} {names[measurement]}"
+                        )
+                    },
+                    metadata={
+                        "commodity_code": spec["commodity_code"],
+                        "commodity_family": spec["commodity_family"],
+                        "metric_role": "fundamental",
+                        "measurement_kind": "structural",
+                        "participant_class": None,
+                        "known_as_of": _known_at_end_of_day(
+                            publication_date,
+                            EASTERN,
+                        ),
+                        "reference_period": observation["reference_period"],
+                    },
+                )
+            )
+        if len(rows) != 2:
+            raise ValueError("USGS parser did not produce production and reserves")
+        return ProviderResult(
+            category="commodity_fundamentals",
+            rows=rows,
+            raw_text=content,
+            source=str(spec["source"]),
+            source_url=spec["source_url"],
+            notes=notes,
+        )
+    except Exception as error:
+        notes = f"{limitation_note}; {error}"
+        if content:
+            notes = (
+                f"bytes={len(content)}; "
+                f"sha256={hashlib.sha256(content).hexdigest()}; "
+                f"schema_signature=unverified; {notes}"
+            )
+        return ProviderResult(
+            category="commodity_fundamentals",
+            rows=[],
+            raw_text=content,
+            source=source,
+            source_url=source_url,
+            status="FETCH_FAILED",
+            notes=notes,
+        )
 
 
 def _event_provider(
@@ -1032,6 +1360,7 @@ def build_default_providers(
         cftc_rows = load_config_rows("context.cftc_contracts")
         watchlist_rows = load_config_rows("context.company_watchlist")
         eia_config = load_config_rows("context.eia_series")
+        metal_config = load_config_rows("context.metals")
         financial_config = load_config_rows("context.financial_conditions")
         yahoo_rows = load_config_rows("context.yahoo_volatility")
     else:
@@ -1039,6 +1368,8 @@ def build_default_providers(
         cftc_rows = _config(root / "capital_weekly_cftc_contracts.csv")
         watchlist_rows = _config(root / "capital_weekly_company_watchlist.csv")
         eia_config = _config(root / "capital_weekly_eia_series.csv")
+        metal_path = root / "capital_weekly_metals.csv"
+        metal_config = _config(metal_path) if metal_path.exists() else []
         financial_config = _config(root / "capital_weekly_financial_conditions.csv")
         yahoo_rows = _config(root / "capital_weekly_yahoo_volatility.csv")
     unknown_report_families = sorted(
@@ -1171,6 +1502,35 @@ def build_default_providers(
             "weekly",
             "required",
         )
+    metal_freshness: dict[str, int] = {}
+    for raw_item in metal_config:
+        item = dict(raw_item)
+        name = str(item.get("provider") or "").strip()
+        if not name.startswith(("comex_", "usgs_")):
+            raise ValueError(f"Unsupported metals provider: {name or 'blank'}")
+        if name in definitions:
+            raise ValueError(f"Duplicate context provider name: {name}")
+        if name.startswith("comex_"):
+            fetchers[name] = lambda item=item: _comex_stocks_provider(
+                client,
+                end,
+                item,
+            )
+        else:
+            fetchers[name] = lambda item=item: _usgs_structural_provider(
+                client,
+                end,
+                item,
+            )
+        definitions[name] = (
+            "commodity_fundamentals",
+            str(item.get("frequency") or "mixed"),
+            "optional",
+        )
+        try:
+            metal_freshness[name] = int(str(item.get("freshness_days") or ""))
+        except ValueError:
+            pass
     return {
         name: ContextProvider(
             spec=ProviderSpec(
@@ -1181,7 +1541,11 @@ def build_default_providers(
                 provider_version="1.0.0",
                 schema_version="context-metric-v1",
                 frequency=frequency,
-                freshness_days=7 if name == "yahoo_volatility_signals" else None,
+                freshness_days=(
+                    metal_freshness[name]
+                    if name in metal_freshness
+                    else 7 if name == "yahoo_volatility_signals" else None
+                ),
             ),
             fetch=fetchers[name],
         )
@@ -1190,6 +1554,10 @@ def build_default_providers(
 
 
 __all__ = [
+    "COMEX_COPPER_STOCKS_URL",
+    "COMEX_GOLD_STOCKS_URL",
+    "USGS_COPPER_MCS_URL",
+    "USGS_GOLD_MCS_URL",
     "build_default_providers",
     "metric_rows",
     "not_configured_result",

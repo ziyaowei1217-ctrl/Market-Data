@@ -24,6 +24,7 @@ EXPECTED_SECTION_HASHES = {
     "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "584aa69dcb4e654c0a924d4688178aa2c474382931e5e04285fc5c0cff9ce149",
+    "context.metals": "de369cdc899001aff4c986425715afbb436ceb88f2b875d43a72d724d5447eb4",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
 }
@@ -39,6 +40,46 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_metals_use_only_official_supplemental_sources_and_native_units(self):
+        rows = load_config_rows("context.metals")
+        by_provider = {row["provider"]: row for row in rows}
+
+        self.assertEqual(
+            set(by_provider),
+            {
+                "comex_copper_stocks",
+                "comex_gold_stocks",
+                "usgs_copper_structural",
+                "usgs_gold_structural",
+            },
+        )
+        self.assertEqual(
+            by_provider["comex_copper_stocks"]["source_url"],
+            "https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
+        )
+        self.assertEqual(
+            by_provider["comex_gold_stocks"]["source_url"],
+            "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+        )
+        self.assertEqual(
+            by_provider["comex_copper_stocks"]["expected_unit"],
+            "Short Tons",
+        )
+        self.assertEqual(
+            by_provider["comex_gold_stocks"]["expected_unit"],
+            "Troy Ounce",
+        )
+        self.assertEqual(
+            by_provider["comex_copper_stocks"]["limitation_note"],
+            "deliverable_inventory_proxy; LME not included",
+        )
+        for provider in ("usgs_copper_structural", "usgs_gold_structural"):
+            row = by_provider[provider]
+            self.assertTrue(row["source_url"].startswith("https://pubs.usgs.gov/"))
+            self.assertEqual(row["publication_date"], "2026-02-06")
+            self.assertEqual(row["freshness_days"], "400")
+            self.assertIn("monthly Mineral Industry Survey paused", row["limitation_note"])
+
     def test_eia_config_covers_independent_physical_fundamental_families(self):
         rows = load_config_rows("context.eia_series")
         required_fields = {
@@ -193,6 +234,15 @@ class PipelineConfigTests(unittest.TestCase):
             environ={},
         )
         self.assertIn("yahoo_volatility_signals", providers)
+        for provider in (
+            "comex_copper_stocks",
+            "comex_gold_stocks",
+            "usgs_copper_structural",
+            "usgs_gold_structural",
+        ):
+            with self.subTest(provider=provider):
+                self.assertIn(provider, providers)
+                self.assertEqual(providers[provider].spec.requiredness, "optional")
 
     def test_requested_commodity_prices_use_only_official_eia_or_world_bank_sources(self):
         rows = load_config_rows("macro")
