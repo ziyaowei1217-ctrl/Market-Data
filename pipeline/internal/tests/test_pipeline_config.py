@@ -26,7 +26,7 @@ EXPECTED_SECTION_HASHES = {
     "macro": "0eeacb67cc492c76d9ca4432c0541a7b4a8b8e8e71fe8b957eacd49385068522",
     "context.cftc_contracts": "364a8589d7fd8c4ac3417d53b380c0cbc6a4fa83adb1cf1d69e172771151d9ef",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "context.eia_series": "b2930c0607e0161b3de7f5cb53bcc16cbd0e84b9dc2d345298590967d0a8deaa",
+    "context.eia_series": "4b70fcf93eae8f5059d7b54236ee5942a6aae52f51a67b148e592ed044766c8d",
     "context.usda_psd": "5564caa7c02b63c29c268bdb25ec0e6f62a4d0db7be92ad2638f9645ff3aa21e",
     "context.usda_esr": "333ec1a5244cbcbc5f590c3a601a64e22b38d04209f97e6638f16faa29a6a977",
     "context.metals": "87e3954b387e74667e19be7d5e791b8516f45b6f0f9cb6af84c2ecdac1aca2f3",
@@ -408,6 +408,87 @@ class PipelineConfigTests(unittest.TestCase):
             if row["metric_code"].startswith("eia_jet_fuel_")
         }
         self.assertEqual(jet_codes, {"JET_US"})
+
+    def test_eia_consumption_series_use_official_end_use_route(self):
+        rows = load_config_rows("context.eia_series")
+        consumption = {
+            row["facets"]["series"]: {
+                field: row[field]
+                for field in (
+                    "route",
+                    "frequency",
+                    "source_description",
+                    "expected_unit",
+                )
+            }
+            for row in rows
+            if row["metric_code"].startswith("eia_ng_consumption_")
+        }
+        self.assertEqual(
+            consumption,
+            {
+                "N3010US2": {
+                    "route": "natural-gas/cons/sum",
+                    "frequency": "monthly",
+                    "source_description": "U.S. Natural Gas Residential Consumption (MMcf)",
+                    "expected_unit": "MMCF",
+                },
+                "N3020US2": {
+                    "route": "natural-gas/cons/sum",
+                    "frequency": "monthly",
+                    "source_description": (
+                        "Natural Gas Deliveries to Commercial Consumers "
+                        "(Including Vehicle Fuel through 1996) in the U.S. (MMcf)"
+                    ),
+                    "expected_unit": "MMCF",
+                },
+                "N3035US2": {
+                    "route": "natural-gas/cons/sum",
+                    "frequency": "monthly",
+                    "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)",
+                    "expected_unit": "MMCF",
+                },
+                "N3045US2": {
+                    "route": "natural-gas/cons/sum",
+                    "frequency": "monthly",
+                    "source_description": "U.S. Natural Gas Deliveries to Electric Power Consumers (MMcf)",
+                    "expected_unit": "MMCF",
+                },
+            },
+        )
+
+    def test_eia_liquefied_natural_gas_series_use_official_trade_routes(self):
+        rows = load_config_rows("context.eia_series")
+        liquefied_trade = {
+            row["facets"]["series"]: {
+                field: row[field]
+                for field in (
+                    "route",
+                    "frequency",
+                    "source_description",
+                    "expected_unit",
+                )
+            }
+            for row in rows
+            if row["metric_code"] in {"eia_ng_lng_imports", "eia_ng_lng_exports"}
+        }
+        self.assertEqual(
+            liquefied_trade,
+            {
+                "N9103US2": {
+                    "route": "natural-gas/move/impc",
+                    "frequency": "monthly",
+                    "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)",
+                    "expected_unit": "MMCF",
+                },
+                "N9133US2": {
+                    "route": "natural-gas/move/expc",
+                    "frequency": "monthly",
+                    "source_description": "Liquefied U.S. Natural Gas Exports (MMcf)",
+                    "expected_unit": "MMCF",
+                },
+            },
+        )
 
     def test_cftc_contracts_split_financial_and_physical_report_families(self):
         rows = load_config_rows("context.cftc_contracts")

@@ -2835,39 +2835,39 @@
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3010US2"},
+        "route": "natural-gas/cons/sum", "frequency": "monthly", "facets": {"series": "N3010US2"},
         "metric_code": "eia_ng_consumption_residential", "metric_name": "U.S. residential natural gas consumption", "measurement_kind": "demand",
         "source_description": "U.S. Natural Gas Residential Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3020US2"},
+        "route": "natural-gas/cons/sum", "frequency": "monthly", "facets": {"series": "N3020US2"},
         "metric_code": "eia_ng_consumption_commercial", "metric_name": "U.S. commercial natural gas consumption", "measurement_kind": "demand",
-        "source_description": "U.S. Natural Gas Commercial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
+        "source_description": "Natural Gas Deliveries to Commercial Consumers (Including Vehicle Fuel through 1996) in the U.S. (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3035US2"},
+        "route": "natural-gas/cons/sum", "frequency": "monthly", "facets": {"series": "N3035US2"},
         "metric_code": "eia_ng_consumption_industrial", "metric_name": "U.S. industrial natural gas consumption", "measurement_kind": "demand",
         "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3045US2"},
+        "route": "natural-gas/cons/sum", "frequency": "monthly", "facets": {"series": "N3045US2"},
         "metric_code": "eia_ng_consumption_electric_power", "metric_name": "U.S. electric-power natural gas consumption", "measurement_kind": "demand",
-        "source_description": "U.S. Natural Gas Electric Power Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
+        "source_description": "U.S. Natural Gas Deliveries to Electric Power Consumers (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9103US2"},
+        "route": "natural-gas/move/impc", "frequency": "monthly", "facets": {"series": "N9103US2"},
         "metric_code": "eia_ng_lng_imports", "metric_name": "U.S. liquefied natural gas imports", "measurement_kind": "trade",
         "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9133US2"},
+        "route": "natural-gas/move/expc", "frequency": "monthly", "facets": {"series": "N9133US2"},
         "metric_code": "eia_ng_lng_exports", "metric_name": "U.S. liquefied natural gas exports", "measurement_kind": "trade",
-        "source_description": "U.S. Liquefied Natural Gas Exports (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
+        "source_description": "Liquefied U.S. Natural Gas Exports (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
