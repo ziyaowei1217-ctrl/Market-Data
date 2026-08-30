@@ -956,15 +956,6 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
             known_as_of="2026-08-08T00:00:00Z",
             provider_route=item.get("provider_route") or "",
         ))
-        macro_statuses.append(fixture_row(
-            MACRO_SOURCE_LOG_FIELDS,
-            series_code=item["series_code"],
-            source=item["source"],
-            source_url=item["source_url"],
-            latest_date="2026-08-07",
-            latest_value=str(100 + index),
-            observations="1",
-        ))
         observations = [date(2026, 8, 7)]
         if item["series_code"] == "WTI":
             observations = [
@@ -972,6 +963,15 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
                 date(2026, 8, 6),
                 date(2026, 8, 7),
             ]
+        macro_statuses.append(fixture_row(
+            MACRO_SOURCE_LOG_FIELDS,
+            series_code=item["series_code"],
+            source=item["source"],
+            source_url=item["source_url"],
+            latest_date="2026-08-07",
+            latest_value=str(100 + index),
+            observations=str(len(observations)),
+        ))
         for offset, observation in enumerate(observations):
             value = 70 + offset if item["series_code"] == "WTI" else 100 + index
             price_history.append(_price_history_row(item, observation, value))
@@ -3313,6 +3313,15 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
             ("unregistered_metric", r"metric identity is not registered.*totally_unregistered_usda_metric"),
             ("status_observation_count", r"cftc_disaggregated.*observations.*208"),
             ("status_provenance", r"cftc_disaggregated.*status provenance"),
+            ("price_status_observation_count", r"WTI.*status observations.*expected 3.*got 0"),
+            ("price_status_provenance", r"WTI.*status provenance"),
+            ("usda_evil_country", r"USDA PSD.*country.*evilcountry"),
+            ("usda_wrong_reference_period", r"USDA PSD.*reference_period.*2026"),
+            ("usda_wrong_market", r"USDA PSD.*market.*World"),
+            ("base_macro_rogue", r"macro commodity base row.*ROGUE.*unregistered"),
+            ("base_macro_family", r"configured macro price.*WTI"),
+            ("base_context_rogue", r"context commodity base row.*ROGUE.*unregistered"),
+            ("base_context_family", r"eia_refined_products.*eia_crude_stocks_ex_spr"),
             ("missing_configured_code", r"configured price history.*BRENT"),
             ("btc_inclusion", r"BTC_USD|digital_asset"),
             ("fact_value", r"formula output mismatch.*wti_absolute_change.*value"),
@@ -3527,6 +3536,116 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 status["source"] = "Impostor"
                 status["source_url"] = "https://example.com/resource/fixture"
             write_csv(status_path, CATEGORY_FIELDS["source_log"], status_rows)
+        elif mutation in {
+            "price_status_observation_count",
+            "price_status_provenance",
+        }:
+            status_path = self.outputs["macro_assets"] / "source_log.csv"
+            status_rows = read_csv_rows(status_path)
+            status = next(row for row in status_rows if row["series_code"] == "WTI")
+            if mutation == "price_status_observation_count":
+                status["observations"] = "0"
+            else:
+                status["source"] = "Impostor"
+                status["source_url"] = "https://example.com/prices"
+            write_csv(status_path, MACRO_SOURCE_LOG_FIELDS, status_rows)
+        elif mutation in {
+            "usda_evil_country",
+            "usda_wrong_reference_period",
+            "usda_wrong_market",
+        }:
+            fundamentals_path = (
+                self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+            )
+            fundamental_rows = read_csv_rows(fundamentals_path)
+            base = next(
+                row for row in fundamental_rows
+                if row["metric_code"] == "usda_psd_corn_00_2026_ending_stocks"
+            )
+            original_metric_code = base["metric_code"]
+            if mutation == "usda_evil_country":
+                base["metric_code"] = (
+                    "usda_psd_corn_evilcountry_2026_ending_stocks"
+                )
+            elif mutation == "usda_wrong_reference_period":
+                base["reference_period"] = "2025"
+            else:
+                base["market"] = "Mars"
+            write_csv(
+                fundamentals_path,
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                fundamental_rows,
+            )
+            if mutation != "usda_wrong_market":
+                replacement = _metric_history_row(base)
+                metric_rows = [
+                    replacement if row["metric_code"] == original_metric_code else row
+                    for row in metric_rows
+                ]
+                metric_rows.sort(key=lambda row: (
+                    row["commodity_code"], row["metric_code"], row["metric_role"],
+                    row["measurement_kind"], row["participant_class"],
+                    row["observation_date"], row["known_as_of"], row["record_id"],
+                ))
+                self._rewrite("metric", metric_rows)
+        elif mutation in {"base_macro_rogue", "base_macro_family"}:
+            macro_path = self.outputs["macro_assets"] / "commodities.csv"
+            macro_rows = read_csv_rows(macro_path)
+            if mutation == "base_macro_rogue":
+                macro_rows.append(fixture_row(
+                    MACRO_FIELDS,
+                    asset_class="commodity",
+                    group="commodities",
+                    series_code="ROGUE",
+                    source="Impostor",
+                    source_url="https://example.com/rogue",
+                    commodity_code="ROGUE",
+                    commodity_family="gold",
+                    price_kind="official_cash",
+                    known_as_of="2026-08-08T00:00:00Z",
+                    latest_value="1",
+                    qc_flag="OK",
+                ))
+            else:
+                next(row for row in macro_rows if row["series_code"] == "WTI")[
+                    "commodity_family"
+                ] = "gold"
+            write_csv(macro_path, MACRO_FIELDS, macro_rows)
+        elif mutation in {"base_context_rogue", "base_context_family"}:
+            context_path = (
+                self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+            )
+            context_rows = read_csv_rows(context_path)
+            if mutation == "base_context_rogue":
+                context_rows.append(fixture_row(
+                    CATEGORY_FIELDS["commodity_fundamentals"],
+                    as_of_date="2026-08-07",
+                    category="commodity_fundamentals",
+                    market="World",
+                    metric_code="rogue_metric",
+                    value="1",
+                    unit="fixture",
+                    source="Impostor",
+                    source_url="https://example.com/rogue",
+                    commodity_code="ROGUE",
+                    commodity_family="gold",
+                    metric_role="physical_fundamental",
+                    measurement_kind="inventory",
+                    participant_class="",
+                    known_as_of="2026-08-07T12:00:00Z",
+                    reference_period="2026-08-07",
+                    qc_flag="OK",
+                ))
+            else:
+                next(
+                    row for row in context_rows
+                    if row["metric_code"] == "eia_crude_stocks_ex_spr"
+                )["commodity_family"] = "gold"
+            write_csv(
+                context_path,
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                context_rows,
+            )
         elif mutation == "missing_configured_code":
             price_rows = [
                 row for row in price_rows if row["commodity_code"] != "BRENT"
@@ -3581,6 +3700,50 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 r"universe.*exact 19.*duplicate.*NATGAS_HH",
             ):
                 self._validate()
+
+    def test_contract_three_preserves_explicitly_noncommodity_base_rows(self):
+        macro_path = self.outputs["macro_assets"] / "commodities.csv"
+        macro_rows = read_csv_rows(macro_path)
+        macro_rows.append(fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            group="commodities",
+            series_code="BTC_USD",
+            provider="yahoo_chart",
+            source="Yahoo Finance chart API (public vendor proxy)",
+            source_url="https://query2.finance.yahoo.com/v8/finance/chart/BTC-USD",
+            commodity_code="BTC_USD",
+            commodity_family="digital_asset",
+            price_kind="vendor_proxy",
+            known_as_of="2026-08-08T00:00:00Z",
+            latest_value="1",
+            qc_flag="OK",
+        ))
+        write_csv(macro_path, MACRO_FIELDS, macro_rows)
+
+        context_path = self.outputs["weekly_context"] / "positioning_flows.csv"
+        context_rows = read_csv_rows(context_path)
+        context_rows.append(fixture_row(
+            CATEGORY_FIELDS["positioning_flows"],
+            market="U.S. TREASURY BONDS",
+            metric_code="tff_asset_manager_net",
+            source="U.S. Commodity Futures Trading Commission",
+            source_url="https://publicreporting.cftc.gov/resource/gpe5-46if.csv",
+            commodity_code="",
+            commodity_family="",
+            metric_role="",
+            measurement_kind="",
+            participant_class="",
+            known_as_of="",
+            reference_period="",
+        ))
+        write_csv(
+            context_path,
+            CATEGORY_FIELDS["positioning_flows"],
+            context_rows,
+        )
+
+        self._validate()
 
 
 class FakePipelineRunner:

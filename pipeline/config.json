@@ -35,6 +35,20 @@
         "metric_role": "physical_fundamental",
         "frequency": "monthly",
         "metric_code_pattern": "^usda_psd_(?P<commodity>[a-z0-9]+)_(?P<country>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "country_identifiers": [
+          {"identifier": "00", "market": "World"},
+          {"identifier": "US", "market": "United States"},
+          {"identifier": "CH", "market": "China"},
+          {"identifier": "BR", "market": "Brazil"},
+          {"identifier": "IN", "market": "India"},
+          {"identifier": "VM", "market": "Vietnam"},
+          {"identifier": "CO", "market": "Colombia"},
+          {"identifier": "IV", "market": "Cote d'Ivoire"},
+          {"identifier": "GH", "market": "Ghana"},
+          {"identifier": "ID", "market": "Indonesia"},
+          {"identifier": "E4", "market": "European Union"}
+        ],
+        "reference_period": "market_year",
         "metrics": [
           {"metric": "beginning_stocks", "measurement_kind": "inventory", "unit": "configured"},
           {"metric": "production", "measurement_kind": "supply", "unit": "configured"},
@@ -53,6 +67,8 @@
         "metric_role": "physical_fundamental",
         "frequency": "weekly",
         "metric_code_pattern": "^usda_esr_(?P<commodity>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "market": "United States export sales (all destinations)",
+        "reference_period": "observation_date",
         "metrics": [
           {"metric": "net_sales", "measurement_kind": "trade", "unit": "configured"},
           {"metric": "weekly_exports", "measurement_kind": "trade", "unit": "configured"},

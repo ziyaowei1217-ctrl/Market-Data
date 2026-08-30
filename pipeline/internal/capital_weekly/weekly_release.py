@@ -2142,49 +2142,59 @@ def _validate_context_provider_statuses(
             raise ReleaseValidationError(
                 f"{provider} configured provider status is missing"
             )
-        source = str(row.get("source") or "").strip()
-        source_url = str(row.get("source_url") or "").strip()
-        parsed_url = urlparse(source_url)
-        status_host = (parsed_url.hostname or "").lower()
-        official_host = policy["official_host"]
-        if (
-            source != policy["source"]
-            or parsed_url.scheme not in {"http", "https"}
-            or not (
-                status_host == official_host
-                or status_host.endswith(f".{official_host}")
-            )
-        ):
-            raise ReleaseValidationError(
-                f"{provider} status provenance must match configured source and official host"
-            )
-        raw_observations = row.get("observations")
-        if isinstance(raw_observations, bool):
-            observations = None
-        elif isinstance(raw_observations, int) and raw_observations >= 0:
-            observations = raw_observations
-        elif isinstance(raw_observations, str) and re.fullmatch(
-            r"(?:0|[1-9][0-9]*)",
-            raw_observations,
-        ):
-            observations = int(raw_observations)
-        else:
-            observations = None
-        if observations is None:
-            raise ReleaseValidationError(
-                f"{provider} status observations must be a canonical integer"
-            )
         expected = business_counts.get(provider, 0)
-        status = str(row.get("status") or "").strip().upper()
-        if observations != expected:
-            raise ReleaseValidationError(
-                f"{provider} status observations must equal attributed business "
-                f"rows: expected {expected}, got {observations}"
-            )
-        if status != "OK" and expected != 0:
-            raise ReleaseValidationError(
-                f"{provider} requires zero business rows while status is {status}"
-            )
+        _validate_provider_status(row, policy, expected, provider)
+
+
+def _validate_provider_status(
+    row: dict,
+    policy: dict[str, str],
+    expected: int,
+    label: str,
+    rows_label: str = "business rows",
+) -> None:
+    source = str(row.get("source") or "").strip()
+    source_url = str(row.get("source_url") or "").strip()
+    parsed_url = urlparse(source_url)
+    status_host = (parsed_url.hostname or "").lower()
+    official_host = policy["official_host"]
+    if (
+        source != policy["source"]
+        or parsed_url.scheme not in {"http", "https"}
+        or not (
+            status_host == official_host
+            or status_host.endswith(f".{official_host}")
+        )
+    ):
+        raise ReleaseValidationError(
+            f"{label} status provenance must match configured source and official host"
+        )
+    raw_observations = row.get("observations")
+    if isinstance(raw_observations, bool):
+        observations = None
+    elif isinstance(raw_observations, int) and raw_observations >= 0:
+        observations = raw_observations
+    elif isinstance(raw_observations, str) and re.fullmatch(
+        r"(?:0|[1-9][0-9]*)",
+        raw_observations,
+    ):
+        observations = int(raw_observations)
+    else:
+        observations = None
+    if observations is None:
+        raise ReleaseValidationError(
+            f"{label} status observations must be a canonical integer"
+        )
+    status = str(row.get("status") or "").strip().upper()
+    if observations != expected:
+        raise ReleaseValidationError(
+            f"{label} status observations must equal attributed {rows_label}: "
+            f"expected {expected}, got {observations}"
+        )
+    if status != "OK" and expected != 0:
+        raise ReleaseValidationError(
+            f"{label} requires zero {rows_label} while status is {status}"
+        )
 
 
 def _metric_descriptors(config: dict) -> dict:
@@ -2366,13 +2376,19 @@ def _metric_descriptors(config: dict) -> dict:
         ("usda_esr", {"commodity", "market_year", "metric"}),
     ):
         raw = configured[section]
-        if not isinstance(raw, dict) or set(raw) != {
+        section_fields = {
             "provider",
             "metric_role",
             "frequency",
             "metric_code_pattern",
             "metrics",
-        }:
+        }
+        section_fields |= (
+            {"country_identifiers", "reference_period"}
+            if section == "usda_psd"
+            else {"market", "reference_period"}
+        )
+        if not isinstance(raw, dict) or set(raw) != section_fields:
             raise ReleaseValidationError(
                 f"commodity_research {section} metric registry fields are invalid"
             )
@@ -2420,12 +2436,71 @@ def _metric_descriptors(config: dict) -> dict:
                     f"commodity_research {section} metric identity is invalid"
                 )
             metrics[metric] = {"measurement_kind": kind, "unit": unit}
+        metadata: dict[str, object]
+        reference_period = str(raw["reference_period"] or "").strip()
+        if section == "usda_psd":
+            raw_countries = raw["country_identifiers"]
+            countries: dict[str, str] = {}
+            country_markets: set[str] = set()
+            if not isinstance(raw_countries, list) or not raw_countries:
+                raise ReleaseValidationError(
+                    "commodity_research USDA PSD country registry is invalid"
+                )
+            for country_raw in raw_countries:
+                if not isinstance(country_raw, dict) or set(country_raw) != {
+                    "identifier",
+                    "market",
+                }:
+                    raise ReleaseValidationError(
+                        "commodity_research USDA PSD country fields are invalid"
+                    )
+                identifier = str(country_raw["identifier"] or "").strip()
+                market = str(country_raw["market"] or "").strip()
+                normalized_identifier = identifier.lower()
+                if (
+                    not re.fullmatch(r"[A-Z0-9]+", identifier)
+                    or normalized_identifier in countries
+                    or not market
+                    or market in country_markets
+                ):
+                    raise ReleaseValidationError(
+                        "commodity_research USDA PSD country identity is invalid"
+                    )
+                countries[normalized_identifier] = market
+                country_markets.add(market)
+            configured_markets = {
+                str(market)
+                for item in context[section]
+                for market in item.get("country_names", [])
+            }
+            if (
+                country_markets != configured_markets
+                or reference_period != "market_year"
+            ):
+                raise ReleaseValidationError(
+                    "commodity_research USDA PSD country/period registry is invalid"
+                )
+            metadata = {
+                "countries": countries,
+                "reference_period": reference_period,
+            }
+        else:
+            market = str(raw["market"] or "").strip()
+            if not market or reference_period != "observation_date":
+                raise ReleaseValidationError(
+                    "commodity_research USDA ESR market/period registry is invalid"
+                )
+            metadata = {
+                "market": market,
+                "reference_period": reference_period,
+            }
         usda_registry[section] = {
             "provider": provider,
             "metric_role": role,
             "frequency": frequency,
             "pattern": pattern,
             "metrics": metrics,
+            **metadata,
         }
     return {"exact": descriptors, "usda": usda_registry}
 
@@ -2440,6 +2515,7 @@ def _usda_metric_descriptor(
     code = str(row.get("commodity_code") or "").strip()
     family = str(row.get("commodity_family") or "").strip()
     unit = str(row.get("unit") or "").strip()
+    reference_period = str(row.get("reference_period") or "").strip()
     for section, spec in registered.items():
         match = spec["pattern"].fullmatch(metric_code)
         if match is None:
@@ -2468,6 +2544,25 @@ def _usda_metric_descriptor(
                 f"commodity metric identity is not registered: {metric_code}"
             )
         if section == "usda_psd":
+            country = parts["country"]
+            expected_market = spec["countries"].get(country)
+            if expected_market is None:
+                raise ReleaseValidationError(
+                    f"USDA PSD country is not configured: {country}"
+                )
+            if expected_market not in set(item.get("country_names", [])):
+                raise ReleaseValidationError(
+                    f"USDA PSD country is not configured for {code}: {country}"
+                )
+            if "market" in row and str(row.get("market") or "").strip() != expected_market:
+                raise ReleaseValidationError(
+                    f"USDA PSD market must match configured country: {expected_market}"
+                )
+            if reference_period != parts["market_year"]:
+                raise ReleaseValidationError(
+                    "USDA PSD reference_period must match configured market year: "
+                    f"{parts['market_year']}"
+                )
             configured_metrics = set(item.get("attributes", {}))
             if parts["metric"] == "stock_to_use":
                 allowed = {"ending_stocks", "domestic_use"} <= configured_metrics
@@ -2475,6 +2570,18 @@ def _usda_metric_descriptor(
                 allowed = parts["metric"] in configured_metrics
             configured_units = {str(value) for value in item.get("unit_names", [])}
         else:
+            expected_reference = str(
+                row.get("observation_date") or row.get("as_of_date") or ""
+            ).strip()
+            if "market" in row and str(row.get("market") or "").strip() != spec["market"]:
+                raise ReleaseValidationError(
+                    f"USDA ESR market must match configured identity: {spec['market']}"
+                )
+            if reference_period != expected_reference:
+                raise ReleaseValidationError(
+                    "USDA ESR reference_period must match configured observation date: "
+                    f"{expected_reference}"
+                )
             allowed = True
             configured_units = {str(item.get("unit_name") or "")}
         expected_unit = metric["unit"]
@@ -2566,17 +2673,25 @@ def _validate_commodity_research_v2(
     context_status = _context_status_index(context_status_rows)
 
     configured_prices: dict[str, dict] = {}
+    configured_nonresearch_prices: dict[str, tuple[str, str]] = {}
     for item in config["macro_rows"]:
         code = str(item.get("commodity_code") or "").strip()
         family = str(item.get("commodity_family") or "").strip()
         provider = str(item.get("provider") or "").strip()
-        if not code or family == "digital_asset":
+        series = str(item.get("series_code") or "").strip()
+        if not code:
+            continue
+        if family == "digital_asset":
+            if not series or series in configured_nonresearch_prices:
+                raise ReleaseValidationError(
+                    f"Configured nonresearch macro identity is duplicated: {series}"
+                )
+            configured_nonresearch_prices[series] = (code, family)
             continue
         if registry.get(code) != family or provider not in providers:
             raise ReleaseValidationError(
                 f"Configured macro commodity identity is invalid: {code}"
             )
-        series = str(item.get("series_code") or "").strip()
         if not series or series in configured_prices:
             raise ReleaseValidationError(
                 f"Configured macro price identity is duplicated: {series}"
@@ -2591,6 +2706,43 @@ def _validate_commodity_research_v2(
                 f"configured macro source status must be unique for {series}"
             )
         macro_status[series] = row
+
+    for row in datasets[("macro_assets", "commodities.csv")]:
+        series = str(row.get("series_code") or "").strip()
+        code = str(row.get("commodity_code") or "").strip()
+        family = str(row.get("commodity_family") or "").strip()
+        if not code and not family:
+            continue
+        if configured_nonresearch_prices.get(series) == (code, family):
+            continue
+        required_family = registry.get(code)
+        if required_family is None:
+            raise ReleaseValidationError(
+                f"macro commodity base row {code or series or 'blank'} is unregistered"
+            )
+        if family != required_family:
+            raise ReleaseValidationError(
+                f"macro commodity base row {code} family {family or 'blank'} "
+                f"requires {required_family}"
+            )
+        expected = configured_prices.get(series)
+        if expected is None:
+            raise ReleaseValidationError(
+                f"macro commodity base row {code}/{series or 'blank'} is unconfigured"
+            )
+        if (
+            code != str(expected["commodity_code"])
+            or family != str(expected["commodity_family"])
+        ):
+            raise ReleaseValidationError(
+                f"macro commodity base row {code}/{series} is mismapped"
+            )
+        provider = str(expected["provider"])
+        _require_policy_provenance(
+            row,
+            providers[provider],
+            f"macro commodity base row {code}/{series}",
+        )
 
     normalized_price: list[dict] = []
     price_identities: set[tuple] = set()
@@ -2707,6 +2859,21 @@ def _validate_commodity_research_v2(
             raise ReleaseValidationError(
                 f"commodity price history limit exceeds {frequency} {limit}: {series}"
             )
+    for series, item in configured_prices.items():
+        status = macro_status.get(series)
+        if status is None:
+            raise ReleaseValidationError(
+                f"{series} configured macro price status is missing"
+            )
+        provider = str(item["provider"])
+        code = str(item["commodity_code"])
+        _validate_provider_status(
+            status,
+            providers[provider],
+            len(price_groups[(code, series)]),
+            f"{provider}/{series}",
+            "price history rows",
+        )
 
     descriptors = _metric_descriptors(config)
     normalized_metric: list[dict] = []
@@ -2847,8 +3014,18 @@ def _validate_commodity_research_v2(
     for row in base_rows:
         code = str(row.get("commodity_code") or "").strip()
         family = str(row.get("commodity_family") or "").strip()
-        if code not in registry or family != registry[code]:
+        if not code and not family:
             continue
+        required_family = registry.get(code)
+        if required_family is None:
+            raise ReleaseValidationError(
+                f"context commodity base row {code or 'blank'} is unregistered"
+            )
+        if family != required_family:
+            raise ReleaseValidationError(
+                f"context commodity base row {code} family {family or 'blank'} "
+                f"requires {required_family}"
+            )
         if str(row.get("qc_flag") or "").strip().upper() != "OK":
             continue
         descriptor = _metric_descriptor(row, config, descriptors, window)

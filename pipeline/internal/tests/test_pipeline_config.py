@@ -105,8 +105,39 @@ class PipelineConfigTests(unittest.TestCase):
             },
         )
         self.assertEqual(
+            {
+                row["identifier"]: row["market"]
+                for row in metric_registry["usda_psd"]["country_identifiers"]
+            },
+            {
+                "00": "World",
+                "US": "United States",
+                "CH": "China",
+                "BR": "Brazil",
+                "IN": "India",
+                "VM": "Vietnam",
+                "CO": "Colombia",
+                "IV": "Cote d'Ivoire",
+                "GH": "Ghana",
+                "ID": "Indonesia",
+                "E4": "European Union",
+            },
+        )
+        self.assertEqual(
+            metric_registry["usda_psd"]["reference_period"],
+            "market_year",
+        )
+        self.assertEqual(
             {row["metric"] for row in metric_registry["usda_esr"]["metrics"]},
             {"net_sales", "weekly_exports", "outstanding_sales"},
+        )
+        self.assertEqual(
+            metric_registry["usda_esr"]["market"],
+            "United States export sales (all destinations)",
+        )
+        self.assertEqual(
+            metric_registry["usda_esr"]["reference_period"],
+            "observation_date",
         )
         self.assertEqual(
             {row["formula_id"] for row in research["facts"]},
