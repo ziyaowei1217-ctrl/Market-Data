@@ -101,7 +101,7 @@ def comex_schema_signature(content: bytes, spec: Mapping[str, Any]) -> str:
         "sheet": _required(spec, "expected_sheet"),
         "commodity_title": _required(spec, "commodity_title"),
         "unit": _required(spec, "expected_unit"),
-        "headers": [_required(spec, "location_header"), *COMEX_COLUMNS],
+        "headers": [_required(spec, "location_header"), "", *COMEX_COLUMNS],
         "registered_total_label": _required(spec, "registered_total_label"),
         "eligible_total_label": _required(spec, "eligible_total_label"),
         "combined_total_label": _required(spec, "combined_total_label"),
@@ -136,13 +136,15 @@ def parse_comex_stocks(
 
     location_header = _required(spec, "location_header")
     header_index = _find_unique_first_cell(rows, location_header, "header")
+    expected_headers = (location_header, "", *COMEX_COLUMNS)
     actual_headers = tuple(
         _text(rows[header_index][index] if len(rows[header_index]) > index else "")
-        for index in (2, 3, 4, 5, 6, 7)
+        for index in range(8)
     )
-    if actual_headers != COMEX_COLUMNS:
+    if actual_headers != expected_headers:
         raise ValueError(
-            f"COMEX header mismatch: expected {COMEX_COLUMNS!r}, got {actual_headers!r}"
+            f"COMEX header mismatch: expected {expected_headers!r}, "
+            f"got {actual_headers!r}"
         )
 
     grand_labels = {

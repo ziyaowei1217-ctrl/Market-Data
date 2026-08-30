@@ -292,6 +292,23 @@ def _provenance_notes(
     )
 
 
+def _unverified_provenance_notes(
+    content: bytes,
+    *,
+    limitation_note: str,
+    detail: str,
+) -> str:
+    signature = "unverified:parse-failed" if content else "unverified:no-content"
+    notes = "; ".join(
+        value for value in (limitation_note, detail) if value
+    )
+    return _provenance_notes(
+        content,
+        schema_signature=signature,
+        limitation_note=notes,
+    )
+
+
 def _known_at_end_of_day(value: date, zone: ZoneInfo) -> str:
     return datetime.combine(value, time.max, tzinfo=zone).isoformat()
 
@@ -381,13 +398,11 @@ def _comex_stocks_provider(
             notes=notes,
         )
     except Exception as error:
-        notes = f"{limitation_note}; {error}"
-        if content:
-            notes = (
-                f"bytes={len(content)}; "
-                f"sha256={hashlib.sha256(content).hexdigest()}; "
-                f"schema_signature=unverified; {notes}"
-            )
+        notes = _unverified_provenance_notes(
+            content,
+            limitation_note=limitation_note,
+            detail=str(error),
+        )
         return ProviderResult(
             category="commodity_fundamentals",
             rows=[],
@@ -413,6 +428,11 @@ def _usgs_structural_provider(
         publication_date = date.fromisoformat(str(spec["publication_date"]))
         age = (end - publication_date).days
         if publication_date > end or age > spec["freshness_days"]:
+            detail = (
+                f"Official USGS table publication {publication_date.isoformat()} "
+                f"is unavailable or more than {spec['freshness_days']} days before "
+                f"target Sunday {end.isoformat()}"
+            )
             return ProviderResult(
                 category="commodity_fundamentals",
                 rows=[],
@@ -420,10 +440,10 @@ def _usgs_structural_provider(
                 source=str(spec["source"]),
                 source_url=spec["source_url"],
                 status="POINT_IN_TIME_UNAVAILABLE",
-                notes=(
-                    f"Official USGS table publication {publication_date.isoformat()} "
-                    f"is unavailable or more than {spec['freshness_days']} days before "
-                    f"target Sunday {end.isoformat()}; {spec['limitation_note']}"
+                notes=_unverified_provenance_notes(
+                    b"",
+                    limitation_note=str(spec["limitation_note"]),
+                    detail=detail,
                 ),
             )
         content = _bytes(session, spec["source_url"])
@@ -501,13 +521,11 @@ def _usgs_structural_provider(
             notes=notes,
         )
     except Exception as error:
-        notes = f"{limitation_note}; {error}"
-        if content:
-            notes = (
-                f"bytes={len(content)}; "
-                f"sha256={hashlib.sha256(content).hexdigest()}; "
-                f"schema_signature=unverified; {notes}"
-            )
+        notes = _unverified_provenance_notes(
+            content,
+            limitation_note=limitation_note,
+            detail=str(error),
+        )
         return ProviderResult(
             category="commodity_fundamentals",
             rows=[],

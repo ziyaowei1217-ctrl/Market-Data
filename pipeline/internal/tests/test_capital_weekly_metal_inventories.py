@@ -140,6 +140,7 @@ def comex_xlsx(
     *,
     unit: str = "Short Tons",
     location_header: str = "DELIVERY POINT",
+    intervening_header: str = "",
     alpha_total: float = 30,
     eligible_total: float = 35,
 ) -> bytes:
@@ -154,7 +155,7 @@ def comex_xlsx(
     sheet["G9"] = "Activity Date: 8/27/2026"
     headers = (
         location_header,
-        "",
+        intervening_header,
         "PREV TOTAL",
         "RECEIVED",
         "WITHDRAWN",
@@ -262,6 +263,11 @@ class ComexStockParserTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "COMEX header mismatch"):
             parse_comex_stocks(
                 comex_xlsx(location_header="WAREHOUSE"),
+                COPPER_SPEC,
+            )
+        with self.assertRaisesRegex(ValueError, "COMEX header mismatch"):
+            parse_comex_stocks(
+                comex_xlsx(intervening_header="UNEXPECTED"),
                 COPPER_SPEC,
             )
         with self.assertRaisesRegex(ValueError, "COMEX unit mismatch"):

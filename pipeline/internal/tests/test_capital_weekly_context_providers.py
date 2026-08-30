@@ -28,6 +28,9 @@ from pipeline.internal.tests.test_capital_weekly_metal_inventories import (
 )
 
 
+EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
+
+
 YAHOO_CONFIG = (
     "metric_code,metric_name,ticker,unit,role\n"
     "vix_9d_level,Cboe S&P 500 9-Day Volatility Index,^VIX9D,index_points,vix_9d\n"
@@ -217,6 +220,9 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
         self.assertEqual(result.rows, [])
         self.assertIn("more than 400 days", result.notes)
+        self.assertIn("bytes=0", result.notes)
+        self.assertIn(f"sha256={EMPTY_SHA256}", result.notes)
+        self.assertIn("schema_signature=unverified:no-content", result.notes)
 
     def test_current_usgs_table_emits_annual_structural_rows(self):
         url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
@@ -313,6 +319,15 @@ class ContextProviderTests(unittest.TestCase):
         audits = {row["provider"]: row for row in tables["source_log"]}
         self.assertEqual(audits["comex_copper_stocks"]["status"], "FETCH_FAILED")
         self.assertEqual(audits["comex_copper_stocks"]["observations"], 0)
+        self.assertIn("bytes=14", audits["comex_copper_stocks"]["notes"])
+        self.assertIn(
+            f"sha256={hashlib.sha256(b'not a workbook').hexdigest()}",
+            audits["comex_copper_stocks"]["notes"],
+        )
+        self.assertIn(
+            "schema_signature=unverified:parse-failed",
+            audits["comex_copper_stocks"]["notes"],
+        )
         self.assertEqual(audits["usgs_gold_structural"]["status"], "OK")
         self.assertEqual(len(tables["commodity_fundamentals"]), 2)
         self.assertTrue(
@@ -368,6 +383,75 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(audits["comex_copper_stocks"]["status"], "FETCH_FAILED")
         self.assertEqual(audits["usgs_gold_structural"]["status"], "OK")
         self.assertEqual(len(tables["commodity_fundamentals"]), 2)
+        self.assertIn("bytes=0", audits["comex_copper_stocks"]["notes"])
+        self.assertIn(
+            f"sha256={EMPTY_SHA256}",
+            audits["comex_copper_stocks"]["notes"],
+        )
+        self.assertIn(
+            "schema_signature=unverified:no-content",
+            audits["comex_copper_stocks"]["notes"],
+        )
+
+    def test_transport_and_zero_byte_failures_report_empty_provenance(self):
+        copper_url = COMEX_COPPER_STOCKS_URL
+        gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
+        header = (
+            "provider,source_url,source,commodity_code,commodity_family,market,"
+            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "location_header,registered_total_label,eligible_total_label,"
+            "combined_total_label,table_kind,reference_year,publication_date,"
+            "publication_month,limitation_note\n"
+        )
+        rows = (
+            f"comex_copper_stocks,{copper_url},CME Group,COPPER_COMEX,copper,"
+            "COMEX,daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,"
+            "Short Tons,DELIVERY POINT,Total Registered (warranted),"
+            "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
+            "deliverable_inventory_proxy; LME not included\n"
+            f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
+            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_metals.csv").write_text(
+                header + rows,
+                encoding="utf-8",
+            )
+            session = BinarySession(
+                {
+                    copper_url: RuntimeError("transport unavailable"),
+                    gold_url: b"",
+                }
+            )
+            providers = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )
+            tables = run_weekly_context(
+                {
+                    name: providers[name]
+                    for name in ("comex_copper_stocks", "usgs_gold_structural")
+                },
+                as_of_date=date(2026, 8, 30),
+            )
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        for name, audit in audits.items():
+            with self.subTest(provider=name):
+                self.assertEqual(audit["status"], "FETCH_FAILED")
+                self.assertEqual(audit["observations"], 0)
+                self.assertIn("bytes=0", audit["notes"])
+                self.assertIn(f"sha256={EMPTY_SHA256}", audit["notes"])
+                self.assertIn(
+                    "schema_signature=unverified:no-content",
+                    audit["notes"],
+                )
 
     def test_eia_families_are_independently_not_configured_without_key(self):
         with tempfile.TemporaryDirectory() as temp:

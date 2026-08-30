@@ -304,6 +304,7 @@ def write_metal_core_coverage(outputs: dict[str, Path], metals: tuple[str, ...])
                 commodity_family=family,
                 price_kind="official_monthly_benchmark",
                 known_as_of="",
+                latest_value="0",
             )
         )
         positioning.append(
@@ -320,6 +321,7 @@ def write_metal_core_coverage(outputs: dict[str, Path], metals: tuple[str, ...])
                 reference_period="2026-08-04",
                 source="U.S. Commodity Futures Trading Commission",
                 source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
+                value="0",
             )
         )
     write_csv(outputs["macro_assets"] / "commodities.csv", MACRO_FIELDS, prices)
@@ -1137,6 +1139,94 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ReleaseValidationError,
             "copper.*World Bank price",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_insufficient_world_bank_row_does_not_satisfy_copper_core_coverage(self):
+        write_metal_core_coverage(self.outputs, ("copper",))
+        matching = fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            series_code="COPPER_PRICE",
+            provider="world_bank_pink_sheet",
+            source="World Bank Pink Sheet",
+            source_url="https://www.worldbank.org/en/research/commodity-markets",
+            commodity_code="COPPER_COMEX",
+            commodity_family="copper",
+            price_kind="official_monthly_benchmark",
+            qc_flag="INSUFFICIENT_DATA",
+            latest_value="",
+        )
+        unrelated_valid = fixture_row(MACRO_FIELDS, series_code="UNRELATED")
+        write_csv(
+            self.outputs["macro_assets"] / "commodities.csv",
+            MACRO_FIELDS,
+            [matching, unrelated_valid],
+        )
+        active = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="comex_copper_stocks",
+            category="commodity_fundamentals",
+            requiredness="optional",
+            status="FETCH_FAILED",
+            observations="0",
+            as_of_date="2026-08-09",
+            source_url="https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
+        )
+        write_csv(
+            self.outputs["weekly_context"] / "source_log.csv",
+            CATEGORY_FIELDS["source_log"],
+            [active],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "copper.*World Bank price",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_blank_insufficient_cftc_row_does_not_satisfy_gold_core_coverage(self):
+        write_metal_core_coverage(self.outputs, ("gold",))
+        positioning = fixture_row(
+            CATEGORY_FIELDS["positioning_flows"],
+            as_of_date="",
+            value="",
+            category="positioning_flows",
+            commodity_code="GOLD_COMEX",
+            commodity_family="gold",
+            metric_role="positioning",
+            measurement_kind="open_interest",
+            participant_class="",
+            known_as_of="2026-08-07T15:30:00-04:00",
+            reference_period="2026-08-04",
+            source="U.S. Commodity Futures Trading Commission",
+            source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
+            qc_flag="INSUFFICIENT_DATA",
+        )
+        write_csv(
+            self.outputs["weekly_context"] / "positioning_flows.csv",
+            CATEGORY_FIELDS["positioning_flows"],
+            [positioning],
+        )
+        active = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="usgs_gold_structural",
+            category="commodity_fundamentals",
+            requiredness="optional",
+            status="FETCH_FAILED",
+            observations="0",
+            as_of_date="2026-08-09",
+            source_url="https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf",
+        )
+        write_csv(
+            self.outputs["weekly_context"] / "source_log.csv",
+            CATEGORY_FIELDS["source_log"],
+            [active],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "gold.*CFTC positioning",
         ):
             validate_staged_week(self.root, self.window)
 

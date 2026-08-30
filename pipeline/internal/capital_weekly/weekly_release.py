@@ -1042,7 +1042,7 @@ def validate_staged_week(
             )
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_eia_physical_coverage(validated_rows)
-        _validate_metals_core_coverage(validated_rows)
+        _validate_metals_core_coverage(validated_rows, window)
     pipelines = [
         {
             "name": pipeline.name,
@@ -1104,6 +1104,7 @@ def _validate_eia_physical_coverage(
 
 def _validate_metals_core_coverage(
     datasets: dict[tuple[str, str], list[dict[str, str]]],
+    window: WeekWindow,
 ) -> None:
     source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
     price_rows = datasets.get(("macro_assets", "commodities.csv"), [])
@@ -1122,6 +1123,26 @@ def _validate_metals_core_coverage(
         for row in source_rows
         if (row.get("provider") or "").strip() in provider_families
     }
+
+    def usable_business_value(
+        row: dict[str, str],
+        *,
+        date_column: str,
+        value_column: str,
+    ) -> bool:
+        if (row.get("qc_flag") or "").strip().upper() != "OK":
+            return False
+        raw_date = (row.get(date_column) or "").strip()
+        raw_value = (row.get(value_column) or "").strip()
+        if not raw_date or not raw_value:
+            return False
+        try:
+            observation_date = date.fromisoformat(raw_date)
+            value = float(raw_value)
+        except ValueError:
+            return False
+        return observation_date <= window.end and math.isfinite(value)
+
     for family, commodity_code in sorted(active):
         has_world_bank_price = any(
             (row.get("asset_class") or "").strip() == "commodity"
@@ -1133,6 +1154,11 @@ def _validate_metals_core_coverage(
             and (urlparse((row.get("source_url") or "").strip()).hostname or "")
             .lower()
             .endswith("worldbank.org")
+            and usable_business_value(
+                row,
+                date_column="latest_date",
+                value_column="latest_value",
+            )
             for row in price_rows
         )
         if not has_world_bank_price:
@@ -1149,6 +1175,11 @@ def _validate_metals_core_coverage(
             and (urlparse((row.get("source_url") or "").strip()).hostname or "")
             .lower()
             .endswith("cftc.gov")
+            and usable_business_value(
+                row,
+                date_column="as_of_date",
+                value_column="value",
+            )
             for row in positioning_rows
         )
         if not has_cftc_positioning:
