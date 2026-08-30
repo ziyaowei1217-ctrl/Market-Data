@@ -21,7 +21,11 @@ class CommodityFundamentalTests(unittest.TestCase):
             "commodity_family": "natural_gas",
             "route": "natural-gas/stor/wkly",
             "frequency": "weekly",
-            "facets": {"duoarea": "R48", "process": "SWO"},
+            "facets": {
+                "duoarea": "R48",
+                "process": "SWO",
+                "series": "NW2_EPG0_SWO_R48_BCF",
+            },
             "metric_code": "eia_ng_storage_lower48",
             "metric_name": "Lower 48 working gas in underground storage",
             "measurement_kind": "physical_level",
@@ -43,6 +47,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                         "period": "2026-08-21",
                         "duoarea": "R48",
                         "process": "SWO",
+                        "series": "NW2_EPG0_SWO_R48_BCF",
                         "series-description": (
                             "Lower 48 Working Gas in Underground Storage "
                             "(Billion Cubic Feet)"
@@ -61,6 +66,7 @@ class CommodityFundamentalTests(unittest.TestCase):
         self.assertEqual(rows[0]["commodity_family"], "natural_gas")
         for field, value, message in (
             ("process", "SNO", "facet"),
+            ("series", "NW2_EPG0_SWO_R31_BCF", "facet"),
             ("series-description", "renamed upstream", "description"),
             ("units", "MMCF", "unit"),
         ):
@@ -74,6 +80,7 @@ class CommodityFundamentalTests(unittest.TestCase):
             "period": "2026-08-21",
             "duoarea": "R48",
             "process": "SWO",
+            "series": "NW2_EPG0_SWO_R48_BCF",
             "series-description": (
                 "Lower 48 Working Gas in Underground Storage "
                 "(Billion Cubic Feet)"
@@ -210,6 +217,44 @@ class CommodityFundamentalTests(unittest.TestCase):
             "storage_seasonal_deviation",
             {row["metric_code"] for row in insufficient},
         )
+
+    def test_seasonal_deviation_uses_explicit_booleans_not_truthy_strings(self):
+        payload = {
+            "response": {
+                "data": [
+                    {
+                        "period": "2026-08-21",
+                        "duoarea": "R48",
+                        "process": "SWO",
+                        "series": "NW2_EPG0_SWO_R48_BCF",
+                        "series-description": (
+                            "Lower 48 Working Gas in Underground Storage "
+                            "(Billion Cubic Feet)"
+                        ),
+                        "units": "BCF",
+                        "value": "3125",
+                    }
+                ]
+            }
+        }
+        for configured, expected in (
+            (True, True),
+            (False, False),
+            ("true", True),
+            ("false", False),
+        ):
+            with self.subTest(configured=configured):
+                rows = parse_eia_metric_series(
+                    json.dumps(payload),
+                    self.eia_spec(seasonal_deviation=configured),
+                )
+                self.assertIs(rows[0]["seasonal_deviation"], expected)
+
+        with self.assertRaisesRegex(ValueError, "seasonal_deviation"):
+            parse_eia_metric_series(
+                json.dumps(payload),
+                self.eia_spec(seasonal_deviation="yes"),
+            )
 
     def test_eia_parser_validates_units_and_orders_periods(self):
         payload = {

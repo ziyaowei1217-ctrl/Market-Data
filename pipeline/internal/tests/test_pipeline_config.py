@@ -23,7 +23,7 @@ EXPECTED_SECTION_HASHES = {
     "macro": "d8142cb57de706af5a1af2e623a7fca9c5af12acca12f9b38a0c72caf9d03e32",
     "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "context.eia_series": "b1c1378337686d8389c25d39d01126a292a26638d633cb9b513b48ddd979fdc0",
+    "context.eia_series": "584aa69dcb4e654c0a924d4688178aa2c474382931e5e04285fc5c0cff9ce149",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
 }
@@ -80,6 +80,40 @@ class PipelineConfigTests(unittest.TestCase):
                 "eia_distillate_imports", "eia_jet_fuel_imports",
                 "eia_gasoline_exports", "eia_distillate_exports",
                 "eia_jet_fuel_exports",
+            },
+        )
+        storage_series = {
+            row["metric_code"]: row["facets"]
+            for row in rows
+            if row["metric_code"].startswith("eia_ng_storage_")
+        }
+        self.assertEqual(
+            storage_series,
+            {
+                "eia_ng_storage_lower48": {
+                    "duoarea": "R48", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R48_BCF",
+                },
+                "eia_ng_storage_east": {
+                    "duoarea": "R31", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R31_BCF",
+                },
+                "eia_ng_storage_midwest": {
+                    "duoarea": "R32", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R32_BCF",
+                },
+                "eia_ng_storage_mountain": {
+                    "duoarea": "R34", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R34_BCF",
+                },
+                "eia_ng_storage_pacific": {
+                    "duoarea": "R35", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R35_BCF",
+                },
+                "eia_ng_storage_south_central": {
+                    "duoarea": "R33", "process": "SWO",
+                    "series": "NW2_EPG0_SWO_R33_BCF",
+                },
             },
         )
         for row in rows:

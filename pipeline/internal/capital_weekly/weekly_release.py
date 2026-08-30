@@ -1060,10 +1060,13 @@ def _validate_eia_physical_coverage(
         [],
     )
     provider_families = {
-        "eia_natural_gas": "natural_gas",
-        "eia_refined_products": "refined_products",
+        "eia_natural_gas": ("natural_gas", "https://api.eia.gov/v2/natural-gas/"),
+        "eia_refined_products": (
+            "refined_products",
+            "https://api.eia.gov/v2/petroleum/",
+        ),
     }
-    for provider, family in provider_families.items():
+    for provider, (family, source_url_prefix) in provider_families.items():
         active = any(
             (row.get("provider") or "").strip() == provider
             and (row.get("status") or "").strip().upper() == "OK"
@@ -1076,11 +1079,15 @@ def _validate_eia_physical_coverage(
             and (row.get("metric_role") or "").strip() == "fundamental"
             and (row.get("measurement_kind") or "").strip()
             == "physical_level"
+            and (row.get("source") or "").strip()
+            == "U.S. Energy Information Administration"
+            and (row.get("source_url") or "").strip().startswith(source_url_prefix)
             for row in fundamental_rows
         )
         if not covered:
             raise ReleaseValidationError(
-                f"{provider} has no physical fundamental row for active family {family}"
+                f"{provider} has no official EIA physical fundamental row "
+                f"for active family {family}"
             )
 
 

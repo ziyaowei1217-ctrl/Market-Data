@@ -778,6 +778,8 @@ class StagedValidationTests(unittest.TestCase):
             participant_class="",
             known_as_of="",
             reference_period="2026-08-07",
+            source="U.S. Energy Information Administration",
+            source_url="https://api.eia.gov/v2/natural-gas/stor/wkly/data/",
         )
         write_csv(
             fundamentals,
@@ -788,6 +790,46 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ReleaseValidationError,
             "eia_refined_products.*physical fundamental",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_unrelated_same_family_row_cannot_satisfy_active_eia_coverage(self):
+        source_log = self.outputs["weekly_context"] / "source_log.csv"
+        active = fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider="eia_natural_gas",
+            category="commodity_fundamentals",
+            requiredness="required",
+            status="OK",
+            observations="1",
+            as_of_date="2026-08-09",
+            source="U.S. Energy Information Administration",
+            source_url="https://api.eia.gov/v2/",
+        )
+        write_csv(source_log, CATEGORY_FIELDS["source_log"], [active])
+        fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        unrelated = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            commodity_code="NATGAS_HH",
+            commodity_family="natural_gas",
+            metric_role="fundamental",
+            measurement_kind="physical_level",
+            participant_class="",
+            known_as_of="",
+            reference_period="2026-08-07",
+            source="Unrelated natural gas source",
+            source_url="https://example.test/natural-gas",
+        )
+        write_csv(
+            fundamentals,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [unrelated],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "eia_natural_gas.*official EIA physical fundamental",
         ):
             validate_staged_week(self.root, self.window)
 

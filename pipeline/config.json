@@ -2333,7 +2333,7 @@
         "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly",
         "frequency": "weekly",
-        "facets": {"duoarea": "R48", "process": "SWO"},
+        "facets": {"duoarea": "R48", "process": "SWO", "series": "NW2_EPG0_SWO_R48_BCF"},
         "metric_code": "eia_ng_storage_lower48",
         "metric_name": "Lower 48 working gas in underground storage",
         "measurement_kind": "physical_level",
@@ -2343,31 +2343,31 @@
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R31", "process": "SWO"},
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R31", "process": "SWO", "series": "NW2_EPG0_SWO_R31_BCF"},
         "metric_code": "eia_ng_storage_east", "metric_name": "East working gas in underground storage", "measurement_kind": "physical_level",
         "source_description": "East Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R32", "process": "SWO"},
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R32", "process": "SWO", "series": "NW2_EPG0_SWO_R32_BCF"},
         "metric_code": "eia_ng_storage_midwest", "metric_name": "Midwest working gas in underground storage", "measurement_kind": "physical_level",
         "source_description": "Midwest Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R34", "process": "SWO"},
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R34", "process": "SWO", "series": "NW2_EPG0_SWO_R34_BCF"},
         "metric_code": "eia_ng_storage_mountain", "metric_name": "Mountain working gas in underground storage", "measurement_kind": "physical_level",
         "source_description": "Mountain Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R35", "process": "SWO"},
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R35", "process": "SWO", "series": "NW2_EPG0_SWO_R35_BCF"},
         "metric_code": "eia_ng_storage_pacific", "metric_name": "Pacific working gas in underground storage", "measurement_kind": "physical_level",
         "source_description": "Pacific Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
-        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R33", "process": "SWO"},
+        "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R33", "process": "SWO", "series": "NW2_EPG0_SWO_R33_BCF"},
         "metric_code": "eia_ng_storage_south_central", "metric_name": "South Central working gas in underground storage", "measurement_kind": "physical_level",
         "source_description": "South Central Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },

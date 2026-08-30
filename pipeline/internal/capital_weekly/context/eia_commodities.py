@@ -39,6 +39,18 @@ EIA_SPEC_FIELDS = frozenset(
 LEGACY_EIA_UNIT_CODES = {"MBBL": "Thousand Barrels"}
 
 
+def parse_explicit_bool(value: Any, *, field: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    raise ValueError(f"EIA {field} must be true or false")
+
+
 def parse_facets(value: Any) -> dict[str, str]:
     if isinstance(value, str):
         try:
@@ -92,6 +104,10 @@ def validate_eia_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
     if freshness_days <= 0:
         raise ValueError("EIA freshness_days must be a positive integer")
     normalized["freshness_days"] = freshness_days
+    normalized["seasonal_deviation"] = parse_explicit_bool(
+        spec.get("seasonal_deviation", False),
+        field="seasonal_deviation",
+    )
     return normalized
 
 
@@ -189,7 +205,7 @@ def parse_eia_metric_series(
                 "commodity_code": configured["commodity_code"],
                 "commodity_family": configured["commodity_family"],
                 "freshness_days": configured["freshness_days"],
-                "seasonal_deviation": bool(spec.get("seasonal_deviation", False)),
+                "seasonal_deviation": configured["seasonal_deviation"],
             }
         )
     rows.sort(key=lambda row: row["observation_date"])

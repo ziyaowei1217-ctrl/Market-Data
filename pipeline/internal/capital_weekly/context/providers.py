@@ -33,6 +33,7 @@ from .commodities import (
     eia_not_configured_result,
 )
 from .eia_commodities import (
+    EIA_FAMILIES,
     EIA_PROVIDERS,
     latest_and_changes,
     parse_eia_metric_series,
@@ -1062,22 +1063,16 @@ def build_default_providers(
     watchlist = load_company_watchlist(watchlist_rows)
     yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
-    unknown_eia_providers = sorted(
-        {
-            str(row.get("provider") or "").strip()
-            for row in eia_config
-        }
-        - EIA_PROVIDERS
-    )
-    if unknown_eia_providers:
-        raise ValueError(
-            "Unsupported EIA providers: " + ", ".join(unknown_eia_providers)
-        )
     eia_by_provider = {
         name: [
             row
             for row in eia_config
             if str(row.get("provider") or "").strip() == name
+            or (
+                str(row.get("provider") or "").strip() not in EIA_PROVIDERS
+                and str(row.get("commodity_family") or "").strip()
+                == EIA_FAMILIES[name]
+            )
         ]
         for name in EIA_PROVIDERS
     }

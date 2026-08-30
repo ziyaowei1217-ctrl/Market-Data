@@ -95,9 +95,9 @@ class ContextProviderTests(unittest.TestCase):
             data_dir = Path(temp)
             write_provider_configs(data_dir)
             (data_dir / "capital_weekly_eia_series.csv").write_text(
-                "provider,route\n"
-                "eia_natural_gas,not-queried-without-a-key\n"
-                "eia_refined_products,not-queried-without-a-key\n",
+                "provider,commodity_family,route\n"
+                "misspelled_natural,natural_gas,not-queried-without-a-key\n"
+                "misspelled_refined,refined_products,not-queried-without-a-key\n",
                 encoding="utf-8",
             )
             providers = build_default_providers(
@@ -122,7 +122,11 @@ class ContextProviderTests(unittest.TestCase):
             "commodity_family": "natural_gas",
             "route": "natural-gas/stor/wkly",
             "frequency": "weekly",
-            "facets": json.dumps({"duoarea": "R48", "process": "SWO"}),
+            "facets": json.dumps({
+                "duoarea": "R48",
+                "process": "SWO",
+                "series": "NW2_EPG0_SWO_R48_BCF",
+            }),
             "metric_code": "eia_ng_storage_lower48",
             "metric_name": "Lower 48 working gas",
             "measurement_kind": "physical_level",
@@ -220,6 +224,100 @@ class ContextProviderTests(unittest.TestCase):
             "A&B",
         )
         self.assertNotIn("dummy-key", str(audits))
+
+    def test_bad_keyed_family_config_fails_only_that_family(self):
+        bad_natural = {
+            "provider": "misspelled_natural",
+            "commodity_code": "NATGAS_HH",
+            "commodity_family": "natural_gas",
+            "route": "natural-gas/stor/wkly",
+            "frequency": "weekly",
+            "facets": json.dumps({
+                "duoarea": "R48",
+                "process": "SWO",
+                "series": "NW2_EPG0_SWO_R48_BCF",
+            }),
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_name": "Lower 48 working gas",
+            "measurement_kind": "physical_level",
+            "source_description": "Lower 48 storage",
+            "expected_unit": "BCF",
+            "freshness_days": "10",
+        }
+        refined = {
+            "provider": "eia_refined_products",
+            "commodity_code": "WTI",
+            "commodity_family": "refined_products",
+            "route": "petroleum/sum/sndw",
+            "frequency": "weekly",
+            "facets": json.dumps({"series": "WCESTUS1"}),
+            "metric_code": "eia_crude_stocks_ex_spr",
+            "metric_name": "Crude stocks excluding SPR",
+            "measurement_kind": "physical_level",
+            "source_description": "Crude stocks excluding SPR",
+            "expected_unit": "MBBL",
+            "freshness_days": "10",
+        }
+
+        class FamilySession:
+            def get(self, url, **_kwargs):
+                if "natural-gas" in url:
+                    raise AssertionError("bad natural config must fail before transport")
+                if "/facet/series/" in url:
+                    return TextResponse(json.dumps({
+                        "response": {
+                            "facets": [{"id": "WCESTUS1", "name": "Crude"}]
+                        }
+                    }))
+                return TextResponse(json.dumps({
+                    "response": {"data": [
+                        {
+                            "period": "2026-08-21",
+                            "series": "WCESTUS1",
+                            "series-description": "Crude stocks excluding SPR",
+                            "units": "MBBL",
+                            "value": "425000",
+                        },
+                        {
+                            "period": "2026-08-14",
+                            "series": "WCESTUS1",
+                            "series-description": "Crude stocks excluding SPR",
+                            "units": "MBBL",
+                            "value": "420000",
+                        },
+                    ]}
+                }))
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            fields = list(refined)
+            with (data_dir / "capital_weekly_eia_series.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=fields)
+                writer.writeheader()
+                writer.writerows([bad_natural, refined])
+            providers = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={"EIA_API_KEY": "dummy-key"},
+                session=FamilySession(),
+            )
+            tables = run_weekly_context(
+                {
+                    "eia_natural_gas": providers["eia_natural_gas"],
+                    "eia_refined_products": providers["eia_refined_products"],
+                },
+                as_of_date=date(2026, 8, 23),
+            )
+
+        audits = {row["provider"]: row for row in tables["source_log"]}
+        self.assertEqual(audits["eia_natural_gas"]["status"], "FETCH_FAILED")
+        self.assertIn("misspelled_natural", audits["eia_natural_gas"]["notes"])
+        self.assertEqual(audits["eia_refined_products"]["status"], "OK")
+        self.assertEqual(len(tables["commodity_fundamentals"]), 3)
 
     def test_disaggregated_provider_uses_official_dataset_and_emits_commodity_metadata(self):
         text = CFTC_COLUMNS + (
