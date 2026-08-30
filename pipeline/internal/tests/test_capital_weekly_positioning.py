@@ -71,6 +71,34 @@ class PositioningTests(unittest.TestCase):
         self.assertEqual(rows[2]["managed_money_net_change"], -40)
         self.assertEqual(rows[2]["managed_money_percentile"], 0.5)
 
+    def test_disaggregated_parser_isolates_history_by_contract_code(self):
+        text = DISAGGREGATED_COLUMNS + (
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-04,500000,"
+            "100,200,120,70,100,80,30,20\n"
+            "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE,067651,2026-08-11,"
+            "510000,110,190,130,60,120,70,35,20\n"
+        )
+        wti = gold_contract(
+            contract_code="067651",
+            commodity_code="SHARED",
+            commodity_family="refined_products",
+            market_name="WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
+        )
+        gold = gold_contract(commodity_code="SHARED")
+
+        rows = parse_cftc_disaggregated_csv(text, [gold, wti])
+
+        self.assertEqual(
+            [row["contract_code"] for row in rows],
+            ["067651", "088691"],
+        )
+        self.assertTrue(
+            all(row["managed_money_net_change"] is None for row in rows)
+        )
+        self.assertTrue(
+            all(row["managed_money_percentile"] is None for row in rows)
+        )
+
     def test_disaggregated_rows_observe_the_friday_known_as_of_cutoff(self):
         row = {
             "report_date": date(2026, 8, 18),
@@ -115,6 +143,20 @@ class PositioningTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "market name mismatch.*088691"):
             parse_cftc_disaggregated_csv(text, [gold_contract()])
+
+    def test_disaggregated_parser_rejects_null_required_commodity_fields(self):
+        text = DISAGGREGATED_COLUMNS + (
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,1000,"
+            "100,200,120,70,250,100,30,20\n"
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, "configuration missing fields: commodity_code"
+        ):
+            parse_cftc_disaggregated_csv(
+                text,
+                [gold_contract(commodity_code=None)],
+            )
 
     def test_cftc_parser_calculates_asset_manager_and_leveraged_fund_net(self):
         text = (

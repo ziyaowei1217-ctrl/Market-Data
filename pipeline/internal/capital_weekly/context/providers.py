@@ -21,7 +21,12 @@ try:
 except ImportError:
     yf = None
 
-from .provider_contracts import ContextProvider, ProviderResult, ProviderSpec
+from .provider_contracts import (
+    ContextProvider,
+    ProviderResult,
+    ProviderSpec,
+    filter_known_as_of,
+)
 from .common import COMMODITY_METRIC_FIELDS
 from .commodities import (
     EIA_SOURCE_URL,
@@ -402,14 +407,27 @@ def _cftc_disaggregated_provider(
     }
     text = _text(session, CFTC_DISAGGREGATED_URL, params=params)
     parsed = parse_cftc_disaggregated_csv(text, contracts)
-    selected = [row for row in parsed if start <= row["report_date"] <= end]
+    selected = filter_known_as_of(
+        [row for row in parsed if start <= row["report_date"] <= end],
+        end,
+    )
+    configured_codes = {
+        str(spec["contract_code"]).strip() for spec in contracts
+    }
+    selected_codes = {str(row["contract_code"]) for row in selected}
+    missing_codes = sorted(configured_codes - selected_codes)
+    if missing_codes:
+        raise ValueError(
+            "CFTC response missing configured contracts for requested window: "
+            + ", ".join(missing_codes)
+        )
     rows = []
     measurements = [("open_interest", "open_interest", None)]
     for participant in DISAGGREGATED_PARTICIPANTS:
         measurements.extend(
             (
                 (f"{participant}_net", "net_position", participant),
-                (f"{participant}_net_change", "net_position", participant),
+                (f"{participant}_net_change", "weekly_change", participant),
                 (f"{participant}_percentile", "percentile", participant),
             )
         )

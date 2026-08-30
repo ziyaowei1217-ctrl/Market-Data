@@ -28,6 +28,35 @@ YAHOO_CONFIG = (
     "vix_6m_level,Cboe S&P 500 6-Month Volatility Index,^VIX6M,index_points,vix_6m\n"
     "cboe_skew_level,Cboe SKEW Index,^SKEW,index_points,skew\n"
 )
+CFTC_COLUMNS = (
+    "market_and_exchange_names,cftc_contract_market_code,"
+    "report_date_as_yyyy_mm_dd,open_interest_all,"
+    "prod_merc_positions_long,prod_merc_positions_short,"
+    "swap_positions_long_all,swap__positions_short_all,"
+    "m_money_positions_long_all,m_money_positions_short_all,"
+    "other_rept_positions_long,other_rept_positions_short\n"
+)
+
+
+class TextResponse:
+    encoding = "utf-8"
+    apparent_encoding = "utf-8"
+
+    def __init__(self, text):
+        self.text = text
+
+    def raise_for_status(self):
+        return None
+
+
+class TextSession:
+    def __init__(self, text):
+        self.text = text
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        return TextResponse(self.text)
 
 
 def write_provider_configs(data_dir):
@@ -58,38 +87,15 @@ def write_provider_configs(data_dir):
 
 class ContextProviderTests(unittest.TestCase):
     def test_disaggregated_provider_uses_official_dataset_and_emits_commodity_metadata(self):
-        text = (
-            "market_and_exchange_names,cftc_contract_market_code,"
-            "report_date_as_yyyy_mm_dd,open_interest_all,"
-            "prod_merc_positions_long,prod_merc_positions_short,"
-            "swap_positions_long_all,swap__positions_short_all,"
-            "m_money_positions_long_all,m_money_positions_short_all,"
-            "other_rept_positions_long,other_rept_positions_short\n"
+        text = CFTC_COLUMNS + (
             "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,500000,"
             "100000,200000,120000,70000,250000,100000,30000,20000\n"
         )
 
-        class Response:
-            encoding = "utf-8"
-            apparent_encoding = "utf-8"
-
-            def raise_for_status(self):
-                return None
-
-        class Session:
-            def __init__(self):
-                self.calls = []
-
-            def get(self, url, **kwargs):
-                self.calls.append((url, kwargs))
-                response = Response()
-                response.text = text
-                return response
-
         with tempfile.TemporaryDirectory() as temp:
             data_dir = Path(temp)
             write_provider_configs(data_dir)
-            session = Session()
+            session = TextSession(text)
             provider = build_default_providers(
                 start=date(2026, 8, 17),
                 end=date(2026, 8, 23),
@@ -115,6 +121,72 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(managed["known_as_of"], "2026-08-21T15:30:00-04:00")
         self.assertEqual(managed["reference_period"], "2026-08-18")
         self.assertFalse(any("asset_manager" in row["metric_code"] for row in result.rows))
+        change = next(
+            row
+            for row in result.rows
+            if row["metric_code"] == "GOLD_COMEX_managed_money_net_change"
+        )
+        self.assertEqual(change["measurement_kind"], "weekly_change")
+
+    def test_disaggregated_provider_rejects_contract_present_only_in_history(self):
+        text = CFTC_COLUMNS + (
+            "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE,067651,2026-08-11,"
+            "490000,100000,200000,120000,70000,200000,100000,30000,20000\n"
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,500000,"
+            "100000,200000,120000,70000,250000,100000,30000,20000\n"
+        )
+        cftc_config = (
+            "contract_code,metric_code,report_family,market_name,commodity_code,"
+            "commodity_family,percentile_window,percentile_min_observations\n"
+            "088691,GOLD_COT,disaggregated,GOLD - COMMODITY EXCHANGE INC.,"
+            "GOLD_COMEX,gold,156,52\n"
+            "067651,WTI_COT,disaggregated,"
+            "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE,"
+            "WTI,refined_products,156,52\n"
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_cftc_contracts.csv").write_text(
+                cftc_config, encoding="utf-8"
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={},
+                session=TextSession(text),
+            )["cftc_disaggregated"]
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "^CFTC response missing configured contracts for requested window: 067651$",
+            ):
+                provider.fetch()
+
+    def test_disaggregated_provider_excludes_pre_release_tuesday_row(self):
+        text = CFTC_COLUMNS + (
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,500000,"
+            "100000,200000,120000,70000,250000,100000,30000,20000\n"
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            provider = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 20),
+                data_dir=data_dir,
+                environ={},
+                session=TextSession(text),
+            )["cftc_disaggregated"]
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "^CFTC response missing configured contracts for requested window: 088691$",
+            ):
+                provider.fetch()
 
     def test_metric_rows_emit_shared_contract(self):
         rows = metric_rows(

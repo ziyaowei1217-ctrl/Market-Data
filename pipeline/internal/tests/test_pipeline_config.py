@@ -20,7 +20,7 @@ EXPECTED_SECTION_HASHES = {
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
     "macro": "3af0dc58b4fd12c729a36bc151baf7aab343aa2250181081ecc3d23f9a2e5705",
-    "context.cftc_contracts": "a006bb29c4cac5053b1fa31a9ff3aae701cbef3c20e994e52957aa51bd39c473",
+    "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
@@ -79,6 +79,17 @@ class PipelineConfigTests(unittest.TestCase):
                 self.assertTrue(row["market_name"])
                 self.assertEqual(row["percentile_window"], "156")
                 self.assertEqual(row["percentile_min_observations"], "52")
+
+    def test_tff_contracts_use_null_for_inapplicable_commodity_fields(self):
+        rows = load_config_rows("context.cftc_contracts")
+
+        for row in rows:
+            if row["report_family"] == "tff":
+                with self.subTest(contract_code=row["contract_code"]):
+                    self.assertIsNone(row["commodity_code"])
+                    self.assertIsNone(row["commodity_family"])
+                    self.assertIsNone(row["percentile_window"])
+                    self.assertIsNone(row["percentile_min_observations"])
 
     def test_json_matches_lossless_legacy_conversion_hashes(self):
         document = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))

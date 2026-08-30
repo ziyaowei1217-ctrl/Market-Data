@@ -136,7 +136,11 @@ def _disaggregated_contracts(
         "percentile_min_observations",
     }
     for raw in contracts:
-        missing = sorted(key for key in required if not str(raw.get(key, "")).strip())
+        missing = sorted(
+            key
+            for key in required
+            if raw.get(key) is None or not str(raw.get(key, "")).strip()
+        )
         if missing:
             raise ValueError(
                 "CFTC contract configuration missing fields: " + ", ".join(missing)
@@ -210,11 +214,11 @@ def parse_cftc_disaggregated_csv(
         raise ValueError(
             "CFTC response missing configured contracts: " + ", ".join(missing_codes)
         )
-    rows.sort(key=lambda row: (row["commodity_code"], row["report_date"]))
+    rows.sort(key=lambda row: (row["contract_code"], row["report_date"]))
     previous_by_code: dict[str, dict] = {}
     histories: dict[str, dict[str, list[float]]] = {}
     for row in rows:
-        code = str(row["commodity_code"])
+        code = str(row["contract_code"])
         previous = previous_by_code.get(code)
         participant_histories = histories.setdefault(code, {})
         for participant in DISAGGREGATED_PARTICIPANTS:
