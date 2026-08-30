@@ -128,6 +128,37 @@ def company_event() -> dict:
 
 
 class WeeklyContextTests(unittest.TestCase):
+    def test_provider_exception_keeps_registered_failure_provenance(self):
+        spec = ProviderSpec(
+            name="failed",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="1.0.0",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=7,
+            failure_source="Official Source",
+            failure_source_url="https://example.gov/data",
+        )
+
+        tables = run_weekly_context(
+            {
+                "failed": ContextProvider(
+                    spec,
+                    lambda: (_ for _ in ()).throw(RuntimeError("page changed")),
+                )
+            },
+            as_of_date=date(2026, 8, 9),
+        )
+
+        self.assertEqual(tables["source_log"][0]["status"], "FETCH_FAILED")
+        self.assertEqual(tables["source_log"][0]["source"], "Official Source")
+        self.assertEqual(
+            tables["source_log"][0]["source_url"],
+            "https://example.gov/data",
+        )
+
     def test_category_fields_cover_every_published_category(self):
         self.assertEqual(set(CATEGORY_FIELDS), set(CATEGORY_FILES))
 

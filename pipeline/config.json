@@ -1836,6 +1836,7 @@
       {
         "contract_code": "13874A",
         "metric_code": "SP500_COT",
+        "report_type": "tff",
         "name_en": "S&P 500 Consolidated",
         "source": "CFTC Traders in Financial Futures",
         "notes": "Tuesday position snapshot released with a standard three-day lag."
@@ -1843,6 +1844,7 @@
       {
         "contract_code": "098662",
         "metric_code": "DXY_COT",
+        "report_type": "tff",
         "name_en": "U.S. Dollar Index",
         "source": "CFTC Traders in Financial Futures",
         "notes": "Legacy financial contract code."
@@ -1850,6 +1852,7 @@
       {
         "contract_code": "088691",
         "metric_code": "GOLD_COT",
+        "report_type": "disaggregated",
         "name_en": "Gold",
         "source": "CFTC Disaggregated Commitments of Traders",
         "notes": "Commodity positioning."
@@ -1857,9 +1860,67 @@
       {
         "contract_code": "067651",
         "metric_code": "WTI_COT",
+        "report_type": "disaggregated",
         "name_en": "WTI Crude Oil",
         "source": "CFTC Disaggregated Commitments of Traders",
         "notes": "Commodity positioning."
+      }
+    ],
+    "breadth_universe": [
+      {
+        "symbol": "XLC",
+        "name": "Communication Services Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLY",
+        "name": "Consumer Discretionary Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLP",
+        "name": "Consumer Staples Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLE",
+        "name": "Energy Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLF",
+        "name": "Financial Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLV",
+        "name": "Health Care Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLI",
+        "name": "Industrial Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLB",
+        "name": "Materials Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLRE",
+        "name": "Real Estate Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLK",
+        "name": "Technology Select Sector SPDR Fund",
+        "enabled": "1"
+      },
+      {
+        "symbol": "XLU",
+        "name": "Utilities Select Sector SPDR Fund",
+        "enabled": "1"
       }
     ],
     "company_watchlist": [],

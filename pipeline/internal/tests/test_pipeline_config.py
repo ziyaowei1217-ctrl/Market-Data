@@ -20,7 +20,8 @@ EXPECTED_SECTION_HASHES = {
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
     "macro": "dca30483c3c5570d92c0c750f0e823820690f53d5ca244605935513af9a422a2",
-    "context.cftc_contracts": "0c1ddb309a3898b93a6ff5e9cba3f34a77e1e3cdb12338deee3c5efdd1d66a75",
+    "context.cftc_contracts": "49509b00fb72d32b07ce15fa0f3d885e45af93f94eaf520ed6dec873aabe4ae6",
+    "context.breadth_universe": "e2de8ddd1e00d211bd7e043278d1eeaadc38002bb17127d62c55e9422e0f1c5c",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
@@ -38,6 +39,32 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_public_green_config_is_json_backed_and_watchlist_stays_empty(self):
+        breadth = load_config_rows("context.breadth_universe")
+        cftc = load_config_rows("context.cftc_contracts")
+
+        self.assertEqual(
+            {row["symbol"] for row in breadth},
+            {
+                "XLC",
+                "XLY",
+                "XLP",
+                "XLE",
+                "XLF",
+                "XLV",
+                "XLI",
+                "XLB",
+                "XLRE",
+                "XLK",
+                "XLU",
+            },
+        )
+        self.assertEqual(
+            {row["report_type"] for row in cftc},
+            {"tff", "disaggregated"},
+        )
+        self.assertEqual(load_config_rows("context.company_watchlist"), [])
+
     def test_json_matches_lossless_legacy_conversion_hashes(self):
         document = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
         self.assertEqual(document["schema_version"], "1.0")

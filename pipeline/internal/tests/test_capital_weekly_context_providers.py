@@ -34,7 +34,16 @@ def write_provider_configs(data_dir):
         "ticker,cik,company_name,enabled\n", encoding="utf-8"
     )
     (data_dir / "capital_weekly_cftc_contracts.csv").write_text(
-        "contract_code,metric_code\n13874A,sp500\n", encoding="utf-8"
+        "contract_code,metric_code,report_type\n"
+        "13874A,sp500,tff\n"
+        "088691,gold,disaggregated\n",
+        encoding="utf-8",
+    )
+    (data_dir / "capital_weekly_breadth_universe.csv").write_text(
+        "symbol,name,enabled\n"
+        "XLC,Communication Services,1\n"
+        "XLY,Consumer Discretionary,1\n",
+        encoding="utf-8",
     )
     (data_dir / "capital_weekly_eia_series.csv").write_text(
         "metric_code,metric_name,route,frequency,series,expected_unit\n",
@@ -51,6 +60,59 @@ def write_provider_configs(data_dir):
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_default_registry_rejects_duplicate_breadth_symbols(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_breadth_universe.csv").write_text(
+                "symbol,name,enabled\nXLC,First,1\nXLC,Duplicate,1\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "breadth symbols"):
+                build_default_providers(
+                    start=date(2026, 7, 20),
+                    end=date(2026, 7, 26),
+                    data_dir=data_dir,
+                    environ={},
+                )
+
+    def test_default_registry_rejects_unknown_cftc_report_type(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_cftc_contracts.csv").write_text(
+                "contract_code,metric_code,report_type\n"
+                "13874A,sp500,legacy\n"
+                "088691,gold,disaggregated\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "unsupported report types"):
+                build_default_providers(
+                    start=date(2026, 7, 20),
+                    end=date(2026, 7, 26),
+                    data_dir=data_dir,
+                    environ={},
+                )
+
+    def test_provider_failure_provenance_is_typed(self):
+        spec = ProviderSpec(
+            name="optional",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="1.0.0",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=7,
+            failure_source="Official Source",
+            failure_source_url="https://example.gov/data",
+        )
+
+        self.assertEqual(spec.failure_source, "Official Source")
+        self.assertEqual(spec.failure_source_url, "https://example.gov/data")
+
     def test_metric_rows_emit_shared_contract(self):
         rows = metric_rows(
             as_of_date=date(2026, 7, 24),

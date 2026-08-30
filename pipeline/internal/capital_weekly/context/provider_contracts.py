@@ -37,6 +37,8 @@ class ProviderSpec:
     schema_version: str
     frequency: str
     freshness_days: int | None
+    failure_source: str = ""
+    failure_source_url: str = ""
 
     def __post_init__(self) -> None:
         if self.source_tier not in SOURCE_TIERS:

@@ -69,6 +69,7 @@ SSE_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
 YAHOO_FINANCE_URL = "https://finance.yahoo.com/"
 YAHOO_VOLATILITY_SOURCE = "Yahoo Finance (Cboe indices)"
+CFTC_REPORT_TYPES = frozenset({"tff", "disaggregated"})
 
 
 def _session() -> requests.Session:
@@ -115,6 +116,56 @@ def _bytes(session: requests.Session, url: str) -> bytes:
 def _config(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _validated_breadth_universe(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    symbols = [str(row.get("symbol", "")).strip() for row in rows]
+    if any(not symbol for symbol in symbols) or len(set(symbols)) != len(symbols):
+        raise ValueError("breadth symbols must be nonblank and unique")
+    invalid_enabled = sorted(
+        {
+            str(row.get("enabled", "")).strip()
+            for row in rows
+            if str(row.get("enabled", "")).strip() not in {"0", "1"}
+        }
+    )
+    if invalid_enabled:
+        raise ValueError(
+            "Breadth config enabled values must be 0 or 1: "
+            + ", ".join(invalid_enabled)
+        )
+    return [dict(row) for row in rows]
+
+
+def _validated_cftc_configs(
+    rows: list[dict[str, str]],
+) -> dict[str, dict[str, str]]:
+    report_types = {
+        str(row.get("report_type", "")).strip().lower() for row in rows
+    }
+    unknown = sorted(report_types - CFTC_REPORT_TYPES)
+    if unknown:
+        raise ValueError(
+            "CFTC config has unsupported report types: " + ", ".join(unknown)
+        )
+    contract_codes = [str(row.get("contract_code", "")).strip() for row in rows]
+    if any(not code for code in contract_codes) or len(set(contract_codes)) != len(
+        contract_codes
+    ):
+        raise ValueError("CFTC config contract codes must be nonblank and unique")
+    configs = {
+        report_type: {
+            str(row["contract_code"]).strip(): str(row["metric_code"]).strip()
+            for row in rows
+            if str(row.get("report_type", "")).strip().lower() == report_type
+        }
+        for report_type in CFTC_REPORT_TYPES
+    }
+    if any(not config for config in configs.values()):
+        raise ValueError("CFTC config must define TFF and Disaggregated contracts")
+    return configs
 
 
 def metric_rows(
@@ -887,6 +938,7 @@ def build_default_providers(
     client = session or _session()
     if data_dir is None:
         cftc_rows = load_config_rows("context.cftc_contracts")
+        breadth_rows = load_config_rows("context.breadth_universe")
         watchlist_rows = load_config_rows("context.company_watchlist")
         eia_config = load_config_rows("context.eia_series")
         financial_config = load_config_rows("context.financial_conditions")
@@ -894,13 +946,13 @@ def build_default_providers(
     else:
         root = Path(data_dir)
         cftc_rows = _config(root / "capital_weekly_cftc_contracts.csv")
+        breadth_rows = _config(root / "capital_weekly_breadth_universe.csv")
         watchlist_rows = _config(root / "capital_weekly_company_watchlist.csv")
         eia_config = _config(root / "capital_weekly_eia_series.csv")
         financial_config = _config(root / "capital_weekly_financial_conditions.csv")
         yahoo_rows = _config(root / "capital_weekly_yahoo_volatility.csv")
-    cftc_config = {
-        row["contract_code"]: row["metric_code"] for row in cftc_rows
-    }
+    cftc_configs = _validated_cftc_configs(cftc_rows)
+    breadth_universe = _validated_breadth_universe(breadth_rows)
     watchlist = load_company_watchlist(watchlist_rows)
     yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
@@ -918,7 +970,7 @@ def build_default_providers(
         ),
         "nasdaq_market_summary": lambda: _nasdaq_provider(client, start, end),
         "cftc_tff": lambda: _cftc_provider(
-            client, start, end, cftc_config
+            client, start, end, cftc_configs["tff"]
         ),
         "finra_margin": lambda: _finra_provider(client, end),
         "sec_company_events": lambda: _sec_provider(

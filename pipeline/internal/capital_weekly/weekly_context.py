@@ -214,8 +214,8 @@ def run_weekly_context(
                     "status": "FETCH_FAILED",
                     "observations": 0,
                     "as_of_date": run_date.isoformat(),
-                    "source": None,
-                    "source_url": None,
+                    "source": provider.spec.failure_source or None,
+                    "source_url": provider.spec.failure_source_url or None,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "notes": str(error),
                 }
