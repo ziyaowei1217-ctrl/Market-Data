@@ -477,55 +477,6 @@ def write_complete_commodity_research_fixture(outputs: dict[str, Path]) -> None:
     )
 
 
-def write_metal_core_coverage(outputs: dict[str, Path], metals: tuple[str, ...]) -> None:
-    identities = {
-        "copper": ("COPPER_COMEX", "COPPER_PRICE"),
-        "gold": ("GOLD_COMEX", "COMEX_GOLD"),
-    }
-    prices = []
-    positioning = []
-    for family in metals:
-        commodity_code, series_code = identities[family]
-        prices.append(
-            fixture_row(
-                MACRO_FIELDS,
-                asset_class="commodity",
-                series_code=series_code,
-                provider="world_bank_pink_sheet",
-                source="World Bank Pink Sheet",
-                source_url="https://thedocs.worldbank.org/commodity-prices.xlsx",
-                commodity_code=commodity_code,
-                commodity_family=family,
-                price_kind="official_monthly_benchmark",
-                known_as_of="",
-                latest_value="0",
-            )
-        )
-        positioning.append(
-            fixture_row(
-                CATEGORY_FIELDS["positioning_flows"],
-                as_of_date="2026-08-04",
-                category="positioning_flows",
-                commodity_code=commodity_code,
-                commodity_family=family,
-                metric_role="positioning",
-                measurement_kind="open_interest",
-                participant_class="",
-                known_as_of="2026-08-07T15:30:00-04:00",
-                reference_period="2026-08-04",
-                source="U.S. Commodity Futures Trading Commission",
-                source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
-                value="0",
-            )
-        )
-    write_csv(outputs["macro_assets"] / "commodities.csv", MACRO_FIELDS, prices)
-    write_csv(
-        outputs["weekly_context"] / "positioning_flows.csv",
-        CATEGORY_FIELDS["positioning_flows"],
-        positioning,
-    )
-
-
 def exact_gate_config() -> dict:
     return {
         "macro": [
@@ -552,6 +503,7 @@ def exact_gate_config() -> dict:
                     "contract_code": "067651",
                     "metric_code": "WTI_COT",
                     "report_family": "disaggregated",
+                    "market_name": "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
                     "commodity_code": "WTI",
                     "commodity_family": "refined_products",
                 },
@@ -559,6 +511,7 @@ def exact_gate_config() -> dict:
                     "contract_code": "088691",
                     "metric_code": "GOLD_COMEX_COT",
                     "report_family": "disaggregated",
+                    "market_name": "GOLD - COMMODITY EXCHANGE INC.",
                     "commodity_code": "GOLD_COMEX",
                     "commodity_family": "gold",
                 },
@@ -586,6 +539,8 @@ def exact_gate_config() -> dict:
             "metals": [
                 {
                     "provider": "comex_gold_stocks",
+                    "source": "CME Group",
+                    "source_url": "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
                     "commodity_code": "GOLD_COMEX",
                     "commodity_family": "gold",
                 }
@@ -606,6 +561,7 @@ def write_exact_gate_fixture(outputs: dict[str, Path]) -> None:
             commodity_code="WTI",
             commodity_family="refined_products",
             price_kind="official_cash",
+            known_as_of="2026-08-08T12:00:00-04:00",
             latest_value="75",
         ),
         fixture_row(
@@ -618,6 +574,7 @@ def write_exact_gate_fixture(outputs: dict[str, Path]) -> None:
             commodity_code="GOLD_COMEX",
             commodity_family="gold",
             price_kind="official_monthly_benchmark",
+            known_as_of="2026-08-08T12:00:00-04:00",
             latest_value="2400",
         ),
     ]
@@ -650,6 +607,7 @@ def write_exact_gate_fixture(outputs: dict[str, Path]) -> None:
             CATEGORY_FIELDS["positioning_flows"],
             as_of_date="2026-08-04",
             metric_code=f"{commodity_code}_open_interest",
+            market=market,
             commodity_code=commodity_code,
             commodity_family=family,
             metric_role="positioning",
@@ -660,9 +618,13 @@ def write_exact_gate_fixture(outputs: dict[str, Path]) -> None:
             source="U.S. Commodity Futures Trading Commission",
             source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
         )
-        for commodity_code, family in (
-            ("WTI", "refined_products"),
-            ("GOLD_COMEX", "gold"),
+        for commodity_code, family, market in (
+            (
+                "WTI",
+                "refined_products",
+                "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
+            ),
+            ("GOLD_COMEX", "gold", "GOLD - COMMODITY EXCHANGE INC."),
         )
     ]
     context_statuses = [
@@ -695,6 +657,7 @@ def write_exact_gate_fixture(outputs: dict[str, Path]) -> None:
             status="FETCH_FAILED",
             observations="0",
             as_of_date="2026-08-09",
+            source="CME Group",
             source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
         ),
     ]
@@ -947,6 +910,64 @@ class StagedValidationTests(unittest.TestCase):
             ):
                 validate_staged_week(self.root, self.window)
 
+    def test_exact_gate_rejects_mismapped_cftc_open_interest_identity(self):
+        for field, bad_value in (
+            ("market", "WRONG CONTRACT MARKET"),
+            ("metric_code", "WTI_managed_money_net"),
+        ):
+            with self.subTest(field=field):
+                write_exact_gate_fixture(self.outputs)
+                path = self.outputs["weekly_context"] / "positioning_flows.csv"
+                rows = read_csv_rows(path)
+                target = next(row for row in rows if row["commodity_code"] == "WTI")
+                target[field] = bad_value
+                write_csv(path, CATEGORY_FIELDS["positioning_flows"], rows)
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    r"CFTC contract identity.*067651.*WTI",
+                ):
+                    validate_staged_week(self.root, self.window)
+
+    def test_exact_gate_not_configured_eia_rejects_residual_derived_rows(self):
+        write_exact_gate_fixture(self.outputs)
+        merge_context_status_rows(
+            self.outputs,
+            [
+                fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider="eia_refined_products",
+                    category="commodity_fundamentals",
+                    requiredness="optional",
+                    status="NOT_CONFIGURED",
+                    observations="0",
+                    source_url="https://api.eia.gov/v2/",
+                )
+            ],
+        )
+        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        derived = fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            metric_code="eia_crude_stocks_ex_spr_change",
+            commodity_code="WTI",
+            commodity_family="refined_products",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+            participant_class="",
+            known_as_of="2026-08-07T12:00:00-04:00",
+            reference_period="2026-07-31 to 2026-08-07",
+            source="U.S. Energy Information Administration",
+            source_url="https://api.eia.gov/v2/petroleum/sum/sndw/data/",
+        )
+        write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], [derived])
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"eia_refined_products NOT_CONFIGURED.*no base or derived rows",
+        ):
+            validate_staged_week(self.root, self.window)
+
     def test_exact_gate_requires_each_configured_supplemental_status(self):
         config_path = self._exact_gate_config_path()
         write_exact_gate_fixture(self.outputs)
@@ -965,18 +986,121 @@ class StagedValidationTests(unittest.TestCase):
             ):
                 validate_staged_week(self.root, self.window)
 
+    def test_exact_gate_requires_business_rows_for_ok_configured_metal(self):
+        write_exact_gate_fixture(self.outputs)
+        merge_context_status_rows(
+            self.outputs,
+            [
+                fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider="comex_gold_stocks",
+                    category="commodity_fundamentals",
+                    requiredness="optional",
+                    status="OK",
+                    observations="1",
+                    source="CME Group",
+                    source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+                )
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"comex_gold_stocks OK.*business rows",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_exact_gate_rejects_wrong_family_for_configured_metal(self):
+        write_exact_gate_fixture(self.outputs)
+        merge_context_status_rows(
+            self.outputs,
+            [
+                fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider="comex_gold_stocks",
+                    category="commodity_fundamentals",
+                    requiredness="optional",
+                    status="OK",
+                    observations="1",
+                    source="CME Group",
+                    source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+                )
+            ],
+        )
+        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        rows = read_csv_rows(path)
+        rows.append(
+            fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                metric_code="GOLD_COMEX_comex_total_stocks",
+                commodity_code="GOLD_COMEX",
+                commodity_family="copper",
+                metric_role="physical_fundamental",
+                measurement_kind="inventory",
+                participant_class="",
+                known_as_of="2026-08-07T23:59:59-05:00",
+                reference_period="2026-08-07",
+                source="CME Group",
+                source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+            )
+        )
+        write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"comex_gold_stocks.*GOLD_COMEX.*gold",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_exact_gate_non_ok_configured_metal_requires_zero_rows(self):
+        for metric_code in (
+            "GOLD_COMEX_comex_total_stocks",
+            "MISMAPPED_METAL_PROVIDER_ROW",
+        ):
+            with self.subTest(metric_code=metric_code):
+                write_exact_gate_fixture(self.outputs)
+                path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+                rows = read_csv_rows(path)
+                rows.append(
+                    fixture_row(
+                        CATEGORY_FIELDS["commodity_fundamentals"],
+                        as_of_date="2026-08-07",
+                        metric_code=metric_code,
+                        commodity_code="GOLD_COMEX",
+                        commodity_family="gold",
+                        metric_role="physical_fundamental",
+                        measurement_kind="inventory",
+                        participant_class="",
+                        known_as_of="2026-08-07T23:59:59-05:00",
+                        reference_period="2026-08-07",
+                        source="CME Group",
+                        source_url=(
+                            "https://www.cmegroup.com/delivery_reports/"
+                            "Gold_Stocks.xls"
+                        ),
+                    )
+                )
+                write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    r"comex_gold_stocks FETCH_FAILED.*zero business rows",
+                ):
+                    validate_staged_week(self.root, self.window)
+
     def test_official_provenance_rejects_lookalike_world_bank_and_cftc_hosts(self):
         config_path = self._exact_gate_config_path()
         for artifact, lookalike, expected_error in (
             (
                 "price",
                 "https://notworldbank.org/commodity-prices.xlsx",
-                "official World Bank price",
+                "configured macro price.*COMEX_GOLD",
             ),
             (
                 "positioning",
                 "https://notcftc.gov/resource/72hh-3qpy.csv",
-                "official CFTC positioning",
+                "CFTC contract identity.*088691.*GOLD_COMEX",
             ),
         ):
             with self.subTest(artifact=artifact):
@@ -1092,7 +1216,12 @@ class StagedValidationTests(unittest.TestCase):
 
     def test_rejects_a_visible_record_without_a_source_url(self):
         path = self.outputs["macro_assets"] / "commodities.csv"
-        row = fixture_row(MACRO_FIELDS, series_code="COMMODITY", source_url="")
+        row = fixture_row(
+            MACRO_FIELDS,
+            series_code="COMMODITY",
+            source_url="",
+            known_as_of="2026-08-08T12:00:00-04:00",
+        )
         write_csv(path, MACRO_FIELDS, [row])
 
         with self.assertRaisesRegex(ReleaseValidationError, "source_url"):
@@ -1106,6 +1235,7 @@ class StagedValidationTests(unittest.TestCase):
             series_code="WTI",
             commodity_code="",
             commodity_family="refined_products",
+            known_as_of="2026-08-08T12:00:00-04:00",
         )
         write_csv(path, MACRO_FIELDS, [row])
 
@@ -1120,6 +1250,7 @@ class StagedValidationTests(unittest.TestCase):
             series_code="WTI",
             commodity_code="WTI",
             commodity_family="unknown_family",
+            known_as_of="2026-08-08T12:00:00-04:00",
         )
         write_csv(path, MACRO_FIELDS, [row])
 
@@ -1189,6 +1320,28 @@ class StagedValidationTests(unittest.TestCase):
                         "known_as_of.*(?:UTC offset|exceeds)",
                     ):
                         validate_staged_week(self.root, self.window)
+
+    def test_rejects_malformed_naive_or_future_macro_commodity_known_as_of(self):
+        path = self.outputs["macro_assets"] / "commodities.csv"
+        for known_as_of in (
+            "not-a-timestamp",
+            "2026-08-09T12:00:00",
+            "2026-08-10T00:00:00+08:00",
+        ):
+            with self.subTest(known_as_of=known_as_of):
+                write_exact_gate_fixture(self.outputs)
+                rows = read_csv_rows(path)
+                target = next(
+                    row for row in rows if row["series_code"] == "COMEX_GOLD"
+                )
+                target["known_as_of"] = known_as_of
+                write_csv(path, MACRO_FIELDS, rows)
+
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "known_as_of.*(?:UTC offset|exceeds)",
+                ):
+                    validate_staged_week(self.root, self.window)
 
     def test_commodity_divergence_summary_does_not_require_instrument_identity(self):
         path = self.outputs["macro_assets"] / "macro_divergence.csv"
@@ -2010,6 +2163,7 @@ class StagedValidationTests(unittest.TestCase):
             status="FETCH_FAILED",
             observations="0",
             as_of_date="2026-08-09",
+            source="CME Group",
             source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
         )
         merge_context_status_rows(self.outputs, [row])
@@ -2017,132 +2171,58 @@ class StagedValidationTests(unittest.TestCase):
         validate_staged_week(self.root, self.window)
 
     def test_metal_supplemental_failure_cannot_replace_world_bank_price_or_cftc(self):
-        path = self.outputs["weekly_context"] / "source_log.csv"
-        row = fixture_row(
-            CATEGORY_FIELDS["source_log"],
-            provider="comex_copper_stocks",
-            category="commodity_fundamentals",
-            requiredness="optional",
-            status="FETCH_FAILED",
-            observations="0",
-            as_of_date="2026-08-09",
-            source_url="https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
-        )
-        write_csv(
-            path,
-            CATEGORY_FIELDS["source_log"],
-            [
-                row,
-                *usda_source_rows(
-                    status="NOT_CONFIGURED",
-                    requiredness="optional",
-                ),
-            ],
-        )
+        for missing, expected in (
+            ("price", r"configured macro price.*COMEX_GOLD"),
+            ("positioning", r"CFTC contract identity.*088691.*GOLD_COMEX"),
+        ):
+            with self.subTest(missing=missing):
+                write_exact_gate_fixture(self.outputs)
+                if missing == "price":
+                    path = self.outputs["macro_assets"] / "commodities.csv"
+                    rows = [
+                        row
+                        for row in read_csv_rows(path)
+                        if row["series_code"] != "COMEX_GOLD"
+                    ]
+                    fields = MACRO_FIELDS
+                else:
+                    path = self.outputs["weekly_context"] / "positioning_flows.csv"
+                    rows = [
+                        row
+                        for row in read_csv_rows(path)
+                        if row["commodity_code"] != "GOLD_COMEX"
+                    ]
+                    fields = CATEGORY_FIELDS["positioning_flows"]
+                write_csv(path, fields, rows)
+
+                with self.assertRaisesRegex(ReleaseValidationError, expected):
+                    validate_staged_week(self.root, self.window)
+
+    def test_insufficient_configured_world_bank_row_does_not_satisfy_core_coverage(self):
+        write_exact_gate_fixture(self.outputs)
+        path = self.outputs["macro_assets"] / "commodities.csv"
+        rows = read_csv_rows(path)
+        target = next(row for row in rows if row["series_code"] == "COMEX_GOLD")
+        target.update(qc_flag="INSUFFICIENT_DATA", latest_value="")
+        write_csv(path, MACRO_FIELDS, rows)
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
-            "copper.*World Bank price",
+            r"configured macro price.*COMEX_GOLD",
         ):
             validate_staged_week(self.root, self.window)
 
-    def test_insufficient_world_bank_row_does_not_satisfy_copper_core_coverage(self):
-        write_metal_core_coverage(self.outputs, ("copper",))
-        matching = fixture_row(
-            MACRO_FIELDS,
-            asset_class="commodity",
-            series_code="COPPER_PRICE",
-            provider="world_bank_pink_sheet",
-            source="World Bank Pink Sheet",
-            source_url="https://www.worldbank.org/en/research/commodity-markets",
-            commodity_code="COPPER_COMEX",
-            commodity_family="copper",
-            price_kind="official_monthly_benchmark",
-            qc_flag="INSUFFICIENT_DATA",
-            latest_value="",
-        )
-        unrelated_valid = fixture_row(MACRO_FIELDS, series_code="UNRELATED")
-        write_csv(
-            self.outputs["macro_assets"] / "commodities.csv",
-            MACRO_FIELDS,
-            [matching, unrelated_valid],
-        )
-        active = fixture_row(
-            CATEGORY_FIELDS["source_log"],
-            provider="comex_copper_stocks",
-            category="commodity_fundamentals",
-            requiredness="optional",
-            status="FETCH_FAILED",
-            observations="0",
-            as_of_date="2026-08-09",
-            source_url="https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
-        )
-        write_csv(
-            self.outputs["weekly_context"] / "source_log.csv",
-            CATEGORY_FIELDS["source_log"],
-            [
-                active,
-                *usda_source_rows(
-                    status="NOT_CONFIGURED",
-                    requiredness="optional",
-                ),
-            ],
-        )
+    def test_blank_insufficient_cftc_open_interest_does_not_satisfy_core_coverage(self):
+        write_exact_gate_fixture(self.outputs)
+        path = self.outputs["weekly_context"] / "positioning_flows.csv"
+        rows = read_csv_rows(path)
+        target = next(row for row in rows if row["commodity_code"] == "GOLD_COMEX")
+        target.update(as_of_date="", value="", qc_flag="INSUFFICIENT_DATA")
+        write_csv(path, CATEGORY_FIELDS["positioning_flows"], rows)
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
-            "copper.*World Bank price",
-        ):
-            validate_staged_week(self.root, self.window)
-
-    def test_blank_insufficient_cftc_row_does_not_satisfy_gold_core_coverage(self):
-        write_metal_core_coverage(self.outputs, ("gold",))
-        positioning = fixture_row(
-            CATEGORY_FIELDS["positioning_flows"],
-            as_of_date="",
-            value="",
-            category="positioning_flows",
-            commodity_code="GOLD_COMEX",
-            commodity_family="gold",
-            metric_role="positioning",
-            measurement_kind="open_interest",
-            participant_class="",
-            known_as_of="2026-08-07T15:30:00-04:00",
-            reference_period="2026-08-04",
-            source="U.S. Commodity Futures Trading Commission",
-            source_url="https://publicreporting.cftc.gov/resource/72hh-3qpy.csv",
-            qc_flag="INSUFFICIENT_DATA",
-        )
-        write_csv(
-            self.outputs["weekly_context"] / "positioning_flows.csv",
-            CATEGORY_FIELDS["positioning_flows"],
-            [positioning],
-        )
-        active = fixture_row(
-            CATEGORY_FIELDS["source_log"],
-            provider="usgs_gold_structural",
-            category="commodity_fundamentals",
-            requiredness="optional",
-            status="FETCH_FAILED",
-            observations="0",
-            as_of_date="2026-08-09",
-            source_url="https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf",
-        )
-        write_csv(
-            self.outputs["weekly_context"] / "source_log.csv",
-            CATEGORY_FIELDS["source_log"],
-            [
-                active,
-                *usda_source_rows(
-                    status="NOT_CONFIGURED",
-                    requiredness="optional",
-                ),
-            ],
-        )
-
-        with self.assertRaisesRegex(
-            ReleaseValidationError,
-            "gold.*CFTC positioning",
+            r"CFTC contract identity.*088691.*GOLD_COMEX",
         ):
             validate_staged_week(self.root, self.window)
 

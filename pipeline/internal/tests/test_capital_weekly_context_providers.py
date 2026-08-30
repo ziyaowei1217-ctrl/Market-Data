@@ -26,6 +26,7 @@ from pipeline.internal.capital_weekly.context.provider_contracts import (
     ProviderSpec,
 )
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
+from pipeline.internal.common import load_config_rows
 from pipeline.internal.tests.test_capital_weekly_metal_inventories import (
     COPPER_BIFF8,
     USGS_GOLD_PDF,
@@ -209,6 +210,19 @@ def corn_esr_config() -> dict:
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_metal_specs_require_explicit_freshness_basis_and_holiday_calendar(self):
+        configured = {
+            row["provider"]: row for row in load_config_rows("context.metals")
+        }
+
+        for provider_name, spec in configured.items():
+            for field in ("freshness_basis", "holiday_calendar"):
+                with self.subTest(provider=provider_name, field=field):
+                    mutated = dict(spec)
+                    mutated.pop(field, None)
+                    with self.assertRaisesRegex(ValueError, field):
+                        providers_module._metal_spec(mutated)
+
     def test_usda_families_are_independently_not_configured_before_validation(self):
         class NoNetworkSession:
             calls = []
@@ -765,7 +779,8 @@ class ContextProviderTests(unittest.TestCase):
     def test_comex_copper_keeps_exact_bytes_and_auditable_provenance(self):
         metal_header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
@@ -773,6 +788,7 @@ class ContextProviderTests(unittest.TestCase):
         metal_row = (
             "comex_copper_stocks,https://www.cmegroup.com/delivery_reports/"
             "Copper_Stocks.xls,CME Group,COPPER_COMEX,copper,COMEX,daily,7,"
+            "trading_days,CME_US,"
             "Daily Metal Stocks Report,COPPER - HIGH GRADE,Short Tons,"
             "DELIVERY POINT,Total Registered (warranted),"
             "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
@@ -830,7 +846,8 @@ class ContextProviderTests(unittest.TestCase):
     def test_outdated_usgs_table_is_visible_without_transport_or_rows(self):
         metal_header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
@@ -838,7 +855,8 @@ class ContextProviderTests(unittest.TestCase):
         metal_row = (
             "usgs_gold_structural,https://pubs.usgs.gov/periodicals/mcs2026/"
             "mcs2026-gold.pdf,U.S. Geological Survey,GOLD_COMEX,gold,World,annual,"
-            "400,,GOLD,\"metric tons, gold content\",,,,,mine_reserves,2025,"
+            "400,calendar_days,NONE,,GOLD,\"metric tons, gold content\",,,,,"
+            "mine_reserves,2025,"
             "2026-02-06,February 2026,monthly Mineral Industry Survey paused\n"
         )
         with tempfile.TemporaryDirectory() as temp:
@@ -870,14 +888,16 @@ class ContextProviderTests(unittest.TestCase):
         url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
         metal_header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
         )
         metal_row = (
             f"usgs_gold_structural,{url},U.S. Geological Survey,GOLD_COMEX,gold,"
-            "World,annual,400,,GOLD,\"metric tons, gold content\",,,,,mine_reserves,"
+            "World,annual,400,calendar_days,NONE,,GOLD,"
+            "\"metric tons, gold content\",,,,,mine_reserves,"
             "2025,2026-02-06,February 2026,"
             "monthly Mineral Industry Survey paused\n"
         )
@@ -916,21 +936,24 @@ class ContextProviderTests(unittest.TestCase):
         gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
         metal_header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
         )
         copper_row = (
             f"comex_copper_stocks,{copper_url},CME Group,COPPER_COMEX,copper,"
-            "COMEX,daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,"
+            "COMEX,daily,7,trading_days,CME_US,Daily Metal Stocks Report,"
+            "COPPER - HIGH GRADE,"
             "Short Tons,DELIVERY POINT,Total Registered (warranted),"
             "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
             "deliverable_inventory_proxy; LME not included\n"
         )
         gold_row = (
             f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
-            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "gold,World,annual,400,calendar_days,NONE,,GOLD,"
+            "\"metric tons, gold content\",,,,,"
             "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
         )
         with tempfile.TemporaryDirectory() as temp:
@@ -984,18 +1007,21 @@ class ContextProviderTests(unittest.TestCase):
         gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
         header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
         )
         rows = (
             f"comex_copper_stocks,{bad_url},CME Group,COPPER_COMEX,copper,COMEX,"
-            "daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,Short Tons,"
+            "daily,7,trading_days,CME_US,Daily Metal Stocks Report,"
+            "COPPER - HIGH GRADE,Short Tons,"
             "DELIVERY POINT,Total Registered (warranted),"
             "Total Eligible (non-warranted),TOTAL COPPER,,,,,limitation\n"
             f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
-            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "gold,World,annual,400,calendar_days,NONE,,GOLD,"
+            "\"metric tons, gold content\",,,,,"
             "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
         )
         with tempfile.TemporaryDirectory() as temp:
@@ -1040,19 +1066,22 @@ class ContextProviderTests(unittest.TestCase):
         gold_url = "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf"
         header = (
             "provider,source_url,source,commodity_code,commodity_family,market,"
-            "frequency,freshness_days,expected_sheet,commodity_title,expected_unit,"
+            "frequency,freshness_days,freshness_basis,holiday_calendar,"
+            "expected_sheet,commodity_title,expected_unit,"
             "location_header,registered_total_label,eligible_total_label,"
             "combined_total_label,table_kind,reference_year,publication_date,"
             "publication_month,limitation_note\n"
         )
         rows = (
             f"comex_copper_stocks,{copper_url},CME Group,COPPER_COMEX,copper,"
-            "COMEX,daily,7,Daily Metal Stocks Report,COPPER - HIGH GRADE,"
+            "COMEX,daily,7,trading_days,CME_US,Daily Metal Stocks Report,"
+            "COPPER - HIGH GRADE,"
             "Short Tons,DELIVERY POINT,Total Registered (warranted),"
             "Total Eligible (non-warranted),TOTAL COPPER,,,,,"
             "deliverable_inventory_proxy; LME not included\n"
             f"usgs_gold_structural,{gold_url},U.S. Geological Survey,GOLD_COMEX,"
-            "gold,World,annual,400,,GOLD,\"metric tons, gold content\",,,,,"
+            "gold,World,annual,400,calendar_days,NONE,,GOLD,"
+            "\"metric tons, gold content\",,,,,"
             "mine_reserves,2025,2026-02-06,February 2026,monthly survey paused\n"
         )
         with tempfile.TemporaryDirectory() as temp:

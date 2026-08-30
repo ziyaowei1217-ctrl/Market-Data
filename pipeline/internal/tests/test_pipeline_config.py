@@ -26,7 +26,7 @@ EXPECTED_SECTION_HASHES = {
     "context.eia_series": "b2930c0607e0161b3de7f5cb53bcc16cbd0e84b9dc2d345298590967d0a8deaa",
     "context.usda_psd": "5564caa7c02b63c29c268bdb25ec0e6f62a4d0db7be92ad2638f9645ff3aa21e",
     "context.usda_esr": "333ec1a5244cbcbc5f590c3a601a64e22b38d04209f97e6638f16faa29a6a977",
-    "context.metals": "adf8027faf886d84fe69451e897b7a42b73c8293fa9782a953da3693c179caf7",
+    "context.metals": "1f9f6064a098fb41a943ba905dbcfa58e45d0a14c08d1fa4b3e466cfe132eba8",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
 }
@@ -387,6 +387,7 @@ class PipelineConfigTests(unittest.TestCase):
         self.assertEqual({row.get("holiday_calendar") for row in cme}, {"CME_US"})
         self.assertEqual({row.get("freshness_days") for row in usgs}, {"400"})
         self.assertEqual({row.get("freshness_basis") for row in usgs}, {"calendar_days"})
+        self.assertEqual({row.get("holiday_calendar") for row in usgs}, {"NONE"})
 
     def test_workbook_dependencies_bound_openpyxl_and_retain_xlrd(self):
         requirements = (

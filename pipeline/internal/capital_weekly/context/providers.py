@@ -848,6 +848,8 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
         ):
             raise ValueError(f"{provider} requires an official CME delivery report URL")
         required = (
+            "freshness_basis",
+            "holiday_calendar",
             "expected_sheet",
             "commodity_title",
             "expected_unit",
@@ -856,16 +858,6 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
             "eligible_total_label",
             "combined_total_label",
         )
-        freshness_basis = str(
-            item.get("freshness_basis") or "trading_days"
-        ).strip()
-        holiday_calendar = str(
-            item.get("holiday_calendar") or "CME_US"
-        ).strip()
-        if freshness_basis != "trading_days" or holiday_calendar != "CME_US":
-            raise ValueError(
-                f"{provider} requires CME_US trading-day freshness"
-            )
     elif provider.startswith("usgs_"):
         if (
             parsed_url.scheme != "https"
@@ -875,6 +867,8 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
         ):
             raise ValueError(f"{provider} requires an official USGS MCS PDF URL")
         required = (
+            "freshness_basis",
+            "holiday_calendar",
             "commodity_title",
             "expected_unit",
             "table_kind",
@@ -882,12 +876,6 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
             "publication_date",
             "publication_month",
         )
-        freshness_basis = str(
-            item.get("freshness_basis") or "calendar_days"
-        ).strip()
-        holiday_calendar = ""
-        if freshness_basis != "calendar_days":
-            raise ValueError(f"{provider} requires calendar-day freshness")
     else:
         raise ValueError(f"Unsupported metals provider: {provider or 'blank'}")
     common = (
@@ -906,6 +894,15 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
     ]
     if missing:
         raise ValueError(f"{provider} metals config missing: {', '.join(missing)}")
+    freshness_basis = str(item["freshness_basis"]).strip()
+    holiday_calendar = str(item["holiday_calendar"]).strip()
+    if provider.startswith("comex_"):
+        if freshness_basis != "trading_days" or holiday_calendar != "CME_US":
+            raise ValueError(f"{provider} requires CME_US trading-day freshness")
+    elif freshness_basis != "calendar_days" or holiday_calendar != "NONE":
+        raise ValueError(
+            f"{provider} requires calendar-day freshness with holiday_calendar NONE"
+        )
     try:
         freshness_days = int(str(item["freshness_days"]))
     except (TypeError, ValueError) as error:

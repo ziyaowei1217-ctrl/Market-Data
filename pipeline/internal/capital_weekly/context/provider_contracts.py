@@ -25,6 +25,7 @@ class ProviderResult:
     source_url: str
     status: str = "OK"
     notes: str = ""
+    raw_is_diagnostic: bool = False
 
 
 @dataclass(frozen=True)

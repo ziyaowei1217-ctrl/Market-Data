@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -54,7 +55,17 @@ def main() -> None:
         if unknown:
             parser.error(f"unknown providers: {', '.join(unknown)}")
         providers = {name: providers[name] for name in requested}
-    tables = run_weekly_context(providers, raw_dir=raw_dir, as_of_date=end)
+    audit_secrets = tuple(
+        secret
+        for name in ("EIA_API_KEY", "USDA_API_KEY")
+        if (secret := os.environ.get(name, "").strip())
+    )
+    tables = run_weekly_context(
+        providers,
+        raw_dir=raw_dir,
+        as_of_date=end,
+        audit_secrets=audit_secrets,
+    )
     publish_weekly_context_bundle(tables, output)
     print(f"saved: {output}")
     print(f"window: {start} to {end}")

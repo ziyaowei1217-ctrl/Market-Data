@@ -7,7 +7,8 @@ import tempfile
 import time
 from datetime import date, datetime
 from pathlib import Path
-from typing import Mapping
+from typing import Mapping, Sequence
+from urllib.parse import quote, quote_plus
 
 import pandas as pd
 
@@ -104,6 +105,7 @@ def run_weekly_context(
     providers: Mapping[str, ContextProvider],
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
+    audit_secrets: Sequence[str] = (),
 ) -> dict[str, list[dict]]:
     tables = {category: [] for category in CATEGORY_FILES}
     raw_path = Path(raw_dir) if raw_dir else None
@@ -136,12 +138,22 @@ def run_weekly_context(
             )
             if provider.spec.category not in tables or provider.spec.category == "source_log":
                 raise ValueError(f"Unsupported context category: {result.category}")
-            if raw_path:
-                raw_content = (
-                    sanitize_audit_bytes(result.raw_text)
-                    if isinstance(result.raw_text, bytes)
-                    else sanitize_audit_text(result.raw_text).encode("utf-8")
+            if (
+                isinstance(result.raw_text, bytes)
+                and not result.raw_is_diagnostic
+                and _contains_configured_secret(result.raw_text, audit_secrets)
+            ):
+                qualifier = "Successful " if result.status == "OK" else ""
+                raise ValueError(
+                    f"{qualifier}raw source contains a configured credential"
                 )
+            if raw_path:
+                if isinstance(result.raw_text, bytes) and result.raw_is_diagnostic:
+                    raw_content = sanitize_audit_bytes(result.raw_text)
+                elif isinstance(result.raw_text, bytes):
+                    raw_content = result.raw_text
+                else:
+                    raw_content = sanitize_audit_text(result.raw_text).encode("utf-8")
                 (raw_path / f"{_safe_provider_name(provider_name)}.raw").write_bytes(
                     raw_content
                 )
@@ -232,6 +244,20 @@ def run_weekly_context(
             )
     _validate_combined_economic_releases(tables, run_date)
     return tables
+
+
+def _contains_configured_secret(raw_content: bytes, secrets: Sequence[str]) -> bool:
+    for secret in secrets:
+        if not secret:
+            continue
+        candidates = {
+            secret,
+            quote(secret, safe=""),
+            quote_plus(secret, safe=""),
+        }
+        if any(candidate.encode("utf-8") in raw_content for candidate in candidates):
+            return True
+    return False
 
 
 def _validate_combined_economic_releases(

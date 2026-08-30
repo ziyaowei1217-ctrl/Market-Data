@@ -2,6 +2,7 @@ from datetime import date
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import csv
+import hashlib
 import json
 import unittest
 
@@ -280,6 +281,7 @@ class WeeklyContextTests(unittest.TestCase):
                 source_url=prepared_url,
                 status="FETCH_FAILED",
                 notes=f"401 Client Error for url: {prepared_url}",
+                raw_is_diagnostic=True,
             ),
         )
 
@@ -299,6 +301,98 @@ class WeeklyContextTests(unittest.TestCase):
 
         self.assertNotIn(secret, serialized)
         self.assertIn("api_key=[REDACTED]", serialized)
+
+    def test_successful_binary_source_is_cached_byte_exact_with_matching_hash(self):
+        raw_bytes = b"\x00official?api_key=published-cell-value\xff"
+        raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
+        for status in ("OK", "POINT_IN_TIME_UNAVAILABLE"):
+            with self.subTest(status=status):
+                spec = ProviderSpec(
+                    name="official_binary_fixture",
+                    category="commodity_fundamentals",
+                    source_tier="public",
+                    requiredness="optional",
+                    provider_version="fixture-v1",
+                    schema_version="context-metric-v1",
+                    frequency="weekly",
+                    freshness_days=5,
+                )
+                provider = ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="commodity_fundamentals",
+                        rows=[],
+                        raw_text=raw_bytes,
+                        source="CME Group",
+                        source_url="https://www.cmegroup.com/official.xls",
+                        status=status,
+                        notes=f"bytes={len(raw_bytes)}; sha256={raw_sha256}",
+                    ),
+                )
+
+                with TemporaryDirectory() as directory:
+                    raw_dir = Path(directory) / "raw"
+                    tables = run_weekly_context(
+                        {"official_binary_fixture": provider},
+                        raw_dir=raw_dir,
+                        as_of_date=date(2026, 8, 9),
+                    )
+                    cached_bytes = (
+                        raw_dir / "official_binary_fixture.raw"
+                    ).read_bytes()
+
+                self.assertEqual(cached_bytes, raw_bytes)
+                self.assertEqual(hashlib.sha256(cached_bytes).hexdigest(), raw_sha256)
+                self.assertIn(
+                    f"sha256={raw_sha256}", tables["source_log"][0]["notes"]
+                )
+                self.assertEqual(tables["source_log"][0]["status"], status)
+
+    def test_successful_binary_source_containing_actual_credential_fails_closed(self):
+        secret = "actual-runtime-credential"
+        raw_bytes = f"official?api_key={secret}".encode("utf-8")
+        spec = ProviderSpec(
+            name="official_binary_fixture",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="weekly",
+            freshness_days=5,
+        )
+        provider = ContextProvider(
+            spec,
+            lambda: ProviderResult(
+                category="commodity_fundamentals",
+                rows=[],
+                raw_text=raw_bytes,
+                source="CME Group",
+                source_url="https://www.cmegroup.com/official.xls",
+            ),
+        )
+
+        with TemporaryDirectory() as directory:
+            raw_dir = Path(directory) / "raw"
+            tables = run_weekly_context(
+                {"official_binary_fixture": provider},
+                raw_dir=raw_dir,
+                as_of_date=date(2026, 8, 9),
+                audit_secrets=(secret,),
+            )
+            self.assertFalse((raw_dir / "official_binary_fixture.raw").exists())
+
+        audit = tables["source_log"][0]
+        self.assertEqual(audit["status"], "FETCH_FAILED")
+        self.assertNotIn(secret, json.dumps(audit))
+
+        uncached_tables = run_weekly_context(
+            {"official_binary_fixture": provider},
+            as_of_date=date(2026, 8, 9),
+            audit_secrets=(secret,),
+        )
+        self.assertEqual(uncached_tables["source_log"][0]["status"], "FETCH_FAILED")
+        self.assertNotIn(secret, json.dumps(uncached_tables["source_log"][0]))
 
     def test_source_log_orders_known_as_of_as_timestamps(self):
         spec = ProviderSpec(

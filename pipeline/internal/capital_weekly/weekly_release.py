@@ -948,6 +948,23 @@ def _validate_row(
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} {column} exceeds {window.end}"
             )
+    if spec.pipeline == "macro_assets" and spec.filename == "commodities.csv":
+        raw_known_as_of = (row.get("known_as_of") or "").strip()
+        if raw_known_as_of:
+            try:
+                known_as_of = datetime.fromisoformat(raw_known_as_of)
+            except ValueError as error:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of must include a UTC offset"
+                ) from error
+            if known_as_of.tzinfo is None or known_as_of.utcoffset() is None:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of must include a UTC offset"
+                )
+            if known_as_of.astimezone(HONG_KONG) > cutoff:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of exceeds {window.end}"
+                )
     source_error = (
         _source_reference_error(row, spec.source_url_column, rows)
         if spec.source_url_column
@@ -1089,7 +1106,6 @@ def validate_staged_week(
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_usda_agriculture_coverage(validated_rows)
         _validate_eia_physical_coverage(validated_rows)
-        _validate_metals_core_coverage(validated_rows, window)
         _validate_configured_commodity_coverage(validated_rows, window)
     pipelines = [
         {
@@ -1180,6 +1196,11 @@ def _usable_business_value(
     return observation_date <= window.end and math.isfinite(value)
 
 
+def _official_host(source_url: str, domain: str) -> bool:
+    host = (urlparse(source_url).hostname or "").lower()
+    return host == domain or host.endswith(f".{domain}")
+
+
 def _validate_configured_commodity_coverage(
     datasets: dict[tuple[str, str], list[dict[str, str]]],
     window: WeekWindow,
@@ -1234,6 +1255,20 @@ def _validate_configured_commodity_coverage(
                 )
             )
             and (row.get("asset_class") or "").strip() == "commodity"
+            and (
+                expected["provider"] != "world_bank_pink_sheet"
+                or _official_host(
+                    (row.get("source_url") or "").strip(),
+                    "worldbank.org",
+                )
+            )
+            and (
+                expected["provider"] != "eia_v2"
+                or _official_host(
+                    (row.get("source_url") or "").strip(),
+                    "eia.gov",
+                )
+            )
             and _usable_business_value(
                 row,
                 window,
@@ -1264,6 +1299,7 @@ def _validate_configured_commodity_coverage(
         identity_field="contract_code",
         required_fields=(
             "contract_code",
+            "market_name",
             "report_family",
             "commodity_code",
             "commodity_family",
@@ -1284,20 +1320,34 @@ def _validate_configured_commodity_coverage(
         for expected in contracts:
             code = expected["commodity_code"]
             family = expected["commodity_family"]
-            if not any(
-                (row.get("commodity_code") or "").strip() == code
+            open_interest = [
+                row
+                for row in positioning_rows
+                if (row.get("market") or "").strip() == expected["market_name"]
+                and (row.get("commodity_code") or "").strip() == code
                 and (row.get("commodity_family") or "").strip() == family
                 and (row.get("metric_role") or "").strip() == "positioning"
+                and (row.get("metric_code") or "").strip()
+                == f"{code}_open_interest"
+                and (row.get("measurement_kind") or "").strip()
+                == "open_interest"
+                and (row.get("source") or "").strip()
+                == "U.S. Commodity Futures Trading Commission"
+                and _official_host(
+                    (row.get("source_url") or "").strip(),
+                    "cftc.gov",
+                )
                 and _usable_business_value(
                     row,
                     window,
                     date_column="as_of_date",
                     value_column="value",
                 )
-                for row in positioning_rows
-            ):
+            ]
+            if len(open_interest) != 1:
                 raise ReleaseValidationError(
-                    f"{provider} missing configured contract commodity mapping: "
+                    f"{provider} CFTC contract identity missing, duplicated, or "
+                    f"mismapped: "
                     f"{expected['contract_code']} / {code} / {family}"
                 )
 
@@ -1322,12 +1372,19 @@ def _validate_configured_commodity_coverage(
         provider_rows = [
             row
             for row in fundamental_rows
-            if (row.get("metric_code") or "").strip() in configured_metric_codes
+            if any(
+                (row.get("metric_code") or "").strip() == metric_code
+                or (row.get("metric_code") or "").strip().startswith(
+                    f"{metric_code}_"
+                )
+                for metric_code in configured_metric_codes
+            )
         ]
         if status == "NOT_CONFIGURED":
             if requiredness != "optional" or provider_rows:
                 raise ReleaseValidationError(
-                    f"{provider} NOT_CONFIGURED must be optional with no rows"
+                    f"{provider} NOT_CONFIGURED must be optional with no base or "
+                    "derived rows"
                 )
             continue
         if status != "OK" or requiredness != "required":
@@ -1360,16 +1417,79 @@ def _validate_configured_commodity_coverage(
     metals_config = _configured_rows(
         "context.metals",
         identity_field="provider",
-        required_fields=("provider", "commodity_code", "commodity_family"),
+        required_fields=(
+            "provider",
+            "source",
+            "source_url",
+            "commodity_code",
+            "commodity_family",
+        ),
     )
     for expected in metals_config:
+        provider = expected["provider"]
         status_row = _require_unique_context_status(
             context_source_rows,
-            expected["provider"],
+            provider,
         )
         if (status_row.get("requiredness") or "").strip() != "optional":
             raise ReleaseValidationError(
-                f"supplemental provider {expected['provider']} must be optional"
+                f"supplemental provider {provider} must be optional"
+            )
+        if (
+            (status_row.get("source") or "").strip() != expected["source"]
+            or (status_row.get("source_url") or "").strip()
+            != expected["source_url"]
+        ):
+            raise ReleaseValidationError(
+                f"supplemental provider {provider} status provenance is mismapped"
+            )
+        code = expected["commodity_code"]
+        family = expected["commodity_family"]
+        namespace = provider.split("_", 1)[0]
+        metric_prefix = f"{code}_{namespace}_"
+        provider_rows = [
+            row
+            for row in fundamental_rows
+            if (
+                (row.get("metric_code") or "").strip().startswith(metric_prefix)
+                or (
+                    (row.get("source") or "").strip() == expected["source"]
+                    and (row.get("source_url") or "").strip()
+                    == expected["source_url"]
+                )
+            )
+        ]
+        status = (status_row.get("status") or "").strip().upper()
+        if status != "OK":
+            if provider_rows:
+                raise ReleaseValidationError(
+                    f"{provider} {status} requires zero business rows"
+                )
+            continue
+        exact_rows = [
+            row
+            for row in provider_rows
+            if (row.get("commodity_code") or "").strip() == code
+            and (row.get("commodity_family") or "").strip() == family
+            and (row.get("source") or "").strip() == expected["source"]
+            and (row.get("source_url") or "").strip() == expected["source_url"]
+            and (row.get("metric_role") or "").strip()
+            == "physical_fundamental"
+            and _usable_business_value(
+                row,
+                window,
+                date_column="as_of_date",
+                value_column="value",
+            )
+        ]
+        if not provider_rows:
+            raise ReleaseValidationError(
+                f"{provider} OK requires configured business rows for "
+                f"{code} / {family}"
+            )
+        if len(exact_rows) != len(provider_rows):
+            raise ReleaseValidationError(
+                f"{provider} business rows must map to {code} / {family}"
             )
 
 
@@ -1526,99 +1646,6 @@ def _validate_usda_agriculture_coverage(
                 raise ReleaseValidationError(
                     "USDA row requires official FAS provenance"
                 )
-
-
-def _validate_metals_core_coverage(
-    datasets: dict[tuple[str, str], list[dict[str, str]]],
-    window: WeekWindow,
-) -> None:
-    source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
-    price_rows = datasets.get(("macro_assets", "commodities.csv"), [])
-    positioning_rows = datasets.get(
-        ("weekly_context", "positioning_flows.csv"),
-        [],
-    )
-    provider_families = {
-        "comex_copper_stocks": ("copper", "COPPER_COMEX"),
-        "usgs_copper_structural": ("copper", "COPPER_COMEX"),
-        "comex_gold_stocks": ("gold", "GOLD_COMEX"),
-        "usgs_gold_structural": ("gold", "GOLD_COMEX"),
-    }
-    active = {
-        provider_families[(row.get("provider") or "").strip()]
-        for row in source_rows
-        if (row.get("provider") or "").strip() in provider_families
-    }
-
-    def official_host(source_url: str, domain: str) -> bool:
-        host = (urlparse(source_url).hostname or "").lower()
-        return host == domain or host.endswith(f".{domain}")
-
-    def usable_business_value(
-        row: dict[str, str],
-        *,
-        date_column: str,
-        value_column: str,
-    ) -> bool:
-        if (row.get("qc_flag") or "").strip().upper() != "OK":
-            return False
-        raw_date = (row.get(date_column) or "").strip()
-        raw_value = (row.get(value_column) or "").strip()
-        if not raw_date or not raw_value:
-            return False
-        try:
-            observation_date = date.fromisoformat(raw_date)
-            value = float(raw_value)
-        except ValueError:
-            return False
-        return observation_date <= window.end and math.isfinite(value)
-
-    for family, commodity_code in sorted(active):
-        has_world_bank_price = any(
-            (row.get("asset_class") or "").strip() == "commodity"
-            and (row.get("commodity_code") or "").strip() == commodity_code
-            and (row.get("commodity_family") or "").strip() == family
-            and (row.get("provider") or "").strip() == "world_bank_pink_sheet"
-            and (row.get("price_kind") or "").strip()
-            == "official_monthly_benchmark"
-            and official_host(
-                (row.get("source_url") or "").strip(),
-                "worldbank.org",
-            )
-            and usable_business_value(
-                row,
-                date_column="latest_date",
-                value_column="latest_value",
-            )
-            for row in price_rows
-        )
-        if not has_world_bank_price:
-            raise ReleaseValidationError(
-                f"{family} active metals supplemental provider requires an "
-                "official World Bank price"
-            )
-        has_cftc_positioning = any(
-            (row.get("commodity_code") or "").strip() == commodity_code
-            and (row.get("commodity_family") or "").strip() == family
-            and (row.get("metric_role") or "").strip() == "positioning"
-            and (row.get("source") or "").strip()
-            == "U.S. Commodity Futures Trading Commission"
-            and official_host(
-                (row.get("source_url") or "").strip(),
-                "cftc.gov",
-            )
-            and usable_business_value(
-                row,
-                date_column="as_of_date",
-                value_column="value",
-            )
-            for row in positioning_rows
-        )
-        if not has_cftc_positioning:
-            raise ReleaseValidationError(
-                f"{family} active metals supplemental provider requires official "
-                "CFTC positioning"
-            )
 
 
 def _strict_json_object(path: Path, root: Path) -> dict:
