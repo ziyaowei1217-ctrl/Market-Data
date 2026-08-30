@@ -185,6 +185,51 @@ class USDACommodityTests(unittest.TestCase):
             "2026-08-20"
         })
 
+    def test_esr_validates_units_only_after_selecting_the_eligible_release_week(self):
+        spec = {
+            "commodity_code": "CORN",
+            "commodity_family": "grains_oilseeds",
+            "commodity_api_code": "101",
+            "country_name": "All destinations",
+            "aggregate_all_countries": True,
+            "market_year": 2026,
+            "unit_code": "1",
+            "unit": "Metric Tons",
+        }
+        records = fixture("esr_records.json")
+        future_bad_unit = {
+            **records[-1],
+            "countryCode": 9999,
+            "unitId": 999,
+        }
+
+        selected = parse_esr_records(
+            [*records, future_bad_unit],
+            spec,
+            datetime(2026, 8, 30, 23, 59, 59, tzinfo=HONG_KONG),
+        )
+
+        self.assertEqual(
+            [(row["metric"], row["value"]) for row in selected],
+            [
+                ("net_sales", 210_000),
+                ("weekly_exports", 340_000),
+                ("outstanding_sales", 4_600_000),
+            ],
+        )
+
+        eligible_bad_unit = {
+            **records[0],
+            "countryCode": 9999,
+            "unitId": 999,
+        }
+        with self.assertRaisesRegex(ValueError, "unexpected native unit"):
+            parse_esr_records(
+                [records[0], records[1], eligible_bad_unit],
+                spec,
+                datetime(2026, 8, 30, 23, 59, 59, tzinfo=HONG_KONG),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

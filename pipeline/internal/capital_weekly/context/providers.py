@@ -390,13 +390,18 @@ def _eligible_release(
         raise ValueError(
             f"USDA release lookup missing commodity {commodity_code} market year {market_year}"
         )
-    latest = max(matching, key=lambda item: item[0])
     hong_kong = ZoneInfo("Asia/Hong_Kong")
-    if latest[0].astimezone(hong_kong) > cutoff.astimezone(hong_kong):
+    eligible = [
+        item
+        for item in matching
+        if item[0].astimezone(hong_kong) <= cutoff.astimezone(hong_kong)
+    ]
+    if not eligible:
         raise ValueError(
-            f"USDA current vintage for {commodity_code} {market_year} is after target Sunday"
+            f"USDA release lookup has no eligible vintage for "
+            f"{commodity_code} {market_year}"
         )
-    return latest[1]
+    return max(eligible, key=lambda item: item[0])[1]
 
 
 def _usda_not_configured(provider: str) -> ProviderResult:
@@ -612,19 +617,6 @@ def _usda_esr_provider(
                 }
                 for record in data_records
             ]
-            unknown_country_codes = sorted({
-                str(
-                    record.get("countryCode")
-                    if record.get("countryCode") is not None
-                    else ""
-                )
-                for record in vintage_records
-            } - official_country_codes)
-            if unknown_country_codes:
-                raise ValueError(
-                    "USDA ESR data contains country codes absent from official lookup: "
-                    + ", ".join(unknown_country_codes)
-                )
             raw_bundle["data"][f"{api_commodity}:{market_year}"] = vintage_records
             parsed = parse_esr_records(
                 vintage_records,
@@ -637,6 +629,7 @@ def _usda_esr_provider(
                     "market_year": market_year,
                     "unit_code": unit_code,
                     "unit": config_item["unit_name"],
+                    "allowed_country_codes": official_country_codes,
                 },
                 cutoff,
             )

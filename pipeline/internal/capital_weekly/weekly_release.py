@@ -23,6 +23,8 @@ import re
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+from pipeline.internal.common import load_config_rows
+
 from .macro_assets import CALCULATED_SOURCE_REFERENCES
 from .weekly_context import CATEGORY_FIELDS
 
@@ -1113,15 +1115,26 @@ def _validate_usda_agriculture_coverage(
         ("weekly_context", "commodity_fundamentals.csv"),
         [],
     )
-    configured = {
-        "usda_psd": frozenset({
-            "CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON", "SUGAR",
-            "COFFEE", "COCOA", "CATTLE", "HOGS",
-        }),
-        "usda_esr": frozenset({
-            "CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON",
-        }),
-    }
+    configured: dict[str, dict[str, str]] = {}
+    for provider in ("usda_psd", "usda_esr"):
+        mapping: dict[str, str] = {}
+        for row in load_config_rows(f"context.{provider}"):
+            code = str(row.get("commodity_code") or "").strip()
+            family = str(row.get("commodity_family") or "").strip()
+            if not code or not family:
+                raise ReleaseValidationError(
+                    f"{provider} configured coverage requires code and family"
+                )
+            if code in mapping:
+                raise ReleaseValidationError(
+                    f"{provider} configured coverage has duplicate code: {code}"
+                )
+            mapping[code] = family
+        if not mapping:
+            raise ReleaseValidationError(
+                f"{provider} configured coverage must not be empty"
+            )
+        configured[provider] = mapping
     provider_rows = {
         provider: [
             row
@@ -1130,8 +1143,6 @@ def _validate_usda_agriculture_coverage(
         ]
         for provider in configured
     }
-    if not any(provider_rows.values()):
-        return
     missing_statuses = [
         provider for provider, rows in provider_rows.items() if not rows
     ]
@@ -1156,7 +1167,8 @@ def _validate_usda_agriculture_coverage(
         raise ReleaseValidationError(
             "USDA PSD and ESR capability statuses must reflect the same key state"
         )
-    for provider, expected_codes in configured.items():
+    for provider, expected_mapping in configured.items():
+        expected_codes = frozenset(expected_mapping)
         source_row = provider_rows[provider][0]
         status = statuses[provider]
         requiredness = (source_row.get("requiredness") or "").strip()
@@ -1190,6 +1202,13 @@ def _validate_usda_agriculture_coverage(
                 + ", ".join(missing_codes)
             )
         for row in rows:
+            code = (row.get("commodity_code") or "").strip()
+            family = (row.get("commodity_family") or "").strip()
+            expected_family = expected_mapping[code]
+            if family != expected_family:
+                raise ReleaseValidationError(
+                    f"{provider} {code} commodity_family must be {expected_family}"
+                )
             source = (row.get("source") or "").strip()
             source_url = (row.get("source_url") or "").strip()
             host = (urlparse(source_url).hostname or "").lower()

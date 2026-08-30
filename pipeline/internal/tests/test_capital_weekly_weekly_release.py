@@ -164,6 +164,68 @@ def fixture_row(fields, **overrides) -> dict:
     return row
 
 
+USDA_PSD_FAMILIES = {
+    "CORN": "grains_oilseeds",
+    "SOYBEANS": "grains_oilseeds",
+    "WHEAT": "grains_oilseeds",
+    "RICE": "grains_oilseeds",
+    "COTTON": "softs",
+    "SUGAR": "softs",
+    "COFFEE": "softs",
+    "COCOA": "softs",
+    "CATTLE": "livestock",
+    "HOGS": "livestock",
+}
+USDA_ESR_FAMILIES = {
+    code: USDA_PSD_FAMILIES[code]
+    for code in ("CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON")
+}
+
+
+def usda_source_rows(*, status: str, requiredness: str) -> list[dict]:
+    return [
+        fixture_row(
+            CATEGORY_FIELDS["source_log"],
+            provider=provider,
+            category="commodity_fundamentals",
+            requiredness=requiredness,
+            status=status,
+            observations="0" if status == "NOT_CONFIGURED" else "1",
+            as_of_date="2026-08-09",
+            source="USDA Foreign Agricultural Service",
+            source_url="https://api.fas.usda.gov/",
+        )
+        for provider in ("usda_psd", "usda_esr")
+    ]
+
+
+def usda_fundamental_rows(
+    psd_families: dict[str, str],
+    esr_families: dict[str, str],
+) -> list[dict]:
+    rows = []
+    for provider, families in (
+        ("usda_psd", psd_families),
+        ("usda_esr", esr_families),
+    ):
+        for commodity_code, family in families.items():
+            rows.append(fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                metric_code=f"{provider}_{commodity_code.lower()}_fixture",
+                commodity_code=commodity_code,
+                commodity_family=family,
+                metric_role="fundamental",
+                measurement_kind="production" if provider == "usda_psd" else "net_sales",
+                participant_class="",
+                known_as_of="2026-08-07T12:00:00-04:00",
+                reference_period="2026",
+                source="USDA Foreign Agricultural Service",
+                source_url=f"https://api.fas.usda.gov/api/{provider[5:]}/fixture",
+            ))
+    return rows
+
+
 def economic_release_row(**overrides) -> dict:
     row = fixture_row(
         CATEGORY_FIELDS["economic_releases"],
@@ -267,7 +329,11 @@ def write_valid_pipeline_output(pipeline: str, output: Path) -> None:
                         "source_url": "https://example.test/context",
                         "elapsed_ms": "1",
                         "notes": "",
-                    }
+                    },
+                    *usda_source_rows(
+                        status="NOT_CONFIGURED",
+                        requiredness="optional",
+                    ),
                 ]
             write_csv(output / f"{category}.csv", fields, rows)
         (output / "weekly_context_snapshot.json").write_text("{}", encoding="utf-8")
@@ -795,7 +861,17 @@ class StagedValidationTests(unittest.TestCase):
             )
             for provider in ("eia_natural_gas", "eia_refined_products")
         ]
-        write_csv(path, CATEGORY_FIELDS["source_log"], rows)
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                *rows,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -818,6 +894,25 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(path, CATEGORY_FIELDS["source_log"], rows)
 
         validate_staged_week(self.root, self.window)
+
+    def test_usda_capability_status_is_required_even_when_both_rows_are_absent(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [fixture_row(
+                CATEGORY_FIELDS["source_log"],
+                provider="fixture",
+                category="market_internals",
+                as_of_date="2026-08-09",
+            )],
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "USDA agriculture capability status missing.*usda_esr.*usda_psd",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_usda_capability_status_requires_both_independent_subsections(self):
         path = self.outputs["weekly_context"] / "source_log.csv"
@@ -881,6 +976,52 @@ class StagedValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ReleaseValidationError,
             "usda_psd.*missing configured commodity_code.*SOYBEANS",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_usda_coverage_uses_the_configured_code_family_mapping(self):
+        config_path = Path(self.temporary.name) / "config.json"
+        config_path.write_text(json.dumps({
+            "context": {
+                "usda_psd": [
+                    {"commodity_code": "CORN", "commodity_family": "softs"}
+                ],
+                "usda_esr": [
+                    {"commodity_code": "CORN", "commodity_family": "softs"}
+                ],
+            }
+        }), encoding="utf-8")
+        write_csv(
+            self.outputs["weekly_context"] / "source_log.csv",
+            CATEGORY_FIELDS["source_log"],
+            usda_source_rows(status="OK", requiredness="required"),
+        )
+        write_csv(
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            usda_fundamental_rows({"CORN": "softs"}, {"CORN": "softs"}),
+        )
+
+        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
+            validate_staged_week(self.root, self.window)
+
+    def test_usda_coverage_rejects_a_wrong_family_for_a_configured_code(self):
+        write_csv(
+            self.outputs["weekly_context"] / "source_log.csv",
+            CATEGORY_FIELDS["source_log"],
+            usda_source_rows(status="OK", requiredness="required"),
+        )
+        wrong_psd = dict(USDA_PSD_FAMILIES)
+        wrong_psd["CORN"] = "softs"
+        write_csv(
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            usda_fundamental_rows(wrong_psd, USDA_ESR_FAMILIES),
+        )
+
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "usda_psd.*CORN.*commodity_family.*grains_oilseeds",
         ):
             validate_staged_week(self.root, self.window)
 
@@ -1053,7 +1194,17 @@ class StagedValidationTests(unittest.TestCase):
             status="INSUFFICIENT_DATA",
             as_of_date="2026-08-09",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1068,7 +1219,17 @@ class StagedValidationTests(unittest.TestCase):
             observations="0",
             as_of_date="2026-08-09",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1178,7 +1339,17 @@ class StagedValidationTests(unittest.TestCase):
             status="OK",
             as_of_date="2026-08-09",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1193,7 +1364,17 @@ class StagedValidationTests(unittest.TestCase):
             status="OK",
             as_of_date="2026-08-09",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1253,7 +1434,17 @@ class StagedValidationTests(unittest.TestCase):
             source="Yahoo Finance (Cboe indices)",
             source_url="https://finance.yahoo.com/",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1279,7 +1470,17 @@ class StagedValidationTests(unittest.TestCase):
             )
             for provider, url in providers
         ]
-        write_csv(path, CATEGORY_FIELDS["source_log"], rows)
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                *rows,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         validate_staged_week(self.root, self.window)
 
@@ -1295,7 +1496,17 @@ class StagedValidationTests(unittest.TestCase):
             as_of_date="2026-08-09",
             source_url="https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        write_csv(
+            path,
+            CATEGORY_FIELDS["source_log"],
+            [
+                row,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
+        )
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
@@ -1337,7 +1548,13 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(
             self.outputs["weekly_context"] / "source_log.csv",
             CATEGORY_FIELDS["source_log"],
-            [active],
+            [
+                active,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
         )
 
         with self.assertRaisesRegex(
@@ -1382,7 +1599,13 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(
             self.outputs["weekly_context"] / "source_log.csv",
             CATEGORY_FIELDS["source_log"],
-            [active],
+            [
+                active,
+                *usda_source_rows(
+                    status="NOT_CONFIGURED",
+                    requiredness="optional",
+                ),
+            ],
         )
 
         with self.assertRaisesRegex(

@@ -157,6 +157,45 @@ def write_provider_configs(data_dir):
     )
 
 
+def write_single_config_row(path: Path, row: dict) -> None:
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(row))
+        writer.writeheader()
+        writer.writerow(row)
+
+
+def corn_psd_config() -> dict:
+    return {
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Corn",
+        "country_names": json.dumps(["World"]),
+        "market_year_offsets": json.dumps([0]),
+        "attributes": json.dumps({
+            "beginning_stocks": "Beginning Stocks",
+            "production": "Production",
+            "imports": "MY Imports",
+            "exports": "MY Exports",
+            "feed_use": "Feed Dom. Consumption",
+            "industrial_use": "Industrial Dom. Consumption",
+            "domestic_use": "Total Dom. Consumption",
+            "ending_stocks": "Ending Stocks",
+        }),
+        "unit_names": json.dumps(["1000 MT"]),
+    }
+
+
+def corn_esr_config() -> dict:
+    return {
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Corn",
+        "route": "allCountries",
+        "market_year_offsets": json.dumps([0]),
+        "unit_name": "Metric Tons",
+    }
+
+
 class ContextProviderTests(unittest.TestCase):
     def test_usda_families_are_independently_not_configured_before_validation(self):
         class NoNetworkSession:
@@ -194,6 +233,180 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(providers["usda_psd"].spec.requiredness, "optional")
         self.assertEqual(providers["usda_esr"].spec.requiredness, "optional")
         self.assertNotEqual(psd.notes, esr.notes)
+
+    def test_keyed_psd_provider_selects_latest_release_at_or_before_cutoff(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        lookups = json.loads(
+            (fixture_root / "psd_lookups.json").read_text(encoding="utf-8")
+        )
+        psd_records = json.loads(
+            (fixture_root / "psd_records.json").read_text(encoding="utf-8")
+        )
+        base = "https://api.fas.usda.gov"
+        responses = {
+            f"{base}/api/psd/commodities": lookups["commodities"],
+            f"{base}/api/psd/commodityAttributes": lookups["attributes"],
+            f"{base}/api/psd/countries": lookups["countries"],
+            f"{base}/api/psd/unitsOfMeasure": lookups["units"],
+            f"{base}/api/psd/commodity/0440000/dataReleaseDates": [
+                {
+                    "commodityCode": "0440000",
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-12T12:00:00-04:00",
+                },
+                {
+                    "commodityCode": "0440000",
+                    "marketYear": 2026,
+                    "releaseDate": "2026-09-12T12:00:00-04:00",
+                },
+            ],
+            f"{base}/api/psd/commodity/0440000/world/year/2026": psd_records,
+        }
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_psd.csv",
+                corn_psd_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=JsonSession(responses),
+            )["usda_psd"]
+            tables = run_weekly_context(
+                {"usda_psd": provider},
+                raw_dir=data_dir / "raw",
+                as_of_date=date(2026, 8, 30),
+            )
+
+        self.assertEqual(tables["source_log"][0]["status"], "OK")
+        self.assertEqual(
+            {row["known_as_of"] for row in tables["commodity_fundamentals"]},
+            {"2026-08-12T12:00:00-04:00"},
+        )
+
+    def test_keyed_esr_ignores_future_unknown_country_and_unit_after_cutoff(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        records = json.loads(
+            (fixture_root / "esr_records.json").read_text(encoding="utf-8")
+        )
+        future_invalid = {
+            **records[-1],
+            "countryCode": 9999,
+            "unitId": 999,
+        }
+        base = "https://api.fas.usda.gov"
+        responses = {
+            f"{base}/api/esr/commodities": [
+                {"commodityCode": 101, "commodityName": "Corn"}
+            ],
+            f"{base}/api/esr/countries": [
+                {"countryCode": 1220, "countryName": "Canada"},
+                {"countryCode": 2010, "countryName": "Mexico"},
+            ],
+            f"{base}/api/esr/unitsOfMeasure": [
+                {"unitId": 1, "unitNames": "Metric Tons"}
+            ],
+            f"{base}/api/esr/datareleasedates": [
+                {
+                    "commodityCode": 101,
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-27T08:30:00-04:00",
+                }
+            ],
+            f"{base}/api/esr/exports/commodityCode/101/allCountries/marketYear/2026": [
+                *records,
+                future_invalid,
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_esr.csv",
+                corn_esr_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=JsonSession(responses),
+            )["usda_esr"]
+            tables = run_weekly_context(
+                {"usda_esr": provider},
+                raw_dir=data_dir / "raw",
+                as_of_date=date(2026, 8, 30),
+            )
+
+        self.assertEqual(tables["source_log"][0]["status"], "OK")
+        self.assertEqual(
+            [(row["measurement_kind"], row["value"]) for row in tables["commodity_fundamentals"]],
+            [
+                ("net_sales", 210_000),
+                ("weekly_exports", 340_000),
+                ("outstanding_sales", 4_600_000),
+            ],
+        )
+
+    def test_keyed_esr_rejects_selected_unknown_country(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        records = json.loads(
+            (fixture_root / "esr_records.json").read_text(encoding="utf-8")
+        )
+        selected_unknown = {**records[0], "countryCode": 9999}
+        base = "https://api.fas.usda.gov"
+        responses = {
+            f"{base}/api/esr/commodities": [
+                {"commodityCode": 101, "commodityName": "Corn"}
+            ],
+            f"{base}/api/esr/countries": [
+                {"countryCode": 1220, "countryName": "Canada"},
+                {"countryCode": 2010, "countryName": "Mexico"},
+            ],
+            f"{base}/api/esr/unitsOfMeasure": [
+                {"unitId": 1, "unitNames": "Metric Tons"}
+            ],
+            f"{base}/api/esr/datareleasedates": [
+                {
+                    "commodityCode": 101,
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-27T08:30:00-04:00",
+                }
+            ],
+            f"{base}/api/esr/exports/commodityCode/101/allCountries/marketYear/2026": [
+                records[1],
+                selected_unknown,
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_esr.csv",
+                corn_esr_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=JsonSession(responses),
+            )["usda_esr"]
+            tables = run_weekly_context(
+                {"usda_esr": provider},
+                raw_dir=data_dir / "raw",
+                as_of_date=date(2026, 8, 30),
+            )
+
+        self.assertEqual(tables["source_log"][0]["status"], "FETCH_FAILED")
+        self.assertEqual(tables["commodity_fundamentals"], [])
 
     def test_keyed_usda_families_use_lookups_native_units_and_secretless_audits(self):
         fixture_root = Path(__file__).with_name("fixtures") / "usda"

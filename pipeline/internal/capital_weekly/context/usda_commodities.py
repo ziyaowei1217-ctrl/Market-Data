@@ -274,9 +274,6 @@ def parse_esr_records(
             raise ValueError("USDA ESR marketYear must be an integer") from error
         if record_year != market_year:
             continue
-        record_unit = str(record.get("unitId") if record.get("unitId") is not None else "")
-        if record_unit != unit_code:
-            raise ValueError(f"USDA ESR unexpected native unit {record_unit or 'blank'}")
         released_at = _timestamp(record.get("releaseDate"), "releaseDate")
         try:
             week_ending = date.fromisoformat(
@@ -299,6 +296,15 @@ def parse_esr_records(
     ]
     if not selected:
         return []
+    selected_unit_codes = {
+        str(record.get("unitId") if record.get("unitId") is not None else "")
+        for record in selected
+    }
+    if selected_unit_codes != {unit_code}:
+        unexpected = sorted(selected_unit_codes - {unit_code})
+        raise ValueError(
+            f"USDA ESR unexpected native unit {unexpected[0] if unexpected else 'blank'}"
+        )
     selected_country_codes = [
         str(
             record.get("countryCode")
@@ -314,6 +320,15 @@ def parse_esr_records(
         raise ValueError("USDA ESR selected release has duplicate country records")
     if not aggregate_all_countries and len(selected) != 1:
         raise ValueError("USDA ESR selected release has duplicate country records")
+    allowed_country_codes = spec.get("allowed_country_codes")
+    if allowed_country_codes is not None:
+        allowed = {str(code) for code in allowed_country_codes}
+        unknown = sorted(set(selected_country_codes) - allowed)
+        if unknown:
+            raise ValueError(
+                "USDA ESR selected release has country codes absent from "
+                "official lookup: " + ", ".join(unknown)
+            )
     metrics = (
         ("net_sales", "currentMYNetSales"),
         ("weekly_exports", "weeklyExports"),
