@@ -7,6 +7,7 @@ import pandas as pd
 from pipeline.internal.capital_weekly.context.market_internals import (
     calculate_breadth,
     calculate_liquidity_metrics,
+    calculate_registered_universe_state,
     calculate_style_relative_return,
     parse_nasdaq_market_summary,
 )
@@ -65,6 +66,75 @@ class MarketInternalsTests(unittest.TestCase):
             calculate_style_relative_return(style, benchmark),
             0.05,
         )
+
+    def test_registered_universe_applies_cutoff_before_breadth_calculation(self):
+        days = pd.bdate_range("2025-10-27", periods=205)
+        rows = []
+        for symbol, step in (("XLK", 1.0), ("XLF", -0.2)):
+            rows.extend(
+                {
+                    "symbol": symbol,
+                    "date": observation.date(),
+                    "close": 100.0 + index * step,
+                }
+                for index, observation in enumerate(days)
+            )
+        cutoff = days[-2].date()
+        rows.append(
+            {
+                "symbol": "XLF",
+                "date": days[-1].date(),
+                "close": 500.0,
+            }
+        )
+
+        result = calculate_registered_universe_state(
+            pd.DataFrame(rows),
+            as_of_date=cutoff,
+        )
+
+        self.assertEqual(result["as_of_date"], cutoff)
+        self.assertEqual(result["constituent_count"], 2)
+        self.assertEqual(result["advancers"], 1)
+        self.assertEqual(result["decliners"], 1)
+        self.assertAlmostEqual(result["pct_above_20d_ma"], 0.5)
+        self.assertAlmostEqual(result["pct_above_50d_ma"], 0.5)
+        self.assertAlmostEqual(result["pct_above_200d_ma"], 0.5)
+        self.assertEqual(result["coverage_above_200d_ma"], 2)
+
+    def test_breadth_excludes_symbols_without_required_moving_average_history(self):
+        dates = pd.bdate_range("2026-01-02", periods=22)
+        rows = [
+            {"symbol": "FULL", "date": day.date(), "close": 100 + index}
+            for index, day in enumerate(dates)
+        ]
+        rows.extend(
+            {"symbol": "SHORT", "date": day.date(), "close": 200 + index}
+            for index, day in enumerate(dates[-5:])
+        )
+
+        metrics = calculate_breadth(
+            pd.DataFrame(rows), moving_average_windows=(20,)
+        )
+
+        self.assertEqual(metrics["coverage_above_20d_ma"], 1)
+        self.assertEqual(metrics["pct_above_20d_ma"], 1.0)
+
+    def test_new_high_low_counts_use_a_252_session_lookback(self):
+        dates = pd.bdate_range("2025-08-01", periods=260)
+        values = [1_000.0, *([100.0] * 258), 200.0]
+        history = pd.DataFrame(
+            {
+                "symbol": "A",
+                "date": [day.date() for day in dates],
+                "close": values,
+            }
+        )
+
+        metrics = calculate_breadth(history, moving_average_windows=(20,))
+
+        self.assertEqual(metrics["new_highs"], 1)
+        self.assertEqual(metrics["new_lows"], 0)
 
     def test_nasdaq_summary_parser_extracts_public_volume_and_trade_fields(self):
         html = """

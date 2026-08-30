@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+import csv
+import io
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 import pandas as pd
 
@@ -100,20 +102,53 @@ def calculate_breadth(
     for window in moving_average_windows:
         averages = grouped["close"].rolling(window, min_periods=window).mean()
         current_average = averages.groupby(level=0).tail(1)
-        average_by_symbol = current_average.droplevel(1)
+        average_by_symbol = current_average.droplevel(1).dropna()
         comparison = latest["close"].reindex(average_by_symbol.index) > average_by_symbol
+        metrics[f"coverage_above_{window}d_ma"] = int(len(comparison))
         metrics[f"pct_above_{window}d_ma"] = (
             float(comparison.mean()) if len(comparison) else None
         )
 
     prior_extremes = grouped["close"].agg(
-        prior_high=lambda values: values.iloc[:-1].max(),
-        prior_low=lambda values: values.iloc[:-1].min(),
+        prior_high=lambda values: values.iloc[:-1].tail(252).max(),
+        prior_low=lambda values: values.iloc[:-1].tail(252).min(),
     )
     current = latest["close"].reindex(prior_extremes.index)
     metrics["new_highs"] = int((current > prior_extremes["prior_high"]).sum())
     metrics["new_lows"] = int((current < prior_extremes["prior_low"]).sum())
     return metrics
+
+
+def calculate_registered_universe_state(
+    constituent_history: pd.DataFrame,
+    *,
+    as_of_date: date,
+    moving_average_windows: tuple[int, ...] = (20, 50, 200),
+) -> dict[str, float | int | date | None]:
+    """Calculate breadth only from observations available by the target cutoff.
+
+    Symbols without an observation on the latest common market date are excluded
+    rather than being treated as unchanged or below a moving average.
+    """
+    _require_columns(constituent_history, {"symbol", "date", "close"})
+    frame = constituent_history.copy()
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce").dt.date
+    frame = frame.loc[frame["date"].notna() & (frame["date"] <= as_of_date)]
+    if frame.empty:
+        raise ValueError("Registered universe has no observations by the cutoff")
+    latest_date = frame["date"].max()
+    latest_by_symbol = frame.groupby("symbol", sort=False)["date"].max()
+    current_symbols = latest_by_symbol[latest_by_symbol == latest_date].index
+    frame = frame.loc[frame["symbol"].isin(current_symbols)]
+    metrics = calculate_breadth(
+        frame,
+        moving_average_windows=moving_average_windows,
+    )
+    return {
+        "as_of_date": latest_date,
+        "constituent_count": int(len(current_symbols)),
+        **metrics,
+    }
 
 
 def calculate_style_relative_return(
@@ -125,6 +160,77 @@ def calculate_style_relative_return(
     style_return = float(style.iloc[-1] / style.iloc[0] - 1)
     benchmark_return = float(benchmark.iloc[-1] / benchmark.iloc[0] - 1)
     return style_return - benchmark_return
+
+
+def extract_yahoo_market_history(
+    frame: pd.DataFrame,
+    symbols: tuple[str, ...],
+    as_of_date: date,
+) -> pd.DataFrame:
+    normalized_dates = pd.to_datetime(frame.index, errors="raise").date
+    if pd.Index(normalized_dates).duplicated().any():
+        raise ValueError("Yahoo market-state history contains duplicate dates")
+    rows = []
+    for symbol in symbols:
+        column = next(
+            (
+                candidate
+                for candidate in ((symbol, "Close"), ("Close", symbol))
+                if candidate in frame.columns
+            ),
+            None,
+        )
+        if column is None and len(symbols) == 1 and "Close" in frame.columns:
+            column = "Close"
+        if column is None:
+            raise ValueError(f"Yahoo market-state history is missing Close for {symbol}")
+        for observed, value in zip(normalized_dates, frame[column].to_numpy()):
+            if observed <= as_of_date and pd.notna(value):
+                numeric = float(value)
+                if not math.isfinite(numeric):
+                    raise ValueError(
+                        f"Yahoo market-state history contains a non-finite value for {symbol}"
+                    )
+                rows.append({"symbol": symbol, "date": observed, "close": numeric})
+    history = pd.DataFrame(rows, columns=("symbol", "date", "close"))
+    if history.empty:
+        raise ValueError("Yahoo market-state history is empty by the cutoff")
+    return history.sort_values(["symbol", "date"]).reset_index(drop=True)
+
+
+def calculate_style_relative_windows(
+    history: pd.DataFrame,
+    *,
+    style_symbol: str,
+    benchmark_symbol: str,
+    windows: tuple[int, ...] = (5, 20),
+) -> dict[str, float]:
+    _require_columns(history, {"symbol", "date", "close"})
+    pivot = history.pivot(index="date", columns="symbol", values="close")
+    if style_symbol not in pivot or benchmark_symbol not in pivot:
+        raise ValueError("Style-relative history is missing a configured symbol")
+    aligned = pivot[[style_symbol, benchmark_symbol]].dropna().sort_index()
+    output = {}
+    for window in windows:
+        sample = aligned.tail(window + 1)
+        if len(sample) < window + 1:
+            raise ValueError(
+                f"Style-relative history requires {window + 1} common observations"
+            )
+        output[f"relative_return_{window}d"] = calculate_style_relative_return(
+            sample[style_symbol],
+            sample[benchmark_symbol],
+        )
+    return output
+
+
+def serialize_yahoo_market_history(history: pd.DataFrame) -> str:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow(("date", "ticker", "close"))
+    for row in history.sort_values(["symbol", "date"]).itertuples(index=False):
+        writer.writerow((row.date.isoformat(), row.symbol, repr(float(row.close))))
+    return output.getvalue()
 
 
 def _plain_text(fragment: str) -> str:

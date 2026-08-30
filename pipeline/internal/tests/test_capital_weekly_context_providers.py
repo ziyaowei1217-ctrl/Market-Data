@@ -167,11 +167,13 @@ class ContextProviderTests(unittest.TestCase):
                 "census_calendar",
                 "nasdaq_market_summary",
                 "cftc_tff",
+                "cftc_disaggregated",
                 "finra_margin",
                 "sec_company_events",
                 "eia_commodities",
                 "fred_financial_conditions",
                 "yahoo_volatility_signals",
+                "yahoo_market_state",
                 "hkex_microstructure",
                 "sse_microstructure",
                 "szse_microstructure",
@@ -186,6 +188,7 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(
             providers["yahoo_volatility_signals"].spec.requiredness, "optional"
         )
+        self.assertEqual(providers["yahoo_market_state"].spec.requiredness, "optional")
         self.assertEqual(providers["bls_calendar"].spec.requiredness, "required")
         self.assertEqual(
             providers["bls_economic_releases"].spec.category,
@@ -281,6 +284,51 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(decision["actual"], "maintain 3.5%-3.75%")
         self.assertEqual(decision["previous"], None)
         self.assertEqual(decision["source_url"], statement_url)
+
+    def test_yahoo_market_state_provider_emits_registered_proxy_breadth(self):
+        calls = []
+        dates = pd.bdate_range("2025-10-24", periods=205)
+
+        def fake_download(**kwargs):
+            calls.append(kwargs)
+            return pd.DataFrame(
+                {
+                    ("XLC", "Close"): [100.0 + index for index in range(205)],
+                    ("XLY", "Close"): [200.0 - index * 0.2 for index in range(205)],
+                    ("RSP", "Close"): [100.0 + index * 0.4 for index in range(205)],
+                    ("SPY", "Close"): [100.0 + index * 0.3 for index in range(205)],
+                },
+                index=dates,
+            )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            provider = build_default_providers(
+                start=dates[-5].date(),
+                end=dates[-1].date(),
+                data_dir=data_dir,
+                environ={},
+                yahoo_downloader=fake_download,
+            )["yahoo_market_state"]
+            result = provider.fetch()
+
+        codes = {row["metric_code"] for row in result.rows}
+        self.assertEqual(result.status, "OK")
+        self.assertTrue(
+            {
+                "us_sector_etf_proxy_pct_above_20d_ma",
+                "us_sector_etf_proxy_pct_above_50d_ma",
+                "us_sector_etf_proxy_pct_above_200d_ma",
+                "us_sector_etf_proxy_advancers",
+                "us_sector_etf_proxy_decliners",
+                "rsp_spy_relative_return_5d",
+                "rsp_spy_relative_return_20d",
+            }.issubset(codes)
+        )
+        self.assertTrue(all(row["market"] == "US_PROXY" for row in result.rows))
+        self.assertIn("registered 2-instrument sector ETF proxy universe", result.notes)
+        self.assertEqual(calls[0]["tickers"], ["XLC", "XLY", "RSP", "SPY"])
 
     def test_yahoo_volatility_provider_uses_bounded_deterministic_download(self):
         calls = []

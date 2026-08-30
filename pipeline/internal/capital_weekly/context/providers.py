@@ -48,7 +48,13 @@ from .financial_conditions import (
     calculate_financial_conditions,
     parse_fred_components_csv,
 )
-from .market_internals import parse_nasdaq_market_summary
+from .market_internals import (
+    calculate_registered_universe_state,
+    calculate_style_relative_windows,
+    extract_yahoo_market_history,
+    parse_nasdaq_market_summary,
+    serialize_yahoo_market_history,
+)
 from .microstructure import (
     ensure_fresh_market_date,
     parse_hkex_market_highlights,
@@ -56,7 +62,12 @@ from .microstructure import (
     parse_sse_daily_overview,
     parse_szse_daily_overview,
 )
-from .positioning import parse_cftc_tff_csv, parse_finra_margin_table
+from .positioning import (
+    parse_cftc_disaggregated_csv,
+    parse_cftc_tff_csv,
+    parse_finra_margin_table,
+    select_released_cftc_rows,
+)
 from .volatility import (
     calculate_yahoo_volatility_metrics,
     extract_yahoo_close_histories,
@@ -76,14 +87,19 @@ ISM_URL = (
 NASDAQ_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=DailyMarketSummary"
 FINRA_URL = "https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics"
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
-CFTC_URL = "https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
+CFTC_URLS = {
+    "tff": "https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip",
+    "disaggregated": (
+        "https://www.cftc.gov/files/dea/history/fut_disagg_txt_{year}.zip"
+    ),
+}
 SEC_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 HKEX_URL = "https://www.hkex.com.hk/eng/stat/smstat/dayquot/d{stamp}e.htm"
 SSE_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
 YAHOO_FINANCE_URL = "https://finance.yahoo.com/"
 YAHOO_VOLATILITY_SOURCE = "Yahoo Finance (Cboe indices)"
-CFTC_REPORT_TYPES = frozenset({"tff", "disaggregated"})
+CFTC_REPORT_TYPES = frozenset(CFTC_URLS)
 
 
 def _session() -> requests.Session:
@@ -443,12 +459,20 @@ def _cftc_provider(
     start: date,
     end: date,
     contract_codes: dict[str, str],
+    report_type: str,
 ) -> ProviderResult:
+    if report_type not in CFTC_URLS:
+        raise ValueError(f"Unsupported CFTC report type: {report_type}")
+    parser = (
+        parse_cftc_tff_csv
+        if report_type == "tff"
+        else parse_cftc_disaggregated_csv
+    )
     parsed = []
     raw_archives = []
-    source_url = CFTC_URL.format(year=end.year)
-    for year in range(start.year, end.year + 1):
-        source_url = CFTC_URL.format(year=year)
+    archive_texts = []
+    for year in range(end.year - 4, end.year + 1):
+        source_url = CFTC_URLS[report_type].format(year=year)
         content = _bytes(session, source_url)
         raw_archives.append(content)
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -458,29 +482,43 @@ def _cftc_provider(
             if not members:
                 raise ValueError("CFTC archive contained no text data")
             text = archive.read(members[0]).decode("utf-8-sig", errors="replace")
-        parsed.extend(parse_cftc_tff_csv(text, contract_codes))
-    selected = [row for row in parsed if start <= row["report_date"] <= end]
+            archive_texts.append(text)
+    combined = archive_texts[0].rstrip("\r\n")
+    for text in archive_texts[1:]:
+        lines = text.splitlines()
+        combined += "\n" + "\n".join(lines[1:])
+    parsed.extend(parser(combined, contract_codes))
+    selected = select_released_cftc_rows(parsed, start=start, end=end)
+    if not selected:
+        raise ValueError(
+            f"CFTC {report_type} archive contained no report released in the window"
+        )
     rows = []
     for observation in selected:
         values = {
-            key: observation[key]
-            for key in (
-                "open_interest",
-                "asset_manager_net",
-                "leveraged_fund_net",
-                "asset_manager_net_change",
-                "leveraged_fund_net_change",
-                "asset_manager_percentile",
-            )
+            key: value
+            for key, value in observation.items()
+            if key
+            not in {
+                "contract_code",
+                "metric_code",
+                "market_name",
+                "report_date",
+                "expected_release_date",
+                "release_lag_days",
+            }
         }
         code = observation["metric_code"]
+        observation_source_url = CFTC_URLS[report_type].format(
+            year=observation["report_date"].year
+        )
         rows.extend(
             metric_rows(
                 as_of_date=observation["report_date"],
                 category="positioning_flows",
                 market=code,
                 source="U.S. Commodity Futures Trading Commission",
-                source_url=source_url,
+                source_url=observation_source_url,
                 frequency="weekly",
                 values={f"{code}_{key}": value for key, value in values.items()},
                 units={
@@ -496,8 +534,124 @@ def _cftc_provider(
         rows=rows,
         raw_text=b"".join(raw_archives),
         source="U.S. Commodity Futures Trading Commission",
-        source_url=source_url,
+        source_url=CFTC_URLS[report_type].format(year=end.year),
+        notes=(
+            "Net-position percentiles use up to five calendar years of the "
+            "configured official archive; eligibility uses the expected "
+            "three-day publication lag."
+        ),
     )
+
+
+def _yahoo_market_state_provider(
+    downloader: Callable[..., Any],
+    end: date,
+    universe: list[dict[str, str]],
+) -> ProviderResult:
+    source = "Yahoo Finance (registered sector ETF proxy universe)"
+    symbols = tuple(row["symbol"] for row in universe if row.get("enabled") == "1")
+    if not symbols:
+        return not_configured_result(
+            category="market_internals",
+            source=source,
+            source_url=YAHOO_FINANCE_URL,
+            notes="Registered breadth proxy universe is empty.",
+        )
+    tickers = tuple(dict.fromkeys((*symbols, "RSP", "SPY")))
+    raw_text = ""
+    try:
+        frame = downloader(
+            tickers=list(tickers),
+            start=(end - timedelta(days=550)).isoformat(),
+            end=(end + timedelta(days=1)).isoformat(),
+            interval="1d",
+            auto_adjust=False,
+            actions=False,
+            group_by="ticker",
+            threads=False,
+            progress=False,
+        )
+        history = extract_yahoo_market_history(frame, tickers, end)
+        raw_text = serialize_yahoo_market_history(history)
+        breadth = calculate_registered_universe_state(
+            history.loc[history["symbol"].isin(symbols)],
+            as_of_date=end,
+        )
+        lag = (end - breadth["as_of_date"]).days
+        if lag < 0 or lag > 7:
+            raise ValueError(
+                f"Yahoo market-state date {breadth['as_of_date']} has lag {lag} days "
+                f"versus target Sunday {end}; allowed range is 0..7 days"
+            )
+        relative = calculate_style_relative_windows(
+            history,
+            style_symbol="RSP",
+            benchmark_symbol="SPY",
+        )
+        values = {
+            "us_sector_etf_proxy_constituent_count": breadth["constituent_count"],
+            "us_sector_etf_proxy_advancers": breadth["advancers"],
+            "us_sector_etf_proxy_decliners": breadth["decliners"],
+            "us_sector_etf_proxy_unchanged": breadth["unchanged"],
+            "us_sector_etf_proxy_advance_ratio": breadth["advance_ratio"],
+            "us_sector_etf_proxy_advance_decline_ratio": breadth[
+                "advance_decline_ratio"
+            ],
+            "us_sector_etf_proxy_net_advances": breadth["net_advances"],
+            "us_sector_etf_proxy_new_highs": breadth["new_highs"],
+            "us_sector_etf_proxy_new_lows": breadth["new_lows"],
+        }
+        for window in (20, 50, 200):
+            values[f"us_sector_etf_proxy_pct_above_{window}d_ma"] = breadth[
+                f"pct_above_{window}d_ma"
+            ]
+            values[f"us_sector_etf_proxy_{window}d_coverage"] = breadth[
+                f"coverage_above_{window}d_ma"
+            ]
+        values.update(
+            {
+                "rsp_spy_relative_return_5d": relative["relative_return_5d"],
+                "rsp_spy_relative_return_20d": relative["relative_return_20d"],
+            }
+        )
+        units = {
+            code: (
+                "ratio"
+                if code.endswith(("ratio", "ma", "return_5d", "return_20d"))
+                else "count"
+            )
+            for code in values
+        }
+        return ProviderResult(
+            category="market_internals",
+            rows=metric_rows(
+                as_of_date=breadth["as_of_date"],
+                category="market_internals",
+                market="US_PROXY",
+                source=source,
+                source_url=YAHOO_FINANCE_URL,
+                frequency="daily",
+                values=values,
+                units=units,
+            ),
+            raw_text=raw_text,
+            source=source,
+            source_url=YAHOO_FINANCE_URL,
+            notes=(
+                f"registered {len(symbols)}-instrument sector ETF proxy universe; "
+                "not official constituent-level index breadth"
+            ),
+        )
+    except Exception as error:
+        return ProviderResult(
+            category="market_internals",
+            rows=[],
+            raw_text=raw_text,
+            source=source,
+            source_url=YAHOO_FINANCE_URL,
+            status="FETCH_FAILED",
+            notes=str(error),
+        )
 
 
 def _sec_provider(
@@ -1055,7 +1209,14 @@ def build_default_providers(
         ),
         "nasdaq_market_summary": lambda: _nasdaq_provider(client, start, end),
         "cftc_tff": lambda: _cftc_provider(
-            client, start, end, cftc_configs["tff"]
+            client, start, end, cftc_configs["tff"], "tff"
+        ),
+        "cftc_disaggregated": lambda: _cftc_provider(
+            client,
+            start,
+            end,
+            cftc_configs["disaggregated"],
+            "disaggregated",
         ),
         "finra_margin": lambda: _finra_provider(client, end),
         "sec_company_events": lambda: _sec_provider(
@@ -1074,6 +1235,9 @@ def build_default_providers(
         "yahoo_volatility_signals": lambda: _yahoo_volatility_provider(
             yahoo_download, end, yahoo_volatility_config
         ),
+        "yahoo_market_state": lambda: _yahoo_market_state_provider(
+            yahoo_download, end, breadth_universe
+        ),
         "hkex_microstructure": lambda: _hkex_provider(client, end),
         "sse_microstructure": lambda: _sse_provider(client, end),
         "szse_microstructure": lambda: _szse_provider(client, end),
@@ -1085,6 +1249,7 @@ def build_default_providers(
         "census_calendar": ("events", "event", "required"),
         "nasdaq_market_summary": ("market_internals", "daily", "required"),
         "cftc_tff": ("positioning_flows", "weekly", "required"),
+        "cftc_disaggregated": ("positioning_flows", "weekly", "required"),
         "finra_margin": ("positioning_flows", "monthly", "required"),
         "sec_company_events": ("company_events", "event", "optional"),
         "eia_commodities": ("commodity_fundamentals", "weekly", "optional"),
@@ -1098,6 +1263,7 @@ def build_default_providers(
             "daily",
             "optional",
         ),
+        "yahoo_market_state": ("market_internals", "daily", "optional"),
         "hkex_microstructure": ("market_internals", "daily", "required"),
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
@@ -1112,7 +1278,19 @@ def build_default_providers(
                 provider_version="1.0.0",
                 schema_version="context-metric-v1",
                 frequency=frequency,
-                freshness_days=7 if name == "yahoo_volatility_signals" else None,
+                freshness_days=(
+                    7
+                    if name in {"yahoo_volatility_signals", "yahoo_market_state"}
+                    else None
+                ),
+                failure_source=(
+                    "Yahoo Finance (registered sector ETF proxy universe)"
+                    if name == "yahoo_market_state"
+                    else ""
+                ),
+                failure_source_url=(
+                    YAHOO_FINANCE_URL if name == "yahoo_market_state" else ""
+                ),
             ),
             fetch=fetchers[name],
         )
