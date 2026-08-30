@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 import hashlib
 import json
 import math
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -71,6 +73,115 @@ METRIC_HISTORY_FIELDS = (
     "source_url",
     "qc_flag",
 )
+RESEARCH_FACT_FIELDS = (
+    "record_id",
+    "as_of_date",
+    "commodity_code",
+    "commodity_family",
+    "fact_code",
+    "fact_kind",
+    "value",
+    "unit",
+    "observation_date",
+    "known_as_of",
+    "reference_period",
+    "formula_id",
+    "formula_version",
+    "input_record_ids",
+    "source_urls",
+    "qc_flag",
+)
+
+
+@dataclass(frozen=True)
+class FormulaSpec:
+    formula_id: str
+    version: str
+    fact_kind: str
+    output_unit: str
+    required_inputs: tuple[Mapping[str, object], ...]
+
+
+_FORMULA_VERSIONS = {
+    "absolute_change_v1": "1.0.0",
+    "coverage_count_v1": "1.0.0",
+    "freshness_age_days_v1": "1.0.0",
+    "percentage_change_v1": "1.0.0",
+    "seasonal_deviation_v1": "1.0.0",
+    "stock_to_use_v1": "1.0.0",
+    "trailing_percentile_v1": "1.0.0",
+    "year_over_year_change_v1": "1.0.0",
+}
+
+
+def load_formula_specs(path: str | Path | None = None) -> dict[str, FormulaSpec]:
+    config_path = (
+        Path(path)
+        if path is not None
+        else Path(__file__).resolve().parents[2] / "config.json"
+    )
+    document = json.loads(config_path.read_text(encoding="utf-8"))
+    try:
+        research = document["commodity_research"]
+        raw_facts = research["facts"]
+        raw_universe = research["universe"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "commodity_research facts and universe must be configured"
+        ) from error
+    if not isinstance(raw_universe, list):
+        raise ValueError("commodity_research.universe must be a row list")
+    registry = validate_commodity_registry(
+        {
+            row.get("commodity_code"): row.get("commodity_family")
+            for row in raw_universe
+            if isinstance(row, Mapping)
+        }
+    )
+    if not isinstance(raw_facts, list) or not raw_facts:
+        raise ValueError("commodity_research.facts must be a nonempty row list")
+    fact_fields = {
+        "fact_code",
+        "commodity_code",
+        "commodity_family",
+        "formula_id",
+        "version",
+        "fact_kind",
+        "output_unit",
+        "required_inputs",
+    }
+    specs: dict[str, FormulaSpec] = {}
+    for raw in raw_facts:
+        if not isinstance(raw, Mapping) or set(raw) != fact_fields:
+            raise ValueError(
+                "commodity_research fact must declare exact registered fields"
+            )
+        fact_code = _required_text(raw["fact_code"], "fact_code")
+        if fact_code in specs:
+            raise ValueError(f"Duplicate configured fact_code: {fact_code}")
+        commodity_code = _required_text(raw["commodity_code"], "commodity_code")
+        commodity_family = _validate_family(raw["commodity_family"])
+        _validate_code_family(commodity_code, commodity_family, registry)
+        raw_inputs = raw["required_inputs"]
+        if not isinstance(raw_inputs, list) or not raw_inputs or not all(
+            isinstance(selector, Mapping) for selector in raw_inputs
+        ):
+            raise ValueError("required_inputs must be a nonempty row list")
+        for selector in raw_inputs:
+            if selector.get("commodity_code") != commodity_code:
+                raise ValueError(
+                    f"Configured fact {fact_code} input commodity_code mismatch"
+                )
+        spec = FormulaSpec(
+            formula_id=_required_text(raw["formula_id"], "formula_id"),
+            version=_required_text(raw["version"], "formula_version"),
+            fact_kind=_required_text(raw["fact_kind"], "fact_kind"),
+            output_unit=_required_text(raw["output_unit"], "output_unit"),
+            required_inputs=tuple(dict(selector) for selector in raw_inputs),
+        )
+        specs[fact_code] = _validated_formula_spec(spec)
+    build_research_facts([], [], specs, date(2000, 1, 2))
+    return specs
 
 
 def stable_record_id(namespace: str, identity: Mapping[str, object]) -> str:
@@ -222,6 +333,697 @@ def _validate_family(value: object) -> str:
 
 def _ordered_row(fields: tuple[str, ...], values: Mapping[str, object]) -> dict:
     return {field: values[field] for field in fields}
+
+
+def _validated_formula_spec(value: object) -> FormulaSpec:
+    if not isinstance(value, FormulaSpec):
+        raise ValueError("formula_specs values must be FormulaSpec instances")
+    formula_id = _required_text(value.formula_id, "formula_id")
+    version = _required_text(value.version, "formula_version")
+    expected_version = _FORMULA_VERSIONS.get(formula_id)
+    if expected_version is None:
+        raise ValueError(f"Unregistered formula_id: {formula_id}")
+    if version != expected_version:
+        raise ValueError(
+            f"Unregistered formula version: {formula_id} {version}"
+        )
+    _required_text(value.fact_kind, "fact_kind")
+    _required_text(value.output_unit, "output_unit")
+    if not isinstance(value.required_inputs, tuple) or not value.required_inputs:
+        raise ValueError("required_inputs must be a nonempty tuple")
+    return value
+
+
+def _validate_fact_inputs(
+    price_history: Iterable[dict],
+    metric_history: Iterable[dict],
+    as_of_date: date,
+) -> dict[str, tuple[dict, ...]]:
+    if isinstance(as_of_date, datetime) or not isinstance(as_of_date, date):
+        raise ValueError("as_of_date must be a date")
+    cutoff = target_sunday_cutoff(as_of_date)
+    normalized: dict[str, list[dict]] = {
+        "price_history": [],
+        "metric_history": [],
+    }
+    seen_record_ids: set[str] = set()
+    for dataset, rows in (
+        ("price_history", price_history),
+        ("metric_history", metric_history),
+    ):
+        for raw in rows:
+            if not isinstance(raw, Mapping):
+                raise ValueError(f"{dataset} rows must be mappings")
+            row = dict(raw)
+            record_id = _required_text(row.get("record_id"), "record_id")
+            if record_id in seen_record_ids:
+                raise ValueError(f"Duplicate input record_id: {record_id}")
+            seen_record_ids.add(record_id)
+            observation = _observation_date(row.get("observation_date"))
+            known, known_text = _known_as_of(row.get("known_as_of"))
+            if observation > as_of_date:
+                raise ValueError(
+                    "input observation_date exceeds as_of_date: "
+                    f"{observation.isoformat()} > {as_of_date.isoformat()}"
+                )
+            if known is not None and known > cutoff:
+                raise ValueError(
+                    "input known_as_of exceeds target Sunday cutoff: "
+                    f"{known_text} > {cutoff.isoformat()}"
+                )
+            if str(row.get("qc_flag") or "").strip() != "OK":
+                raise ValueError("research fact inputs must have qc_flag OK")
+            row["record_id"] = record_id
+            row["observation_date"] = observation.isoformat()
+            row["known_as_of"] = known_text
+            row["source_url"] = _source_url(row.get("source_url"))
+            row["unit"] = _required_text(row.get("unit"), "unit")
+            normalized[dataset].append(row)
+    return {key: tuple(value) for key, value in normalized.items()}
+
+
+def _select_two_observation_price_inputs(
+    datasets: Mapping[str, tuple[dict, ...]],
+    selector: Mapping[str, object],
+    formula_id: str,
+) -> tuple[dict, dict]:
+    expected_keys = {
+        "role",
+        "dataset",
+        "commodity_code",
+        "series_code",
+        "observation_count",
+    }
+    if not isinstance(selector, Mapping) or set(selector) != expected_keys:
+        raise ValueError(
+            f"{formula_id} input must declare exact price identity and "
+            "observation_count"
+        )
+    if selector["role"] != "series" or selector["dataset"] != "price_history":
+        raise ValueError(f"{formula_id} requires the series price input")
+    if selector["observation_count"] != 2:
+        raise ValueError(f"{formula_id} observation_count must be 2")
+    commodity_code = _required_text(selector["commodity_code"], "commodity_code")
+    series_code = _required_text(selector["series_code"], "series_code")
+    selected = sorted(
+        (
+            row
+            for row in datasets["price_history"]
+            if row.get("commodity_code") == commodity_code
+            and row.get("series_code") == series_code
+        ),
+        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+    )
+    if len(selected) < 2:
+        return ()  # type: ignore[return-value]
+    return selected[-2], selected[-1]
+
+
+def _select_year_over_year_inputs(
+    datasets: Mapping[str, tuple[dict, ...]],
+    selector: Mapping[str, object],
+) -> tuple[dict, dict]:
+    expected_keys = {
+        "role",
+        "dataset",
+        "commodity_code",
+        "series_code",
+        "observation_count",
+        "comparison_years",
+    }
+    if not isinstance(selector, Mapping) or set(selector) != expected_keys:
+        raise ValueError(
+            "year_over_year_change_v1 input must declare exact price identity, "
+            "observation_count, and comparison_years"
+        )
+    if selector["role"] != "series" or selector["dataset"] != "price_history":
+        raise ValueError("year_over_year_change_v1 requires the series price input")
+    if selector["observation_count"] != 2:
+        raise ValueError("year_over_year_change_v1 observation_count must be 2")
+    years = selector["comparison_years"]
+    if isinstance(years, bool) or not isinstance(years, int) or years <= 0:
+        raise ValueError("comparison_years must be a positive integer")
+    commodity_code = _required_text(selector["commodity_code"], "commodity_code")
+    series_code = _required_text(selector["series_code"], "series_code")
+    selected = sorted(
+        (
+            row
+            for row in datasets["price_history"]
+            if row.get("commodity_code") == commodity_code
+            and row.get("series_code") == series_code
+        ),
+        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+    )
+    if not selected:
+        return ()  # type: ignore[return-value]
+    current = selected[-1]
+    current_date = date.fromisoformat(current["observation_date"])
+    try:
+        comparison_date = current_date.replace(year=current_date.year - years)
+    except ValueError:
+        return ()  # type: ignore[return-value]
+    prior = [
+        row for row in selected[:-1]
+        if row["observation_date"] == comparison_date.isoformat()
+    ]
+    if len(prior) != 1:
+        return ()  # type: ignore[return-value]
+    return prior[0], current
+
+
+def _select_metric_series(
+    datasets: Mapping[str, tuple[dict, ...]],
+    selector: Mapping[str, object],
+    *,
+    parameter_keys: set[str],
+    formula_id: str,
+) -> list[dict]:
+    identity_keys = {
+        "role",
+        "dataset",
+        "commodity_code",
+        "metric_code",
+        "metric_role",
+        "measurement_kind",
+        "participant_class",
+    }
+    if not isinstance(selector, Mapping) or set(selector) != identity_keys | parameter_keys:
+        raise ValueError(
+            f"{formula_id} input must declare exact metric identity and parameters"
+        )
+    if selector["role"] != "series" or selector["dataset"] != "metric_history":
+        raise ValueError(f"{formula_id} requires the series metric input")
+    commodity_code = _required_text(selector["commodity_code"], "commodity_code")
+    metric_code = _required_text(selector["metric_code"], "metric_code")
+    metric_role = _required_text(selector["metric_role"], "metric_role")
+    measurement_kind = _required_text(
+        selector["measurement_kind"], "measurement_kind"
+    )
+    participant_class = selector["participant_class"]
+    if participant_class is not None:
+        participant_class = _required_text(participant_class, "participant_class")
+    return sorted(
+        (
+            row
+            for row in datasets["metric_history"]
+            if row.get("commodity_code") == commodity_code
+            and row.get("metric_code") == metric_code
+            and row.get("metric_role") == metric_role
+            and row.get("measurement_kind") == measurement_kind
+            and row.get("participant_class") == participant_class
+        ),
+        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+    )
+
+
+def _select_exact_metric_input(
+    datasets: Mapping[str, tuple[dict, ...]],
+    selector: Mapping[str, object],
+    *,
+    role: str,
+    formula_id: str,
+) -> dict | None:
+    identity_keys = {
+        "role",
+        "dataset",
+        "commodity_code",
+        "metric_code",
+        "metric_role",
+        "measurement_kind",
+        "participant_class",
+    }
+    if not isinstance(selector, Mapping) or set(selector) != identity_keys:
+        raise ValueError(f"{formula_id} {role} must declare exact metric identity")
+    if selector["role"] != role or selector["dataset"] != "metric_history":
+        raise ValueError(f"{formula_id} requires the {role} metric input")
+    commodity_code = _required_text(selector["commodity_code"], "commodity_code")
+    metric_code = _required_text(selector["metric_code"], "metric_code")
+    metric_role = _required_text(selector["metric_role"], "metric_role")
+    measurement_kind = _required_text(
+        selector["measurement_kind"], "measurement_kind"
+    )
+    participant_class = selector["participant_class"]
+    if participant_class is not None:
+        participant_class = _required_text(participant_class, "participant_class")
+    selected = sorted(
+        (
+            row
+            for row in datasets["metric_history"]
+            if row.get("commodity_code") == commodity_code
+            and row.get("metric_code") == metric_code
+            and row.get("metric_role") == metric_role
+            and row.get("measurement_kind") == measurement_kind
+            and row.get("participant_class") == participant_class
+        ),
+        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+    )
+    return selected[-1] if selected else None
+
+
+def _fact_from_inputs(
+    *,
+    fact_code: str,
+    spec: FormulaSpec,
+    rows: tuple[dict, ...],
+    value: float,
+    reference_period: str,
+    as_of_date: date,
+) -> dict:
+    latest = max(rows, key=lambda row: row["observation_date"])
+    known_values = [row["known_as_of"] for row in rows if row["known_as_of"]]
+    known_as_of = max(known_values) if known_values else None
+    commodity_code = _required_text(latest.get("commodity_code"), "commodity_code")
+    commodity_family = _validate_family(latest.get("commodity_family"))
+    if any(
+        row.get("commodity_code") != commodity_code
+        or row.get("commodity_family") != commodity_family
+        for row in rows
+    ):
+        raise ValueError("Formula inputs have mixed commodity identities")
+    input_record_ids = sorted(row["record_id"] for row in rows)
+    source_urls = sorted({row["source_url"] for row in rows})
+    observation_date = latest["observation_date"]
+    identity = {
+        "commodity_code": commodity_code,
+        "fact_code": fact_code,
+        "formula_id": spec.formula_id,
+        "formula_version": spec.version,
+        "known_as_of": known_as_of,
+        "observation_date": observation_date,
+        "reference_period": reference_period,
+    }
+    return _ordered_row(
+        RESEARCH_FACT_FIELDS,
+        {
+            "record_id": stable_record_id("commodity_research_facts", identity),
+            "as_of_date": as_of_date.isoformat(),
+            "commodity_code": commodity_code,
+            "commodity_family": commodity_family,
+            "fact_code": fact_code,
+            "fact_kind": spec.fact_kind,
+            "value": value,
+            "unit": spec.output_unit,
+            "observation_date": observation_date,
+            "known_as_of": known_as_of,
+            "reference_period": reference_period,
+            "formula_id": spec.formula_id,
+            "formula_version": spec.version,
+            "input_record_ids": input_record_ids,
+            "source_urls": source_urls,
+            "qc_flag": "OK",
+        },
+    )
+
+
+def build_research_facts(
+    price_history: Iterable[dict],
+    metric_history: Iterable[dict],
+    formula_specs: Mapping[str, FormulaSpec],
+    as_of_date: date,
+) -> list[dict]:
+    if not isinstance(formula_specs, Mapping):
+        raise ValueError("formula_specs must map fact_code to FormulaSpec")
+    datasets = _validate_fact_inputs(price_history, metric_history, as_of_date)
+    facts: list[dict] = []
+    for raw_fact_code in sorted(formula_specs):
+        fact_code = _required_text(raw_fact_code, "fact_code")
+        spec = _validated_formula_spec(formula_specs[raw_fact_code])
+        if spec.formula_id == "absolute_change_v1":
+            if spec.fact_kind != "absolute_change":
+                raise ValueError("absolute_change_v1 requires fact_kind absolute_change")
+            if len(spec.required_inputs) != 1:
+                raise ValueError("absolute_change_v1 requires one input selector")
+            selected = _select_two_observation_price_inputs(
+                datasets,
+                spec.required_inputs[0],
+                spec.formula_id,
+            )
+            if not selected:
+                continue
+            previous, current = selected
+            if previous["unit"] != current["unit"] or spec.output_unit != current["unit"]:
+                raise ValueError("absolute_change_v1 inputs and output have mixed units")
+            value = float(current["value"]) - float(previous["value"])
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=selected,
+                    value=value,
+                    reference_period=(
+                        f"{previous['observation_date']} to {current['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "percentage_change_v1":
+            if spec.fact_kind != "percentage_change":
+                raise ValueError(
+                    "percentage_change_v1 requires fact_kind percentage_change"
+                )
+            if spec.output_unit != "percent":
+                raise ValueError("percentage_change_v1 output_unit must be percent")
+            if len(spec.required_inputs) != 1:
+                raise ValueError("percentage_change_v1 requires one input selector")
+            selected = _select_two_observation_price_inputs(
+                datasets,
+                spec.required_inputs[0],
+                spec.formula_id,
+            )
+            if not selected:
+                continue
+            previous, current = selected
+            if previous["unit"] != current["unit"]:
+                raise ValueError("percentage_change_v1 inputs have mixed units")
+            if float(previous["value"]) == 0.0:
+                continue
+            value = (
+                (float(current["value"]) - float(previous["value"]))
+                / float(previous["value"])
+            ) * 100.0
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=selected,
+                    value=value,
+                    reference_period=(
+                        f"{previous['observation_date']} to {current['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "year_over_year_change_v1":
+            if spec.fact_kind != "year_over_year_change":
+                raise ValueError(
+                    "year_over_year_change_v1 requires fact_kind "
+                    "year_over_year_change"
+                )
+            if len(spec.required_inputs) != 1:
+                raise ValueError(
+                    "year_over_year_change_v1 requires one input selector"
+                )
+            selected = _select_year_over_year_inputs(
+                datasets,
+                spec.required_inputs[0],
+            )
+            if not selected:
+                continue
+            previous, current = selected
+            if previous["unit"] != current["unit"] or spec.output_unit != current["unit"]:
+                raise ValueError(
+                    "year_over_year_change_v1 inputs and output have mixed units"
+                )
+            value = float(current["value"]) - float(previous["value"])
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=selected,
+                    value=value,
+                    reference_period=(
+                        f"{previous['observation_date']} to {current['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "trailing_percentile_v1":
+            if spec.fact_kind != "trailing_percentile":
+                raise ValueError(
+                    "trailing_percentile_v1 requires fact_kind trailing_percentile"
+                )
+            if spec.output_unit != "percentile":
+                raise ValueError(
+                    "trailing_percentile_v1 output_unit must be percentile"
+                )
+            if len(spec.required_inputs) != 1:
+                raise ValueError(
+                    "trailing_percentile_v1 requires one input selector"
+                )
+            selector = spec.required_inputs[0]
+            selected = _select_metric_series(
+                datasets,
+                selector,
+                parameter_keys={"trailing_observations", "minimum_observations"},
+                formula_id=spec.formula_id,
+            )
+            window = selector["trailing_observations"]
+            minimum = selector["minimum_observations"]
+            if (
+                isinstance(window, bool)
+                or not isinstance(window, int)
+                or window <= 0
+                or isinstance(minimum, bool)
+                or not isinstance(minimum, int)
+                or minimum <= 0
+                or minimum > window
+            ):
+                raise ValueError(
+                    "trailing percentile window and minimum must be positive "
+                    "integers with minimum no greater than window"
+                )
+            selected = selected[-window:]
+            if len(selected) < minimum:
+                continue
+            if len({row["unit"] for row in selected}) != 1:
+                raise ValueError("trailing_percentile_v1 inputs have mixed units")
+            values = [float(row["value"]) for row in selected]
+            current_value = values[-1]
+            value = (
+                sum(observation <= current_value for observation in values)
+                / len(values)
+            ) * 100.0
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=tuple(selected),
+                    value=value,
+                    reference_period=(
+                        f"{selected[0]['observation_date']} to "
+                        f"{selected[-1]['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "seasonal_deviation_v1":
+            if spec.fact_kind != "seasonal_deviation":
+                raise ValueError(
+                    "seasonal_deviation_v1 requires fact_kind seasonal_deviation"
+                )
+            if len(spec.required_inputs) != 1:
+                raise ValueError(
+                    "seasonal_deviation_v1 requires one input selector"
+                )
+            selector = spec.required_inputs[0]
+            selected = _select_metric_series(
+                datasets,
+                selector,
+                parameter_keys={"prior_years", "minimum_observations"},
+                formula_id=spec.formula_id,
+            )
+            prior_years = selector["prior_years"]
+            minimum = selector["minimum_observations"]
+            if (
+                isinstance(prior_years, bool)
+                or not isinstance(prior_years, int)
+                or prior_years <= 0
+                or isinstance(minimum, bool)
+                or not isinstance(minimum, int)
+                or minimum <= 0
+                or minimum > prior_years
+            ):
+                raise ValueError(
+                    "seasonal prior_years and minimum must be positive integers "
+                    "with minimum no greater than prior_years"
+                )
+            if len(selected) < 2:
+                continue
+            current = selected[-1]
+            current_date = date.fromisoformat(current["observation_date"])
+            current_week = current_date.isocalendar()[1]
+            aligned = [
+                row
+                for row in selected[:-1]
+                if date.fromisoformat(row["observation_date"]).isocalendar()[1]
+                == current_week
+            ][-prior_years:]
+            if len(aligned) < minimum:
+                continue
+            used = tuple(aligned + [current])
+            if len({row["unit"] for row in used}) != 1 or spec.output_unit != current["unit"]:
+                raise ValueError(
+                    "seasonal_deviation_v1 inputs and output have mixed units"
+                )
+            seasonal_mean = sum(float(row["value"]) for row in aligned) / len(aligned)
+            value = float(current["value"]) - seasonal_mean
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=used,
+                    value=value,
+                    reference_period=(
+                        f"ISO week {current_week}: "
+                        + ", ".join(row["observation_date"] for row in aligned)
+                        + f" to {current['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "stock_to_use_v1":
+            if spec.fact_kind != "stock_to_use":
+                raise ValueError("stock_to_use_v1 requires fact_kind stock_to_use")
+            if spec.output_unit != "ratio":
+                raise ValueError("stock_to_use_v1 output_unit must be ratio")
+            if len(spec.required_inputs) != 2:
+                raise ValueError("stock_to_use_v1 requires two input selectors")
+            numerator = _select_exact_metric_input(
+                datasets,
+                spec.required_inputs[0],
+                role="numerator",
+                formula_id=spec.formula_id,
+            )
+            denominator = _select_exact_metric_input(
+                datasets,
+                spec.required_inputs[1],
+                role="denominator",
+                formula_id=spec.formula_id,
+            )
+            if numerator is None or denominator is None:
+                continue
+            selected = (numerator, denominator)
+            if numerator["unit"] != denominator["unit"]:
+                raise ValueError("stock_to_use_v1 inputs have mixed units")
+            if (
+                numerator.get("known_as_of") != denominator.get("known_as_of")
+                or numerator.get("reference_period")
+                != denominator.get("reference_period")
+            ):
+                raise ValueError("stock_to_use_v1 inputs have mixed USDA vintage")
+            if float(denominator["value"]) == 0.0:
+                continue
+            value = float(numerator["value"]) / float(denominator["value"])
+            if not math.isfinite(value):
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=selected,
+                    value=value,
+                    reference_period=str(numerator.get("reference_period") or ""),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "coverage_count_v1":
+            if spec.fact_kind != "coverage_count":
+                raise ValueError(
+                    "coverage_count_v1 requires fact_kind coverage_count"
+                )
+            if spec.output_unit != "count":
+                raise ValueError("coverage_count_v1 output_unit must be count")
+            if len(spec.required_inputs) != 1:
+                raise ValueError("coverage_count_v1 requires one input selector")
+            selector = spec.required_inputs[0]
+            selected = _select_metric_series(
+                datasets,
+                selector,
+                parameter_keys={"trailing_observations"},
+                formula_id=spec.formula_id,
+            )
+            window = selector["trailing_observations"]
+            if isinstance(window, bool) or not isinstance(window, int) or window <= 0:
+                raise ValueError(
+                    "coverage_count_v1 trailing_observations must be a positive integer"
+                )
+            selected = selected[-window:]
+            if not selected:
+                continue
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=tuple(selected),
+                    value=len(selected),
+                    reference_period=(
+                        f"{selected[0]['observation_date']} to "
+                        f"{selected[-1]['observation_date']}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+        elif spec.formula_id == "freshness_age_days_v1":
+            if spec.fact_kind != "freshness_age_days":
+                raise ValueError(
+                    "freshness_age_days_v1 requires fact_kind freshness_age_days"
+                )
+            if spec.output_unit != "days":
+                raise ValueError("freshness_age_days_v1 output_unit must be days")
+            if len(spec.required_inputs) != 1:
+                raise ValueError(
+                    "freshness_age_days_v1 requires one input selector"
+                )
+            selector = spec.required_inputs[0]
+            selected = _select_metric_series(
+                datasets,
+                selector,
+                parameter_keys={"observation_count"},
+                formula_id=spec.formula_id,
+            )
+            observation_count = selector["observation_count"]
+            if observation_count != 1:
+                raise ValueError(
+                    "freshness_age_days_v1 observation_count must be 1"
+                )
+            if not selected:
+                continue
+            latest = selected[-1]
+            value = (
+                as_of_date - date.fromisoformat(latest["observation_date"])
+            ).days
+            facts.append(
+                _fact_from_inputs(
+                    fact_code=fact_code,
+                    spec=spec,
+                    rows=(latest,),
+                    value=value,
+                    reference_period=(
+                        f"{latest['observation_date']} to {as_of_date.isoformat()}"
+                    ),
+                    as_of_date=as_of_date,
+                )
+            )
+    seen_fact_ids: set[str] = set()
+    input_ids = {
+        row["record_id"]
+        for rows in datasets.values()
+        for row in rows
+    }
+    for fact in facts:
+        if fact["record_id"] in seen_fact_ids:
+            raise ValueError(
+                "Duplicate commodity research fact identity: "
+                f"{fact['record_id']}"
+            )
+        seen_fact_ids.add(fact["record_id"])
+        orphan_ids = sorted(set(fact["input_record_ids"]) - input_ids)
+        if orphan_ids:
+            raise ValueError(
+                "Commodity research fact references missing input record: "
+                + ", ".join(orphan_ids)
+            )
+    return facts
 
 
 def bounded_price_history(
@@ -500,8 +1302,12 @@ def bounded_metric_history(
 __all__ = [
     "METRIC_HISTORY_FIELDS",
     "PRICE_HISTORY_FIELDS",
+    "RESEARCH_FACT_FIELDS",
+    "FormulaSpec",
     "bounded_metric_history",
     "bounded_price_history",
+    "build_research_facts",
+    "load_formula_specs",
     "stable_record_id",
     "validate_commodity_registry",
     "validate_history_limits",

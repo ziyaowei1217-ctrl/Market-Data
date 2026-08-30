@@ -28,6 +28,178 @@
       {"commodity_code": "COCOA", "commodity_family": "softs"},
       {"commodity_code": "CATTLE", "commodity_family": "livestock"},
       {"commodity_code": "HOGS", "commodity_family": "livestock"}
+    ],
+    "facts": [
+      {
+        "fact_code": "wti_absolute_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "absolute_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "absolute_change",
+        "output_unit": "$/BBL",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2
+          }
+        ]
+      },
+      {
+        "fact_code": "wti_percentage_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "percentage_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "percentage_change",
+        "output_unit": "percent",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2
+          }
+        ]
+      },
+      {
+        "fact_code": "wti_year_over_year_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "year_over_year_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "year_over_year_change",
+        "output_unit": "$/BBL",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2,
+            "comparison_years": 1
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_managed_money_trailing_percentile",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "trailing_percentile_v1",
+        "version": "1.0.0",
+        "fact_kind": "trailing_percentile",
+        "output_unit": "percentile",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "NATGAS_HH_managed_money_net",
+            "metric_role": "positioning",
+            "measurement_kind": "net_position",
+            "participant_class": "managed_money",
+            "trailing_observations": 156,
+            "minimum_observations": 52
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_seasonal_deviation",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "seasonal_deviation_v1",
+        "version": "1.0.0",
+        "fact_kind": "seasonal_deviation",
+        "output_unit": "BCF",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "prior_years": 5,
+            "minimum_observations": 5
+          }
+        ]
+      },
+      {
+        "fact_code": "corn_world_2026_stock_to_use",
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "formula_id": "stock_to_use_v1",
+        "version": "1.0.0",
+        "fact_kind": "stock_to_use",
+        "output_unit": "ratio",
+        "required_inputs": [
+          {
+            "role": "numerator",
+            "dataset": "metric_history",
+            "commodity_code": "CORN",
+            "metric_code": "usda_psd_corn_00_2026_ending_stocks",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null
+          },
+          {
+            "role": "denominator",
+            "dataset": "metric_history",
+            "commodity_code": "CORN",
+            "metric_code": "usda_psd_corn_00_2026_domestic_use",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "demand",
+            "participant_class": null
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_coverage",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "coverage_count_v1",
+        "version": "1.0.0",
+        "fact_kind": "coverage_count",
+        "output_unit": "count",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "trailing_observations": 160
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_freshness",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "freshness_age_days_v1",
+        "version": "1.0.0",
+        "fact_kind": "freshness_age_days",
+        "output_unit": "days",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "observation_count": 1
+          }
+        ]
+      }
     ]
   },
   "indices": [

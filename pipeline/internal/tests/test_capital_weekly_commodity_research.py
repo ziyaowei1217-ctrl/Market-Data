@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
+import csv
 import json
 import math
 from pathlib import Path
@@ -8,12 +9,26 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from pipeline.internal.capital_weekly import macro_assets as macro_assets_module
+from pipeline.internal.capital_weekly.context.provider_contracts import (
+    ContextProvider,
+    ProviderResult,
+    ProviderSpec,
+)
 from pipeline.internal.capital_weekly.commodity_research import (
     METRIC_HISTORY_FIELDS,
     PRICE_HISTORY_FIELDS,
+    FormulaSpec,
     bounded_metric_history,
     bounded_price_history,
+    build_research_facts,
+    load_formula_specs,
     stable_record_id,
+)
+from pipeline.internal.capital_weekly.weekly_context import (
+    CATEGORY_FIELDS,
+    CATEGORY_FILES,
+    publish_weekly_context_bundle,
+    run_weekly_context,
 )
 
 
@@ -553,6 +568,966 @@ class BoundedMetricHistoryTests(unittest.TestCase):
                         LIMITS,
                         commodity_registry=REGISTRY,
                     )
+
+
+def _research_price(
+    record_id: str,
+    observation_date: str,
+    value: float,
+    *,
+    unit: str = "USD/BBL",
+    known_as_of: str | None = None,
+    source_url: str = "https://official.example.test/prices",
+) -> dict:
+    return {
+        "record_id": record_id,
+        "as_of_date": "2026-08-30",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "series_code": "WTI_CASH",
+        "price_kind": "official_cash",
+        "observation_date": observation_date,
+        "known_as_of": known_as_of or f"{observation_date}T12:00:00Z",
+        "value": value,
+        "unit": unit,
+        "source": "Official price fixture",
+        "source_url": source_url,
+        "qc_flag": "OK",
+    }
+
+
+def _price_selector(**parameters) -> dict:
+    return {
+        "role": "series",
+        "dataset": "price_history",
+        "commodity_code": "WTI",
+        "series_code": "WTI_CASH",
+        **parameters,
+    }
+
+
+def _research_metric(
+    record_id: str,
+    observation_date: str,
+    value: float,
+    *,
+    commodity_code: str = "NATGAS_HH",
+    commodity_family: str = "natural_gas",
+    metric_code: str = "eia_ng_storage_lower48",
+    metric_role: str = "physical_fundamental",
+    measurement_kind: str = "inventory",
+    participant_class: str | None = None,
+    unit: str = "BCF",
+    known_as_of: str | None = None,
+    reference_period: str | None = None,
+    source_url: str = "https://official.example.test/metrics",
+) -> dict:
+    return {
+        "record_id": record_id,
+        "as_of_date": "2026-08-30",
+        "commodity_code": commodity_code,
+        "commodity_family": commodity_family,
+        "metric_code": metric_code,
+        "metric_role": metric_role,
+        "measurement_kind": measurement_kind,
+        "participant_class": participant_class,
+        "observation_date": observation_date,
+        "known_as_of": known_as_of or f"{observation_date}T12:00:00Z",
+        "reference_period": reference_period or observation_date,
+        "value": value,
+        "unit": unit,
+        "source": "Official metric fixture",
+        "source_url": source_url,
+        "qc_flag": "OK",
+    }
+
+
+def _metric_selector(**parameters) -> dict:
+    return {
+        "role": "series",
+        "dataset": "metric_history",
+        "commodity_code": "NATGAS_HH",
+        "metric_code": "eia_ng_storage_lower48",
+        "metric_role": "physical_fundamental",
+        "measurement_kind": "inventory",
+        "participant_class": None,
+        **parameters,
+    }
+
+
+def _stock_to_use_specs() -> dict:
+    return {
+        "corn_stock_to_use": FormulaSpec(
+            formula_id="stock_to_use_v1",
+            version="1.0.0",
+            fact_kind="stock_to_use",
+            output_unit="ratio",
+            required_inputs=(
+                {
+                    "role": "numerator",
+                    "dataset": "metric_history",
+                    "commodity_code": "CORN",
+                    "metric_code": "usda_psd_ending_stocks",
+                    "metric_role": "physical_fundamental",
+                    "measurement_kind": "inventory",
+                    "participant_class": None,
+                },
+                {
+                    "role": "denominator",
+                    "dataset": "metric_history",
+                    "commodity_code": "CORN",
+                    "metric_code": "usda_psd_domestic_use",
+                    "metric_role": "physical_fundamental",
+                    "measurement_kind": "demand",
+                    "participant_class": None,
+                },
+            ),
+        )
+    }
+
+
+class RegisteredResearchFactTests(unittest.TestCase):
+    def test_production_config_registers_all_formulas_with_exact_inputs(self):
+        specs = load_formula_specs()
+
+        self.assertEqual(
+            {spec.formula_id for spec in specs.values()},
+            {
+                "absolute_change_v1",
+                "percentage_change_v1",
+                "year_over_year_change_v1",
+                "trailing_percentile_v1",
+                "seasonal_deviation_v1",
+                "stock_to_use_v1",
+                "coverage_count_v1",
+                "freshness_age_days_v1",
+            },
+        )
+        self.assertTrue(specs)
+        for fact_code, spec in specs.items():
+            with self.subTest(fact_code=fact_code):
+                self.assertEqual(fact_code, fact_code.strip())
+                self.assertTrue(spec.required_inputs)
+                for selector in spec.required_inputs:
+                    self.assertIn(
+                        selector["dataset"],
+                        {"price_history", "metric_history"},
+                    )
+                    self.assertIn("commodity_code", selector)
+                    self.assertNotIn("prefix", selector)
+                    self.assertNotIn("label", selector)
+
+    def test_absolute_change_has_registered_formula_and_exact_provenance(self):
+        specs = {
+            "wti_absolute_change": FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="1.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+        price_history = [
+            _research_price(
+                "price-new",
+                "2026-08-29",
+                78.0,
+                source_url="https://official.example.test/shared",
+            ),
+            _research_price(
+                "price-old",
+                "2026-08-22",
+                75.0,
+                source_url="https://official.example.test/shared",
+            ),
+        ]
+
+        facts = build_research_facts(
+            price_history,
+            [],
+            specs,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 3.0)
+        self.assertEqual(fact["unit"], "USD/BBL")
+        self.assertEqual(fact["observation_date"], "2026-08-29")
+        self.assertEqual(fact["known_as_of"], "2026-08-29T12:00:00Z")
+        self.assertEqual(fact["reference_period"], "2026-08-22 to 2026-08-29")
+        self.assertEqual(fact["formula_id"], "absolute_change_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(fact["input_record_ids"], ["price-new", "price-old"])
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/shared"],
+        )
+        self.assertNotIn("bullish", json.dumps(fact).lower())
+        self.assertNotIn("bearish", json.dumps(fact).lower())
+        self.assertNotIn("prediction", json.dumps(fact).lower())
+
+    def test_percentage_change_is_percent_with_exact_inputs(self):
+        specs = {
+            "wti_percentage_change": FormulaSpec(
+                formula_id="percentage_change_v1",
+                version="1.0.0",
+                fact_kind="percentage_change",
+                output_unit="percent",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+
+        facts = build_research_facts(
+            [
+                _research_price("price-old", "2026-08-22", 80.0),
+                _research_price("price-new", "2026-08-29", 84.0),
+            ],
+            [],
+            specs,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 5.0)
+        self.assertEqual(fact["unit"], "percent")
+        self.assertEqual(fact["observation_date"], "2026-08-29")
+        self.assertEqual(fact["known_as_of"], "2026-08-29T12:00:00Z")
+        self.assertEqual(fact["formula_id"], "percentage_change_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(fact["input_record_ids"], ["price-new", "price-old"])
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/prices"],
+        )
+
+    def test_percentage_change_zero_denominator_is_factually_unavailable(self):
+        specs = {
+            "wti_percentage_change": FormulaSpec(
+                formula_id="percentage_change_v1",
+                version="1.0.0",
+                fact_kind="percentage_change",
+                output_unit="percent",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+
+        self.assertEqual(
+            build_research_facts(
+                [
+                    _research_price("price-old", "2026-08-22", 0.0),
+                    _research_price("price-new", "2026-08-29", 84.0),
+                ],
+                [],
+                specs,
+                date(2026, 8, 30),
+            ),
+            [],
+        )
+
+    def test_year_over_year_change_uses_exact_configured_year_alignment(self):
+        specs = {
+            "wti_year_over_year_change": FormulaSpec(
+                formula_id="year_over_year_change_v1",
+                version="1.0.0",
+                fact_kind="year_over_year_change",
+                output_unit="USD/BBL",
+                required_inputs=(
+                    _price_selector(observation_count=2, comparison_years=1),
+                ),
+            )
+        }
+
+        facts = build_research_facts(
+            [
+                _research_price("prior-year", "2025-08-29", 70.0),
+                _research_price("current-year", "2026-08-29", 76.0),
+            ],
+            [],
+            specs,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 6.0)
+        self.assertEqual(fact["unit"], "USD/BBL")
+        self.assertEqual(fact["observation_date"], "2026-08-29")
+        self.assertEqual(fact["known_as_of"], "2026-08-29T12:00:00Z")
+        self.assertEqual(fact["reference_period"], "2025-08-29 to 2026-08-29")
+        self.assertEqual(fact["formula_id"], "year_over_year_change_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(
+            fact["input_record_ids"],
+            ["current-year", "prior-year"],
+        )
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/prices"],
+        )
+
+    def test_trailing_percentile_uses_configured_inclusive_rank(self):
+        specs = {
+            "natgas_storage_percentile": FormulaSpec(
+                formula_id="trailing_percentile_v1",
+                version="1.0.0",
+                fact_kind="trailing_percentile",
+                output_unit="percentile",
+                required_inputs=(
+                    _metric_selector(
+                        trailing_observations=4,
+                        minimum_observations=4,
+                    ),
+                ),
+            )
+        }
+        history = [
+            _research_metric("storage-1", "2026-08-08", 10.0),
+            _research_metric("storage-2", "2026-08-15", 40.0),
+            _research_metric("storage-3", "2026-08-22", 20.0),
+            _research_metric("storage-4", "2026-08-29", 30.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 75.0)
+        self.assertEqual(fact["unit"], "percentile")
+        self.assertEqual(fact["observation_date"], "2026-08-29")
+        self.assertEqual(fact["known_as_of"], "2026-08-29T12:00:00Z")
+        self.assertEqual(fact["reference_period"], "2026-08-08 to 2026-08-29")
+        self.assertEqual(fact["formula_id"], "trailing_percentile_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(
+            fact["input_record_ids"],
+            ["storage-1", "storage-2", "storage-3", "storage-4"],
+        )
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/metrics"],
+        )
+
+    def test_seasonal_deviation_uses_aligned_iso_week_history(self):
+        specs = {
+            "natgas_storage_seasonal_deviation": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=3, minimum_observations=3),
+                ),
+            )
+        }
+        history = [
+            _research_metric("season-2023", "2023-08-25", 100.0),
+            _research_metric("season-2024", "2024-08-23", 110.0),
+            _research_metric("season-2025", "2025-08-22", 120.0),
+            _research_metric("season-2026", "2026-08-21", 150.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 40.0)
+        self.assertEqual(fact["unit"], "BCF")
+        self.assertEqual(fact["observation_date"], "2026-08-21")
+        self.assertEqual(fact["known_as_of"], "2026-08-21T12:00:00Z")
+        self.assertEqual(
+            fact["reference_period"],
+            "ISO week 34: 2023-08-25, 2024-08-23, 2025-08-22 to 2026-08-21",
+        )
+        self.assertEqual(fact["formula_id"], "seasonal_deviation_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(
+            fact["input_record_ids"],
+            ["season-2023", "season-2024", "season-2025", "season-2026"],
+        )
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/metrics"],
+        )
+
+    def test_seasonal_deviation_requires_configured_week_coverage(self):
+        specs = {
+            "natgas_storage_seasonal_deviation": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=3, minimum_observations=3),
+                ),
+            )
+        }
+
+        facts = build_research_facts(
+            [],
+            [
+                _research_metric("season-2024", "2024-08-23", 110.0),
+                _research_metric("season-2025", "2025-08-22", 120.0),
+                _research_metric("season-2026", "2026-08-21", 150.0),
+            ],
+            specs,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(facts, [])
+
+    def test_stock_to_use_requires_exact_same_vintage_usda_inputs(self):
+        specs = {
+            "corn_stock_to_use": FormulaSpec(
+                formula_id="stock_to_use_v1",
+                version="1.0.0",
+                fact_kind="stock_to_use",
+                output_unit="ratio",
+                required_inputs=(
+                    {
+                        "role": "numerator",
+                        "dataset": "metric_history",
+                        "commodity_code": "CORN",
+                        "metric_code": "usda_psd_ending_stocks",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "inventory",
+                        "participant_class": None,
+                    },
+                    {
+                        "role": "denominator",
+                        "dataset": "metric_history",
+                        "commodity_code": "CORN",
+                        "metric_code": "usda_psd_domestic_use",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "demand",
+                        "participant_class": None,
+                    },
+                ),
+            )
+        }
+        history = [
+            _research_metric(
+                "corn-ending",
+                "2026-08-12",
+                200.0,
+                commodity_code="CORN",
+                commodity_family="grains_oilseeds",
+                metric_code="usda_psd_ending_stocks",
+                measurement_kind="inventory",
+                unit="1000 MT",
+                known_as_of="2026-08-12T16:00:00Z",
+                reference_period="2026/27",
+                source_url="https://official.example.test/usda/ending",
+            ),
+            _research_metric(
+                "corn-use",
+                "2026-08-12",
+                1000.0,
+                commodity_code="CORN",
+                commodity_family="grains_oilseeds",
+                metric_code="usda_psd_domestic_use",
+                measurement_kind="demand",
+                unit="1000 MT",
+                known_as_of="2026-08-12T16:00:00Z",
+                reference_period="2026/27",
+                source_url="https://official.example.test/usda/use",
+            ),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 0.2)
+        self.assertEqual(fact["unit"], "ratio")
+        self.assertEqual(fact["observation_date"], "2026-08-12")
+        self.assertEqual(fact["known_as_of"], "2026-08-12T16:00:00Z")
+        self.assertEqual(fact["reference_period"], "2026/27")
+        self.assertEqual(fact["formula_id"], "stock_to_use_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(
+            fact["input_record_ids"],
+            ["corn-ending", "corn-use"],
+        )
+        self.assertEqual(
+            fact["source_urls"],
+            [
+                "https://official.example.test/usda/ending",
+                "https://official.example.test/usda/use",
+            ],
+        )
+
+    def test_stock_to_use_zero_denominator_is_factually_unavailable(self):
+        specs = {
+            "corn_stock_to_use": FormulaSpec(
+                formula_id="stock_to_use_v1",
+                version="1.0.0",
+                fact_kind="stock_to_use",
+                output_unit="ratio",
+                required_inputs=(
+                    {
+                        "role": "numerator",
+                        "dataset": "metric_history",
+                        "commodity_code": "CORN",
+                        "metric_code": "usda_psd_ending_stocks",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "inventory",
+                        "participant_class": None,
+                    },
+                    {
+                        "role": "denominator",
+                        "dataset": "metric_history",
+                        "commodity_code": "CORN",
+                        "metric_code": "usda_psd_domestic_use",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "demand",
+                        "participant_class": None,
+                    },
+                ),
+            )
+        }
+        common = {
+            "commodity_code": "CORN",
+            "commodity_family": "grains_oilseeds",
+            "unit": "1000 MT",
+            "known_as_of": "2026-08-12T16:00:00Z",
+            "reference_period": "2026/27",
+        }
+        history = [
+            _research_metric(
+                "corn-ending",
+                "2026-08-12",
+                200.0,
+                metric_code="usda_psd_ending_stocks",
+                measurement_kind="inventory",
+                **common,
+            ),
+            _research_metric(
+                "corn-use",
+                "2026-08-12",
+                0.0,
+                metric_code="usda_psd_domestic_use",
+                measurement_kind="demand",
+                **common,
+            ),
+        ]
+
+        self.assertEqual(
+            build_research_facts([], history, specs, date(2026, 8, 30)),
+            [],
+        )
+
+    def test_stock_to_use_rejects_mixed_unit_and_mixed_usda_vintage(self):
+        common = {
+            "commodity_code": "CORN",
+            "commodity_family": "grains_oilseeds",
+            "known_as_of": "2026-08-12T16:00:00Z",
+            "reference_period": "2026/27",
+        }
+        numerator = _research_metric(
+            "corn-ending",
+            "2026-08-12",
+            200.0,
+            metric_code="usda_psd_ending_stocks",
+            measurement_kind="inventory",
+            unit="1000 MT",
+            **common,
+        )
+        denominator = _research_metric(
+            "corn-use",
+            "2026-08-12",
+            1000.0,
+            metric_code="usda_psd_domestic_use",
+            measurement_kind="demand",
+            unit="1000 MT",
+            **common,
+        )
+        invalid = (
+            ({**denominator, "unit": "MT"}, "mixed units"),
+            (
+                {
+                    **denominator,
+                    "known_as_of": "2026-08-19T16:00:00Z",
+                },
+                "USDA vintage",
+            ),
+        )
+
+        for changed_denominator, message in invalid:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    build_research_facts(
+                        [],
+                        [numerator, changed_denominator],
+                        _stock_to_use_specs(),
+                        date(2026, 8, 30),
+                    )
+
+    def test_coverage_count_counts_only_configured_exact_series_window(self):
+        specs = {
+            "natgas_storage_coverage": FormulaSpec(
+                formula_id="coverage_count_v1",
+                version="1.0.0",
+                fact_kind="coverage_count",
+                output_unit="count",
+                required_inputs=(
+                    _metric_selector(trailing_observations=3),
+                ),
+            )
+        }
+        history = [
+            _research_metric("storage-1", "2026-08-01", 10.0),
+            _research_metric("storage-2", "2026-08-08", 20.0),
+            _research_metric("storage-3", "2026-08-15", 30.0),
+            _research_metric("storage-4", "2026-08-22", 40.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 3)
+        self.assertEqual(fact["unit"], "count")
+        self.assertEqual(fact["observation_date"], "2026-08-22")
+        self.assertEqual(fact["known_as_of"], "2026-08-22T12:00:00Z")
+        self.assertEqual(fact["reference_period"], "2026-08-08 to 2026-08-22")
+        self.assertEqual(fact["formula_id"], "coverage_count_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(
+            fact["input_record_ids"],
+            ["storage-2", "storage-3", "storage-4"],
+        )
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/metrics"],
+        )
+
+    def test_freshness_age_days_uses_as_of_date_and_latest_exact_input(self):
+        specs = {
+            "natgas_storage_freshness": FormulaSpec(
+                formula_id="freshness_age_days_v1",
+                version="1.0.0",
+                fact_kind="freshness_age_days",
+                output_unit="days",
+                required_inputs=(
+                    _metric_selector(observation_count=1),
+                ),
+            )
+        }
+        history = [
+            _research_metric("storage-old", "2026-08-16", 20.0),
+            _research_metric("storage-latest", "2026-08-23", 25.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        fact = facts[0]
+        self.assertEqual(fact["value"], 7)
+        self.assertEqual(fact["unit"], "days")
+        self.assertEqual(fact["observation_date"], "2026-08-23")
+        self.assertEqual(fact["known_as_of"], "2026-08-23T12:00:00Z")
+        self.assertEqual(fact["reference_period"], "2026-08-23 to 2026-08-30")
+        self.assertEqual(fact["formula_id"], "freshness_age_days_v1")
+        self.assertEqual(fact["formula_version"], "1.0.0")
+        self.assertEqual(fact["input_record_ids"], ["storage-latest"])
+        self.assertEqual(
+            fact["source_urls"],
+            ["https://official.example.test/metrics"],
+        )
+
+    def test_missing_input_record_id_is_rejected_before_fact_emission(self):
+        specs = {
+            "wti_absolute_change": FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="1.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+        orphan = _research_price("orphan", "2026-08-29", 78.0)
+        del orphan["record_id"]
+
+        with self.assertRaisesRegex(ValueError, "record_id"):
+            build_research_facts(
+                [
+                    _research_price("price-old", "2026-08-22", 75.0),
+                    orphan,
+                ],
+                [],
+                specs,
+                date(2026, 8, 30),
+            )
+
+    def test_future_input_observation_or_vintage_is_rejected(self):
+        specs = {
+            "wti_absolute_change": FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="1.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+        invalid = (
+            (
+                _research_price("future-observation", "2026-08-31", 78.0),
+                "observation_date exceeds as_of_date",
+            ),
+            (
+                _research_price(
+                    "future-vintage",
+                    "2026-08-29",
+                    78.0,
+                    known_as_of="2026-08-31T00:00:00Z",
+                ),
+                "known_as_of exceeds target Sunday cutoff",
+            ),
+        )
+        for row, message in invalid:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    build_research_facts(
+                        [_research_price("price-old", "2026-08-22", 75.0), row],
+                        [],
+                        specs,
+                        date(2026, 8, 30),
+                    )
+
+    def test_nonfinite_formula_result_is_factually_unavailable(self):
+        specs = {
+            "wti_absolute_change": FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="1.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            )
+        }
+
+        self.assertEqual(
+            build_research_facts(
+                [
+                    _research_price("price-old", "2026-08-22", -1e308),
+                    _research_price("price-new", "2026-08-29", 1e308),
+                ],
+                [],
+                specs,
+                date(2026, 8, 30),
+            ),
+            [],
+        )
+
+    def test_duplicate_normalized_fact_identity_is_rejected(self):
+        spec = FormulaSpec(
+            formula_id="absolute_change_v1",
+            version="1.0.0",
+            fact_kind="absolute_change",
+            output_unit="USD/BBL",
+            required_inputs=(_price_selector(observation_count=2),),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Duplicate commodity research fact identity",
+        ):
+            build_research_facts(
+                [
+                    _research_price("price-old", "2026-08-22", 75.0),
+                    _research_price("price-new", "2026-08-29", 78.0),
+                ],
+                [],
+                {"duplicate_fact": spec, " duplicate_fact ": spec},
+                date(2026, 8, 30),
+            )
+
+    def test_unregistered_formula_or_version_is_rejected(self):
+        invalid = (
+            FormulaSpec(
+                formula_id="bullish_composite_v1",
+                version="1.0.0",
+                fact_kind="composite",
+                output_unit="score",
+                required_inputs=(_price_selector(observation_count=2),),
+            ),
+            FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="2.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            ),
+        )
+        for spec in invalid:
+            with self.subTest(formula_id=spec.formula_id, version=spec.version):
+                with self.assertRaisesRegex(ValueError, "Unregistered formula"):
+                    build_research_facts(
+                        [],
+                        [],
+                        {"invalid": spec},
+                        date(2026, 8, 30),
+                    )
+
+    def test_dispatch_rejects_prefix_label_and_hidden_defaults(self):
+        base = {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2,
+        }
+        prefix_spec = FormulaSpec(
+            formula_id="absolute_change_v1",
+            version="1.0.0",
+            fact_kind="absolute_change",
+            output_unit="USD/BBL",
+            required_inputs=(base,),
+        )
+        history = [
+            _research_price("price-old", "2026-08-22", 75.0),
+            _research_price("price-new", "2026-08-29", 78.0),
+        ]
+        self.assertEqual(
+            build_research_facts(
+                history,
+                [],
+                {"prefix_not_selected": prefix_spec},
+                date(2026, 8, 30),
+            ),
+            [],
+        )
+
+        invalid_selectors = (
+            {**base, "series_code": "WTI_CASH", "label": "WTI cash"},
+            {key: value for key, value in base.items() if key != "observation_count"},
+        )
+        for selector in invalid_selectors:
+            with self.subTest(selector=selector):
+                spec = FormulaSpec(
+                    formula_id="absolute_change_v1",
+                    version="1.0.0",
+                    fact_kind="absolute_change",
+                    output_unit="USD/BBL",
+                    required_inputs=(selector,),
+                )
+                with self.assertRaisesRegex(ValueError, "exact price identity"):
+                    build_research_facts(
+                        history,
+                        [],
+                        {"invalid_dispatch": spec},
+                        date(2026, 8, 30),
+                    )
+
+
+class WeeklyContextResearchFactTests(unittest.TestCase):
+    def test_runner_and_publisher_add_registered_research_facts_csv(self):
+        as_of = date(2026, 8, 30)
+        raw_row = _metric_row(
+            date(2026, 8, 23),
+            value=100.0,
+            known_as_of="2026-08-23T12:00:00+00:00",
+        )
+        provider = ContextProvider(
+            ProviderSpec(
+                name="official_storage",
+                category="commodity_fundamentals",
+                source_tier="public",
+                requiredness="required",
+                provider_version="1.0.0",
+                schema_version="commodity-v2",
+                frequency="weekly",
+                freshness_days=10,
+            ),
+            lambda: ProviderResult(
+                category="commodity_fundamentals",
+                rows=[raw_row],
+                raw_text="official fixture",
+                source="Official fixture",
+                source_url="https://official.example.test/metric",
+            ),
+        )
+        formula_specs = {
+            "storage_coverage": FormulaSpec(
+                formula_id="coverage_count_v1",
+                version="1.0.0",
+                fact_kind="coverage_count",
+                output_unit="count",
+                required_inputs=(
+                    {
+                        "role": "series",
+                        "dataset": "metric_history",
+                        "commodity_code": "NATGAS_HH",
+                        "metric_code": "stocks",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "inventory",
+                        "participant_class": None,
+                        "trailing_observations": 160,
+                    },
+                ),
+            ),
+            "storage_freshness": FormulaSpec(
+                formula_id="freshness_age_days_v1",
+                version="1.0.0",
+                fact_kind="freshness_age_days",
+                output_unit="days",
+                required_inputs=(
+                    {
+                        "role": "series",
+                        "dataset": "metric_history",
+                        "commodity_code": "NATGAS_HH",
+                        "metric_code": "stocks",
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "inventory",
+                        "participant_class": None,
+                        "observation_count": 1,
+                    },
+                ),
+            ),
+        }
+
+        tables = run_weekly_context(
+            {"official_storage": provider},
+            as_of_date=as_of,
+            history_limits=LIMITS,
+            commodity_registry=REGISTRY,
+            formula_specs=formula_specs,
+        )
+
+        self.assertEqual(
+            [row["fact_code"] for row in tables["commodity_research_facts"]],
+            ["storage_coverage", "storage_freshness"],
+        )
+        self.assertEqual(
+            [row["value"] for row in tables["commodity_research_facts"]],
+            [1, 7],
+        )
+        self.assertEqual(
+            CATEGORY_FILES["commodity_research_facts"],
+            "commodity_research_facts.csv",
+        )
+
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "bundle"
+            publish_weekly_context_bundle(tables, output)
+
+            with (output / "commodity_research_facts.csv").open(
+                newline="", encoding="utf-8"
+            ) as file:
+                self.assertEqual(
+                    next(csv.reader(file)),
+                    list(CATEGORY_FIELDS["commodity_research_facts"]),
+                )
+            snapshot = json.loads(
+                (output / "weekly_context_snapshot.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                len(snapshot["commodity_research_facts"]),
+                2,
+            )
 
 
 if __name__ == "__main__":

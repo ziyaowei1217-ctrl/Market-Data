@@ -16,7 +16,10 @@ from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
 
 from .commodity_research import (
     METRIC_HISTORY_FIELDS,
+    RESEARCH_FACT_FIELDS,
+    FormulaSpec,
     bounded_metric_history,
+    build_research_facts,
 )
 
 from .context.common import (
@@ -46,6 +49,7 @@ CATEGORY_FILES = {
     "company_events": "company_events.csv",
     "commodity_fundamentals": "commodity_fundamentals.csv",
     "commodity_metric_history": "commodity_metric_history.csv",
+    "commodity_research_facts": "commodity_research_facts.csv",
     "financial_conditions": "financial_conditions.csv",
     "source_log": "source_log.csv",
 }
@@ -108,6 +112,7 @@ CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {
     "company_events": COMPANY_EVENT_FIELDS,
     "commodity_fundamentals": METRIC_FIELDS,
     "commodity_metric_history": METRIC_HISTORY_FIELDS,
+    "commodity_research_facts": RESEARCH_FACT_FIELDS,
     "financial_conditions": METRIC_FIELDS,
     "source_log": SOURCE_LOG_FIELDS,
 }
@@ -124,6 +129,8 @@ def run_weekly_context(
     audit_secrets: Sequence[str] = (),
     history_limits: Mapping[str, object] | None = None,
     commodity_registry: Mapping[str, object] | None = None,
+    formula_specs: Mapping[str, FormulaSpec] | None = None,
+    price_history: Sequence[dict] = (),
 ) -> dict[str, list[dict]]:
     normalized_audit_secrets = _normalize_audit_secrets(audit_secrets)
     tables = {category: [] for category in CATEGORY_FILES}
@@ -321,6 +328,12 @@ def run_weekly_context(
                     "commodity_registry"
                 )
             tables["commodity_metric_history"] = []
+            tables["commodity_research_facts"] = build_research_facts(
+                price_history,
+                [],
+                formula_specs or {},
+                run_date,
+            )
             return tables
         raise ValueError(
             "history_limits and commodity_registry must be injected together"
@@ -330,6 +343,12 @@ def run_weekly_context(
         run_date,
         history_limits,
         commodity_registry,
+    )
+    tables["commodity_research_facts"] = build_research_facts(
+        price_history,
+        tables["commodity_metric_history"],
+        formula_specs or {},
+        run_date,
     )
     return tables
 
@@ -435,7 +454,7 @@ def _latest_known_as_of(rows: list[dict]) -> str | None:
         if not row.get("known_as_of"):
             continue
         raw = str(row["known_as_of"])
-        known = datetime.fromisoformat(raw)
+        known = datetime.fromisoformat(raw.replace("Z", "+00:00"))
         if known.tzinfo is None:
             raise ValueError("known_as_of must include a UTC offset")
         known_values.append((known, raw))
@@ -465,7 +484,13 @@ def publish_weekly_context_bundle(
     )
     backup = destination.with_name(f".{destination.name}.backup")
     try:
-        for category, filename in CATEGORY_FILES.items():
+        published_categories = tuple(
+            category
+            for category in CATEGORY_FILES
+            if category != "commodity_research_facts" or category in tables
+        )
+        for category in published_categories:
+            filename = CATEGORY_FILES[category]
             pd.DataFrame(
                 tables.get(category, []), columns=CATEGORY_FIELDS[category]
             ).to_csv(
@@ -473,7 +498,7 @@ def publish_weekly_context_bundle(
             )
         snapshot = {
             category: _json_ready(tables.get(category, []))
-            for category in CATEGORY_FILES
+            for category in published_categories
         }
         (staging / "weekly_context_snapshot.json").write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2, allow_nan=False),

@@ -15,6 +15,7 @@ from pipeline.internal.capital_weekly.context.providers import build_default_pro
 from pipeline.internal.capital_weekly.macro_assets import (
     load_commodity_research_config,
 )
+from pipeline.internal.capital_weekly.commodity_research import load_formula_specs
 from pipeline.internal.capital_weekly.weekly_context import (
     publish_weekly_context_bundle,
     run_weekly_context,
@@ -68,6 +69,11 @@ def main() -> None:
         if args.data_dir and Path(args.data_dir).suffix.lower() == ".json"
         else None
     )
+    formula_specs = load_formula_specs(
+        args.data_dir
+        if args.data_dir and Path(args.data_dir).suffix.lower() == ".json"
+        else None
+    )
     tables = run_weekly_context(
         providers,
         raw_dir=raw_dir,
@@ -75,6 +81,7 @@ def main() -> None:
         audit_secrets=audit_secrets,
         history_limits=research_config.history_limits,
         commodity_registry=research_config.commodity_registry,
+        formula_specs=formula_specs,
     )
     publish_weekly_context_bundle(tables, output)
     print(f"saved: {output}")
