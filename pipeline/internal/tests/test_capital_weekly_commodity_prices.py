@@ -77,7 +77,7 @@ def _world_bank_fixture(
     ])
     may_values = [float(index) for index in range(1, len(labels) + 1)]
     if official_missing_marker:
-        may_values[labels.index("Crude oil, WTI")] = "…"
+        may_values[labels.index("Gold")] = "…"
     sheet.append(["2026M05", *may_values])
     sheet.append([datetime(2026, 6, 1), *(float(index) + 0.5 for index in range(1, len(labels) + 1))])
     july_values = [float(index) + 1.0 for index in range(1, len(labels) + 1)]
@@ -256,7 +256,14 @@ class WorldBankPriceParserTests(unittest.TestCase):
         except ValueError as error:
             self.fail(str(error))
 
-        self.assertEqual(parsed["Gold"][-1]["date"], date(2026, 7, 31))
+        self.assertEqual(
+            [row["date"] for row in parsed["Gold"]],
+            [date(2026, 6, 30), date(2026, 7, 31)],
+        )
+        self.assertEqual(
+            [row["date"] for row in parsed["Copper"]],
+            [date(2026, 5, 31), date(2026, 6, 30), date(2026, 7, 31)],
+        )
 
     def test_finds_exact_columns_and_preserves_month_end_dates_and_units(self):
         parsed = parse_world_bank_monthly_prices(
@@ -304,7 +311,7 @@ class WorldBankPriceParserTests(unittest.TestCase):
 
     def test_rejects_malformed_or_nonfinite_requested_values_on_dated_rows(self):
         for label, invalid_value in (
-            ("malformed", "not-a-number"),
+            ("malformed_marker", "..."),
             ("nonfinite", float("nan")),
         ):
             with self.subTest(label=label):

@@ -2318,6 +2318,7 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         )
         published = self.project_root / "output"
         cache = self.project_root / "pipeline" / ".cache"
+        staging = self.project_root / "pipeline" / ".staging"
         prior_hashes = {
             path.name: hashlib.sha256(path.read_bytes()).hexdigest()
             for path in published.iterdir()
@@ -2343,6 +2344,8 @@ class ReleaseOrchestrationTests(unittest.TestCase):
         )
         self.assertEqual(set(prior_hashes), set(weekly_release_module.OUTPUT_FILES))
         self.assertEqual(directory_bytes(cache), prior_cache)
+        self.assertTrue(staging.is_dir())
+        self.assertEqual(list(staging.iterdir()), [])
         status = json.loads(self.status_path.read_text())
         self.assertEqual(status["status"], "failed")
         self.assertEqual(status["current_pipeline"], "validation")
