@@ -68,6 +68,7 @@ from .positioning import (
     parse_finra_margin_table,
     select_released_cftc_rows,
 )
+from .public_flows import parse_hkex_stock_connect_daily, parse_ishares_fund_page
 from .volatility import (
     calculate_yahoo_volatility_metrics,
     extract_yahoo_close_histories,
@@ -95,6 +96,13 @@ CFTC_URLS = {
 }
 SEC_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 HKEX_URL = "https://www.hkex.com.hk/eng/stat/smstat/dayquot/d{stamp}e.htm"
+HKEX_STOCK_CONNECT_URL = (
+    "https://www.hkex.com.hk/eng/csm/DailyStat/"
+    "data_tab_daily_{stamp}e.js"
+)
+ISHARES_IVV_URL = (
+    "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf"
+)
 SSE_URL = "https://query.sse.com.cn/commonQuery.do"
 SZSE_URL = "https://www.szse.cn/api/report/ShowReport/data"
 YAHOO_FINANCE_URL = "https://finance.yahoo.com/"
@@ -652,6 +660,108 @@ def _yahoo_market_state_provider(
             status="FETCH_FAILED",
             notes=str(error),
         )
+
+
+def _ishares_ivv_provider(session: requests.Session, end: date) -> ProviderResult:
+    text = _text(session, ISHARES_IVV_URL)
+    observation = parse_ishares_fund_page(text, ticker="IVV")
+    if observation["date"] > end:
+        return ProviderResult(
+            category="fund_flows",
+            rows=[],
+            raw_text=text,
+            source="iShares",
+            source_url=ISHARES_IVV_URL,
+            status="POINT_IN_TIME_UNAVAILABLE",
+            notes=(
+                f"Issuer observation {observation['date']} is after target Sunday {end}."
+            ),
+        )
+    values = {
+        "ivv_nav": observation["nav"],
+        "ivv_net_assets": observation["net_assets"],
+        "ivv_shares_outstanding": observation["shares_outstanding"],
+    }
+    return ProviderResult(
+        category="fund_flows",
+        rows=metric_rows(
+            as_of_date=observation["date"],
+            category="fund_flows",
+            market="IVV",
+            source="iShares",
+            source_url=ISHARES_IVV_URL,
+            frequency="daily",
+            values=values,
+            units={
+                "ivv_nav": "USD_per_share",
+                "ivv_net_assets": "USD",
+                "ivv_shares_outstanding": "shares",
+            },
+        ),
+        raw_text=text,
+        source="iShares",
+        source_url=ISHARES_IVV_URL,
+        notes=(
+            "Issuer AUM and shares are observed; implied flow requires a prior "
+            "dated issuer observation and is not inferred from price returns."
+        ),
+    )
+
+
+def _hkex_stock_connect_provider(
+    session: requests.Session,
+    end: date,
+) -> ProviderResult:
+    failures = []
+    for lag in range(8):
+        candidate = end - timedelta(days=lag)
+        url = HKEX_STOCK_CONNECT_URL.format(stamp=candidate.strftime("%Y%m%d"))
+        try:
+            text = _text(session, url)
+            observation = parse_hkex_stock_connect_daily(text)
+            ensure_fresh_market_date(
+                observation["date"], expected_end=end, max_lag_days=4
+            )
+            values = {
+                f"hkex_{key}": value
+                for key, value in observation.items()
+                if key != "date"
+            }
+            units = {
+                code: (
+                    "count"
+                    if code.endswith("trade_count")
+                    else "HKD_millions"
+                    if "southbound" in code
+                    else "RMB_millions"
+                )
+                for code in values
+            }
+            return ProviderResult(
+                category="fund_flows",
+                rows=metric_rows(
+                    as_of_date=observation["date"],
+                    category="fund_flows",
+                    market="HKEX_STOCK_CONNECT",
+                    source="Hong Kong Exchanges and Clearing",
+                    source_url=url,
+                    frequency="daily",
+                    values=values,
+                    units=units,
+                ),
+                raw_text=text,
+                source="Hong Kong Exchanges and Clearing",
+                source_url=url,
+                notes=(
+                    "Southbound net buy is official Buy Turnover minus Sell "
+                    "Turnover; Northbound net flow is intentionally unavailable."
+                ),
+            )
+        except Exception as error:
+            failures.append(f"{candidate}: {error}")
+    raise ValueError(
+        "No recent HKEX Stock Connect daily statistics: " + "; ".join(failures)
+    )
 
 
 def _sec_provider(
@@ -1238,6 +1348,10 @@ def build_default_providers(
         "yahoo_market_state": lambda: _yahoo_market_state_provider(
             yahoo_download, end, breadth_universe
         ),
+        "ishares_ivv_fund": lambda: _ishares_ivv_provider(client, end),
+        "hkex_stock_connect_flows": lambda: _hkex_stock_connect_provider(
+            client, end
+        ),
         "hkex_microstructure": lambda: _hkex_provider(client, end),
         "sse_microstructure": lambda: _sse_provider(client, end),
         "szse_microstructure": lambda: _szse_provider(client, end),
@@ -1264,6 +1378,8 @@ def build_default_providers(
             "optional",
         ),
         "yahoo_market_state": ("market_internals", "daily", "optional"),
+        "ishares_ivv_fund": ("fund_flows", "daily", "optional"),
+        "hkex_stock_connect_flows": ("fund_flows", "daily", "optional"),
         "hkex_microstructure": ("market_internals", "daily", "required"),
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
@@ -1280,16 +1396,32 @@ def build_default_providers(
                 frequency=frequency,
                 freshness_days=(
                     7
-                    if name in {"yahoo_volatility_signals", "yahoo_market_state"}
+                    if name
+                    in {
+                        "yahoo_volatility_signals",
+                        "yahoo_market_state",
+                        "ishares_ivv_fund",
+                        "hkex_stock_connect_flows",
+                    }
                     else None
                 ),
                 failure_source=(
                     "Yahoo Finance (registered sector ETF proxy universe)"
                     if name == "yahoo_market_state"
+                    else "iShares"
+                    if name == "ishares_ivv_fund"
+                    else "Hong Kong Exchanges and Clearing"
+                    if name == "hkex_stock_connect_flows"
                     else ""
                 ),
                 failure_source_url=(
-                    YAHOO_FINANCE_URL if name == "yahoo_market_state" else ""
+                    YAHOO_FINANCE_URL
+                    if name == "yahoo_market_state"
+                    else ISHARES_IVV_URL
+                    if name == "ishares_ivv_fund"
+                    else "https://www.hkex.com.hk/Mutual-Market/Stock-Connect/Statistics/"
+                    if name == "hkex_stock_connect_flows"
+                    else ""
                 ),
             ),
             fetch=fetchers[name],

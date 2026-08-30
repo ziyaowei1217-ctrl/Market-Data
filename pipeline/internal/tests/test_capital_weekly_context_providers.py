@@ -174,6 +174,8 @@ class ContextProviderTests(unittest.TestCase):
                 "fred_financial_conditions",
                 "yahoo_volatility_signals",
                 "yahoo_market_state",
+                "ishares_ivv_fund",
+                "hkex_stock_connect_flows",
                 "hkex_microstructure",
                 "sse_microstructure",
                 "szse_microstructure",
@@ -189,6 +191,11 @@ class ContextProviderTests(unittest.TestCase):
             providers["yahoo_volatility_signals"].spec.requiredness, "optional"
         )
         self.assertEqual(providers["yahoo_market_state"].spec.requiredness, "optional")
+        self.assertEqual(providers["ishares_ivv_fund"].spec.category, "fund_flows")
+        self.assertEqual(
+            providers["hkex_stock_connect_flows"].spec.category,
+            "fund_flows",
+        )
         self.assertEqual(providers["bls_calendar"].spec.requiredness, "required")
         self.assertEqual(
             providers["bls_economic_releases"].spec.category,
