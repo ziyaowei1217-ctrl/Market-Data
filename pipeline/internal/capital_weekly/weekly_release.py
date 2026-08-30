@@ -1890,6 +1890,7 @@ def _research_validation_config() -> dict:
         research = document["commodity_research"]
         raw_universe = research["universe"]
         raw_limits = research["history_limits"]
+        raw_metric_registry = research["metric_registry"]
         raw_providers = research["providers"]
         raw_facts = research["facts"]
         macro_rows = document["macro"]
@@ -1898,17 +1899,36 @@ def _research_validation_config() -> dict:
         raise ReleaseValidationError(
             "Commodity Research V2 validation config is incomplete"
         ) from error
-    if not isinstance(raw_universe, list) or not all(
-        isinstance(row, dict) for row in raw_universe
-    ):
+    if not isinstance(raw_universe, list):
         raise ReleaseValidationError(
             "commodity_research.universe must be an exact row list"
         )
+    universe_mapping: dict[str, object] = {}
+    duplicate_codes: set[str] = set()
+    for row in raw_universe:
+        if not isinstance(row, dict) or set(row) != {
+            "commodity_code",
+            "commodity_family",
+        }:
+            raise ReleaseValidationError(
+                "commodity_research.universe rows must declare exact fields"
+            )
+        code = str(row.get("commodity_code") or "").strip()
+        if code in universe_mapping:
+            duplicate_codes.add(code)
+        universe_mapping[code] = row.get("commodity_family")
+    if len(raw_universe) != 19 or duplicate_codes:
+        detail = (
+            "; duplicate commodity_code: " + ", ".join(sorted(duplicate_codes))
+            if duplicate_codes
+            else ""
+        )
+        raise ReleaseValidationError(
+            "commodity_research.universe must declare exact 19 unique rows"
+            + detail
+        )
     try:
-        registry = validate_commodity_registry({
-            row.get("commodity_code"): row.get("commodity_family")
-            for row in raw_universe
-        })
+        registry = validate_commodity_registry(universe_mapping)
         limits = validate_history_limits(raw_limits)
     except (TypeError, ValueError) as error:
         raise ReleaseValidationError(str(error)) from error
@@ -1983,6 +2003,7 @@ def _research_validation_config() -> dict:
         "registry": registry,
         "limits": limits,
         "providers": providers,
+        "metric_registry": raw_metric_registry,
         "formula_specs": formula_specs,
         "fact_rows": {row["fact_code"]: row for row in raw_facts},
         "macro_rows": macro_rows,
@@ -2108,10 +2129,78 @@ def _context_status_index(rows: list[dict]) -> dict[str, dict]:
     return index
 
 
-def _metric_descriptors(config: dict) -> dict[str, dict]:
+def _validate_context_provider_statuses(
+    statuses: dict[str, dict],
+    providers: dict[str, dict[str, str]],
+    business_counts: dict[str, int],
+) -> None:
+    for provider, policy in providers.items():
+        if policy["dataset"] != "metric_history":
+            continue
+        row = statuses.get(provider)
+        if row is None:
+            raise ReleaseValidationError(
+                f"{provider} configured provider status is missing"
+            )
+        source = str(row.get("source") or "").strip()
+        source_url = str(row.get("source_url") or "").strip()
+        parsed_url = urlparse(source_url)
+        status_host = (parsed_url.hostname or "").lower()
+        official_host = policy["official_host"]
+        if (
+            source != policy["source"]
+            or parsed_url.scheme not in {"http", "https"}
+            or not (
+                status_host == official_host
+                or status_host.endswith(f".{official_host}")
+            )
+        ):
+            raise ReleaseValidationError(
+                f"{provider} status provenance must match configured source and official host"
+            )
+        raw_observations = row.get("observations")
+        if isinstance(raw_observations, bool):
+            observations = None
+        elif isinstance(raw_observations, int) and raw_observations >= 0:
+            observations = raw_observations
+        elif isinstance(raw_observations, str) and re.fullmatch(
+            r"(?:0|[1-9][0-9]*)",
+            raw_observations,
+        ):
+            observations = int(raw_observations)
+        else:
+            observations = None
+        if observations is None:
+            raise ReleaseValidationError(
+                f"{provider} status observations must be a canonical integer"
+            )
+        expected = business_counts.get(provider, 0)
+        status = str(row.get("status") or "").strip().upper()
+        if observations != expected:
+            raise ReleaseValidationError(
+                f"{provider} status observations must equal attributed business "
+                f"rows: expected {expected}, got {observations}"
+            )
+        if status != "OK" and expected != 0:
+            raise ReleaseValidationError(
+                f"{provider} requires zero business rows while status is {status}"
+            )
+
+
+def _metric_descriptors(config: dict) -> dict:
     providers = config["providers"]
     registry = config["registry"]
     context = config["context"]
+    configured = config["metric_registry"]
+    if not isinstance(configured, dict) or set(configured) != {
+        "eia_variants",
+        "cftc_variants",
+        "usda_psd",
+        "usda_esr",
+    }:
+        raise ReleaseValidationError(
+            "commodity_research.metric_registry must declare exact sections"
+        )
     descriptors: dict[str, dict] = {}
 
     def register(metric_code: str, descriptor: dict) -> None:
@@ -2122,40 +2211,115 @@ def _metric_descriptors(config: dict) -> dict[str, dict]:
             )
         descriptors[metric_code] = descriptor
 
+    eia_variants = configured["eia_variants"]
+    if not isinstance(eia_variants, list) or not eia_variants:
+        raise ReleaseValidationError(
+            "commodity_research metric registry EIA variants are invalid"
+        )
+    normalized_eia: list[dict[str, str]] = []
+    seen_eia_suffixes: set[str] = set()
+    for raw in eia_variants:
+        if not isinstance(raw, dict) or set(raw) != {
+            "suffix",
+            "unit",
+            "metric_role",
+        }:
+            raise ReleaseValidationError(
+                "commodity_research EIA metric variant fields are invalid"
+            )
+        suffix = str(raw["suffix"])
+        unit = str(raw["unit"] or "").strip()
+        role = str(raw["metric_role"] or "").strip()
+        if (
+            suffix in seen_eia_suffixes
+            or not re.fullmatch(r"(?:|_[a-z0-9_]+)", suffix)
+            or not unit
+            or role not in METRIC_ROLE_VALUES
+        ):
+            raise ReleaseValidationError(
+                "commodity_research EIA metric variant is invalid"
+            )
+        seen_eia_suffixes.add(suffix)
+        normalized_eia.append({"suffix": suffix, "unit": unit, "metric_role": role})
+
     for item in context["eia_series"]:
         provider = str(item["provider"])
         if provider not in providers:
             raise ReleaseValidationError(f"Missing provider policy for {provider}")
         base = str(item["metric_code"])
-        for suffix, unit in (
-            ("", str(item["expected_unit"])),
-            ("_change", str(item["expected_unit"])),
-            ("_change_pct", "ratio"),
-            ("_seasonal_deviation", str(item["expected_unit"])),
-        ):
-            register(base + suffix, {
+        for variant in normalized_eia:
+            unit = (
+                str(item["expected_unit"])
+                if variant["unit"] == "configured"
+                else variant["unit"]
+            )
+            register(base + variant["suffix"], {
                 "provider": provider,
                 "frequency": str(item["frequency"]),
                 "commodity_code": str(item["commodity_code"]),
                 "commodity_family": str(item["commodity_family"]),
-                "metric_role": "physical_fundamental",
+                "metric_role": variant["metric_role"],
                 "measurement_kind": str(item["measurement_kind"]),
                 "participant_class": None,
                 "unit": unit,
             })
 
-    measurements = [("open_interest", "open_interest", None, "contracts")]
-    for participant in (
-        "producer",
-        "swap_dealer",
-        "managed_money",
-        "other_reportable",
-    ):
-        measurements.extend((
-            (f"{participant}_net", "net_position", participant, "contracts"),
-            (f"{participant}_net_change", "net_position", participant, "contracts"),
-            (f"{participant}_percentile", "percentile", participant, "ratio"),
-        ))
+    cftc_variants = configured["cftc_variants"]
+    if not isinstance(cftc_variants, list) or not cftc_variants:
+        raise ReleaseValidationError(
+            "commodity_research metric registry CFTC variants are invalid"
+        )
+    normalized_cftc: list[dict] = []
+    cftc_fields = {
+        "provider",
+        "suffix",
+        "metric_role",
+        "measurement_kind",
+        "participant_class",
+        "unit",
+        "frequency",
+    }
+    seen_cftc_suffixes: set[str] = set()
+    for raw in cftc_variants:
+        if not isinstance(raw, dict) or set(raw) != cftc_fields:
+            raise ReleaseValidationError(
+                "commodity_research CFTC metric variant fields are invalid"
+            )
+        row = dict(raw)
+        provider = str(row["provider"] or "").strip()
+        suffix = str(row["suffix"] or "").strip()
+        role = str(row["metric_role"] or "").strip()
+        kind = str(row["measurement_kind"] or "").strip()
+        participant = row["participant_class"]
+        participant = str(participant).strip() if participant is not None else None
+        unit = str(row["unit"] or "").strip()
+        frequency = str(row["frequency"] or "").strip()
+        if (
+            provider not in providers
+            or suffix in seen_cftc_suffixes
+            or not re.fullmatch(r"[a-z0-9_]+", suffix)
+            or role not in METRIC_ROLE_VALUES
+            or kind not in MEASUREMENT_KIND_VALUES
+            or (
+                participant is not None
+                and participant not in PARTICIPANT_CLASS_VALUES
+            )
+            or not unit
+            or frequency not in config["limits"]
+        ):
+            raise ReleaseValidationError(
+                "commodity_research CFTC metric variant is invalid"
+            )
+        seen_cftc_suffixes.add(suffix)
+        normalized_cftc.append({
+            "provider": provider,
+            "suffix": suffix,
+            "metric_role": role,
+            "measurement_kind": kind,
+            "participant_class": participant,
+            "unit": unit,
+            "frequency": frequency,
+        })
     for contract in context["cftc_contracts"]:
         code = str(contract.get("commodity_code") or "").strip()
         if not code:
@@ -2165,16 +2329,16 @@ def _metric_descriptors(config: dict) -> dict[str, dict]:
             raise ReleaseValidationError(
                 f"Configured CFTC code-family mismatch: {code}"
             )
-        for suffix, kind, participant, unit in measurements:
-            register(f"{code}_{suffix}", {
-                "provider": "cftc_disaggregated",
-                "frequency": "weekly",
+        for variant in normalized_cftc:
+            register(f"{code}_{variant['suffix']}", {
+                "provider": variant["provider"],
+                "frequency": variant["frequency"],
                 "commodity_code": code,
                 "commodity_family": family,
-                "metric_role": "positioning",
-                "measurement_kind": kind,
-                "participant_class": participant,
-                "unit": unit,
+                "metric_role": variant["metric_role"],
+                "measurement_kind": variant["measurement_kind"],
+                "participant_class": variant["participant_class"],
+                "unit": variant["unit"],
             })
 
     for item in context["metals"]:
@@ -2196,47 +2360,165 @@ def _metric_descriptors(config: dict) -> dict[str, dict]:
                 "participant_class": None,
                 "unit": str(item["expected_unit"]),
             })
-    return descriptors
+    usda_registry: dict[str, dict] = {}
+    for section, expected_groups in (
+        ("usda_psd", {"commodity", "country", "market_year", "metric"}),
+        ("usda_esr", {"commodity", "market_year", "metric"}),
+    ):
+        raw = configured[section]
+        if not isinstance(raw, dict) or set(raw) != {
+            "provider",
+            "metric_role",
+            "frequency",
+            "metric_code_pattern",
+            "metrics",
+        }:
+            raise ReleaseValidationError(
+                f"commodity_research {section} metric registry fields are invalid"
+            )
+        provider = str(raw["provider"] or "").strip()
+        role = str(raw["metric_role"] or "").strip()
+        frequency = str(raw["frequency"] or "").strip()
+        try:
+            pattern = re.compile(str(raw["metric_code_pattern"]))
+        except re.error as error:
+            raise ReleaseValidationError(
+                f"commodity_research {section} metric pattern is invalid"
+            ) from error
+        if (
+            provider not in providers
+            or provider not in context
+            or role not in METRIC_ROLE_VALUES
+            or frequency not in config["limits"]
+            or set(pattern.groupindex) != expected_groups
+            or not isinstance(raw["metrics"], list)
+            or not raw["metrics"]
+        ):
+            raise ReleaseValidationError(
+                f"commodity_research {section} metric registry is invalid"
+            )
+        metrics: dict[str, dict[str, str]] = {}
+        for metric_raw in raw["metrics"]:
+            if not isinstance(metric_raw, dict) or set(metric_raw) != {
+                "metric",
+                "measurement_kind",
+                "unit",
+            }:
+                raise ReleaseValidationError(
+                    f"commodity_research {section} metric fields are invalid"
+                )
+            metric = str(metric_raw["metric"] or "").strip()
+            kind = str(metric_raw["measurement_kind"] or "").strip()
+            unit = str(metric_raw["unit"] or "").strip()
+            if (
+                not re.fullmatch(r"[a-z0-9_]+", metric)
+                or metric in metrics
+                or kind not in MEASUREMENT_KIND_VALUES
+                or not unit
+            ):
+                raise ReleaseValidationError(
+                    f"commodity_research {section} metric identity is invalid"
+                )
+            metrics[metric] = {"measurement_kind": kind, "unit": unit}
+        usda_registry[section] = {
+            "provider": provider,
+            "metric_role": role,
+            "frequency": frequency,
+            "pattern": pattern,
+            "metrics": metrics,
+        }
+    return {"exact": descriptors, "usda": usda_registry}
 
 
-def _dynamic_usda_descriptor(row: dict, config: dict) -> dict | None:
-    source_url = str(row.get("source_url") or "").strip()
+def _usda_metric_descriptor(
+    row: dict,
+    config: dict,
+    registered: dict,
+    window: WeekWindow,
+) -> dict | None:
+    metric_code = str(row.get("metric_code") or "").strip()
     code = str(row.get("commodity_code") or "").strip()
     family = str(row.get("commodity_family") or "").strip()
-    for provider in ("usda_psd", "usda_esr"):
-        policy = config["providers"][provider]
-        if not _policy_matches_url(policy, source_url):
+    unit = str(row.get("unit") or "").strip()
+    for section, spec in registered.items():
+        match = spec["pattern"].fullmatch(metric_code)
+        if match is None:
             continue
-        mapping = {
-            str(item.get("commodity_code") or "").strip():
-            str(item.get("commodity_family") or "").strip()
-            for item in config["context"][provider]
+        parts = match.groupdict()
+        metric = spec["metrics"].get(parts["metric"])
+        items = {
+            str(item.get("commodity_code") or "").strip(): item
+            for item in config["context"][section]
         }
-        if mapping.get(code) != family:
+        item = items.get(code)
+        if (
+            item is None
+            or parts["commodity"] != code.lower()
+            or family != str(item.get("commodity_family") or "").strip()
+        ):
             raise ReleaseValidationError(
-                f"{provider} history code-family identity is unconfigured: {code}"
+                f"commodity metric identity is not registered: {metric_code}"
+            )
+        allowed_years = {
+            window.end.year + int(offset)
+            for offset in item.get("market_year_offsets", [])
+        }
+        if metric is None or int(parts["market_year"]) not in allowed_years:
+            raise ReleaseValidationError(
+                f"commodity metric identity is not registered: {metric_code}"
+            )
+        if section == "usda_psd":
+            configured_metrics = set(item.get("attributes", {}))
+            if parts["metric"] == "stock_to_use":
+                allowed = {"ending_stocks", "domestic_use"} <= configured_metrics
+            else:
+                allowed = parts["metric"] in configured_metrics
+            configured_units = {str(value) for value in item.get("unit_names", [])}
+        else:
+            allowed = True
+            configured_units = {str(item.get("unit_name") or "")}
+        expected_unit = metric["unit"]
+        if expected_unit == "configured":
+            if unit not in configured_units:
+                allowed = False
+            expected_unit = unit
+        elif unit != expected_unit:
+            allowed = False
+        if not allowed:
+            raise ReleaseValidationError(
+                f"commodity metric identity is not registered: {metric_code}"
             )
         return {
-            "provider": provider,
-            "frequency": policy["frequency"],
+            "provider": spec["provider"],
+            "frequency": spec["frequency"],
             "commodity_code": code,
             "commodity_family": family,
-            "metric_role": "physical_fundamental",
-            "measurement_kind": str(row.get("measurement_kind") or "").strip(),
+            "metric_role": spec["metric_role"],
+            "measurement_kind": metric["measurement_kind"],
             "participant_class": None,
-            "unit": str(row.get("unit") or "").strip(),
+            "unit": expected_unit,
         }
     return None
 
 
-def _metric_descriptor(row: dict, config: dict, descriptors: dict[str, dict]) -> dict:
+def _metric_descriptor(
+    row: dict,
+    config: dict,
+    descriptors: dict,
+    window: WeekWindow,
+) -> dict:
     metric_code = _required_row_text(row, "metric_code", "commodity metric history")
-    descriptor = descriptors.get(metric_code)
+    descriptor = descriptors["exact"].get(metric_code)
     if descriptor is None:
-        descriptor = _dynamic_usda_descriptor(row, config)
+        descriptor = _usda_metric_descriptor(
+            row,
+            config,
+            descriptors["usda"],
+            window,
+        )
     if descriptor is None:
         raise ReleaseValidationError(
-            f"commodity metric history identity is not configured: {metric_code}"
+            f"commodity metric identity is not registered: {metric_code}"
         )
     return descriptor
 
@@ -2446,7 +2728,7 @@ def _validate_commodity_research_v2(
                 f"commodity metric history code-family mismatch: {code} requires "
                 f"{registry.get(code) or 'configured identity'}"
             )
-        descriptor = _metric_descriptor(row, config, descriptors)
+        descriptor = _metric_descriptor(row, config, descriptors, window)
         participant = str(row.get("participant_class") or "").strip() or None
         role = _required_row_text(row, "metric_role", label)
         kind = _required_row_text(row, "measurement_kind", label)
@@ -2548,7 +2830,7 @@ def _validate_commodity_research_v2(
         )
         raise ReleaseValidationError(f"commodity metric history ordering is invalid: {changed}")
     for group, rows in metric_groups.items():
-        descriptor = _metric_descriptor(rows[0], config, descriptors)
+        descriptor = _metric_descriptor(rows[0], config, descriptors, window)
         frequency = descriptor["frequency"]
         limit = limits.get(frequency)
         if limit is None or len(rows) > limit:
@@ -2561,6 +2843,7 @@ def _validate_commodity_research_v2(
         *datasets[("weekly_context", "positioning_flows.csv")],
     ]
     expected_groups: set[tuple] = set()
+    business_counts: dict[str, int] = {}
     for row in base_rows:
         code = str(row.get("commodity_code") or "").strip()
         family = str(row.get("commodity_family") or "").strip()
@@ -2568,10 +2851,14 @@ def _validate_commodity_research_v2(
             continue
         if str(row.get("qc_flag") or "").strip().upper() != "OK":
             continue
-        try:
-            _metric_descriptor(row, config, descriptors)
-        except ReleaseValidationError:
-            continue
+        descriptor = _metric_descriptor(row, config, descriptors, window)
+        provider = descriptor["provider"]
+        _require_policy_provenance(
+            row,
+            providers[provider],
+            f"{provider} business row",
+        )
+        business_counts[provider] = business_counts.get(provider, 0) + 1
         expected_groups.add((
             code,
             str(row.get("metric_code") or "").strip(),
@@ -2579,6 +2866,11 @@ def _validate_commodity_research_v2(
             str(row.get("measurement_kind") or "").strip(),
             str(row.get("participant_class") or "").strip() or None,
         ))
+    _validate_context_provider_statuses(
+        context_status,
+        providers,
+        business_counts,
+    )
     actual_groups = set(metric_groups)
     if actual_groups != expected_groups:
         missing = sorted(str(group) for group in expected_groups - actual_groups)

@@ -81,6 +81,33 @@ class PipelineConfigTests(unittest.TestCase):
             "annual": 12,
             "marketing_year": 12,
         })
+        metric_registry = research["metric_registry"]
+        self.assertEqual(
+            set(metric_registry),
+            {"eia_variants", "cftc_variants", "usda_psd", "usda_esr"},
+        )
+        self.assertEqual(
+            metric_registry["eia_variants"],
+            [
+                {"suffix": "", "unit": "configured", "metric_role": "physical_fundamental"},
+                {"suffix": "_change", "unit": "configured", "metric_role": "physical_fundamental"},
+                {"suffix": "_change_pct", "unit": "ratio", "metric_role": "physical_fundamental"},
+                {"suffix": "_seasonal_deviation", "unit": "configured", "metric_role": "physical_fundamental"},
+            ],
+        )
+        self.assertEqual(len(metric_registry["cftc_variants"]), 13)
+        self.assertEqual(
+            {row["metric"] for row in metric_registry["usda_psd"]["metrics"]},
+            {
+                "beginning_stocks", "production", "imports", "exports",
+                "feed_use", "industrial_use", "crush", "domestic_use",
+                "ending_stocks", "stock_to_use",
+            },
+        )
+        self.assertEqual(
+            {row["metric"] for row in metric_registry["usda_esr"]["metrics"]},
+            {"net_sales", "weekly_exports", "outstanding_sales"},
+        )
         self.assertEqual(
             {row["formula_id"] for row in research["facts"]},
             {

@@ -8,6 +8,58 @@
       "annual": 12,
       "marketing_year": 12
     },
+    "metric_registry": {
+      "eia_variants": [
+        {"suffix": "", "unit": "configured", "metric_role": "physical_fundamental"},
+        {"suffix": "_change", "unit": "configured", "metric_role": "physical_fundamental"},
+        {"suffix": "_change_pct", "unit": "ratio", "metric_role": "physical_fundamental"},
+        {"suffix": "_seasonal_deviation", "unit": "configured", "metric_role": "physical_fundamental"}
+      ],
+      "cftc_variants": [
+        {"provider": "cftc_disaggregated", "suffix": "open_interest", "metric_role": "positioning", "measurement_kind": "open_interest", "participant_class": null, "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "producer_net", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "producer", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "producer_net_change", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "producer", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "producer_percentile", "metric_role": "positioning", "measurement_kind": "percentile", "participant_class": "producer", "unit": "ratio", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "swap_dealer_net", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "swap_dealer", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "swap_dealer_net_change", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "swap_dealer", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "swap_dealer_percentile", "metric_role": "positioning", "measurement_kind": "percentile", "participant_class": "swap_dealer", "unit": "ratio", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "managed_money_net", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "managed_money", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "managed_money_net_change", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "managed_money", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "managed_money_percentile", "metric_role": "positioning", "measurement_kind": "percentile", "participant_class": "managed_money", "unit": "ratio", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "other_reportable_net", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "other_reportable", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "other_reportable_net_change", "metric_role": "positioning", "measurement_kind": "net_position", "participant_class": "other_reportable", "unit": "contracts", "frequency": "weekly"},
+        {"provider": "cftc_disaggregated", "suffix": "other_reportable_percentile", "metric_role": "positioning", "measurement_kind": "percentile", "participant_class": "other_reportable", "unit": "ratio", "frequency": "weekly"}
+      ],
+      "usda_psd": {
+        "provider": "usda_psd",
+        "metric_role": "physical_fundamental",
+        "frequency": "monthly",
+        "metric_code_pattern": "^usda_psd_(?P<commodity>[a-z0-9]+)_(?P<country>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "metrics": [
+          {"metric": "beginning_stocks", "measurement_kind": "inventory", "unit": "configured"},
+          {"metric": "production", "measurement_kind": "supply", "unit": "configured"},
+          {"metric": "imports", "measurement_kind": "trade", "unit": "configured"},
+          {"metric": "exports", "measurement_kind": "trade", "unit": "configured"},
+          {"metric": "feed_use", "measurement_kind": "demand", "unit": "configured"},
+          {"metric": "industrial_use", "measurement_kind": "demand", "unit": "configured"},
+          {"metric": "crush", "measurement_kind": "demand", "unit": "configured"},
+          {"metric": "domestic_use", "measurement_kind": "demand", "unit": "configured"},
+          {"metric": "ending_stocks", "measurement_kind": "inventory", "unit": "configured"},
+          {"metric": "stock_to_use", "measurement_kind": "structural", "unit": "ratio"}
+        ]
+      },
+      "usda_esr": {
+        "provider": "usda_esr",
+        "metric_role": "physical_fundamental",
+        "frequency": "weekly",
+        "metric_code_pattern": "^usda_esr_(?P<commodity>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "metrics": [
+          {"metric": "net_sales", "measurement_kind": "trade", "unit": "configured"},
+          {"metric": "weekly_exports", "measurement_kind": "trade", "unit": "configured"},
+          {"metric": "outstanding_sales", "measurement_kind": "trade", "unit": "configured"}
+        ]
+      }
+    },
     "providers": [
       {
         "provider": "eia_v2",

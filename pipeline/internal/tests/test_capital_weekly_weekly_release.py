@@ -3310,8 +3310,13 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
             ("orphan_input", r"orphan input_record_id"),
             ("mixed_vintage", r"same USDA vintage"),
             ("provider_residual", r"comex_gold_stocks.*zero V2 rows"),
+            ("unregistered_metric", r"metric identity is not registered.*totally_unregistered_usda_metric"),
+            ("status_observation_count", r"cftc_disaggregated.*observations.*208"),
+            ("status_provenance", r"cftc_disaggregated.*status provenance"),
             ("missing_configured_code", r"configured price history.*BRENT"),
             ("btc_inclusion", r"BTC_USD|digital_asset"),
+            ("fact_value", r"formula output mismatch.*wti_absolute_change.*value"),
+            ("wrong_resolving_input", r"formula output mismatch.*wti_absolute_change.*input_record_ids"),
         )
         for mutation, expected in cases:
             with self.subTest(mutation=mutation):
@@ -3462,6 +3467,66 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
                 row["observation_date"], row["known_as_of"], row["record_id"],
             ))
             self._rewrite("metric", metric_rows)
+        elif mutation == "unregistered_metric":
+            fundamentals_path = (
+                self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+            )
+            fundamental_rows = read_csv_rows(fundamentals_path)
+            base = fixture_row(
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                as_of_date="2026-08-07",
+                category="commodity_fundamentals",
+                market="World",
+                metric_code="totally_unregistered_usda_metric",
+                value="7",
+                unit="made_up_native_unit",
+                source="USDA Foreign Agricultural Service",
+                source_url=(
+                    "https://api.fas.usda.gov/api/psd/commodity/fixture/"
+                    "world/year/2026"
+                ),
+                commodity_code="CORN",
+                commodity_family="grains_oilseeds",
+                metric_role="physical_fundamental",
+                measurement_kind="supply",
+                participant_class="",
+                known_as_of="2026-08-07T12:00:00Z",
+                reference_period="2026",
+            )
+            fundamental_rows.append(base)
+            write_csv(
+                fundamentals_path,
+                CATEGORY_FIELDS["commodity_fundamentals"],
+                fundamental_rows,
+            )
+            metric_rows.append(_metric_history_row(base))
+            metric_rows.sort(key=lambda row: (
+                row["commodity_code"], row["metric_code"], row["metric_role"],
+                row["measurement_kind"], row["participant_class"],
+                row["observation_date"], row["known_as_of"], row["record_id"],
+            ))
+            self._rewrite("metric", metric_rows)
+            status_path = self.outputs["weekly_context"] / "source_log.csv"
+            status_rows = read_csv_rows(status_path)
+            psd_status = next(
+                row for row in status_rows if row["provider"] == "usda_psd"
+            )
+            psd_status["observations"] = str(int(psd_status["observations"]) + 1)
+            write_csv(status_path, CATEGORY_FIELDS["source_log"], status_rows)
+        elif mutation in {"status_observation_count", "status_provenance"}:
+            status_path = self.outputs["weekly_context"] / "source_log.csv"
+            status_rows = read_csv_rows(status_path)
+            status = next(
+                row
+                for row in status_rows
+                if row["provider"] == "cftc_disaggregated"
+            )
+            if mutation == "status_observation_count":
+                status["observations"] = "0"
+            else:
+                status["source"] = "Impostor"
+                status["source_url"] = "https://example.com/resource/fixture"
+            write_csv(status_path, CATEGORY_FIELDS["source_log"], status_rows)
         elif mutation == "missing_configured_code":
             price_rows = [
                 row for row in price_rows if row["commodity_code"] != "BRENT"
@@ -3479,8 +3544,43 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
             }
             price_rows.append(_price_history_row(btc, date(2026, 8, 7), 1.0))
             self._rewrite("price", price_rows)
+        elif mutation == "fact_value":
+            fact = next(
+                row for row in fact_rows
+                if row["fact_code"] == "wti_absolute_change"
+            )
+            fact["value"] = str(float(fact["value"]) + 1.0)
+            self._rewrite("facts", fact_rows)
+        elif mutation == "wrong_resolving_input":
+            fact = next(
+                row for row in fact_rows
+                if row["fact_code"] == "wti_absolute_change"
+            )
+            wti_rows = [
+                row for row in price_rows if row["series_code"] == "WTI"
+            ]
+            inputs = ast.literal_eval(fact["input_record_ids"])
+            wrong_id = wti_rows[0]["record_id"]
+            self.assertNotIn(wrong_id, inputs)
+            fact["input_record_ids"] = repr(sorted([wrong_id, inputs[-1]]))
+            self._rewrite("facts", fact_rows)
         else:
             raise AssertionError(f"unknown mutation: {mutation}")
+
+    def test_contract_three_rejects_duplicate_raw_universe_rows(self):
+        document = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+        document["commodity_research"]["universe"].append(
+            dict(document["commodity_research"]["universe"][0])
+        )
+        config_path = Path(self.temporary.name) / "duplicate-universe.json"
+        config_path.write_text(json.dumps(document), encoding="utf-8")
+
+        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
+            with self.assertRaisesRegex(
+                ReleaseValidationError,
+                r"universe.*exact 19.*duplicate.*NATGAS_HH",
+            ):
+                self._validate()
 
 
 class FakePipelineRunner:
