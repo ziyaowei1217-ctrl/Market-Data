@@ -13,6 +13,7 @@ from pipeline.internal.capital_weekly.context.eia_commodities import (
     EiaBatchError,
     EiaBatchSpec,
     build_eia_batch_specs,
+    eia_response_total,
     fetch_eia_batches,
     latest_and_changes,
     parse_eia_metric_series,
@@ -222,7 +223,7 @@ class CommodityFundamentalTests(unittest.TestCase):
             ("missing", {"response": {"data": [row("2026-08-21")]}}),
             ("negative", {"response": {"total": -1, "data": [row("2026-08-21")]}}),
             ("float", {"response": {"total": 1.5, "data": [row("2026-08-21")]}}),
-            ("string", {"response": {"total": "1", "data": [row("2026-08-21")]}}),
+            ("noncanonical", {"response": {"total": "01", "data": [row("2026-08-21")]}}),
         )
         for label, payload in malformed:
             with self.subTest(label=label):
@@ -240,6 +241,44 @@ class CommodityFundamentalTests(unittest.TestCase):
         with self.assertRaisesRegex(EiaBatchError, "changed across pages") as raised:
             fetch_eia_batches(inconsistent, [spec], expected_metadata=metadata)
         self.assertEqual(raised.exception.phase, "coverage")
+
+    def test_eia_response_total_matches_official_endpoint_contracts(self):
+        cases = (
+            (
+                "metadata",
+                {"facets": [{"id": "RWTC", "name": "WTI"}], "totalFacets": 1},
+            ),
+            (
+                "data",
+                {"data": [{"period": "2026-08-21"}], "total": "1"},
+            ),
+        )
+        for label, response in cases:
+            with self.subTest(label=label):
+                self.assertEqual(
+                    eia_response_total(
+                        response,
+                        offset=0,
+                        page_count=1,
+                        requested_length=400,
+                    ),
+                    1,
+                )
+
+        for label, response in (
+            ("metadata missing totalFacets", {"facets": []}),
+            ("metadata string totalFacets", {"facets": [], "totalFacets": "0"}),
+            ("ambiguous metadata totals", {"facets": [], "totalFacets": 0, "total": 0}),
+            ("noncanonical data total", {"data": [], "total": "00"}),
+        ):
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(ValueError, "total"):
+                    eia_response_total(
+                        response,
+                        offset=0,
+                        page_count=0,
+                        requested_length=400,
+                    )
 
     def test_current_lower_48_description_matches_production_config(self):
         spec = next(

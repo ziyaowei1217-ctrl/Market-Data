@@ -246,11 +246,26 @@ def eia_response_total(
     requested_length: int,
     prior_total: int | None = None,
 ) -> int:
-    if "total" not in response:
-        raise ValueError("EIA response total is required")
-    total = response["total"]
-    if isinstance(total, bool) or not isinstance(total, int) or total < 0:
-        raise ValueError("EIA response total must be a non-negative integer")
+    if "totalFacets" in response:
+        if "facets" not in response or "data" in response or "total" in response:
+            raise ValueError("EIA response total fields are ambiguous")
+        total = response["totalFacets"]
+        if isinstance(total, bool) or not isinstance(total, int) or total < 0:
+            raise ValueError(
+                "EIA response totalFacets must be a non-negative integer"
+            )
+    else:
+        if "total" not in response:
+            raise ValueError("EIA response total is required")
+        total = response["total"]
+        if isinstance(total, str):
+            if "data" not in response or not re.fullmatch(r"0|[1-9][0-9]*", total):
+                raise ValueError(
+                    "EIA response total must be a non-negative canonical integer"
+                )
+            total = int(total)
+        elif isinstance(total, bool) or not isinstance(total, int) or total < 0:
+            raise ValueError("EIA response total must be a non-negative integer")
     if offset < 0 or page_count < 0 or requested_length <= 0:
         raise ValueError("EIA pagination offset and page size are invalid")
     if page_count > requested_length:
