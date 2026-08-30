@@ -189,18 +189,23 @@ git add pipeline/internal/capital_weekly/context/provider_contracts.py \
 git commit -m "feat: publish provider phase diagnostics"
 ```
 
-### Task 3: EIA Batching, Metadata Validation, and Read-Only Probe
+### Task 3: Official Commodity Transports, EIA Batching, and Read-Only Probe
 
 **Files:**
 
 - Modify: `pipeline/internal/capital_weekly/context/eia_commodities.py`
 - Modify: `pipeline/internal/capital_weekly/context/providers.py`
 - Modify: `pipeline/internal/capital_weekly/macro_assets.py`
+- Modify: `pipeline/internal/capital_weekly/commodity_prices.py`
 - Create: `pipeline/internal/scripts/probe_commodity_sources.py`
 - Modify: `pipeline/config.json`
 - Test: `pipeline/internal/tests/test_capital_weekly_commodities.py`
+- Test: `pipeline/internal/tests/test_capital_weekly_commodity_prices.py`
 - Test: `pipeline/internal/tests/test_capital_weekly_context_providers.py`
 - Test: `pipeline/internal/tests/test_capital_weekly_macro_assets.py`
+- Test: `pipeline/internal/tests/test_capital_weekly_positioning.py`
+- Test: `pipeline/internal/tests/test_capital_weekly_metal_inventories.py`
+- Test: `pipeline/internal/tests/test_capital_weekly_usda_commodities.py`
 - Test: `pipeline/internal/tests/test_pipeline_config.py`
 
 **Interfaces:**
@@ -224,6 +229,11 @@ uses `offset` and `length`, metadata description/unit/facet checks happen
 before row parsing, duplicate/missing series fail coverage, and an HTTP retry
 trace propagates attempts into `ProviderResult`.
 
+Add transport-boundary tests proving the configured World Bank, CFTC, CME,
+USGS, USDA PSD, and USDA ESR commodity providers call `official_get` with their
+exact policy and audit secrets. Assert validation errors from each parser are
+not retried, and successful binary CME/USGS raw bytes remain byte-exact.
+
 - [ ] **Step 2: Write probe no-mutation RED test**
 
 Run `probe_commodity_sources.main()` against a fake client with temporary
@@ -238,12 +248,14 @@ policy config, and no probe module.
 
 - [ ] **Step 4: Implement EIA integration**
 
-Adopt `official_get` only for EIA V2 price/fundamental requests. Preserve the
-current exact official series/facet/unit registry. Config must declare, for
-each EIA provider, `connect_timeout`, `read_timeout`, `total_timeout`,
+Adopt `official_get` for every configured Commodity Research HTTP GET transport:
+EIA, World Bank, CFTC, CME, USGS, USDA PSD, and USDA ESR. Preserve each current
+provider-specific parser and exact official identity registry; the shared
+executor ends at response bytes and never normalizes provider schemas. Config
+must declare, for each commodity provider, `connect_timeout`, `read_timeout`, `total_timeout`,
 `max_attempts`, `retry_backoff_seconds`, `retry_after_cap`,
-`request_batch_size`, and `page_length`; parsing rejects missing keys or hidden
-defaults.
+with `request_batch_size` and `page_length` additionally required for EIA;
+parsing rejects missing keys or hidden defaults.
 
 - [ ] **Step 5: Implement the read-only probe**
 
@@ -257,12 +269,17 @@ call a pipeline runner or cache writer.
 ```bash
 python3 -m unittest -v \
   pipeline.internal.tests.test_capital_weekly_commodities \
+  pipeline.internal.tests.test_capital_weekly_commodity_prices \
   pipeline.internal.tests.test_capital_weekly_context_providers \
   pipeline.internal.tests.test_capital_weekly_macro_assets \
+  pipeline.internal.tests.test_capital_weekly_positioning \
+  pipeline.internal.tests.test_capital_weekly_metal_inventories \
+  pipeline.internal.tests.test_capital_weekly_usda_commodities \
   pipeline.internal.tests.test_pipeline_config
 git add pipeline/internal/capital_weekly/context/eia_commodities.py \
   pipeline/internal/capital_weekly/context/providers.py \
   pipeline/internal/capital_weekly/macro_assets.py \
+  pipeline/internal/capital_weekly/commodity_prices.py \
   pipeline/internal/scripts/probe_commodity_sources.py \
   pipeline/config.json pipeline/internal/tests
 git commit -m "feat: harden official EIA retrieval"
