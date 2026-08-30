@@ -370,10 +370,11 @@ class MacroAssetUniverseTests(unittest.TestCase):
             universe = Path(directory) / "universe.csv"
             universe.write_text(
                 "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
-                "source,source_url,frequency,level_unit,change_unit,sort_order,notes\n"
+                "source,source_url,frequency,level_unit,change_unit,sort_order,notes,"
+                "freshness_days\n"
                 "commodity,commodities,GOLD,黄金,Gold,world_bank_pink_sheet,Gold,"
                 "World Bank,https://www.worldbank.org/en/research/commodity-markets,"
-                "monthly,$/toz,pct,1,official monthly benchmark\n",
+                "monthly,$/toz,pct,1,official monthly benchmark,45\n",
                 encoding="utf-8",
             )
             history = [
@@ -393,6 +394,42 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertEqual(detail.loc[0, "latest_date"], "2026-05-31")
         self.assertEqual(detail.loc[0, "latest_value"], 3300.0)
         self.assertEqual(source.loc[0, "observations"], 2)
+
+    def test_world_bank_price_staler_than_configured_45_days_blocks_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            universe = Path(directory) / "universe.csv"
+            universe.write_text(
+                "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
+                "source,source_url,frequency,level_unit,change_unit,sort_order,notes,"
+                "freshness_days\n"
+                "commodity,commodities,GOLD,黄金,Gold,world_bank_pink_sheet,Gold,"
+                "World Bank,https://www.worldbank.org/en/research/commodity-markets,"
+                "monthly,$/toz,pct,1,official monthly benchmark,45\n",
+                encoding="utf-8",
+            )
+            history = [
+                {"date": date(2026, 5, 31), "value": 3200.0},
+                {"date": date(2026, 6, 30), "value": 3300.0},
+            ]
+            with patch(
+                "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
+                return_value=(
+                    history,
+                    b"workbook",
+                    "https://thedocs.worldbank.org/monthly.xlsx",
+                ),
+            ):
+                detail, source = fetch_macro_assets(
+                    universe,
+                    as_of_date=date(2026, 8, 15),
+                    allow_partial=True,
+                )
+                with self.assertRaisesRegex(ValueError, "GOLD"):
+                    fetch_macro_assets(universe, as_of_date=date(2026, 8, 15))
+
+        self.assertEqual(source.loc[0, "status"], "FETCH_FAILED")
+        self.assertIn("stale beyond configured 45", source.loc[0, "error"])
+        self.assertEqual(detail.loc[0, "qc_flag"], "FETCH_FAILED")
 
     def test_boe_shared_payload_uses_one_request_and_marks_cache_hit(self):
         session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
@@ -858,6 +895,54 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertIn("POST https://expanded.test/chunk-1 [completed]", provenance)
         self.assertIn("POST https://expanded.test/chunk-2 [attempting]", provenance)
         self.assertNotEqual(provenance, "https://generic.test")
+
+    def test_eia_prepared_url_secret_is_redacted_from_every_audit_artifact(self):
+        secret = "audit-sentinel-eia-key"
+        prepared_url = (
+            "https://api.eia.gov/v2/petroleum/pri/spt/data/"
+            f"?api_key={secret}&frequency=daily"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            universe = Path(directory) / "universe.csv"
+            raw_dir = Path(directory) / "raw"
+            universe.write_text(
+                "asset_class,group,series_code,name_cn,name_en,provider,"
+                "provider_symbol,source,source_url,frequency,level_unit,"
+                "change_unit,sort_order,notes,provider_route\n"
+                "commodity,commodities,WTI,原油,WTI,eia_v2,RWTC,EIA,"
+                "https://www.eia.gov/opendata/,daily,$/BBL,pct,1,note,"
+                "petroleum/pri/spt\n",
+                encoding="utf-8",
+            )
+
+            def fail_with_prepared_url(_config, session, as_of_date=None):
+                del as_of_date
+                session._macro_attempt_trace = [
+                    {"method": "GET", "url": prepared_url, "status": "attempting"}
+                ]
+                session._macro_raw_parts = [prepared_url.encode("utf-8")]
+                raise RuntimeError(f"401 Client Error for url: {prepared_url}")
+
+            with patch.dict(os.environ, {"EIA_API_KEY": secret}), patch(
+                "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
+                side_effect=fail_with_prepared_url,
+            ):
+                detail, source_log = fetch_macro_assets(
+                    universe,
+                    raw_dir=raw_dir,
+                    as_of_date=date(2026, 8, 9),
+                    allow_partial=True,
+                )
+            serialized = "\n".join(
+                (
+                    detail.to_json(),
+                    source_log.to_json(),
+                    (raw_dir / "WTI.raw").read_text(encoding="utf-8"),
+                )
+            )
+
+        self.assertNotIn(secret, serialized)
+        self.assertIn("api_key=[REDACTED]", serialized)
 
     def test_raw_response_is_cached_when_parsing_fails(self):
         with tempfile.TemporaryDirectory() as directory:

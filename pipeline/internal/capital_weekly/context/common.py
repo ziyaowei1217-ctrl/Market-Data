@@ -27,6 +27,30 @@ COMMODITY_METRIC_FIELDS = (
     "known_as_of",
     "reference_period",
 )
+METRIC_ROLE_VALUES = frozenset({"physical_fundamental", "positioning"})
+MEASUREMENT_KIND_VALUES = frozenset(
+    {
+        "inventory",
+        "supply",
+        "demand",
+        "trade",
+        "utilization",
+        "price",
+        "open_interest",
+        "net_position",
+        "percentile",
+        "structural",
+    }
+)
+PARTICIPANT_CLASS_VALUES = frozenset(
+    {
+        "producer",
+        "swap_dealer",
+        "managed_money",
+        "other_reportable",
+        "index_trader",
+    }
+)
 METRIC_FIELDS = BASE_METRIC_FIELDS + COMMODITY_METRIC_FIELDS
 
 
@@ -46,6 +70,14 @@ def normalize_metric_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]
         row = dict(raw)
         for field in COMMODITY_METRIC_FIELDS:
             row.setdefault(field, None)
+        for field, allowed in (
+            ("metric_role", METRIC_ROLE_VALUES),
+            ("measurement_kind", MEASUREMENT_KIND_VALUES),
+            ("participant_class", PARTICIPANT_CLASS_VALUES),
+        ):
+            value = row.get(field)
+            if value not in (None, "") and value not in allowed:
+                raise ValueError(f"Unsupported {field}: {value}")
         row["as_of_date"] = iso_date(row["as_of_date"])
         key = (
             row["as_of_date"],

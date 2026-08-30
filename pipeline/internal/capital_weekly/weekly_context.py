@@ -11,6 +11,8 @@ from typing import Mapping
 
 import pandas as pd
 
+from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
+
 from .context.common import METRIC_FIELDS, normalize_metric_rows
 from .context.economic_releases import (
     ECONOMIC_RELEASE_FIELDS,
@@ -123,6 +125,8 @@ def run_weekly_context(
                     f"Provider result category {result.category!r} does not match "
                     f"ProviderSpec category {provider.spec.category!r}"
                 )
+            safe_result_notes = sanitize_audit_text(result.notes)
+            safe_result_source_url = sanitize_audit_text(result.source_url)
             rows = (
                 normalize_economic_release_rows(result.rows)
                 if result.category == "economic_releases"
@@ -134,9 +138,9 @@ def run_weekly_context(
                 raise ValueError(f"Unsupported context category: {result.category}")
             if raw_path:
                 raw_content = (
-                    result.raw_text
+                    sanitize_audit_bytes(result.raw_text)
                     if isinstance(result.raw_text, bytes)
-                    else result.raw_text.encode("utf-8")
+                    else sanitize_audit_text(result.raw_text).encode("utf-8")
                 )
                 (raw_path / f"{_safe_provider_name(provider_name)}.raw").write_bytes(
                     raw_content
@@ -152,7 +156,9 @@ def run_weekly_context(
                         f"{run_date.isoformat()}."
                     )
                     notes = "; ".join(
-                        note for note in (result.notes, unavailable_note) if note
+                        note
+                        for note in (safe_result_notes, unavailable_note)
+                        if note
                     )
                     tables["source_log"].append(
                         {
@@ -170,12 +176,15 @@ def run_weekly_context(
                             "observations": 0,
                             "as_of_date": run_date.isoformat(),
                             "source": result.source,
-                            "source_url": result.source_url,
+                            "source_url": safe_result_source_url,
                             "elapsed_ms": int((time.monotonic() - started) * 1000),
                             "notes": notes,
                         }
                     )
                     continue
+            for row in rows:
+                if row.get("source_url") is not None:
+                    row["source_url"] = sanitize_audit_text(row["source_url"])
             tables[provider.spec.category].extend(rows)
             tables["source_log"].append(
                 {
@@ -187,18 +196,19 @@ def run_weekly_context(
                     "frequency": provider.spec.frequency,
                     "freshness_days": provider.spec.freshness_days,
                     "latest_known_as_of": _latest_known_as_of(rows),
-                    "warnings": result.notes,
+                    "warnings": safe_result_notes,
                     "category": provider.spec.category,
                     "status": result.status,
                     "observations": len(rows),
                     "as_of_date": run_date.isoformat(),
                     "source": result.source,
-                    "source_url": result.source_url,
+                    "source_url": safe_result_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
-                    "notes": result.notes,
+                    "notes": safe_result_notes,
                 }
             )
         except Exception as error:
+            safe_error = sanitize_audit_text(error)
             tables["source_log"].append(
                 {
                     "provider": provider_name,
@@ -209,7 +219,7 @@ def run_weekly_context(
                     "frequency": provider.spec.frequency,
                     "freshness_days": provider.spec.freshness_days,
                     "latest_known_as_of": None,
-                    "warnings": str(error),
+                    "warnings": safe_error,
                     "category": provider.spec.category,
                     "status": "FETCH_FAILED",
                     "observations": 0,
@@ -217,7 +227,7 @@ def run_weekly_context(
                     "source": None,
                     "source_url": None,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
-                    "notes": str(error),
+                    "notes": safe_error,
                 }
             )
     _validate_combined_economic_releases(tables, run_date)
@@ -234,6 +244,7 @@ def _validate_combined_economic_releases(
         )
         validate_economic_release_input_references(tables["economic_releases"])
     except ValueError as error:
+        safe_error = sanitize_audit_text(error)
         tables["economic_releases"] = []
         tables["source_log"].append(
             {
@@ -245,7 +256,7 @@ def _validate_combined_economic_releases(
                 "frequency": "event",
                 "freshness_days": None,
                 "latest_known_as_of": None,
-                "warnings": str(error),
+                "warnings": safe_error,
                 "category": "economic_releases",
                 "status": "FETCH_FAILED",
                 "observations": 0,
@@ -253,7 +264,7 @@ def _validate_combined_economic_releases(
                 "source": None,
                 "source_url": None,
                 "elapsed_ms": 0,
-                "notes": str(error),
+                "notes": safe_error,
             }
         )
 

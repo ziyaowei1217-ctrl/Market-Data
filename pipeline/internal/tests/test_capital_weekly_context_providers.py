@@ -1,13 +1,17 @@
 from datetime import date
 import csv
 import hashlib
+import io
 import json
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
+from unittest.mock import patch
 
 import pandas as pd
 
+from pipeline.internal.capital_weekly.context import providers as providers_module
 from pipeline.internal.capital_weekly.context.providers import (
     COMEX_COPPER_STOCKS_URL,
     CFTC_DISAGGREGATED_URL,
@@ -74,9 +78,12 @@ class JsonResponse:
     encoding = "utf-8"
     apparent_encoding = "utf-8"
 
-    def __init__(self, payload):
+    def __init__(self, payload, raw_bytes=None):
         self.payload = payload
-        self.text = json.dumps(payload, separators=(",", ":"))
+        self.content = raw_bytes or json.dumps(
+            payload, separators=(",", ":")
+        ).encode("utf-8")
+        self.text = self.content.decode("utf-8")
 
     def raise_for_status(self):
         return None
@@ -95,6 +102,8 @@ class JsonSession:
         response = self.responses[url]
         if isinstance(response, Exception):
             raise response
+        if isinstance(response, tuple):
+            return JsonResponse(*response)
         return JsonResponse(response)
 
 
@@ -125,10 +134,11 @@ def write_provider_configs(data_dir):
     )
     (data_dir / "capital_weekly_cftc_contracts.csv").write_text(
         "contract_code,metric_code,report_family,market_name,commodity_code,"
-        "commodity_family,percentile_window,percentile_min_observations\n"
-        "13874A,sp500,tff,S&P 500 Consolidated,,,,\n"
+        "commodity_family,percentile_window,percentile_min_observations,"
+        "freshness_days\n"
+        "13874A,sp500,tff,S&P 500 Consolidated,,,,,10\n"
         "088691,GOLD_COT,disaggregated,GOLD - COMMODITY EXCHANGE INC.,"
-        "GOLD_COMEX,gold,156,52\n",
+        "GOLD_COMEX,gold,156,52,10\n",
         encoding="utf-8",
     )
     (data_dir / "capital_weekly_eia_series.csv").write_text(
@@ -147,12 +157,12 @@ def write_provider_configs(data_dir):
     )
     (data_dir / "capital_weekly_usda_psd.csv").write_text(
         "commodity_code,commodity_family,commodity_name,country_names,"
-        "market_year_offsets,attributes,unit_names\n",
+        "market_year_offsets,attributes,unit_names,freshness_days\n",
         encoding="utf-8",
     )
     (data_dir / "capital_weekly_usda_esr.csv").write_text(
         "commodity_code,commodity_family,commodity_name,route,"
-        "market_year_offsets,unit_name\n",
+        "market_year_offsets,unit_name,freshness_days\n",
         encoding="utf-8",
     )
 
@@ -182,6 +192,7 @@ def corn_psd_config() -> dict:
             "ending_stocks": "Ending Stocks",
         }),
         "unit_names": json.dumps(["1000 MT"]),
+        "freshness_days": "45",
     }
 
 
@@ -193,6 +204,7 @@ def corn_esr_config() -> dict:
         "route": "allCountries",
         "market_year_offsets": json.dumps([0]),
         "unit_name": "Metric Tons",
+        "freshness_days": "14",
     }
 
 
@@ -289,6 +301,160 @@ class ContextProviderTests(unittest.TestCase):
             {"2026-08-12T12:00:00-04:00"},
         )
 
+    def test_keyed_psd_fails_closed_without_explicit_matching_record_vintage(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        lookups = json.loads(
+            (fixture_root / "psd_lookups.json").read_text(encoding="utf-8")
+        )
+        records = json.loads(
+            (fixture_root / "psd_records.json").read_text(encoding="utf-8")
+        )
+        unversioned = [
+            {key: value for key, value in record.items() if key != "releaseDate"}
+            for record in records
+        ]
+        original_bytes = json.dumps(unversioned, indent=2).encode("utf-8")
+        base = "https://api.fas.usda.gov"
+        data_url = f"{base}/api/psd/commodity/0440000/world/year/2026"
+        responses = {
+            f"{base}/api/psd/commodities": lookups["commodities"],
+            f"{base}/api/psd/commodityAttributes": lookups["attributes"],
+            f"{base}/api/psd/countries": lookups["countries"],
+            f"{base}/api/psd/unitsOfMeasure": lookups["units"],
+            f"{base}/api/psd/commodity/0440000/dataReleaseDates": [
+                {
+                    "commodityCode": "0440000",
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-12T12:00:00-04:00",
+                }
+            ],
+            data_url: (unversioned, original_bytes),
+        }
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_psd.csv",
+                corn_psd_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=JsonSession(responses),
+            )["usda_psd"]
+
+            result = provider.fetch()
+
+        self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(result.rows, [])
+        self.assertIn("explicit record vintage", result.notes)
+        with zipfile.ZipFile(io.BytesIO(result.raw_text)) as archive:
+            self.assertIn(original_bytes, [archive.read(name) for name in archive.namelist()])
+
+    def test_keyed_psd_stale_release_uses_configured_45_day_cutoff(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        lookups = json.loads(
+            (fixture_root / "psd_lookups.json").read_text(encoding="utf-8")
+        )
+        base = "https://api.fas.usda.gov"
+        data_url = f"{base}/api/psd/commodity/0440000/world/year/2026"
+        responses = {
+            f"{base}/api/psd/commodities": lookups["commodities"],
+            f"{base}/api/psd/commodityAttributes": lookups["attributes"],
+            f"{base}/api/psd/countries": lookups["countries"],
+            f"{base}/api/psd/unitsOfMeasure": lookups["units"],
+            f"{base}/api/psd/commodity/0440000/dataReleaseDates": [
+                {
+                    "commodityCode": "0440000",
+                    "marketYear": 2026,
+                    "releaseDate": "2026-07-14T12:00:00-04:00",
+                }
+            ],
+        }
+        session = JsonSession(responses)
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_psd.csv",
+                corn_psd_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=session,
+            )["usda_psd"]
+            result = provider.fetch()
+
+        self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(result.rows, [])
+        self.assertIn("45 calendar days", result.notes)
+        self.assertNotIn(data_url, [url for url, _kwargs in session.calls])
+
+    def test_keyed_esr_fails_closed_when_records_do_not_match_latest_release(self):
+        fixture_root = Path(__file__).with_name("fixtures") / "usda"
+        records = json.loads(
+            (fixture_root / "esr_records.json").read_text(encoding="utf-8")
+        )
+        mismatched = [
+            {**record, "releaseDate": "2026-08-20T08:30:00-04:00"}
+            for record in records[:2]
+        ]
+        original_bytes = json.dumps(mismatched, indent=2).encode("utf-8")
+        base = "https://api.fas.usda.gov"
+        data_url = (
+            f"{base}/api/esr/exports/commodityCode/101/"
+            "allCountries/marketYear/2026"
+        )
+        responses = {
+            f"{base}/api/esr/commodities": [
+                {"commodityCode": 101, "commodityName": "Corn"}
+            ],
+            f"{base}/api/esr/countries": [
+                {"countryCode": 1220, "countryName": "Canada"},
+                {"countryCode": 2010, "countryName": "Mexico"},
+            ],
+            f"{base}/api/esr/unitsOfMeasure": [
+                {"unitId": 1, "unitNames": "Metric Tons"}
+            ],
+            f"{base}/api/esr/datareleasedates": [
+                {
+                    "commodityCode": 101,
+                    "marketYear": 2026,
+                    "releaseDate": "2026-08-27T08:30:00-04:00",
+                }
+            ],
+            data_url: (mismatched, original_bytes),
+        }
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            write_single_config_row(
+                data_dir / "capital_weekly_usda_esr.csv",
+                corn_esr_config(),
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 24),
+                end=date(2026, 8, 30),
+                data_dir=data_dir,
+                environ={"USDA_API_KEY": "fixture-key"},
+                session=JsonSession(responses),
+            )["usda_esr"]
+
+            result = provider.fetch()
+
+        self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(result.rows, [])
+        self.assertIn("does not match latest eligible release", result.notes)
+        with zipfile.ZipFile(io.BytesIO(result.raw_text)) as archive:
+            self.assertIn(original_bytes, [archive.read(name) for name in archive.namelist()])
+
     def test_keyed_esr_ignores_future_unknown_country_and_unit_after_cutoff(self):
         fixture_root = Path(__file__).with_name("fixtures") / "usda"
         records = json.loads(
@@ -348,9 +514,9 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(
             [(row["measurement_kind"], row["value"]) for row in tables["commodity_fundamentals"]],
             [
-                ("net_sales", 210_000),
-                ("weekly_exports", 340_000),
-                ("outstanding_sales", 4_600_000),
+                ("trade", 210_000),
+                ("trade", 340_000),
+                ("trade", 4_600_000),
             ],
         )
 
@@ -474,6 +640,7 @@ class ContextProviderTests(unittest.TestCase):
                     "ending_stocks": "Ending Stocks",
                 }),
                 "unit_names": json.dumps(["1000 MT"]),
+                "freshness_days": "45",
             }
             with (data_dir / "capital_weekly_usda_psd.csv").open(
                 "w", newline="", encoding="utf-8"
@@ -488,6 +655,7 @@ class ContextProviderTests(unittest.TestCase):
                 "route": "allCountries",
                 "market_year_offsets": json.dumps([0]),
                 "unit_name": "Metric Tons",
+                "freshness_days": "14",
             }
             with (data_dir / "capital_weekly_usda_esr.csv").open(
                 "w", newline="", encoding="utf-8"
@@ -536,6 +704,63 @@ class ContextProviderTests(unittest.TestCase):
             kwargs["headers"]["API_KEY"] == secret
             for _url, kwargs in session.calls
         ))
+
+    def test_cme_five_trading_day_cutoff_counts_holiday_and_weekend_boundaries(self):
+        spec = {
+            "provider": "comex_copper_stocks",
+            "source_url": COMEX_COPPER_STOCKS_URL,
+            "source": "CME Group",
+            "commodity_code": "COPPER_COMEX",
+            "commodity_family": "copper",
+            "market": "COMEX",
+            "frequency": "daily",
+            "freshness_days": "5",
+            "freshness_basis": "trading_days",
+            "holiday_calendar": "CME_US",
+            "expected_sheet": "Daily Metal Stocks Report",
+            "commodity_title": "COPPER - HIGH GRADE",
+            "expected_unit": "Short Tons",
+            "location_header": "DELIVERY POINT",
+            "registered_total_label": "Total Registered (warranted)",
+            "eligible_total_label": "Total Eligible (non-warranted)",
+            "combined_total_label": "TOTAL COPPER",
+            "limitation_note": "deliverable_inventory_proxy; LME not included",
+        }
+        parsed = [
+            {
+                "report_date": date(2026, 6, 25),
+                "scope": "exchange",
+                "inventory_type": inventory_type,
+                "value": value,
+                "unit": "Short Tons",
+            }
+            for inventory_type, value in (
+                ("registered", 15.0),
+                ("eligible", 35.0),
+                ("total", 50.0),
+            )
+        ]
+        with patch.object(providers_module, "parse_comex_stocks", return_value=parsed), patch.object(
+            providers_module,
+            "comex_schema_signature",
+            return_value="fixture",
+        ):
+            boundary = providers_module._comex_stocks_provider(
+                BinarySession({COMEX_COPPER_STOCKS_URL: b"fixture"}),
+                date(2026, 7, 5),
+                spec,
+            )
+            stale = providers_module._comex_stocks_provider(
+                BinarySession({COMEX_COPPER_STOCKS_URL: b"fixture"}),
+                date(2026, 7, 6),
+                spec,
+            )
+
+        self.assertEqual(boundary.status, "OK")
+        self.assertEqual(len(boundary.rows), 3)
+        self.assertEqual(stale.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(stale.rows, [])
+        self.assertIn("5 trading days", stale.notes)
 
     def test_comex_copper_keeps_exact_bytes_and_auditable_provenance(self):
         metal_header = (
@@ -909,7 +1134,7 @@ class ContextProviderTests(unittest.TestCase):
             }),
             "metric_code": "eia_ng_storage_lower48",
             "metric_name": "Lower 48 working gas",
-            "measurement_kind": "physical_level",
+            "measurement_kind": "inventory",
             "source_description": "Lower 48 storage",
             "expected_unit": "BCF",
             "freshness_days": "10",
@@ -923,7 +1148,7 @@ class ContextProviderTests(unittest.TestCase):
             "facets": json.dumps({"series": "A&B"}),
             "metric_code": "eia_crude_stocks_ex_spr",
             "metric_name": "Crude stocks excluding SPR",
-            "measurement_kind": "physical_level",
+            "measurement_kind": "inventory",
             "source_description": "Crude stocks excluding SPR",
             "expected_unit": "MBBL",
             "freshness_days": "10",
@@ -1019,7 +1244,7 @@ class ContextProviderTests(unittest.TestCase):
             }),
             "metric_code": "eia_ng_storage_lower48",
             "metric_name": "Lower 48 working gas",
-            "measurement_kind": "physical_level",
+            "measurement_kind": "inventory",
             "source_description": "Lower 48 storage",
             "expected_unit": "BCF",
             "freshness_days": "10",
@@ -1033,7 +1258,7 @@ class ContextProviderTests(unittest.TestCase):
             "facets": json.dumps({"series": "WCESTUS1"}),
             "metric_code": "eia_crude_stocks_ex_spr",
             "metric_name": "Crude stocks excluding SPR",
-            "measurement_kind": "physical_level",
+            "measurement_kind": "inventory",
             "source_description": "Crude stocks excluding SPR",
             "expected_unit": "MBBL",
             "freshness_days": "10",
@@ -1139,9 +1364,29 @@ class ContextProviderTests(unittest.TestCase):
             for row in result.rows
             if row["metric_code"] == "GOLD_COMEX_managed_money_net_change"
         )
-        self.assertEqual(change["measurement_kind"], "weekly_change")
+        self.assertEqual(change["measurement_kind"], "net_position")
 
-    def test_disaggregated_provider_rejects_contract_present_only_in_history(self):
+    def test_disaggregated_provider_rejects_release_older_than_configured_10_days(self):
+        text = CFTC_COLUMNS + (
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-07-21,500000,"
+            "100000,200000,120000,70000,250000,100000,30000,20000\n"
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            provider = build_default_providers(
+                start=date(2026, 7, 20),
+                end=date(2026, 8, 9),
+                data_dir=data_dir,
+                environ={},
+                session=TextSession(text),
+            )["cftc_disaggregated"]
+
+            with self.assertRaisesRegex(ValueError, "stale.*10.*088691"):
+                provider.fetch()
+
+    def test_disaggregated_provider_accepts_contract_within_freshness_window(self):
         text = CFTC_COLUMNS + (
             "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE,067651,2026-08-11,"
             "490000,100000,200000,120000,70000,200000,100000,30000,20000\n"
@@ -1150,12 +1395,13 @@ class ContextProviderTests(unittest.TestCase):
         )
         cftc_config = (
             "contract_code,metric_code,report_family,market_name,commodity_code,"
-            "commodity_family,percentile_window,percentile_min_observations\n"
+            "commodity_family,percentile_window,percentile_min_observations,"
+            "freshness_days\n"
             "088691,GOLD_COT,disaggregated,GOLD - COMMODITY EXCHANGE INC.,"
-            "GOLD_COMEX,gold,156,52\n"
+            "GOLD_COMEX,gold,156,52,10\n"
             "067651,WTI_COT,disaggregated,"
             "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE,"
-            "WTI,refined_products,156,52\n"
+            "WTI,refined_products,156,52,10\n"
         )
 
         with tempfile.TemporaryDirectory() as temp:
@@ -1172,11 +1418,12 @@ class ContextProviderTests(unittest.TestCase):
                 session=TextSession(text),
             )["cftc_disaggregated"]
 
-            with self.assertRaisesRegex(
-                ValueError,
-                "^CFTC response missing configured contracts for requested window: 067651$",
-            ):
-                provider.fetch()
+            result = provider.fetch()
+
+        self.assertEqual(
+            {row["commodity_code"] for row in result.rows},
+            {"WTI", "GOLD_COMEX"},
+        )
 
     def test_disaggregated_provider_excludes_pre_release_tuesday_row(self):
         text = CFTC_COLUMNS + (

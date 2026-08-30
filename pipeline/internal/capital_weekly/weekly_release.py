@@ -24,8 +24,14 @@ from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from pipeline.internal.common import load_config_rows
+from pipeline.internal.common import sanitize_audit_text
 
 from .macro_assets import CALCULATED_SOURCE_REFERENCES
+from .context.common import (
+    MEASUREMENT_KIND_VALUES,
+    METRIC_ROLE_VALUES,
+    PARTICIPANT_CLASS_VALUES,
+)
 from .weekly_context import CATEGORY_FIELDS
 
 
@@ -189,6 +195,9 @@ COMMODITY_RESEARCH_FAMILIES = frozenset({
     "softs",
     "livestock",
 })
+REFINED_PRODUCT_CODES = frozenset(
+    {"WTI", "BRENT", "RBOB_US", "ULSD_US", "JET_US", "PROPANE_US"}
+)
 SECTOR_DIVERGENCE_COLUMNS = (
     "market", "market_cn", "horizon", "horizon_cn", "valid_count",
     "positive_count", "flat_count", "negative_count", "breadth_ratio",
@@ -996,6 +1005,38 @@ def _validate_row(
         raise ReleaseValidationError(
             f"{path.name} row {row_number} commodity_family is unsupported: {family or 'blank'}"
         )
+    if family == "refined_products" and commodity_code not in REFINED_PRODUCT_CODES:
+        raise ReleaseValidationError(
+            f"{path.name} row {row_number} refined-products commodity_code "
+            f"is unsupported: {commodity_code}"
+        )
+    if is_context_commodity:
+        for field, allowed in (
+            ("metric_role", METRIC_ROLE_VALUES),
+            ("measurement_kind", MEASUREMENT_KIND_VALUES),
+            ("participant_class", PARTICIPANT_CLASS_VALUES),
+        ):
+            value = (row.get(field) or "").strip()
+            if value and value not in allowed:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} {field} is unsupported: {value}"
+                )
+        raw_known_as_of = (row.get("known_as_of") or "").strip()
+        if raw_known_as_of:
+            try:
+                known_as_of = datetime.fromisoformat(raw_known_as_of)
+            except ValueError as error:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of must include a UTC offset"
+                ) from error
+            if known_as_of.tzinfo is None or known_as_of.utcoffset() is None:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of must include a UTC offset"
+                )
+            if known_as_of.astimezone(HONG_KONG) > cutoff:
+                raise ReleaseValidationError(
+                    f"{path.name} row {row_number} known_as_of exceeds {window.end}"
+                )
 
 
 def _is_valid_core_row(row: dict[str, str], spec: DatasetSpec) -> bool:
@@ -1046,9 +1087,10 @@ def validate_staged_week(
                 f"Required table {path.name} has no valid row"
             )
     if dataset_contract_version == DATASET_CONTRACT_VERSION:
-        _validate_eia_physical_coverage(validated_rows)
         _validate_usda_agriculture_coverage(validated_rows)
+        _validate_eia_physical_coverage(validated_rows)
         _validate_metals_core_coverage(validated_rows, window)
+        _validate_configured_commodity_coverage(validated_rows, window)
     pipelines = [
         {
             "name": pipeline.name,
@@ -1066,6 +1108,269 @@ def validate_staged_week(
         pipeline_runs=pipelines,
         dataset_contract_version=dataset_contract_version,
     )
+
+
+def _configured_rows(
+    section: str,
+    *,
+    identity_field: str,
+    required_fields: tuple[str, ...],
+    include: Callable[[dict], bool] | None = None,
+) -> list[dict[str, str]]:
+    configured: list[dict[str, str]] = []
+    identities: set[str] = set()
+    for raw_row in load_config_rows(section):
+        if include is not None and not include(raw_row):
+            continue
+        row = {field: str(raw_row.get(field) or "").strip() for field in required_fields}
+        missing = [field for field, value in row.items() if not value]
+        if missing:
+            raise ReleaseValidationError(
+                f"{section} configured coverage requires " + ", ".join(missing)
+            )
+        identity = row[identity_field]
+        if identity in identities:
+            raise ReleaseValidationError(
+                f"{section} configured coverage has duplicate {identity_field}: "
+                f"{identity}"
+            )
+        identities.add(identity)
+        configured.append(row)
+    return configured
+
+
+def _require_unique_context_status(
+    source_rows: list[dict[str, str]],
+    provider: str,
+) -> dict[str, str]:
+    matches = [
+        row
+        for row in source_rows
+        if (row.get("provider") or "").strip() == provider
+    ]
+    if not matches:
+        raise ReleaseValidationError(
+            f"configured provider status missing for {provider}"
+        )
+    if len(matches) != 1:
+        raise ReleaseValidationError(
+            f"configured provider status must be unique for {provider}"
+        )
+    return matches[0]
+
+
+def _usable_business_value(
+    row: dict[str, str],
+    window: WeekWindow,
+    *,
+    date_column: str,
+    value_column: str,
+) -> bool:
+    if (row.get("qc_flag") or "").strip().upper() != "OK":
+        return False
+    raw_date = (row.get(date_column) or "").strip()
+    raw_value = (row.get(value_column) or "").strip()
+    if not raw_date or not raw_value:
+        return False
+    try:
+        observation_date = date.fromisoformat(raw_date)
+        value = float(raw_value)
+    except ValueError:
+        return False
+    return observation_date <= window.end and math.isfinite(value)
+
+
+def _validate_configured_commodity_coverage(
+    datasets: dict[tuple[str, str], list[dict[str, str]]],
+    window: WeekWindow,
+) -> None:
+    price_rows = datasets.get(("macro_assets", "commodities.csv"), [])
+    macro_source_rows = datasets.get(("macro_assets", "source_log.csv"), [])
+    context_source_rows = datasets.get(("weekly_context", "source_log.csv"), [])
+    fundamental_rows = datasets.get(
+        ("weekly_context", "commodity_fundamentals.csv"),
+        [],
+    )
+    positioning_rows = datasets.get(
+        ("weekly_context", "positioning_flows.csv"),
+        [],
+    )
+
+    macro_config = _configured_rows(
+        "macro",
+        identity_field="series_code",
+        required_fields=(
+            "series_code",
+            "provider",
+            "commodity_code",
+            "commodity_family",
+            "price_kind",
+        ),
+        include=lambda row: (
+            str(row.get("asset_class") or "").strip() == "commodity"
+            and str(row.get("commodity_family") or "").strip()
+            in COMMODITY_RESEARCH_FAMILIES
+        ),
+    )
+    if not macro_config:
+        raise ReleaseValidationError("configured macro commodity coverage is empty")
+    for expected in macro_config:
+        series_code = expected["series_code"]
+        matches = [
+            row
+            for row in price_rows
+            if (row.get("series_code") or "").strip() == series_code
+        ]
+        exact = [
+            row
+            for row in matches
+            if all(
+                (row.get(field) or "").strip() == expected[field]
+                for field in (
+                    "provider",
+                    "commodity_code",
+                    "commodity_family",
+                    "price_kind",
+                )
+            )
+            and (row.get("asset_class") or "").strip() == "commodity"
+            and _usable_business_value(
+                row,
+                window,
+                date_column="latest_date",
+                value_column="latest_value",
+            )
+        ]
+        if len(matches) != 1 or len(exact) != 1:
+            raise ReleaseValidationError(
+                f"configured macro price missing, duplicated, or mismapped: {series_code}"
+            )
+        status_matches = [
+            row
+            for row in macro_source_rows
+            if (row.get("series_code") or "").strip() == series_code
+        ]
+        if (
+            len(status_matches) != 1
+            or (status_matches[0].get("status") or "").strip().upper() != "OK"
+        ):
+            raise ReleaseValidationError(
+                f"configured macro source status missing, duplicated, or not OK: "
+                f"{series_code}"
+            )
+
+    cftc_config = _configured_rows(
+        "context.cftc_contracts",
+        identity_field="contract_code",
+        required_fields=(
+            "contract_code",
+            "report_family",
+            "commodity_code",
+            "commodity_family",
+        ),
+        include=lambda row: bool(str(row.get("commodity_code") or "").strip()),
+    )
+    cftc_by_provider: dict[str, list[dict[str, str]]] = {}
+    for expected in cftc_config:
+        provider = f"cftc_{expected['report_family']}"
+        cftc_by_provider.setdefault(provider, []).append(expected)
+    for provider, contracts in cftc_by_provider.items():
+        status_row = _require_unique_context_status(context_source_rows, provider)
+        if (
+            (status_row.get("status") or "").strip().upper() != "OK"
+            or (status_row.get("requiredness") or "").strip() != "required"
+        ):
+            raise ReleaseValidationError(f"{provider} must be required and OK")
+        for expected in contracts:
+            code = expected["commodity_code"]
+            family = expected["commodity_family"]
+            if not any(
+                (row.get("commodity_code") or "").strip() == code
+                and (row.get("commodity_family") or "").strip() == family
+                and (row.get("metric_role") or "").strip() == "positioning"
+                and _usable_business_value(
+                    row,
+                    window,
+                    date_column="as_of_date",
+                    value_column="value",
+                )
+                for row in positioning_rows
+            ):
+                raise ReleaseValidationError(
+                    f"{provider} missing configured contract commodity mapping: "
+                    f"{expected['contract_code']} / {code} / {family}"
+                )
+
+    eia_config = _configured_rows(
+        "context.eia_series",
+        identity_field="metric_code",
+        required_fields=(
+            "provider",
+            "metric_code",
+            "commodity_code",
+            "commodity_family",
+        ),
+    )
+    eia_by_provider: dict[str, list[dict[str, str]]] = {}
+    for expected in eia_config:
+        eia_by_provider.setdefault(expected["provider"], []).append(expected)
+    for provider, metrics in eia_by_provider.items():
+        status_row = _require_unique_context_status(context_source_rows, provider)
+        status = (status_row.get("status") or "").strip().upper()
+        requiredness = (status_row.get("requiredness") or "").strip()
+        configured_metric_codes = {row["metric_code"] for row in metrics}
+        provider_rows = [
+            row
+            for row in fundamental_rows
+            if (row.get("metric_code") or "").strip() in configured_metric_codes
+        ]
+        if status == "NOT_CONFIGURED":
+            if requiredness != "optional" or provider_rows:
+                raise ReleaseValidationError(
+                    f"{provider} NOT_CONFIGURED must be optional with no rows"
+                )
+            continue
+        if status != "OK" or requiredness != "required":
+            raise ReleaseValidationError(f"{provider} must be required and OK")
+        for expected in metrics:
+            metric_code = expected["metric_code"]
+            exact = [
+                row
+                for row in fundamental_rows
+                if (row.get("metric_code") or "").strip() == metric_code
+                and (row.get("commodity_code") or "").strip()
+                == expected["commodity_code"]
+                and (row.get("commodity_family") or "").strip()
+                == expected["commodity_family"]
+                and (row.get("metric_role") or "").strip()
+                == "physical_fundamental"
+                and _usable_business_value(
+                    row,
+                    window,
+                    date_column="as_of_date",
+                    value_column="value",
+                )
+            ]
+            if len(exact) != 1:
+                raise ReleaseValidationError(
+                    f"{provider} missing, duplicated, or mismapped configured metric: "
+                    f"{metric_code}"
+                )
+
+    metals_config = _configured_rows(
+        "context.metals",
+        identity_field="provider",
+        required_fields=("provider", "commodity_code", "commodity_family"),
+    )
+    for expected in metals_config:
+        status_row = _require_unique_context_status(
+            context_source_rows,
+            expected["provider"],
+        )
+        if (status_row.get("requiredness") or "").strip() != "optional":
+            raise ReleaseValidationError(
+                f"supplemental provider {expected['provider']} must be optional"
+            )
 
 
 def _validate_eia_physical_coverage(
@@ -1093,9 +1398,10 @@ def _validate_eia_physical_coverage(
             continue
         covered = any(
             (row.get("commodity_family") or "").strip() == family
-            and (row.get("metric_role") or "").strip() == "fundamental"
+            and (row.get("metric_role") or "").strip()
+            == "physical_fundamental"
             and (row.get("measurement_kind") or "").strip()
-            == "physical_level"
+            in MEASUREMENT_KIND_VALUES
             and (row.get("source") or "").strip()
             == "U.S. Energy Information Administration"
             and (row.get("source_url") or "").strip().startswith(source_url_prefix)
@@ -1244,6 +1550,10 @@ def _validate_metals_core_coverage(
         if (row.get("provider") or "").strip() in provider_families
     }
 
+    def official_host(source_url: str, domain: str) -> bool:
+        host = (urlparse(source_url).hostname or "").lower()
+        return host == domain or host.endswith(f".{domain}")
+
     def usable_business_value(
         row: dict[str, str],
         *,
@@ -1271,9 +1581,10 @@ def _validate_metals_core_coverage(
             and (row.get("provider") or "").strip() == "world_bank_pink_sheet"
             and (row.get("price_kind") or "").strip()
             == "official_monthly_benchmark"
-            and (urlparse((row.get("source_url") or "").strip()).hostname or "")
-            .lower()
-            .endswith("worldbank.org")
+            and official_host(
+                (row.get("source_url") or "").strip(),
+                "worldbank.org",
+            )
             and usable_business_value(
                 row,
                 date_column="latest_date",
@@ -1292,9 +1603,10 @@ def _validate_metals_core_coverage(
             and (row.get("metric_role") or "").strip() == "positioning"
             and (row.get("source") or "").strip()
             == "U.S. Commodity Futures Trading Commission"
-            and (urlparse((row.get("source_url") or "").strip()).hostname or "")
-            .lower()
-            .endswith("cftc.gov")
+            and official_host(
+                (row.get("source_url") or "").strip(),
+                "cftc.gov",
+            )
             and usable_business_value(
                 row,
                 date_column="as_of_date",
@@ -1681,7 +1993,7 @@ def _status_timestamp() -> str:
 
 
 def safe_error_reason(error: BaseException) -> str:
-    reason = str(error).strip() or type(error).__name__
+    reason = sanitize_audit_text(error).strip() or type(error).__name__
 
     def replace_quoted_path(match: re.Match[str]) -> str:
         quote = match.group("quote")

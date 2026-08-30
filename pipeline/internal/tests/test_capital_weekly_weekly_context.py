@@ -183,6 +183,22 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(row["measurement_kind"], "inventory")
         self.assertNotIn("not_contract_metadata", row)
 
+    def test_normalization_rejects_unsupported_non_null_commodity_semantics(self):
+        base = metric("INVENTORY")
+        base.update(
+            commodity_code="WTI",
+            commodity_family="refined_products",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+        )
+
+        with self.assertRaisesRegex(ValueError, "metric_role"):
+            normalize_metric_rows([{**base, "metric_role": "fundamental"}])
+        with self.assertRaisesRegex(ValueError, "measurement_kind"):
+            normalize_metric_rows(
+                [{**base, "measurement_kind": "physical_level"}]
+            )
+
     def test_provider_failure_does_not_abort_successful_provider(self):
         def successful():
             return ProviderResult(
@@ -237,6 +253,52 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(successful_log["requiredness"], "required")
         self.assertEqual(successful_log["provider_version"], "1.0.0")
         self.assertEqual(successful_log["schema_version"], "economic-release-v1")
+
+    def test_credential_query_values_are_redacted_from_context_audit_artifacts(self):
+        secret = "audit-sentinel-context-key"
+        prepared_url = (
+            "https://api.eia.gov/v2/natural-gas/stor/wkly/data/"
+            f"?api_key={secret}&frequency=weekly"
+        )
+        spec = ProviderSpec(
+            name="eia_fixture",
+            category="commodity_fundamentals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="weekly",
+            freshness_days=10,
+        )
+        provider = ContextProvider(
+            spec,
+            lambda: ProviderResult(
+                category="commodity_fundamentals",
+                rows=[],
+                raw_text=f"request failed: {prepared_url}".encode("utf-8"),
+                source="U.S. Energy Information Administration",
+                source_url=prepared_url,
+                status="FETCH_FAILED",
+                notes=f"401 Client Error for url: {prepared_url}",
+            ),
+        )
+
+        with TemporaryDirectory() as directory:
+            raw_dir = Path(directory) / "raw"
+            tables = run_weekly_context(
+                {"eia_fixture": provider},
+                raw_dir=raw_dir,
+                as_of_date=date(2026, 8, 9),
+            )
+            serialized = "\n".join(
+                (
+                    json.dumps(tables),
+                    (raw_dir / "eia_fixture.raw").read_text(encoding="utf-8"),
+                )
+            )
+
+        self.assertNotIn(secret, serialized)
+        self.assertIn("api_key=[REDACTED]", serialized)
 
     def test_source_log_orders_known_as_of_as_timestamps(self):
         spec = ProviderSpec(

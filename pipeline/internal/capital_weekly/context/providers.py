@@ -17,7 +17,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from pipeline.internal.common import load_config_rows
+from pipeline.internal.common import load_config_rows, sanitize_audit_text
 
 try:
     import yfinance as yf
@@ -26,6 +26,7 @@ except ImportError:
 
 from .provider_contracts import (
     ContextProvider,
+    PointInTimeUnavailable,
     ProviderResult,
     ProviderSpec,
     filter_known_as_of,
@@ -259,6 +260,7 @@ def _validated_usda_config(
             "unit_name",
         )
     )
+    fields = (*fields, "freshness_days")
     if not rows:
         raise ValueError(f"{provider} requires a configured eligible subset")
     validated = []
@@ -278,6 +280,15 @@ def _validated_usda_config(
         item["commodity_code"] = code
         item["commodity_family"] = family
         item["commodity_name"] = str(item["commodity_name"]).strip()
+        try:
+            freshness_days = int(str(item["freshness_days"]).strip())
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"{provider} freshness_days must be a positive integer"
+            ) from error
+        if freshness_days <= 0:
+            raise ValueError(f"{provider} freshness_days must be a positive integer")
+        item["freshness_days"] = freshness_days
         offsets = _usda_json_value(
             item["market_year_offsets"], "market_year_offsets", list
         )
@@ -332,7 +343,7 @@ def _usda_get_json(
     session: requests.Session,
     path: str,
     api_key: str,
-) -> tuple[str, Any]:
+) -> tuple[str, Any, bytes]:
     url = f"{USDA_FAS_API_URL}{path}"
     try:
         response = session.get(
@@ -343,11 +354,97 @@ def _usda_get_json(
         response.raise_for_status()
         payload = response.json()
     except Exception as error:
-        safe = str(error).replace(api_key, "[REDACTED]")
+        safe = sanitize_audit_text(error, secrets=(api_key,))
         raise RuntimeError(safe) from None
     if not isinstance(payload, (list, dict)):
         raise ValueError(f"USDA endpoint returned non-record JSON: {path}")
-    return url, payload
+    content = getattr(response, "content", None)
+    if not isinstance(content, bytes):
+        content = response.text.encode("utf-8")
+    return url, payload, content
+
+
+def _usda_raw_archive(responses: list[tuple[str, bytes]]) -> bytes:
+    """Package exact USDA response bytes without normalized record rewrites."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_STORED) as archive:
+        for index, (url, content) in enumerate(responses, start=1):
+            path = urlparse(url).path.strip("/") or "root"
+            safe_path = re.sub(r"[^A-Za-z0-9._-]+", "_", path)
+            info = zipfile.ZipInfo(f"{index:03d}_{safe_path}.json")
+            info.date_time = (1980, 1, 1, 0, 0, 0)
+            info.compress_type = zipfile.ZIP_STORED
+            archive.writestr(info, content)
+    return buffer.getvalue()
+
+
+def _explicit_vintage_records(
+    records: list[Any],
+    *,
+    selected_release: str,
+    label: str,
+) -> list[dict[str, Any]]:
+    try:
+        selected_at = datetime.fromisoformat(selected_release.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError("USDA selected release must be an ISO timestamp") from error
+    matching = []
+    for raw_record in records:
+        if not isinstance(raw_record, Mapping):
+            raise ValueError(f"USDA {label} data record must be an object")
+        raw_vintage = str(raw_record.get("releaseDate") or "").strip()
+        if not raw_vintage:
+            raise PointInTimeUnavailable(
+                f"USDA {label} row lacks an explicit record vintage"
+            )
+        try:
+            record_at = datetime.fromisoformat(raw_vintage.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError(
+                f"USDA {label} record releaseDate must be an ISO timestamp"
+            ) from error
+        if record_at.tzinfo is None or record_at.utcoffset() is None:
+            raise ValueError(
+                f"USDA {label} record releaseDate must include a UTC offset"
+            )
+        if record_at == selected_at:
+            matching.append(dict(raw_record))
+    if not matching:
+        raise PointInTimeUnavailable(
+            f"USDA {label} explicit record vintage does not match latest eligible release"
+        )
+    return matching
+
+
+def _usda_point_in_time_unavailable(
+    *,
+    label: str,
+    raw_responses: list[tuple[str, bytes]],
+    detail: str,
+) -> ProviderResult:
+    return ProviderResult(
+        category="commodity_fundamentals",
+        rows=[],
+        raw_text=_usda_raw_archive(raw_responses),
+        source="USDA Foreign Agricultural Service",
+        source_url=USDA_FAS_PORTAL_URL,
+        status="POINT_IN_TIME_UNAVAILABLE",
+        notes=f"{label} point-in-time unavailable: {detail}",
+    )
+
+
+def _psd_measurement_kind(attribute: str) -> str:
+    if attribute in {"beginning_stocks", "ending_stocks"}:
+        return "inventory"
+    if attribute == "production":
+        return "supply"
+    if attribute in {"imports", "exports"}:
+        return "trade"
+    if attribute in {"feed_use", "industrial_use", "crush", "domestic_use"}:
+        return "demand"
+    if attribute == "stock_to_use":
+        return "structural"
+    raise ValueError(f"Unsupported USDA PSD attribute semantic: {attribute}")
 
 
 def _exact_lookup_code(lookup: Mapping[str, str], display: str, kind: str) -> str:
@@ -404,6 +501,21 @@ def _eligible_release(
     return max(eligible, key=lambda item: item[0])[1]
 
 
+def _release_is_fresh(
+    release_timestamp: str,
+    *,
+    cutoff: datetime,
+    freshness_days: int,
+) -> bool:
+    released_at = datetime.fromisoformat(release_timestamp.replace("Z", "+00:00"))
+    if released_at.tzinfo is None or released_at.utcoffset() is None:
+        raise ValueError("USDA releaseDate must include a UTC offset")
+    zone = ZoneInfo("Asia/Hong_Kong")
+    return (
+        cutoff.astimezone(zone).date() - released_at.astimezone(zone).date()
+    ).days <= freshness_days
+
+
 def _usda_not_configured(provider: str) -> ProviderResult:
     label = "PSD" if provider == "usda_psd" else "ESR"
     return not_configured_result(
@@ -426,7 +538,13 @@ def _usda_psd_provider(
     if not api_key:
         return _usda_not_configured("usda_psd")
     specs = _validated_usda_config(config, provider="usda_psd")
-    raw_bundle: dict[str, Any] = {"lookups": {}, "releases": {}, "data": {}}
+    raw_responses: list[tuple[str, bytes]] = []
+
+    def fetch(path: str) -> tuple[str, Any]:
+        url, payload, content = _usda_get_json(session, path, api_key)
+        raw_responses.append((url, content))
+        return url, payload
+
     lookup_paths = {
         "commodities": ("/api/psd/commodities", ("commodityName", "commodityCode")),
         "attributes": (
@@ -438,8 +556,7 @@ def _usda_psd_provider(
     }
     lookups: dict[str, dict[str, str]] = {}
     for kind, (path, fields) in lookup_paths.items():
-        _url, payload = _usda_get_json(session, path, api_key)
-        raw_bundle["lookups"][kind] = payload
+        _url, payload = fetch(path)
         lookups[kind] = parse_usda_lookup(payload, fields)
     cutoff = datetime.combine(end, time.max, tzinfo=ZoneInfo("Asia/Hong_Kong"))
     rows: list[dict[str, Any]] = []
@@ -460,10 +577,7 @@ def _usda_psd_provider(
             for display in config_item["country_names"]
         }
         release_path = f"/api/psd/commodity/{api_commodity}/dataReleaseDates"
-        _release_url, release_payload = _usda_get_json(
-            session, release_path, api_key
-        )
-        raw_bundle["releases"][api_commodity] = release_payload
+        _release_url, release_payload = fetch(release_path)
         for market_year in (
             end.year + offset for offset in config_item["market_year_offsets"]
         ):
@@ -473,6 +587,19 @@ def _usda_psd_provider(
                 market_year=market_year,
                 cutoff=cutoff,
             )
+            if not _release_is_fresh(
+                release_date,
+                cutoff=cutoff,
+                freshness_days=config_item["freshness_days"],
+            ):
+                return _usda_point_in_time_unavailable(
+                    label="PSD",
+                    raw_responses=raw_responses,
+                    detail=(
+                        f"latest eligible release is older than configured "
+                        f"{config_item['freshness_days']} calendar days"
+                    ),
+                )
             for country_name, country_code in countries.items():
                 if country_name == "World":
                     data_path = (
@@ -483,17 +610,22 @@ def _usda_psd_provider(
                         f"/api/psd/commodity/{api_commodity}/country/"
                         f"{country_code}/year/{market_year}"
                     )
-                source_url, payload = _usda_get_json(session, data_path, api_key)
+                source_url, payload = fetch(data_path)
                 data_records = payload if isinstance(payload, list) else payload.get("data", [])
                 if not isinstance(data_records, list):
                     raise ValueError("USDA PSD data payload must contain records")
-                vintage_records = [
-                    {**dict(record), "releaseDate": record.get("releaseDate") or release_date}
-                    for record in data_records
-                ]
-                raw_bundle["data"][f"{api_commodity}:{country_code}:{market_year}"] = (
-                    vintage_records
-                )
+                try:
+                    vintage_records = _explicit_vintage_records(
+                        data_records,
+                        selected_release=release_date,
+                        label="PSD",
+                    )
+                except PointInTimeUnavailable as error:
+                    return _usda_point_in_time_unavailable(
+                        label="PSD",
+                        raw_responses=raw_responses,
+                        detail=str(error),
+                    )
                 parsed = parse_psd_records(
                     vintage_records,
                     {
@@ -536,8 +668,10 @@ def _usda_psd_provider(
                         metadata={
                             "commodity_code": record["commodity_code"],
                             "commodity_family": record["commodity_family"],
-                            "metric_role": "fundamental",
-                            "measurement_kind": record["attribute"],
+                            "metric_role": "physical_fundamental",
+                            "measurement_kind": _psd_measurement_kind(
+                                record["attribute"]
+                            ),
                             "participant_class": None,
                             "known_as_of": record["release_date"],
                             "reference_period": str(record["market_year"]),
@@ -546,7 +680,7 @@ def _usda_psd_provider(
     return ProviderResult(
         category="commodity_fundamentals",
         rows=rows,
-        raw_text=json.dumps(raw_bundle, ensure_ascii=False, separators=(",", ":")),
+        raw_text=_usda_raw_archive(raw_responses),
         source="USDA Foreign Agricultural Service",
         source_url=USDA_FAS_PORTAL_URL,
         notes=(
@@ -565,7 +699,13 @@ def _usda_esr_provider(
     if not api_key:
         return _usda_not_configured("usda_esr")
     specs = _validated_usda_config(config, provider="usda_esr")
-    raw_bundle: dict[str, Any] = {"lookups": {}, "releases": None, "data": {}}
+    raw_responses: list[tuple[str, bytes]] = []
+
+    def fetch(path: str) -> tuple[str, Any]:
+        url, payload, content = _usda_get_json(session, path, api_key)
+        raw_responses.append((url, content))
+        return url, payload
+
     lookup_paths = {
         "commodities": ("/api/esr/commodities", ("commodityName", "commodityCode")),
         "countries": ("/api/esr/countries", ("countryName", "countryCode")),
@@ -573,13 +713,9 @@ def _usda_esr_provider(
     }
     lookups: dict[str, dict[str, str]] = {}
     for kind, (path, fields) in lookup_paths.items():
-        _url, payload = _usda_get_json(session, path, api_key)
-        raw_bundle["lookups"][kind] = payload
+        _url, payload = fetch(path)
         lookups[kind] = parse_usda_lookup(payload, fields)
-    _release_url, release_payload = _usda_get_json(
-        session, "/api/esr/datareleasedates", api_key
-    )
-    raw_bundle["releases"] = release_payload
+    _release_url, release_payload = fetch("/api/esr/datareleasedates")
     cutoff = datetime.combine(end, time.max, tzinfo=ZoneInfo("Asia/Hong_Kong"))
     rows: list[dict[str, Any]] = []
     for config_item in specs:
@@ -599,25 +735,48 @@ def _usda_esr_provider(
                 market_year=market_year,
                 cutoff=cutoff,
             )
+            if not _release_is_fresh(
+                release_date,
+                cutoff=cutoff,
+                freshness_days=config_item["freshness_days"],
+            ):
+                return _usda_point_in_time_unavailable(
+                    label="ESR",
+                    raw_responses=raw_responses,
+                    detail=(
+                        f"latest eligible release is older than configured "
+                        f"{config_item['freshness_days']} calendar days"
+                    ),
+                )
             data_path = (
                 f"/api/esr/exports/commodityCode/{api_commodity}/"
                 f"allCountries/marketYear/{market_year}"
             )
-            source_url, payload = _usda_get_json(session, data_path, api_key)
+            source_url, payload = fetch(data_path)
             data_records = payload if isinstance(payload, list) else payload.get("data", [])
             if not isinstance(data_records, list):
                 raise ValueError("USDA ESR data payload must contain records")
+            try:
+                vintage_records = _explicit_vintage_records(
+                    data_records,
+                    selected_release=release_date,
+                    label="ESR",
+                )
+            except PointInTimeUnavailable as error:
+                return _usda_point_in_time_unavailable(
+                    label="ESR",
+                    raw_responses=raw_responses,
+                    detail=str(error),
+                )
             vintage_records = [
                 {
-                    **dict(record),
+                    **record,
                     "marketYear": record.get("marketYear")
                     if record.get("marketYear") is not None
                     else market_year,
-                    "releaseDate": record.get("releaseDate") or release_date,
                 }
-                for record in data_records
+                for record in vintage_records
             ]
-            raw_bundle["data"][f"{api_commodity}:{market_year}"] = vintage_records
             parsed = parse_esr_records(
                 vintage_records,
                 {
@@ -656,8 +815,8 @@ def _usda_esr_provider(
                     metadata={
                         "commodity_code": record["commodity_code"],
                         "commodity_family": record["commodity_family"],
-                        "metric_role": "fundamental",
-                        "measurement_kind": record["metric"],
+                        "metric_role": "physical_fundamental",
+                        "measurement_kind": "trade",
                         "participant_class": None,
                         "known_as_of": record["release_date"],
                         "reference_period": record["week_ending_date"],
@@ -666,7 +825,7 @@ def _usda_esr_provider(
     return ProviderResult(
         category="commodity_fundamentals",
         rows=rows,
-        raw_text=json.dumps(raw_bundle, ensure_ascii=False, separators=(",", ":")),
+        raw_text=_usda_raw_archive(raw_responses),
         source="USDA Foreign Agricultural Service",
         source_url=USDA_FAS_PORTAL_URL,
         notes=(
@@ -697,6 +856,16 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
             "eligible_total_label",
             "combined_total_label",
         )
+        freshness_basis = str(
+            item.get("freshness_basis") or "trading_days"
+        ).strip()
+        holiday_calendar = str(
+            item.get("holiday_calendar") or "CME_US"
+        ).strip()
+        if freshness_basis != "trading_days" or holiday_calendar != "CME_US":
+            raise ValueError(
+                f"{provider} requires CME_US trading-day freshness"
+            )
     elif provider.startswith("usgs_"):
         if (
             parsed_url.scheme != "https"
@@ -713,6 +882,12 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
             "publication_date",
             "publication_month",
         )
+        freshness_basis = str(
+            item.get("freshness_basis") or "calendar_days"
+        ).strip()
+        holiday_calendar = ""
+        if freshness_basis != "calendar_days":
+            raise ValueError(f"{provider} requires calendar-day freshness")
     else:
         raise ValueError(f"Unsupported metals provider: {provider or 'blank'}")
     common = (
@@ -740,7 +915,80 @@ def _metal_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
     item["provider"] = provider
     item["source_url"] = source_url
     item["freshness_days"] = freshness_days
+    item["freshness_basis"] = freshness_basis
+    item["holiday_calendar"] = holiday_calendar
     return item
+
+
+def _observed_fixed_holiday(value: date) -> date:
+    if value.weekday() == 5:
+        return value - timedelta(days=1)
+    if value.weekday() == 6:
+        return value + timedelta(days=1)
+    return value
+
+
+def _nth_weekday(year: int, month: int, weekday: int, occurrence: int) -> date:
+    first = date(year, month, 1)
+    offset = (weekday - first.weekday()) % 7
+    return first + timedelta(days=offset + 7 * (occurrence - 1))
+
+
+def _last_weekday(year: int, month: int, weekday: int) -> date:
+    if month == 12:
+        next_month = date(year + 1, 1, 1)
+    else:
+        next_month = date(year, month + 1, 1)
+    candidate = next_month - timedelta(days=1)
+    return candidate - timedelta(days=(candidate.weekday() - weekday) % 7)
+
+
+def _easter_sunday(year: int) -> date:
+    """Gregorian Easter calculation used by the CME_US holiday calendar."""
+    a = year % 19
+    b, c = divmod(year, 100)
+    d, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = divmod(c, 4)
+    leap_adjustment = (32 + 2 * e + 2 * i - h - k) % 7
+    month_adjustment = (a + 11 * h + 22 * leap_adjustment) // 451
+    month = (h + leap_adjustment - 7 * month_adjustment + 114) // 31
+    day = (h + leap_adjustment - 7 * month_adjustment + 114) % 31 + 1
+    return date(year, month, day)
+
+
+def _cme_us_holidays(year: int) -> frozenset[date]:
+    holidays = {
+        _observed_fixed_holiday(date(year, 1, 1)),
+        _nth_weekday(year, 1, 0, 3),
+        _nth_weekday(year, 2, 0, 3),
+        _easter_sunday(year) - timedelta(days=2),
+        _last_weekday(year, 5, 0),
+        _observed_fixed_holiday(date(year, 7, 4)),
+        _nth_weekday(year, 9, 0, 1),
+        _nth_weekday(year, 11, 3, 4),
+        _observed_fixed_holiday(date(year, 12, 25)),
+    }
+    if year >= 2022:
+        holidays.add(_observed_fixed_holiday(date(year, 6, 19)))
+    return frozenset(holidays)
+
+
+def _cme_trading_days_elapsed(report_date: date, end: date) -> int:
+    if report_date > end:
+        return 0
+    holidays = frozenset().union(
+        *(_cme_us_holidays(year) for year in range(report_date.year, end.year + 2))
+    )
+    elapsed = 0
+    candidate = report_date + timedelta(days=1)
+    while candidate <= end:
+        if candidate.weekday() < 5 and candidate not in holidays:
+            elapsed += 1
+        candidate += timedelta(days=1)
+    return elapsed
 
 
 def _provenance_notes(
@@ -799,11 +1047,11 @@ def _comex_stocks_provider(
         if len(report_dates) != 1:
             raise ValueError("COMEX workbook has inconsistent report dates")
         report_date = report_dates.pop()
-        age = (end - report_date).days
+        age = _cme_trading_days_elapsed(report_date, end)
         if report_date > end or age > spec["freshness_days"]:
             cutoff_note = (
                 f"No COMEX report at or before target within "
-                f"{spec['freshness_days']} calendar days; "
+                f"{spec['freshness_days']} trading days; "
                 f"report_date={report_date.isoformat()}"
             )
             return ProviderResult(
@@ -842,7 +1090,7 @@ def _comex_stocks_provider(
                     metadata={
                         "commodity_code": spec["commodity_code"],
                         "commodity_family": spec["commodity_family"],
-                        "metric_role": "fundamental",
+                        "metric_role": "physical_fundamental",
                         "measurement_kind": "inventory",
                         "participant_class": None,
                         "known_as_of": _known_at_end_of_day(report_date, CHICAGO),
@@ -962,7 +1210,7 @@ def _usgs_structural_provider(
                     metadata={
                         "commodity_code": spec["commodity_code"],
                         "commodity_family": spec["commodity_family"],
-                        "metric_role": "fundamental",
+                        "metric_role": "physical_fundamental",
                         "measurement_kind": "structural",
                         "participant_class": None,
                         "known_as_of": _known_at_end_of_day(
@@ -1142,6 +1390,7 @@ def _cftc_tff_provider(
     start: date,
     end: date,
     contract_codes: dict[str, str],
+    freshness_days: int,
 ) -> ProviderResult:
     parsed = []
     raw_archives = []
@@ -1158,7 +1407,33 @@ def _cftc_tff_provider(
                 raise ValueError("CFTC archive contained no text data")
             text = archive.read(members[0]).decode("utf-8-sig", errors="replace")
         parsed.extend(parse_cftc_tff_csv(text, contract_codes))
-    selected = [row for row in parsed if start <= row["report_date"] <= end]
+    eligible = [
+        row
+        for row in parsed
+        if row["expected_release_date"] <= end
+        and row["report_date"] <= end
+    ]
+    latest_by_code: dict[str, dict[str, Any]] = {}
+    for row in eligible:
+        code = str(row["contract_code"])
+        if code not in latest_by_code or row["report_date"] > latest_by_code[code]["report_date"]:
+            latest_by_code[code] = row
+    missing = sorted(set(contract_codes) - set(latest_by_code))
+    if missing:
+        raise ValueError(
+            "CFTC response missing eligible configured contracts: " + ", ".join(missing)
+        )
+    stale = sorted(
+        code
+        for code, row in latest_by_code.items()
+        if (end - row["expected_release_date"]).days > freshness_days
+    )
+    if stale:
+        raise ValueError(
+            f"CFTC release is stale beyond configured {freshness_days} days: "
+            + ", ".join(stale)
+        )
+    selected = list(latest_by_code.values())
     rows = []
     for observation in selected:
         values = {
@@ -1204,6 +1479,7 @@ def _cftc_disaggregated_provider(
     start: date,
     end: date,
     contracts: list[dict[str, str]],
+    freshness_days: int,
 ) -> ProviderResult:
     max_window = max(int(spec["percentile_window"]) for spec in contracts)
     history_start = start - timedelta(weeks=max_window)
@@ -1223,10 +1499,16 @@ def _cftc_disaggregated_provider(
     }
     text = _text(session, CFTC_DISAGGREGATED_URL, params=params)
     parsed = parse_cftc_disaggregated_csv(text, contracts)
-    selected = filter_known_as_of(
-        [row for row in parsed if start <= row["report_date"] <= end],
+    eligible = filter_known_as_of(
+        [row for row in parsed if row["report_date"] <= end],
         end,
     )
+    latest_by_code: dict[str, dict[str, Any]] = {}
+    for row in eligible:
+        code = str(row["contract_code"])
+        if code not in latest_by_code or row["report_date"] > latest_by_code[code]["report_date"]:
+            latest_by_code[code] = row
+    selected = list(latest_by_code.values())
     configured_codes = {
         str(spec["contract_code"]).strip() for spec in contracts
     }
@@ -1237,13 +1519,24 @@ def _cftc_disaggregated_provider(
             "CFTC response missing configured contracts for requested window: "
             + ", ".join(missing_codes)
         )
+    stale_codes = sorted(
+        code
+        for code, row in latest_by_code.items()
+        if (end - (row["report_date"] + timedelta(days=3))).days
+        > freshness_days
+    )
+    if stale_codes:
+        raise ValueError(
+            f"CFTC release is stale beyond configured {freshness_days} days: "
+            + ", ".join(stale_codes)
+        )
     rows = []
     measurements = [("open_interest", "open_interest", None)]
     for participant in DISAGGREGATED_PARTICIPANTS:
         measurements.extend(
             (
                 (f"{participant}_net", "net_position", participant),
-                (f"{participant}_net_change", "weekly_change", participant),
+                (f"{participant}_net_change", "net_position", participant),
                 (f"{participant}_percentile", "percentile", participant),
             )
         )
@@ -1425,7 +1718,7 @@ def _eia_provider(
                     metadata={
                         "commodity_code": item["commodity_code"],
                         "commodity_family": item["commodity_family"],
-                        "metric_role": "fundamental",
+                        "metric_role": "physical_fundamental",
                         "measurement_kind": metric["measurement_kind"],
                         "participant_class": None,
                         "known_as_of": metric.get("known_as_of"),
@@ -1870,6 +2163,26 @@ def build_default_providers(
         raise ValueError(
             "Unsupported CFTC report families: " + ", ".join(unknown_report_families)
         )
+
+    def cftc_freshness(report_family: str) -> int:
+        relevant = [
+            row for row in cftc_rows if row["report_family"] == report_family
+        ]
+        try:
+            values = {
+                int(str(row.get("freshness_days") or "").strip())
+                for row in relevant
+            }
+        except ValueError as error:
+            raise ValueError(
+                f"cftc_{report_family} freshness_days must be a positive integer"
+            ) from error
+        if len(values) != 1 or next(iter(values), 0) <= 0:
+            raise ValueError(
+                f"cftc_{report_family} requires one positive configured freshness_days"
+            )
+        return next(iter(values))
+
     cftc_tff_config = {
         row["contract_code"]: row["metric_code"]
         for row in cftc_rows
@@ -1878,6 +2191,33 @@ def build_default_providers(
     cftc_disaggregated_config = [
         row for row in cftc_rows if row["report_family"] == "disaggregated"
     ]
+    cftc_tff_freshness = cftc_freshness("tff") if cftc_tff_config else 0
+    cftc_disaggregated_freshness = (
+        cftc_freshness("disaggregated") if cftc_disaggregated_config else 0
+    )
+
+    def uniform_freshness(rows: list[dict], label: str) -> int | None:
+        if not rows:
+            return None
+        try:
+            values = {
+                int(str(row.get("freshness_days") or "").strip()) for row in rows
+            }
+        except ValueError as error:
+            raise ValueError(
+                f"{label} freshness_days must be a positive integer"
+            ) from error
+        if len(values) != 1 or next(iter(values), 0) <= 0:
+            raise ValueError(
+                f"{label} requires one positive configured freshness_days"
+            )
+        return next(iter(values))
+
+    provider_freshness: dict[str, int] = {}
+    if cftc_tff_config:
+        provider_freshness["cftc_tff"] = cftc_tff_freshness
+    if cftc_disaggregated_config:
+        provider_freshness["cftc_disaggregated"] = cftc_disaggregated_freshness
     watchlist = load_company_watchlist(watchlist_rows)
     yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
@@ -1896,6 +2236,17 @@ def build_default_providers(
     }
     eia_key = settings.get("EIA_API_KEY")
     usda_key = settings.get("USDA_API_KEY")
+    for name, rows in eia_by_provider.items():
+        freshness = uniform_freshness(rows, name) if eia_key else None
+        if freshness is not None:
+            provider_freshness[name] = freshness
+    for name, rows in (
+        ("usda_psd", usda_psd_config),
+        ("usda_esr", usda_esr_config),
+    ):
+        freshness = uniform_freshness(rows, name) if usda_key else None
+        if freshness is not None:
+            provider_freshness[name] = freshness
 
     fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
@@ -1996,7 +2347,7 @@ def build_default_providers(
     }
     if cftc_tff_config:
         fetchers["cftc_tff"] = lambda: _cftc_tff_provider(
-            client, start, end, cftc_tff_config
+            client, start, end, cftc_tff_config, cftc_tff_freshness
         )
         definitions["cftc_tff"] = (
             "positioning_flows",
@@ -2005,7 +2356,11 @@ def build_default_providers(
         )
     if cftc_disaggregated_config:
         fetchers["cftc_disaggregated"] = lambda: _cftc_disaggregated_provider(
-            client, start, end, cftc_disaggregated_config
+            client,
+            start,
+            end,
+            cftc_disaggregated_config,
+            cftc_disaggregated_freshness,
         )
         definitions["cftc_disaggregated"] = (
             "positioning_flows",
@@ -2054,6 +2409,8 @@ def build_default_providers(
                 freshness_days=(
                     metal_freshness[name]
                     if name in metal_freshness
+                    else provider_freshness[name]
+                    if name in provider_freshness
                     else 7 if name == "yahoo_volatility_signals" else None
                 ),
             ),

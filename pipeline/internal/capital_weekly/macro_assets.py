@@ -18,7 +18,11 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from pipeline.internal.common import load_config_rows
+from pipeline.internal.common import (
+    load_config_rows,
+    sanitize_audit_bytes,
+    sanitize_audit_text,
+)
 
 from pipeline.internal.capital_weekly.commodity_prices import (
     parse_eia_price_series,
@@ -59,6 +63,7 @@ class MacroAssetConfig:
     price_kind: str = ""
     known_as_of: str = ""
     provider_route: str = ""
+    freshness_days: str = ""
 
 
 def load_macro_asset_universe(
@@ -1191,9 +1196,11 @@ def _snapshot_fields(snapshot) -> dict:
 
 def _attempt_provenance(trace: list[dict], fallback: str) -> str:
     if not trace:
-        return fallback
+        return sanitize_audit_text(fallback)
     return " | ".join(
-        f'{attempt["method"]} {attempt["url"]} [{attempt["status"]}]'
+        sanitize_audit_text(
+            f'{attempt["method"]} {attempt["url"]} [{attempt["status"]}]'
+        )
         for attempt in trace
     )
 
@@ -1202,10 +1209,13 @@ def _cache_raw_failure(raw_path, config, raw_parts):
     if raw_path is None or not raw_parts:
         return "NOT_WRITTEN", ""
     try:
-        _atomic_write_bytes(raw_path / f"{config.series_code}.raw", b"\n".join(raw_parts))
+        _atomic_write_bytes(
+            raw_path / f"{config.series_code}.raw",
+            sanitize_audit_bytes(b"\n".join(raw_parts)),
+        )
         return "OK", ""
     except Exception as cache_error:
-        return "CACHE_WRITE_FAILED", str(cache_error)
+        return "CACHE_WRITE_FAILED", sanitize_audit_text(cache_error)
 
 
 def _source_audit_metadata(
@@ -1214,13 +1224,25 @@ def _source_audit_metadata(
     *,
     warnings: str = "",
 ) -> dict:
-    freshness_days = {
-        "daily": 7,
-        "weekly": 14,
-        "monthly": 45,
-        "quarterly": 120,
-        "event": 365,
-    }.get(config.frequency)
+    if str(config.freshness_days).strip():
+        try:
+            freshness_days = int(str(config.freshness_days).strip())
+        except ValueError as error:
+            raise ValueError(
+                f"{config.series_code} freshness_days must be a positive integer"
+            ) from error
+        if freshness_days <= 0:
+            raise ValueError(
+                f"{config.series_code} freshness_days must be a positive integer"
+            )
+    else:
+        freshness_days = {
+            "daily": 7,
+            "weekly": 14,
+            "monthly": 45,
+            "quarterly": 120,
+            "event": 365,
+        }.get(config.frequency)
     return {
         "provider": config.provider,
         "provider_symbol": config.provider_symbol,
@@ -1231,7 +1253,7 @@ def _source_audit_metadata(
         "frequency": config.frequency,
         "freshness_days": freshness_days,
         "known_as_of": known_as_of,
-        "warnings": warnings,
+        "warnings": sanitize_audit_text(warnings),
         "calculation_id": config.calculation_id,
         "formula_version": config.formula_version,
         "input_series_codes": config.input_series_codes,
@@ -1318,25 +1340,42 @@ def fetch_macro_assets(
                     if parse_date(point["date"]) <= as_of_date
                 ]
             snapshot = calculate_macro_snapshot(history, config.change_unit)
+            if config.provider == "world_bank_pink_sheet":
+                if not str(config.freshness_days).strip():
+                    raise ValueError(
+                        f"{config.series_code} requires configured freshness_days"
+                    )
+                freshness_days = int(str(config.freshness_days).strip())
+                target_date = as_of_date or date.today()
+                if (target_date - snapshot.latest_date).days > freshness_days:
+                    raise ValueError(
+                        f"{config.series_code} is stale beyond configured "
+                        f"{freshness_days} calendar days"
+                    )
             histories[config.series_code] = history
             raw_cache_status = "DISABLED"
             raw_cache_error = ""
             if raw_path is not None:
                 try:
-                    _atomic_write_bytes(raw_path / f"{config.series_code}.raw", raw)
+                    _atomic_write_bytes(
+                        raw_path / f"{config.series_code}.raw",
+                        sanitize_audit_bytes(raw),
+                    )
                     raw_cache_status = "OK"
                 except Exception as cache_error:
                     raw_cache_status = "CACHE_WRITE_FAILED"
-                    raw_cache_error = str(cache_error)
+                    raw_cache_error = sanitize_audit_text(cache_error)
             detail = asdict(config)
+            detail.pop("freshness_days", None)
             detail.update(_snapshot_fields(snapshot))
-            detail["source_url"] = url
+            detail["source_url"] = sanitize_audit_text(url)
             detail_rows.append(detail)
             source_rows.append({
                 "series_code": config.series_code, "sort_order": config.sort_order,
                 "source": config.source, "status": "OK", "error": "",
                 "observations": len(history), "latest_date": _iso(snapshot.latest_date),
-                "latest_value": snapshot.latest_value, "source_url": url,
+                "latest_value": snapshot.latest_value,
+                "source_url": sanitize_audit_text(url),
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status, "raw_cache_error": raw_cache_error,
                 **_source_audit_metadata(
@@ -1352,19 +1391,22 @@ def fetch_macro_assets(
                 raw_path, config, raw_parts
             )
             detail = asdict(config)
+            detail.pop("freshness_days", None)
             for field in (
                 "latest_date", "latest_value", "daily_base_date", "daily_base_value", "daily_change",
                 "weekly_base_date", "weekly_base_value", "weekly_change", "mtd_base_date",
                 "mtd_base_value", "mtd_change", "ytd_base_date", "ytd_base_value", "ytd_change",
             ):
                 detail[field] = None
-            detail.update({"qc_flag": "FETCH_FAILED", "source_url": url})
+            safe_error = sanitize_audit_text(error)
+            safe_url = sanitize_audit_text(url)
+            detail.update({"qc_flag": "FETCH_FAILED", "source_url": safe_url})
             detail_rows.append(detail)
             source_rows.append({
                 "series_code": config.series_code, "sort_order": config.sort_order,
-                "source": config.source, "status": "FETCH_FAILED", "error": str(error),
+                "source": config.source, "status": "FETCH_FAILED", "error": safe_error,
                 "observations": 0, "latest_date": None, "latest_value": None,
-                "source_url": url,
+                "source_url": safe_url,
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status,
                 "raw_cache_error": raw_cache_error,

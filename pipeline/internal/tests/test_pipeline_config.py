@@ -20,13 +20,13 @@ EXPECTED_SECTION_HASHES = {
     "indices": "52d1af58519dc5d542eb220f108b3242052c5cb9312eeb1ac7ded0ccbc0bc146",
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
-    "macro": "5567648fec482a82407a4063bcacdfea24ecdb3daf76b91a327aa6fbbf3685d8",
-    "context.cftc_contracts": "50504af5344ca4c71b9f0e740ba62f1c160be3aa5cc2dd6141ea613ba0e097e8",
+    "macro": "359e2d6db04d488d08ce0bdd9634fe76b8483ffe8500364ff2e52a7688320c9b",
+    "context.cftc_contracts": "364a8589d7fd8c4ac3417d53b380c0cbc6a4fa83adb1cf1d69e172771151d9ef",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-    "context.eia_series": "580b3604daa84eba8c28657ddb5f9a8e295f9e2ac96801c0e5ff63db8d3ff58b",
-    "context.usda_psd": "078b31245ca20eaced781f4ed9b497b4943c15bea5cfdc8f30a17be8107d0e97",
-    "context.usda_esr": "d35c41e261d4df752b3d6e583cd2eeb28f62d4d005eea56461550853ed4f66d7",
-    "context.metals": "de369cdc899001aff4c986425715afbb436ceb88f2b875d43a72d724d5447eb4",
+    "context.eia_series": "b2930c0607e0161b3de7f5cb53bcc16cbd0e84b9dc2d345298590967d0a8deaa",
+    "context.usda_psd": "5564caa7c02b63c29c268bdb25ec0e6f62a4d0db7be92ad2638f9645ff3aa21e",
+    "context.usda_esr": "333ec1a5244cbcbc5f590c3a601a64e22b38d04209f97e6638f16faa29a6a977",
+    "context.metals": "adf8027faf886d84fe69451e897b7a42b73c8293fa9782a953da3693c179caf7",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
     "context.yahoo_volatility": "76ab154498b2c96c4f30e38cae6e0817d43b7a4c63e38dd6f4487d3ec179a8dc",
 }
@@ -131,6 +131,13 @@ class PipelineConfigTests(unittest.TestCase):
 
     def test_eia_config_covers_independent_physical_fundamental_families(self):
         rows = load_config_rows("context.eia_series")
+        allowed_measurement_kinds = {
+            "inventory",
+            "supply",
+            "demand",
+            "trade",
+            "utilization",
+        }
         required_fields = {
             "provider", "commodity_code", "commodity_family", "route",
             "frequency", "facets", "metric_code", "metric_name",
@@ -210,7 +217,13 @@ class PipelineConfigTests(unittest.TestCase):
             validate_eia_spec(row)
             self.assertIsInstance(row["facets"], dict)
             self.assertTrue(row["facets"])
-            self.assertNotIn(row["measurement_kind"], {"price", "return"})
+            self.assertIn(row["measurement_kind"], allowed_measurement_kinds)
+        jet_codes = {
+            row["commodity_code"]
+            for row in rows
+            if row["metric_code"].startswith("eia_jet_fuel_")
+        }
+        self.assertEqual(jet_codes, {"JET_US"})
 
     def test_cftc_contracts_split_financial_and_physical_report_families(self):
         rows = load_config_rows("context.cftc_contracts")
@@ -337,6 +350,50 @@ class PipelineConfigTests(unittest.TestCase):
         btc = next(row for row in rows if row.get("commodity_code") == "BTC_USD")
         self.assertEqual(btc["provider"], "yahoo_chart")
         self.assertEqual(btc["commodity_family"], "digital_asset")
+
+    def test_commodity_freshness_policies_are_exact_and_config_owned(self):
+        macro = load_config_rows("macro")
+        world_bank = [
+            row for row in macro if row.get("provider") == "world_bank_pink_sheet"
+        ]
+        self.assertTrue(world_bank)
+        self.assertEqual({row.get("freshness_days") for row in world_bank}, {"45"})
+        self.assertEqual(
+            {row.get("freshness_days") for row in load_config_rows("context.eia_series")},
+            {"10"},
+        )
+        commodity_contracts = [
+            row
+            for row in load_config_rows("context.cftc_contracts")
+            if row.get("commodity_code")
+        ]
+        self.assertEqual(
+            {row.get("freshness_days") for row in commodity_contracts},
+            {"10"},
+        )
+        self.assertEqual(
+            {row.get("freshness_days") for row in load_config_rows("context.usda_psd")},
+            {"45"},
+        )
+        self.assertEqual(
+            {row.get("freshness_days") for row in load_config_rows("context.usda_esr")},
+            {"14"},
+        )
+        metals = load_config_rows("context.metals")
+        cme = [row for row in metals if row["provider"].startswith("comex_")]
+        usgs = [row for row in metals if row["provider"].startswith("usgs_")]
+        self.assertEqual({row.get("freshness_days") for row in cme}, {"5"})
+        self.assertEqual({row.get("freshness_basis") for row in cme}, {"trading_days"})
+        self.assertEqual({row.get("holiday_calendar") for row in cme}, {"CME_US"})
+        self.assertEqual({row.get("freshness_days") for row in usgs}, {"400"})
+        self.assertEqual({row.get("freshness_basis") for row in usgs}, {"calendar_days"})
+
+    def test_workbook_dependencies_bound_openpyxl_and_retain_xlrd(self):
+        requirements = (
+            Path(__file__).resolve().parents[2] / "requirements.txt"
+        ).read_text(encoding="utf-8")
+        self.assertRegex(requirements, r"(?m)^openpyxl>=3\.1,<4$")
+        self.assertRegex(requirements, r"(?m)^xlrd>=2\.0\.1,<3$")
 
     def test_default_loader_returns_an_independent_copy(self):
         first = load_config_rows("indices")

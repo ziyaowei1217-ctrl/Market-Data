@@ -15,6 +15,9 @@ EIA_FAMILIES = {
     "eia_natural_gas": "natural_gas",
     "eia_refined_products": "refined_products",
 }
+EIA_MEASUREMENT_KINDS = frozenset(
+    {"inventory", "supply", "demand", "trade", "utilization"}
+)
 EIA_FREQUENCY_PATTERNS = {
     "weekly": r"\d{4}-\d{2}-\d{2}",
     "monthly": r"\d{4}-\d{2}",
@@ -91,6 +94,11 @@ def validate_eia_spec(spec: Mapping[str, Any]) -> dict[str, Any]:
     if normalized["frequency"] not in EIA_FREQUENCY_PATTERNS:
         raise ValueError(
             f"Unsupported EIA frequency: {normalized['frequency']}"
+        )
+    if normalized["measurement_kind"] not in EIA_MEASUREMENT_KINDS:
+        raise ValueError(
+            "Unsupported EIA measurement_kind: "
+            f"{normalized['measurement_kind']}"
         )
     route = normalized["route"].strip("/")
     if not route or not re.fullmatch(r"[a-z0-9][a-z0-9/-]*", route):
@@ -252,7 +260,7 @@ def latest_and_changes(
         **base,
         "metric_code": f"{current['metric_code']}_change",
         "metric_name": f"{current['metric_name']} change",
-        "measurement_kind": "period_change",
+        "measurement_kind": current["measurement_kind"],
         "value": difference,
         "reference_period": f"{previous['period']} to {current['period']}",
     }
@@ -260,7 +268,7 @@ def latest_and_changes(
         **base,
         "metric_code": f"{current['metric_code']}_change_pct",
         "metric_name": f"{current['metric_name']} change percent",
-        "measurement_kind": "period_change_pct",
+        "measurement_kind": current["measurement_kind"],
         "value": difference / prior if prior else None,
         "unit": "ratio",
         "reference_period": f"{previous['period']} to {current['period']}",
@@ -281,7 +289,7 @@ def latest_and_changes(
                     **base,
                     "metric_code": f"{current['metric_code']}_seasonal_deviation",
                     "metric_name": f"{current['metric_name']} seasonal deviation",
-                    "measurement_kind": "seasonal_deviation",
+                    "measurement_kind": current["measurement_kind"],
                     "value": float(current["value"]) - seasonal_mean,
                     "reference_period": (
                         "formula_version=eia-seasonal-v1; "

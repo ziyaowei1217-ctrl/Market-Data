@@ -1383,7 +1383,8 @@
       "input_series_codes": "",
       "commodity_code": "GOLD_COMEX",
       "commodity_family": "gold",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "policy_rate",
@@ -1887,7 +1888,8 @@
       "input_series_codes": "",
       "commodity_code": "COPPER_COMEX",
       "commodity_family": "copper",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -1909,7 +1911,8 @@
       "input_series_codes": "",
       "commodity_code": "CORN",
       "commodity_family": "grains_oilseeds",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -1931,7 +1934,8 @@
       "input_series_codes": "",
       "commodity_code": "SOYBEANS",
       "commodity_family": "grains_oilseeds",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -1953,7 +1957,8 @@
       "input_series_codes": "",
       "commodity_code": "WHEAT",
       "commodity_family": "grains_oilseeds",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -1975,7 +1980,8 @@
       "input_series_codes": "",
       "commodity_code": "RICE",
       "commodity_family": "grains_oilseeds",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -1997,7 +2003,8 @@
       "input_series_codes": "",
       "commodity_code": "COTTON",
       "commodity_family": "softs",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -2019,7 +2026,8 @@
       "input_series_codes": "",
       "commodity_code": "SUGAR",
       "commodity_family": "softs",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -2041,7 +2049,8 @@
       "input_series_codes": "",
       "commodity_code": "COFFEE",
       "commodity_family": "softs",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -2063,7 +2072,8 @@
       "input_series_codes": "",
       "commodity_code": "COCOA",
       "commodity_family": "softs",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     },
     {
       "asset_class": "commodity",
@@ -2085,7 +2095,8 @@
       "input_series_codes": "",
       "commodity_code": "CATTLE",
       "commodity_family": "livestock",
-      "price_kind": "official_monthly_benchmark"
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     }
   ],
   "context": {
@@ -2101,6 +2112,7 @@
         "percentile_min_observations": null,
         "name_en": "S&P 500 Consolidated",
         "source": "CFTC Traders in Financial Futures",
+        "freshness_days": "10",
         "notes": "Tuesday position snapshot released with a standard three-day lag."
       },
       {
@@ -2114,6 +2126,7 @@
         "percentile_min_observations": null,
         "name_en": "U.S. Dollar Index",
         "source": "CFTC Traders in Financial Futures",
+        "freshness_days": "10",
         "notes": "Legacy financial contract code."
       },
       {
@@ -2127,6 +2140,7 @@
         "percentile_min_observations": "52",
         "name_en": "Henry Hub Natural Gas",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2140,6 +2154,7 @@
         "percentile_min_observations": "52",
         "name_en": "WTI Crude Oil",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2153,6 +2168,7 @@
         "percentile_min_observations": "52",
         "name_en": "RBOB Gasoline",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2166,6 +2182,7 @@
         "percentile_min_observations": "52",
         "name_en": "New York Harbor ULSD",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2179,6 +2196,7 @@
         "percentile_min_observations": "52",
         "name_en": "COMEX Copper",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2192,6 +2210,7 @@
         "percentile_min_observations": "52",
         "name_en": "COMEX Gold",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2205,6 +2224,7 @@
         "percentile_min_observations": "52",
         "name_en": "Corn",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2218,6 +2238,7 @@
         "percentile_min_observations": "52",
         "name_en": "Soybeans",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2231,6 +2252,7 @@
         "percentile_min_observations": "52",
         "name_en": "Chicago SRW Wheat",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2244,6 +2266,7 @@
         "percentile_min_observations": "52",
         "name_en": "Rough Rice",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2257,6 +2280,7 @@
         "percentile_min_observations": "52",
         "name_en": "Cotton No. 2",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2270,6 +2294,7 @@
         "percentile_min_observations": "52",
         "name_en": "Sugar No. 11",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2283,6 +2308,7 @@
         "percentile_min_observations": "52",
         "name_en": "Coffee C",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2296,6 +2322,7 @@
         "percentile_min_observations": "52",
         "name_en": "Cocoa",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2309,6 +2336,7 @@
         "percentile_min_observations": "52",
         "name_en": "Live Cattle",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       },
       {
@@ -2322,6 +2350,7 @@
         "percentile_min_observations": "52",
         "name_en": "Lean Hogs",
         "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
         "notes": "Official physical-commodity contract mapping."
       }
     ],
@@ -2336,7 +2365,7 @@
         "facets": {"duoarea": "R48", "process": "SWO", "series": "NW2_EPG0_SWO_R48_BCF"},
         "metric_code": "eia_ng_storage_lower48",
         "metric_name": "Lower 48 working gas in underground storage",
-        "measurement_kind": "physical_level",
+        "measurement_kind": "inventory",
         "source_description": "Weekly Lower 48 States Natural Gas Working Underground Storage (Billion Cubic Feet)",
         "expected_unit": "BCF",
         "freshness_days": "10"
@@ -2344,258 +2373,268 @@
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R31", "process": "SWO", "series": "NW2_EPG0_SWO_R31_BCF"},
-        "metric_code": "eia_ng_storage_east", "metric_name": "East working gas in underground storage", "measurement_kind": "physical_level",
+        "metric_code": "eia_ng_storage_east", "metric_name": "East working gas in underground storage", "measurement_kind": "inventory",
         "source_description": "East Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R32", "process": "SWO", "series": "NW2_EPG0_SWO_R32_BCF"},
-        "metric_code": "eia_ng_storage_midwest", "metric_name": "Midwest working gas in underground storage", "measurement_kind": "physical_level",
+        "metric_code": "eia_ng_storage_midwest", "metric_name": "Midwest working gas in underground storage", "measurement_kind": "inventory",
         "source_description": "Midwest Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R34", "process": "SWO", "series": "NW2_EPG0_SWO_R34_BCF"},
-        "metric_code": "eia_ng_storage_mountain", "metric_name": "Mountain working gas in underground storage", "measurement_kind": "physical_level",
+        "metric_code": "eia_ng_storage_mountain", "metric_name": "Mountain working gas in underground storage", "measurement_kind": "inventory",
         "source_description": "Mountain Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R35", "process": "SWO", "series": "NW2_EPG0_SWO_R35_BCF"},
-        "metric_code": "eia_ng_storage_pacific", "metric_name": "Pacific working gas in underground storage", "measurement_kind": "physical_level",
+        "metric_code": "eia_ng_storage_pacific", "metric_name": "Pacific working gas in underground storage", "measurement_kind": "inventory",
         "source_description": "Pacific Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/stor/wkly", "frequency": "weekly", "facets": {"duoarea": "R33", "process": "SWO", "series": "NW2_EPG0_SWO_R33_BCF"},
-        "metric_code": "eia_ng_storage_south_central", "metric_name": "South Central working gas in underground storage", "measurement_kind": "physical_level",
+        "metric_code": "eia_ng_storage_south_central", "metric_name": "South Central working gas in underground storage", "measurement_kind": "inventory",
         "source_description": "South Central Working Gas in Underground Storage (Billion Cubic Feet)", "expected_unit": "BCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9070US2"},
-        "metric_code": "eia_ng_dry_production", "metric_name": "U.S. dry natural gas production", "measurement_kind": "physical_level",
-        "source_description": "U.S. Dry Natural Gas Production (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_dry_production", "metric_name": "U.S. dry natural gas production", "measurement_kind": "supply",
+        "source_description": "U.S. Dry Natural Gas Production (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3010US2"},
-        "metric_code": "eia_ng_consumption_residential", "metric_name": "U.S. residential natural gas consumption", "measurement_kind": "physical_level",
-        "source_description": "U.S. Natural Gas Residential Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_consumption_residential", "metric_name": "U.S. residential natural gas consumption", "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Residential Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3020US2"},
-        "metric_code": "eia_ng_consumption_commercial", "metric_name": "U.S. commercial natural gas consumption", "measurement_kind": "physical_level",
-        "source_description": "U.S. Natural Gas Commercial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_consumption_commercial", "metric_name": "U.S. commercial natural gas consumption", "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Commercial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3035US2"},
-        "metric_code": "eia_ng_consumption_industrial", "metric_name": "U.S. industrial natural gas consumption", "measurement_kind": "physical_level",
-        "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_consumption_industrial", "metric_name": "U.S. industrial natural gas consumption", "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N3045US2"},
-        "metric_code": "eia_ng_consumption_electric_power", "metric_name": "U.S. electric-power natural gas consumption", "measurement_kind": "physical_level",
-        "source_description": "U.S. Natural Gas Electric Power Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_consumption_electric_power", "metric_name": "U.S. electric-power natural gas consumption", "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Electric Power Consumption (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9103US2"},
-        "metric_code": "eia_ng_lng_imports", "metric_name": "U.S. liquefied natural gas imports", "measurement_kind": "physical_level",
-        "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_lng_imports", "metric_name": "U.S. liquefied natural gas imports", "measurement_kind": "trade",
+        "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_natural_gas", "commodity_code": "NATGAS_HH", "commodity_family": "natural_gas",
         "route": "natural-gas/sum/snd", "frequency": "monthly", "facets": {"series": "N9133US2"},
-        "metric_code": "eia_ng_lng_exports", "metric_name": "U.S. liquefied natural gas exports", "measurement_kind": "physical_level",
-        "source_description": "U.S. Liquefied Natural Gas Exports (MMcf)", "expected_unit": "MMCF", "freshness_days": "75"
+        "metric_code": "eia_ng_lng_exports", "metric_name": "U.S. liquefied natural gas exports", "measurement_kind": "trade",
+        "source_description": "U.S. Liquefied Natural Gas Exports (MMcf)", "expected_unit": "MMCF", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WCESTUS1"},
-        "metric_code": "eia_crude_stocks_ex_spr", "metric_name": "U.S. crude oil stocks excluding SPR", "measurement_kind": "physical_level",
+        "metric_code": "eia_crude_stocks_ex_spr", "metric_name": "U.S. crude oil stocks excluding SPR", "measurement_kind": "inventory",
         "source_description": "U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGTSTUS1"},
-        "metric_code": "eia_gasoline_stocks", "metric_name": "U.S. total motor gasoline stocks", "measurement_kind": "physical_level",
+        "metric_code": "eia_gasoline_stocks", "metric_name": "U.S. total motor gasoline stocks", "measurement_kind": "inventory",
         "source_description": "U.S. Ending Stocks of Total Gasoline (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDISTUS1"},
-        "metric_code": "eia_distillate_stocks", "metric_name": "U.S. distillate fuel oil stocks", "measurement_kind": "physical_level",
+        "metric_code": "eia_distillate_stocks", "metric_name": "U.S. distillate fuel oil stocks", "measurement_kind": "inventory",
         "source_description": "U.S. Ending Stocks of Distillate Fuel Oil (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
       },
       {
-        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "provider": "eia_refined_products", "commodity_code": "JET_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJSTUS1"},
-        "metric_code": "eia_jet_fuel_stocks", "metric_name": "U.S. kerosene-type jet fuel stocks", "measurement_kind": "physical_level",
+        "metric_code": "eia_jet_fuel_stocks", "metric_name": "U.S. kerosene-type jet fuel stocks", "measurement_kind": "inventory",
         "source_description": "U.S. Ending Stocks of Kerosene-Type Jet Fuel (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "PROPANE_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WPRSTUS1"},
-        "metric_code": "eia_propane_stocks", "metric_name": "U.S. propane and propylene stocks", "measurement_kind": "physical_level",
+        "metric_code": "eia_propane_stocks", "metric_name": "U.S. propane and propylene stocks", "measurement_kind": "inventory",
         "source_description": "U.S. Ending Stocks of Propane/Propylene (Excl. Propylene at Terminal) (Thousand Barrels)", "expected_unit": "MBBL", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WPULEUS3"},
-        "metric_code": "eia_refinery_utilization", "metric_name": "U.S. refinery operable utilization", "measurement_kind": "physical_level",
+        "metric_code": "eia_refinery_utilization", "metric_name": "U.S. refinery operable utilization", "measurement_kind": "utilization",
         "source_description": "U.S. Percent Utilization of Refinery Operable Capacity (Percent)", "expected_unit": "PCT", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "WTI", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WCRRIUS2"},
-        "metric_code": "eia_refinery_crude_inputs", "metric_name": "U.S. refinery crude oil inputs", "measurement_kind": "physical_level",
+        "metric_code": "eia_refinery_crude_inputs", "metric_name": "U.S. refinery crude oil inputs", "measurement_kind": "supply",
         "source_description": "U.S. Inputs of Crude Oil to Refineries (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGFRPUS2"},
-        "metric_code": "eia_gasoline_production", "metric_name": "U.S. finished motor gasoline production", "measurement_kind": "physical_level",
+        "metric_code": "eia_gasoline_production", "metric_name": "U.S. finished motor gasoline production", "measurement_kind": "supply",
         "source_description": "U.S. Refinery and Blender Net Production of Finished Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIRPUS2"},
-        "metric_code": "eia_distillate_production", "metric_name": "U.S. distillate fuel oil production", "measurement_kind": "physical_level",
+        "metric_code": "eia_distillate_production", "metric_name": "U.S. distillate fuel oil production", "measurement_kind": "supply",
         "source_description": "U.S. Refinery and Blender Net Production of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
-        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "provider": "eia_refined_products", "commodity_code": "JET_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJRPUS2"},
-        "metric_code": "eia_jet_fuel_production", "metric_name": "U.S. kerosene-type jet fuel production", "measurement_kind": "physical_level",
+        "metric_code": "eia_jet_fuel_production", "metric_name": "U.S. kerosene-type jet fuel production", "measurement_kind": "supply",
         "source_description": "U.S. Refinery and Blender Net Production of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGFUPUS2"},
-        "metric_code": "eia_gasoline_product_supplied", "metric_name": "U.S. finished motor gasoline product supplied", "measurement_kind": "physical_level",
+        "metric_code": "eia_gasoline_product_supplied", "metric_name": "U.S. finished motor gasoline product supplied", "measurement_kind": "demand",
         "source_description": "U.S. Product Supplied of Finished Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIUPUS2"},
-        "metric_code": "eia_distillate_product_supplied", "metric_name": "U.S. distillate fuel oil product supplied", "measurement_kind": "physical_level",
+        "metric_code": "eia_distillate_product_supplied", "metric_name": "U.S. distillate fuel oil product supplied", "measurement_kind": "demand",
         "source_description": "U.S. Product Supplied of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
-        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "provider": "eia_refined_products", "commodity_code": "JET_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJUPUS2"},
-        "metric_code": "eia_jet_fuel_product_supplied", "metric_name": "U.S. kerosene-type jet fuel product supplied", "measurement_kind": "physical_level",
+        "metric_code": "eia_jet_fuel_product_supplied", "metric_name": "U.S. kerosene-type jet fuel product supplied", "measurement_kind": "demand",
         "source_description": "U.S. Product Supplied of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WGTIMUS2"},
-        "metric_code": "eia_gasoline_imports", "metric_name": "U.S. total motor gasoline imports", "measurement_kind": "physical_level",
+        "metric_code": "eia_gasoline_imports", "metric_name": "U.S. total motor gasoline imports", "measurement_kind": "trade",
         "source_description": "U.S. Imports of Total Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIIMUS2"},
-        "metric_code": "eia_distillate_imports", "metric_name": "U.S. distillate fuel oil imports", "measurement_kind": "physical_level",
+        "metric_code": "eia_distillate_imports", "metric_name": "U.S. distillate fuel oil imports", "measurement_kind": "trade",
         "source_description": "U.S. Imports of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
-        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "provider": "eia_refined_products", "commodity_code": "JET_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJIMUS2"},
-        "metric_code": "eia_jet_fuel_imports", "metric_name": "U.S. kerosene-type jet fuel imports", "measurement_kind": "physical_level",
+        "metric_code": "eia_jet_fuel_imports", "metric_name": "U.S. kerosene-type jet fuel imports", "measurement_kind": "trade",
         "source_description": "U.S. Imports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "RBOB_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "W_EPM0F_EEX_NUS-Z00_MBBLD"},
-        "metric_code": "eia_gasoline_exports", "metric_name": "U.S. total motor gasoline exports", "measurement_kind": "physical_level",
+        "metric_code": "eia_gasoline_exports", "metric_name": "U.S. total motor gasoline exports", "measurement_kind": "trade",
         "source_description": "U.S. Exports of Total Motor Gasoline (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
         "provider": "eia_refined_products", "commodity_code": "ULSD_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WDIEXUS2"},
-        "metric_code": "eia_distillate_exports", "metric_name": "U.S. distillate fuel oil exports", "measurement_kind": "physical_level",
+        "metric_code": "eia_distillate_exports", "metric_name": "U.S. distillate fuel oil exports", "measurement_kind": "trade",
         "source_description": "U.S. Exports of Distillate Fuel Oil (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       },
       {
-        "provider": "eia_refined_products", "commodity_code": "JET_FUEL_US", "commodity_family": "refined_products",
+        "provider": "eia_refined_products", "commodity_code": "JET_US", "commodity_family": "refined_products",
         "route": "petroleum/sum/sndw", "frequency": "weekly", "facets": {"series": "WKJEXUS2"},
-        "metric_code": "eia_jet_fuel_exports", "metric_name": "U.S. kerosene-type jet fuel exports", "measurement_kind": "physical_level",
+        "metric_code": "eia_jet_fuel_exports", "metric_name": "U.S. kerosene-type jet fuel exports", "measurement_kind": "trade",
         "source_description": "U.S. Exports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)", "expected_unit": "MBBLD", "freshness_days": "10"
       }
     ],
     "usda_psd": [
       {
         "commodity_code": "CORN", "commodity_family": "grains_oilseeds", "commodity_name": "Corn",
+        "freshness_days": "45",
         "country_names": ["World", "United States", "China", "Brazil"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "feed_use": "Feed Dom. Consumption", "industrial_use": "FSI Consumption", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds", "commodity_name": "Oilseed, Soybean",
+        "freshness_days": "45",
         "country_names": ["World", "United States", "Brazil", "China"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "crush": "Crush", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "WHEAT", "commodity_family": "grains_oilseeds", "commodity_name": "Wheat",
+        "freshness_days": "45",
         "country_names": ["World", "United States", "China", "India"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "feed_use": "Feed Dom. Consumption", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "RICE", "commodity_family": "grains_oilseeds", "commodity_name": "Rice, Milled",
+        "freshness_days": "45",
         "country_names": ["World", "China", "India", "United States"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Milled Production", "imports": "MY Imports", "exports": "MY Exports", "domestic_use": "Total Dom. Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "COTTON", "commodity_family": "softs", "commodity_name": "Cotton",
+        "freshness_days": "45",
         "country_names": ["World", "China", "India", "United States"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "MY Imports", "exports": "MY Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 480 lb. Bales"]
       },
       {
         "commodity_code": "SUGAR", "commodity_family": "softs", "commodity_name": "Sugar, Centrifugal",
+        "freshness_days": "45",
         "country_names": ["World", "Brazil", "India", "United States"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "COFFEE", "commodity_family": "softs", "commodity_name": "Coffee, Green",
+        "freshness_days": "45",
         "country_names": ["World", "Brazil", "Vietnam", "Colombia"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 60-KG BAGS"]
       },
       {
         "commodity_code": "COCOA", "commodity_family": "softs", "commodity_name": "Cocoa Beans",
+        "freshness_days": "45",
         "country_names": ["World", "Cote d'Ivoire", "Ghana", "Indonesia"], "market_year_offsets": [-1, 0],
         "attributes": {"beginning_stocks": "Beginning Stocks", "production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption", "ending_stocks": "Ending Stocks"},
         "unit_names": ["1000 MT"]
       },
       {
         "commodity_code": "CATTLE", "commodity_family": "livestock", "commodity_name": "Meat, Beef and Veal",
+        "freshness_days": "45",
         "country_names": ["World", "United States", "Brazil", "China"], "market_year_offsets": [-1, 0],
         "attributes": {"production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption"},
         "unit_names": ["1000 MT CWE"]
       },
       {
         "commodity_code": "HOGS", "commodity_family": "livestock", "commodity_name": "Meat, Swine",
+        "freshness_days": "45",
         "country_names": ["World", "China", "United States", "European Union"], "market_year_offsets": [-1, 0],
         "attributes": {"production": "Production", "imports": "Imports", "exports": "Exports", "domestic_use": "Domestic Consumption"},
         "unit_names": ["1000 MT CWE"]
       }
     ],
     "usda_esr": [
-      {"commodity_code": "CORN", "commodity_family": "grains_oilseeds", "commodity_name": "Corn", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
-      {"commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds", "commodity_name": "Soybeans", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
-      {"commodity_code": "WHEAT", "commodity_family": "grains_oilseeds", "commodity_name": "Wheat - All", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
-      {"commodity_code": "RICE", "commodity_family": "grains_oilseeds", "commodity_name": "Rice - Total", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons"},
-      {"commodity_code": "COTTON", "commodity_family": "softs", "commodity_name": "Cotton - Upland", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Running Bales"}
+      {"commodity_code": "CORN", "commodity_family": "grains_oilseeds", "commodity_name": "Corn", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons", "freshness_days": "14"},
+      {"commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds", "commodity_name": "Soybeans", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons", "freshness_days": "14"},
+      {"commodity_code": "WHEAT", "commodity_family": "grains_oilseeds", "commodity_name": "Wheat - All", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons", "freshness_days": "14"},
+      {"commodity_code": "RICE", "commodity_family": "grains_oilseeds", "commodity_name": "Rice - Total", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Metric Tons", "freshness_days": "14"},
+      {"commodity_code": "COTTON", "commodity_family": "softs", "commodity_name": "Cotton - Upland", "route": "allCountries", "market_year_offsets": [-1, 0], "unit_name": "Running Bales", "freshness_days": "14"}
     ],
     "metals": [
       {
@@ -2606,7 +2645,9 @@
         "commodity_family": "copper",
         "market": "COMEX",
         "frequency": "daily",
-        "freshness_days": "7",
+        "freshness_days": "5",
+        "freshness_basis": "trading_days",
+        "holiday_calendar": "CME_US",
         "expected_sheet": "Daily Metal Stocks Report",
         "commodity_title": "COPPER - HIGH GRADE",
         "expected_unit": "Short Tons",
@@ -2628,7 +2669,9 @@
         "commodity_family": "gold",
         "market": "COMEX",
         "frequency": "daily",
-        "freshness_days": "7",
+        "freshness_days": "5",
+        "freshness_basis": "trading_days",
+        "holiday_calendar": "CME_US",
         "expected_sheet": "Daily Metal Stocks Report",
         "commodity_title": "GOLD",
         "expected_unit": "Troy Ounce",
@@ -2651,6 +2694,7 @@
         "market": "World",
         "frequency": "annual",
         "freshness_days": "400",
+        "freshness_basis": "calendar_days",
         "expected_sheet": null,
         "commodity_title": "COPPER",
         "expected_unit": "thousand metric tons, copper content",
@@ -2673,6 +2717,7 @@
         "market": "World",
         "frequency": "annual",
         "freshness_days": "400",
+        "freshness_basis": "calendar_days",
         "expected_sheet": null,
         "commodity_title": "GOLD",
         "expected_unit": "metric tons, gold content",

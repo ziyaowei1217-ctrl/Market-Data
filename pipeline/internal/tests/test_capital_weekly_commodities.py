@@ -29,7 +29,7 @@ class CommodityFundamentalTests(unittest.TestCase):
             },
             "metric_code": "eia_ng_storage_lower48",
             "metric_name": "Lower 48 working gas in underground storage",
-            "measurement_kind": "physical_level",
+            "measurement_kind": "inventory",
             "source_description": (
                 "Lower 48 Working Gas in Underground Storage "
                 "(Billion Cubic Feet)"
@@ -138,9 +138,10 @@ class CommodityFundamentalTests(unittest.TestCase):
             facets={"series": "N9070US2"},
             metric_code="eia_ng_dry_production",
             metric_name="U.S. dry natural gas production",
+            measurement_kind="supply",
             source_description="U.S. Dry Natural Gas Production (MMcf)",
             expected_unit="MMCF",
-            freshness_days="75",
+            freshness_days="10",
         )
         row = {
             "period": "2026-06",
@@ -170,7 +171,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                 "known_as_of": "2026-08-28T12:00:00-04:00",
                 "metric_code": "storage",
                 "metric_name": "Storage",
-                "measurement_kind": "physical_level",
+                "measurement_kind": "inventory",
                 "value": 999.0,
                 "unit": "BCF",
             },
@@ -179,7 +180,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                 "known_as_of": "2026-08-15T12:00:00-04:00",
                 "metric_code": "storage",
                 "metric_name": "Storage",
-                "measurement_kind": "physical_level",
+                "measurement_kind": "inventory",
                 "value": 3000.0,
                 "unit": "BCF",
             },
@@ -188,7 +189,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                 "known_as_of": "2026-08-24T00:00:00+08:00",
                 "metric_code": "storage",
                 "metric_name": "Storage",
-                "measurement_kind": "physical_level",
+                "measurement_kind": "inventory",
                 "value": 3060.0,
                 "unit": "BCF",
             },
@@ -197,7 +198,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                 "known_as_of": "2026-08-08T12:00:00-04:00",
                 "metric_code": "storage",
                 "metric_name": "Storage",
-                "measurement_kind": "physical_level",
+                "measurement_kind": "inventory",
                 "value": 2975.0,
                 "unit": "BCF",
             },
@@ -221,7 +222,7 @@ class CommodityFundamentalTests(unittest.TestCase):
                 "period": period,
                 "metric_code": "storage",
                 "metric_name": "Storage",
-                "measurement_kind": "physical_level",
+                "measurement_kind": "inventory",
                 "seasonal_deviation": True,
                 "value": value,
                 "unit": "BCF",
@@ -240,7 +241,7 @@ class CommodityFundamentalTests(unittest.TestCase):
         seasonal = complete[-1]
         self.assertEqual(seasonal["metric_code"], "storage_seasonal_deviation")
         self.assertEqual(seasonal["value"], 30.0)
-        self.assertEqual(seasonal["measurement_kind"], "seasonal_deviation")
+        self.assertEqual(seasonal["measurement_kind"], "inventory")
         self.assertIn("formula_version=eia-seasonal-v1", seasonal["reference_period"])
 
         insufficient = latest_and_changes(rows[1:], date(2026, 8, 23))

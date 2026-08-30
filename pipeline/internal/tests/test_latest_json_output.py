@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseValidationError,
@@ -16,6 +17,7 @@ from pipeline.internal.capital_weekly.weekly_release import (
     validate_staged_week,
 )
 from pipeline.internal.tests.test_capital_weekly_weekly_release import (
+    exact_gate_config,
     write_complete_commodity_research_fixture,
     write_valid_staged_week,
 )
@@ -62,6 +64,14 @@ class LatestJsonOutputTests(unittest.TestCase):
             "week_20260803-20260809",
         )
         self.staged_week = self.root / self.window.week_id
+        config_path = self.root / "exact-gate-config.json"
+        config_path.write_text(json.dumps(exact_gate_config()), encoding="utf-8")
+        config_patcher = patch(
+            "pipeline.internal.common.DEFAULT_CONFIG_PATH",
+            config_path,
+        )
+        config_patcher.start()
+        self.addCleanup(config_patcher.stop)
         outputs = write_valid_staged_week(self.staged_week, self.window)
         write_complete_commodity_research_fixture(outputs)
         manifest = validate_staged_week(self.staged_week, self.window)
