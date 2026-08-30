@@ -393,11 +393,16 @@ def _validate_fact_inputs(
                 )
             if str(row.get("qc_flag") or "").strip() != "OK":
                 raise ValueError("research fact inputs must have qc_flag OK")
+            value = _finite_value(row.get("value"))
+            if value is None:
+                continue
             row["record_id"] = record_id
             row["observation_date"] = observation.isoformat()
             row["known_as_of"] = known_text
+            row["_known_as_of_datetime"] = known
             row["source_url"] = _source_url(row.get("source_url"))
             row["unit"] = _required_text(row.get("unit"), "unit")
+            row["value"] = value
             normalized[dataset].append(row)
     return {key: tuple(value) for key, value in normalized.items()}
 
@@ -432,7 +437,12 @@ def _select_two_observation_price_inputs(
             if row.get("commodity_code") == commodity_code
             and row.get("series_code") == series_code
         ),
-        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+        key=lambda row: (
+            row["observation_date"],
+            row["_known_as_of_datetime"]
+            or datetime.min.replace(tzinfo=timezone.utc),
+            row["record_id"],
+        ),
     )
     if len(selected) < 2:
         return ()  # type: ignore[return-value]
@@ -472,7 +482,12 @@ def _select_year_over_year_inputs(
             if row.get("commodity_code") == commodity_code
             and row.get("series_code") == series_code
         ),
-        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+        key=lambda row: (
+            row["observation_date"],
+            row["_known_as_of_datetime"]
+            or datetime.min.replace(tzinfo=timezone.utc),
+            row["record_id"],
+        ),
     )
     if not selected:
         return ()  # type: ignore[return-value]
@@ -532,7 +547,12 @@ def _select_metric_series(
             and row.get("measurement_kind") == measurement_kind
             and row.get("participant_class") == participant_class
         ),
-        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+        key=lambda row: (
+            row["observation_date"],
+            row["_known_as_of_datetime"]
+            or datetime.min.replace(tzinfo=timezone.utc),
+            row["record_id"],
+        ),
     )
 
 
@@ -575,7 +595,12 @@ def _select_exact_metric_input(
             and row.get("measurement_kind") == measurement_kind
             and row.get("participant_class") == participant_class
         ),
-        key=lambda row: (row["observation_date"], row["known_as_of"] or "", row["record_id"]),
+        key=lambda row: (
+            row["observation_date"],
+            row["_known_as_of_datetime"]
+            or datetime.min.replace(tzinfo=timezone.utc),
+            row["record_id"],
+        ),
     )
     return selected[-1] if selected else None
 
@@ -590,8 +615,12 @@ def _fact_from_inputs(
     as_of_date: date,
 ) -> dict:
     latest = max(rows, key=lambda row: row["observation_date"])
-    known_values = [row["known_as_of"] for row in rows if row["known_as_of"]]
-    known_as_of = max(known_values) if known_values else None
+    known_rows = [row for row in rows if row["_known_as_of_datetime"] is not None]
+    known_as_of = (
+        max(known_rows, key=lambda row: row["_known_as_of_datetime"])["known_as_of"]
+        if known_rows
+        else None
+    )
     commodity_code = _required_text(latest.get("commodity_code"), "commodity_code")
     commodity_family = _validate_family(latest.get("commodity_family"))
     if any(
@@ -849,13 +878,18 @@ def build_research_facts(
                 continue
             current = selected[-1]
             current_date = date.fromisoformat(current["observation_date"])
-            current_week = current_date.isocalendar()[1]
+            current_iso_year, current_week, _ = current_date.isocalendar()
+            latest_by_iso_year: dict[int, dict] = {}
+            for row in selected[:-1]:
+                iso_year, iso_week, _ = date.fromisoformat(
+                    row["observation_date"]
+                ).isocalendar()
+                if iso_week == current_week and iso_year < current_iso_year:
+                    latest_by_iso_year[iso_year] = row
             aligned = [
-                row
-                for row in selected[:-1]
-                if date.fromisoformat(row["observation_date"]).isocalendar()[1]
-                == current_week
-            ][-prior_years:]
+                latest_by_iso_year[iso_year]
+                for iso_year in sorted(latest_by_iso_year)[-prior_years:]
+            ]
             if len(aligned) < minimum:
                 continue
             used = tuple(aligned + [current])
@@ -905,6 +939,14 @@ def build_research_facts(
             selected = (numerator, denominator)
             if numerator["unit"] != denominator["unit"]:
                 raise ValueError("stock_to_use_v1 inputs have mixed units")
+            if any(
+                not str(row.get(field) or "").strip()
+                for row in selected
+                for field in ("known_as_of", "reference_period")
+            ):
+                raise ValueError(
+                    "stock_to_use_v1 requires nonblank USDA vintage fields"
+                )
             if (
                 numerator.get("known_as_of") != denominator.get("known_as_of")
                 or numerator.get("reference_period")

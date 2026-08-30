@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import sys
 from datetime import date, datetime, timedelta
@@ -15,11 +16,50 @@ from pipeline.internal.capital_weekly.context.providers import build_default_pro
 from pipeline.internal.capital_weekly.macro_assets import (
     load_commodity_research_config,
 )
-from pipeline.internal.capital_weekly.commodity_research import load_formula_specs
+from pipeline.internal.capital_weekly.commodity_research import (
+    PRICE_HISTORY_FIELDS,
+    load_formula_specs,
+)
 from pipeline.internal.capital_weekly.weekly_context import (
     publish_weekly_context_bundle,
     run_weekly_context,
 )
+
+
+def _load_current_staged_price_history(
+    context_output: Path,
+    as_of_date: date,
+) -> list[dict]:
+    expected_context_name = f"capital_weekly_context_{as_of_date:%Y%m%d}"
+    if context_output.name != expected_context_name:
+        return []
+    macro_output = context_output.parent / (
+        f"capital_weekly_macro_assets_python_{as_of_date:%Y%m%d}"
+    )
+    path = macro_output / "commodity_price_history.csv"
+    if not path.exists():
+        return []
+    if path.is_symlink() or not path.is_file():
+        raise ValueError("Staged commodity price history must be a regular file")
+    with path.open(newline="", encoding="utf-8-sig") as file:
+        reader = csv.DictReader(file)
+        if reader.fieldnames != list(PRICE_HISTORY_FIELDS):
+            raise ValueError(
+                "Staged commodity price history has an unexpected schema"
+            )
+        rows = []
+        for row in reader:
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError("Staged commodity price history has a ragged row")
+            if not any(str(value).strip() for value in row.values()):
+                continue
+            rows.append(
+                {
+                    key: None if value == "" else value
+                    for key, value in row.items()
+                }
+            )
+    return rows
 
 
 def main() -> None:
@@ -74,6 +114,7 @@ def main() -> None:
         if args.data_dir and Path(args.data_dir).suffix.lower() == ".json"
         else None
     )
+    price_history = _load_current_staged_price_history(output, end)
     tables = run_weekly_context(
         providers,
         raw_dir=raw_dir,
@@ -82,6 +123,7 @@ def main() -> None:
         history_limits=research_config.history_limits,
         commodity_registry=research_config.commodity_registry,
         formula_specs=formula_specs,
+        price_history=price_history,
     )
     publish_weekly_context_bundle(tables, output)
     print(f"saved: {output}")

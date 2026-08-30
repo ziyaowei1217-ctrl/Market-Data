@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from pipeline.internal.capital_weekly import macro_assets as macro_assets_module
 from pipeline.internal.capital_weekly.context.provider_contracts import (
@@ -977,6 +978,85 @@ class RegisteredResearchFactTests(unittest.TestCase):
 
         self.assertEqual(facts, [])
 
+    def test_seasonal_deviation_uses_latest_revision_per_distinct_iso_year(self):
+        specs = {
+            "natgas_storage_seasonal_deviation": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=3, minimum_observations=3),
+                ),
+            )
+        }
+        history = [
+            _research_metric("season-2023", "2023-08-25", 100.0),
+            _research_metric(
+                "season-2024-original",
+                "2024-08-23",
+                110.0,
+                known_as_of="2024-08-23T12:00:00Z",
+            ),
+            _research_metric(
+                "season-2024-revision",
+                "2024-08-23",
+                130.0,
+                known_as_of="2024-08-24T12:00:00Z",
+            ),
+            _research_metric("season-2025", "2025-08-22", 140.0),
+            _research_metric("season-2026", "2026-08-21", 170.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        self.assertAlmostEqual(facts[0]["value"], 170.0 - (370.0 / 3.0))
+        self.assertEqual(
+            facts[0]["input_record_ids"],
+            [
+                "season-2023",
+                "season-2024-revision",
+                "season-2025",
+                "season-2026",
+            ],
+        )
+        self.assertNotIn("season-2024-original", facts[0]["input_record_ids"])
+
+    def test_seasonal_minimum_counts_distinct_prior_iso_years(self):
+        specs = {
+            "natgas_storage_seasonal_deviation": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=3, minimum_observations=3),
+                ),
+            )
+        }
+        history = [
+            _research_metric(
+                "season-2024-original",
+                "2024-08-23",
+                110.0,
+                known_as_of="2024-08-23T12:00:00Z",
+            ),
+            _research_metric(
+                "season-2024-revision",
+                "2024-08-23",
+                130.0,
+                known_as_of="2024-08-24T12:00:00Z",
+            ),
+            _research_metric("season-2025", "2025-08-22", 140.0),
+            _research_metric("season-2026", "2026-08-21", 170.0),
+        ]
+
+        self.assertEqual(
+            build_research_facts([], history, specs, date(2026, 8, 30)),
+            [],
+        )
+
     def test_stock_to_use_requires_exact_same_vintage_usda_inputs(self):
         specs = {
             "corn_stock_to_use": FormulaSpec(
@@ -1164,6 +1244,57 @@ class RegisteredResearchFactTests(unittest.TestCase):
                         date(2026, 8, 30),
                     )
 
+    def test_stock_to_use_requires_nonblank_usda_vintage_fields(self):
+        common = {
+            "commodity_code": "CORN",
+            "commodity_family": "grains_oilseeds",
+            "known_as_of": "2026-08-12T16:00:00Z",
+            "reference_period": "2026/27",
+            "unit": "1000 MT",
+        }
+        numerator = _research_metric(
+            "corn-ending",
+            "2026-08-12",
+            200.0,
+            metric_code="usda_psd_ending_stocks",
+            measurement_kind="inventory",
+            **common,
+        )
+        denominator = _research_metric(
+            "corn-use",
+            "2026-08-12",
+            1000.0,
+            metric_code="usda_psd_domestic_use",
+            measurement_kind="demand",
+            **common,
+        )
+        invalid = (
+            (
+                {**numerator, "known_as_of": None},
+                {**denominator, "known_as_of": None},
+            ),
+            (
+                {**numerator, "reference_period": ""},
+                {**denominator, "reference_period": ""},
+            ),
+        )
+
+        for invalid_numerator, invalid_denominator in invalid:
+            with self.subTest(
+                known_as_of=invalid_numerator.get("known_as_of"),
+                reference_period=invalid_numerator.get("reference_period"),
+            ):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "nonblank USDA vintage",
+                ):
+                    build_research_facts(
+                        [],
+                        [invalid_numerator, invalid_denominator],
+                        _stock_to_use_specs(),
+                        date(2026, 8, 30),
+                    )
+
     def test_coverage_count_counts_only_configured_exact_series_window(self):
         specs = {
             "natgas_storage_coverage": FormulaSpec(
@@ -1235,6 +1366,45 @@ class RegisteredResearchFactTests(unittest.TestCase):
         self.assertEqual(
             fact["source_urls"],
             ["https://official.example.test/metrics"],
+        )
+
+    def test_fractional_second_known_as_of_orders_by_aware_instant(self):
+        specs = {
+            "natgas_storage_freshness": FormulaSpec(
+                formula_id="freshness_age_days_v1",
+                version="1.0.0",
+                fact_kind="freshness_age_days",
+                output_unit="days",
+                required_inputs=(
+                    _metric_selector(observation_count=1),
+                ),
+            )
+        }
+        history = [
+            _research_metric(
+                "whole-second-vintage",
+                "2026-08-23",
+                20.0,
+                known_as_of="2026-08-29T12:00:00Z",
+            ),
+            _research_metric(
+                "fractional-later-vintage",
+                "2026-08-23",
+                21.0,
+                known_as_of="2026-08-29T12:00:00.900000+00:00",
+            ),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(len(facts), 1)
+        self.assertEqual(
+            facts[0]["input_record_ids"],
+            ["fractional-later-vintage"],
+        )
+        self.assertEqual(
+            facts[0]["known_as_of"],
+            "2026-08-29T12:00:00.900000Z",
         )
 
     def test_missing_input_record_id_is_rejected_before_fact_emission(self):
@@ -1319,6 +1489,61 @@ class RegisteredResearchFactTests(unittest.TestCase):
             ),
             [],
         )
+
+    def test_nonfinite_inputs_never_create_coverage_or_freshness_facts(self):
+        specs = {
+            "storage_coverage": FormulaSpec(
+                formula_id="coverage_count_v1",
+                version="1.0.0",
+                fact_kind="coverage_count",
+                output_unit="count",
+                required_inputs=(
+                    _metric_selector(trailing_observations=160),
+                ),
+            ),
+            "storage_freshness": FormulaSpec(
+                formula_id="freshness_age_days_v1",
+                version="1.0.0",
+                fact_kind="freshness_age_days",
+                output_unit="days",
+                required_inputs=(
+                    _metric_selector(observation_count=1),
+                ),
+            ),
+        }
+
+        for value in (float("nan"), float("inf"), -float("inf")):
+            with self.subTest(value=value):
+                self.assertEqual(
+                    build_research_facts(
+                        [],
+                        [_research_metric("nonfinite", "2026-08-23", value)],
+                        specs,
+                        date(2026, 8, 30),
+                    ),
+                    [],
+                )
+
+    def test_nonnumeric_input_is_a_schema_violation(self):
+        specs = {
+            "storage_coverage": FormulaSpec(
+                formula_id="coverage_count_v1",
+                version="1.0.0",
+                fact_kind="coverage_count",
+                output_unit="count",
+                required_inputs=(
+                    _metric_selector(trailing_observations=160),
+                ),
+            )
+        }
+
+        with self.assertRaisesRegex(ValueError, "value must be numeric"):
+            build_research_facts(
+                [],
+                [_research_metric("not-numeric", "2026-08-23", "missing")],
+                specs,
+                date(2026, 8, 30),
+            )
 
     def test_duplicate_normalized_fact_identity_is_rejected(self):
         spec = FormulaSpec(
@@ -1422,6 +1647,76 @@ class RegisteredResearchFactTests(unittest.TestCase):
 
 
 class WeeklyContextResearchFactTests(unittest.TestCase):
+    def test_context_cli_uses_current_staged_macro_price_history_for_wti_facts(self):
+        from pipeline.internal.scripts import fetch_weekly_context as fetch_module
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            context_output = root / "capital_weekly_context_20260830"
+            macro_output = root / "capital_weekly_macro_assets_python_20260830"
+            macro_output.mkdir()
+            rows = [
+                {
+                    **_research_price("wti-prior-year", "2025-08-29", 70.0),
+                    "series_code": "WTI",
+                    "unit": "$/BBL",
+                },
+                {
+                    **_research_price("wti-prior", "2026-08-22", 75.0),
+                    "series_code": "WTI",
+                    "unit": "$/BBL",
+                },
+                {
+                    **_research_price("wti-current", "2026-08-29", 78.0),
+                    "series_code": "WTI",
+                    "unit": "$/BBL",
+                },
+            ]
+            with (macro_output / "commodity_price_history.csv").open(
+                "w", newline="", encoding="utf-8"
+            ) as file:
+                writer = csv.DictWriter(file, fieldnames=PRICE_HISTORY_FIELDS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            argv = [
+                "fetch_weekly_context.py",
+                "--output-dir",
+                str(context_output),
+                "--start-date",
+                "2026-08-24",
+                "--end-date",
+                "2026-08-30",
+                "--no-raw-cache",
+            ]
+            with patch.object(fetch_module, "build_default_providers", return_value={}), patch(
+                "sys.argv", argv
+            ):
+                fetch_module.main()
+
+            snapshot = json.loads(
+                (context_output / "weekly_context_snapshot.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            facts = snapshot["commodity_research_facts"]
+            self.assertEqual(
+                [fact["fact_code"] for fact in facts],
+                [
+                    "wti_absolute_change",
+                    "wti_percentage_change",
+                    "wti_year_over_year_change",
+                ],
+            )
+            self.assertEqual(
+                [fact["value"] for fact in facts],
+                [3.0, 4.0, 8.0],
+            )
+            self.assertEqual(
+                facts[0]["input_record_ids"],
+                ["wti-current", "wti-prior"],
+            )
+
     def test_runner_and_publisher_add_registered_research_facts_csv(self):
         as_of = date(2026, 8, 30)
         raw_row = _metric_row(
