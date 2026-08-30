@@ -20,7 +20,7 @@ EXPECTED_SECTION_HASHES = {
     "sectors": "34c7c2a4d59d19983b9f5ef6af147a9678f494da0e2d8f10f0be779ba41785c5",
     "gics": "5ded3da3ad2789ea91b917038f9e813181a1a5d2b719aa066b0257b9c2649449",
     "macro": "3af0dc58b4fd12c729a36bc151baf7aab343aa2250181081ecc3d23f9a2e5705",
-    "context.cftc_contracts": "0c1ddb309a3898b93a6ff5e9cba3f34a77e1e3cdb12338deee3c5efdd1d66a75",
+    "context.cftc_contracts": "a006bb29c4cac5053b1fa31a9ff3aae701cbef3c20e994e52957aa51bd39c473",
     "context.company_watchlist": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "context.eia_series": "c9a967fcd4831cfbe9c0a20b19fa0d08475e6d338908997cb7c4c419dafaff08",
     "context.financial_conditions": "f2c336e5c72e7a86a870cb5f07a8fce7d6855464c6587efde50bccff6f7ea3e7",
@@ -38,6 +38,48 @@ def rows_hash(rows: list[dict[str, str]]) -> str:
 
 
 class PipelineConfigTests(unittest.TestCase):
+    def test_cftc_contracts_split_financial_and_physical_report_families(self):
+        rows = load_config_rows("context.cftc_contracts")
+        tff_codes = {
+            row["contract_code"] for row in rows if row["report_family"] == "tff"
+        }
+        commodity_map = {
+            row["contract_code"]: (
+                row["commodity_code"],
+                row["commodity_family"],
+            )
+            for row in rows
+            if row["report_family"] == "disaggregated"
+        }
+
+        self.assertEqual(tff_codes, {"13874A", "098662"})
+        self.assertEqual(
+            commodity_map,
+            {
+                "023651": ("NATGAS_HH", "natural_gas"),
+                "067651": ("WTI", "refined_products"),
+                "111659": ("RBOB_US", "refined_products"),
+                "022651": ("ULSD_US", "refined_products"),
+                "085692": ("COPPER_COMEX", "copper"),
+                "088691": ("GOLD_COMEX", "gold"),
+                "002602": ("CORN", "grains_oilseeds"),
+                "005602": ("SOYBEANS", "grains_oilseeds"),
+                "001602": ("WHEAT", "grains_oilseeds"),
+                "039601": ("RICE", "grains_oilseeds"),
+                "033661": ("COTTON", "softs"),
+                "080732": ("SUGAR", "softs"),
+                "083731": ("COFFEE", "softs"),
+                "073732": ("COCOA", "softs"),
+                "057642": ("CATTLE", "livestock"),
+                "054642": ("HOGS", "livestock"),
+            },
+        )
+        for row in rows:
+            if row["report_family"] == "disaggregated":
+                self.assertTrue(row["market_name"])
+                self.assertEqual(row["percentile_window"], "156")
+                self.assertEqual(row["percentile_min_observations"], "52")
+
     def test_json_matches_lossless_legacy_conversion_hashes(self):
         document = json.loads(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"))
         self.assertEqual(document["schema_version"], "1.0")

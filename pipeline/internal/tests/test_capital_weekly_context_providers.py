@@ -6,6 +6,7 @@ import unittest
 import pandas as pd
 
 from pipeline.internal.capital_weekly.context.providers import (
+    CFTC_DISAGGREGATED_URL,
     build_default_providers,
     metric_rows,
     not_configured_result,
@@ -34,7 +35,12 @@ def write_provider_configs(data_dir):
         "ticker,cik,company_name,enabled\n", encoding="utf-8"
     )
     (data_dir / "capital_weekly_cftc_contracts.csv").write_text(
-        "contract_code,metric_code\n13874A,sp500\n", encoding="utf-8"
+        "contract_code,metric_code,report_family,market_name,commodity_code,"
+        "commodity_family,percentile_window,percentile_min_observations\n"
+        "13874A,sp500,tff,S&P 500 Consolidated,,,,\n"
+        "088691,GOLD_COT,disaggregated,GOLD - COMMODITY EXCHANGE INC.,"
+        "GOLD_COMEX,gold,156,52\n",
+        encoding="utf-8",
     )
     (data_dir / "capital_weekly_eia_series.csv").write_text(
         "metric_code,metric_name,route,frequency,series,expected_unit\n",
@@ -51,6 +57,65 @@ def write_provider_configs(data_dir):
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_disaggregated_provider_uses_official_dataset_and_emits_commodity_metadata(self):
+        text = (
+            "market_and_exchange_names,cftc_contract_market_code,"
+            "report_date_as_yyyy_mm_dd,open_interest_all,"
+            "prod_merc_positions_long,prod_merc_positions_short,"
+            "swap_positions_long_all,swap__positions_short_all,"
+            "m_money_positions_long_all,m_money_positions_short_all,"
+            "other_rept_positions_long,other_rept_positions_short\n"
+            "GOLD - COMMODITY EXCHANGE INC.,088691,2026-08-18,500000,"
+            "100000,200000,120000,70000,250000,100000,30000,20000\n"
+        )
+
+        class Response:
+            encoding = "utf-8"
+            apparent_encoding = "utf-8"
+
+            def raise_for_status(self):
+                return None
+
+        class Session:
+            def __init__(self):
+                self.calls = []
+
+            def get(self, url, **kwargs):
+                self.calls.append((url, kwargs))
+                response = Response()
+                response.text = text
+                return response
+
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            session = Session()
+            provider = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )["cftc_disaggregated"]
+
+            result = provider.fetch()
+
+        self.assertEqual(session.calls[0][0], CFTC_DISAGGREGATED_URL)
+        self.assertEqual(provider.spec.requiredness, "required")
+        self.assertEqual(len(result.rows), 13)
+        managed = next(
+            row for row in result.rows if row["metric_code"] == "GOLD_COMEX_managed_money_net"
+        )
+        self.assertEqual(managed["value"], 150_000)
+        self.assertEqual(managed["commodity_code"], "GOLD_COMEX")
+        self.assertEqual(managed["commodity_family"], "gold")
+        self.assertEqual(managed["metric_role"], "positioning")
+        self.assertEqual(managed["measurement_kind"], "net_position")
+        self.assertEqual(managed["participant_class"], "managed_money")
+        self.assertEqual(managed["known_as_of"], "2026-08-21T15:30:00-04:00")
+        self.assertEqual(managed["reference_period"], "2026-08-18")
+        self.assertFalse(any("asset_manager" in row["metric_code"] for row in result.rows))
+
     def test_metric_rows_emit_shared_contract(self):
         rows = metric_rows(
             as_of_date=date(2026, 7, 24),
@@ -98,6 +163,7 @@ class ContextProviderTests(unittest.TestCase):
                 "census_calendar",
                 "nasdaq_market_summary",
                 "cftc_tff",
+                "cftc_disaggregated",
                 "finra_margin",
                 "sec_company_events",
                 "eia_commodities",

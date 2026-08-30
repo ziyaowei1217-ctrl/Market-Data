@@ -48,7 +48,12 @@ from .microstructure import (
     parse_sse_daily_overview,
     parse_szse_daily_overview,
 )
-from .positioning import parse_cftc_tff_csv, parse_finra_margin_table
+from .positioning import (
+    DISAGGREGATED_PARTICIPANTS,
+    parse_cftc_disaggregated_csv,
+    parse_cftc_tff_csv,
+    parse_finra_margin_table,
+)
 from .volatility import (
     calculate_yahoo_volatility_metrics,
     extract_yahoo_close_histories,
@@ -63,7 +68,8 @@ CENSUS_URL = "https://www.census.gov/economic-indicators/calendar-listview.html"
 NASDAQ_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=DailyMarketSummary"
 FINRA_URL = "https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics"
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
-CFTC_URL = "https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
+CFTC_TFF_URL = "https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
+CFTC_DISAGGREGATED_URL = "https://publicreporting.cftc.gov/resource/72hh-3qpy.csv"
 SEC_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 HKEX_URL = "https://www.hkex.com.hk/eng/stat/smstat/dayquot/d{stamp}e.htm"
 SSE_URL = "https://query.sse.com.cn/commonQuery.do"
@@ -310,7 +316,7 @@ def _finra_provider(session: requests.Session, end: date) -> ProviderResult:
     )
 
 
-def _cftc_provider(
+def _cftc_tff_provider(
     session: requests.Session,
     start: date,
     end: date,
@@ -318,9 +324,9 @@ def _cftc_provider(
 ) -> ProviderResult:
     parsed = []
     raw_archives = []
-    source_url = CFTC_URL.format(year=end.year)
+    source_url = CFTC_TFF_URL.format(year=end.year)
     for year in range(start.year, end.year + 1):
-        source_url = CFTC_URL.format(year=year)
+        source_url = CFTC_TFF_URL.format(year=year)
         content = _bytes(session, source_url)
         raw_archives.append(content)
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
@@ -369,6 +375,79 @@ def _cftc_provider(
         raw_text=b"".join(raw_archives),
         source="U.S. Commodity Futures Trading Commission",
         source_url=source_url,
+    )
+
+
+def _cftc_disaggregated_provider(
+    session: requests.Session,
+    start: date,
+    end: date,
+    contracts: list[dict[str, str]],
+) -> ProviderResult:
+    max_window = max(int(spec["percentile_window"]) for spec in contracts)
+    history_start = start - timedelta(weeks=max_window)
+    quoted_codes = ",".join(
+        f"'{spec['contract_code']}'" for spec in sorted(
+            contracts, key=lambda item: item["contract_code"]
+        )
+    )
+    params = {
+        "$where": (
+            f"report_date_as_yyyy_mm_dd >= '{history_start.isoformat()}T00:00:00.000' "
+            f"AND report_date_as_yyyy_mm_dd <= '{end.isoformat()}T23:59:59.999' "
+            f"AND cftc_contract_market_code in ({quoted_codes})"
+        ),
+        "$order": "cftc_contract_market_code,report_date_as_yyyy_mm_dd",
+        "$limit": 50000,
+    }
+    text = _text(session, CFTC_DISAGGREGATED_URL, params=params)
+    parsed = parse_cftc_disaggregated_csv(text, contracts)
+    selected = [row for row in parsed if start <= row["report_date"] <= end]
+    rows = []
+    measurements = [("open_interest", "open_interest", None)]
+    for participant in DISAGGREGATED_PARTICIPANTS:
+        measurements.extend(
+            (
+                (f"{participant}_net", "net_position", participant),
+                (f"{participant}_net_change", "net_position", participant),
+                (f"{participant}_percentile", "percentile", participant),
+            )
+        )
+    for observation in selected:
+        commodity_code = str(observation["commodity_code"])
+        for value_key, measurement_kind, participant_class in measurements:
+            metric_code = f"{commodity_code}_{value_key}"
+            rows.extend(
+                metric_rows(
+                    as_of_date=observation["report_date"],
+                    category="positioning_flows",
+                    market=observation["market_name"],
+                    source="U.S. Commodity Futures Trading Commission",
+                    source_url=CFTC_DISAGGREGATED_URL,
+                    frequency="weekly",
+                    values={metric_code: observation[value_key]},
+                    units={
+                        metric_code: (
+                            "ratio" if value_key.endswith("percentile") else "contracts"
+                        )
+                    },
+                    metadata={
+                        "commodity_code": commodity_code,
+                        "commodity_family": observation["commodity_family"],
+                        "metric_role": "positioning",
+                        "measurement_kind": measurement_kind,
+                        "participant_class": participant_class,
+                        "known_as_of": observation["known_as_of"],
+                        "reference_period": observation["report_date"].isoformat(),
+                    },
+                )
+            )
+    return ProviderResult(
+        category="positioning_flows",
+        rows=rows,
+        raw_text=text,
+        source="U.S. Commodity Futures Trading Commission",
+        source_url=CFTC_DISAGGREGATED_URL,
     )
 
 
@@ -906,9 +985,25 @@ def build_default_providers(
         eia_config = _config(root / "capital_weekly_eia_series.csv")
         financial_config = _config(root / "capital_weekly_financial_conditions.csv")
         yahoo_rows = _config(root / "capital_weekly_yahoo_volatility.csv")
-    cftc_config = {
-        row["contract_code"]: row["metric_code"] for row in cftc_rows
+    unknown_report_families = sorted(
+        {
+            str(row.get("report_family", "")).strip()
+            for row in cftc_rows
+        }
+        - {"tff", "disaggregated"}
+    )
+    if unknown_report_families:
+        raise ValueError(
+            "Unsupported CFTC report families: " + ", ".join(unknown_report_families)
+        )
+    cftc_tff_config = {
+        row["contract_code"]: row["metric_code"]
+        for row in cftc_rows
+        if row["report_family"] == "tff"
     }
+    cftc_disaggregated_config = [
+        row for row in cftc_rows if row["report_family"] == "disaggregated"
+    ]
     watchlist = load_company_watchlist(watchlist_rows)
     yahoo_volatility_config = load_yahoo_volatility_config(yahoo_rows)
     yahoo_download = yahoo_downloader or _default_yahoo_download
@@ -925,9 +1020,6 @@ def build_default_providers(
             source="U.S. Census Bureau",
         ),
         "nasdaq_market_summary": lambda: _nasdaq_provider(client, start, end),
-        "cftc_tff": lambda: _cftc_provider(
-            client, start, end, cftc_config
-        ),
         "finra_margin": lambda: _finra_provider(client, end),
         "sec_company_events": lambda: _sec_provider(
             client,
@@ -954,7 +1046,6 @@ def build_default_providers(
         "federal_reserve_calendar": ("events", "event", "required"),
         "census_calendar": ("events", "event", "required"),
         "nasdaq_market_summary": ("market_internals", "daily", "required"),
-        "cftc_tff": ("positioning_flows", "weekly", "required"),
         "finra_margin": ("positioning_flows", "monthly", "required"),
         "sec_company_events": ("company_events", "event", "optional"),
         "eia_commodities": ("commodity_fundamentals", "weekly", "optional"),
@@ -972,6 +1063,24 @@ def build_default_providers(
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
     }
+    if cftc_tff_config:
+        fetchers["cftc_tff"] = lambda: _cftc_tff_provider(
+            client, start, end, cftc_tff_config
+        )
+        definitions["cftc_tff"] = (
+            "positioning_flows",
+            "weekly",
+            "required",
+        )
+    if cftc_disaggregated_config:
+        fetchers["cftc_disaggregated"] = lambda: _cftc_disaggregated_provider(
+            client, start, end, cftc_disaggregated_config
+        )
+        definitions["cftc_disaggregated"] = (
+            "positioning_flows",
+            "weekly",
+            "required",
+        )
     return {
         name: ContextProvider(
             spec=ProviderSpec(
