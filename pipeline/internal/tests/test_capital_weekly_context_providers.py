@@ -21,12 +21,15 @@ from pipeline.internal.capital_weekly.context.providers import (
     not_configured_result,
 )
 from pipeline.internal.capital_weekly.context.common import METRIC_FIELDS
+from pipeline.internal.capital_weekly.context.eia_commodities import EiaBatchSpec
 from pipeline.internal.capital_weekly.context.provider_contracts import (
     ContextProvider,
+    ProviderPhaseError,
     ProviderResult,
     ProviderSpec,
 )
 from pipeline.internal.capital_weekly.official_http import (
+    OfficialHttpError,
     OfficialHttpResponse,
     OfficialHttpTrace,
 )
@@ -142,10 +145,138 @@ class BinarySession:
 
 
 class CommodityProbeTests(unittest.TestCase):
+    def test_eia_probe_failure_reports_live_phase_and_attempts(self):
+        from pipeline.internal.scripts import probe_commodity_sources
+
+        series = "NW2_EPG0_SWO_R48_BCF"
+        valid_row = {
+            "period": "2026-08-21",
+            "series": series,
+            "duoarea": "R48",
+            "process": "SWO",
+            "series-description": "Lower 48 storage",
+            "units": "BCF",
+            "value": "3125",
+        }
+
+        class Client:
+            def __init__(self, kind, attempts=2):
+                self.kind = kind
+                self.attempts = attempts
+
+            def fetch_metadata(self, _spec, _expected):
+                if self.kind == "metadata_transport":
+                    raise OfficialHttpError(
+                        "HTTP_RETRY_EXHAUSTED",
+                        "retrieve",
+                        True,
+                        2,
+                        "metadata transport exhausted",
+                    )
+                if self.kind == "metadata":
+                    raise ValueError("metadata identity mismatch")
+
+            def fetch_page(self, _spec, *, offset, length):
+                self.request = (offset, length)
+                if self.kind == "parse":
+                    return {
+                        "response": {
+                            "total": 1,
+                            "data": [{**valid_row, "units": "WRONG"}],
+                        }
+                    }
+                if self.kind == "coverage":
+                    return {"response": {"total": 0, "data": []}}
+                return {"response": {"total": 1, "data": [valid_row]}}
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            document = json.loads(
+                (Path(__file__).resolve().parents[2] / "config.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            document["context"]["eia_series"] = [{
+                "provider": "eia_natural_gas",
+                "commodity_code": "NATGAS_HH",
+                "commodity_family": "natural_gas",
+                "route": "natural-gas/stor/wkly",
+                "frequency": "weekly",
+                "facets": {
+                    "duoarea": "R48", "process": "SWO", "series": series,
+                },
+                "metric_code": "eia_ng_storage_lower48",
+                "metric_name": "Lower 48 storage",
+                "measurement_kind": "inventory",
+                "source_description": "Lower 48 storage",
+                "expected_unit": "BCF",
+                "freshness_days": "10",
+            }]
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(document), encoding="utf-8")
+
+            for kind, expected_phase in (
+                ("metadata_transport", "metadata"),
+                ("metadata", "metadata"),
+                ("parse", "parse"),
+                ("coverage", "coverage"),
+            ):
+                with self.subTest(kind=kind):
+                    output = io.StringIO()
+                    with redirect_stdout(output):
+                        exit_code = probe_commodity_sources.main(
+                            [
+                                "--config", str(config_path),
+                                "--as-of", "2026-08-23",
+                                "--provider", "eia",
+                            ],
+                            client=Client(kind),
+                            environ={"EIA_API_KEY": "probe-secret"},
+                        )
+                    payload = json.loads(output.getvalue())
+                    self.assertEqual(exit_code, 1)
+                    self.assertEqual(payload["phase"], expected_phase)
+                    self.assertEqual(payload["attempts"], 2)
+
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = probe_commodity_sources.main(
+                    [
+                        "--config", str(config_path),
+                        "--as-of", "2026-08-23",
+                        "--provider", "eia",
+                    ],
+                    client=Client("success", attempts=1.5),
+                    environ={"EIA_API_KEY": "probe-secret"},
+                )
+            payload = json.loads(output.getvalue())
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(payload["phase"], "config")
+            self.assertEqual(payload["error_code"], "EIA_PROBE_ATTEMPTS_INVALID")
+
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = probe_commodity_sources.main(
+                    [
+                        "--config", str(config_path),
+                        "--as-of", "2026-08-23",
+                        "--provider", "eia",
+                    ],
+                    client=Client("metadata", attempts=0),
+                    environ={"EIA_API_KEY": "probe-secret"},
+                )
+            payload = json.loads(output.getvalue())
+            self.assertEqual(exit_code, 1)
+            self.assertEqual(payload["phase"], "config")
+            self.assertEqual(payload["attempts"], 1)
+            self.assertEqual(payload["error_code"], "EIA_PROBE_ATTEMPTS_INVALID")
+
     def test_eia_probe_is_sanitized_and_leaves_every_product_tree_byte_identical(self):
         from pipeline.internal.scripts import probe_commodity_sources
 
         class Client:
+            attempts = 1
+
             def fetch_metadata(self, spec, expected):
                 self.route = spec.route
 
@@ -321,6 +452,332 @@ def corn_esr_config() -> dict:
 
 
 class ContextProviderTests(unittest.TestCase):
+    def test_cftc_and_usda_transport_boundaries_preserve_policy_secret_and_parse_trace(self):
+        policies = providers_module.load_commodity_http_policies()
+
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr("fixture.txt", "header\n")
+
+        cftc_cases = (
+            (
+                "cftc_tff",
+                providers_module.parse_cftc_tff_csv,
+                lambda http: providers_module._cftc_tff_provider(
+                    object(), date(2026, 1, 1), date(2026, 1, 4),
+                    {"13874A": "sp500"}, 10, http,
+                ),
+                archive_buffer.getvalue(),
+            ),
+            (
+                "cftc_disaggregated",
+                providers_module.parse_cftc_disaggregated_csv,
+                lambda http: providers_module._cftc_disaggregated_provider(
+                    object(), date(2026, 1, 1), date(2026, 1, 4),
+                    [{
+                        "contract_code": "088691",
+                        "market_name": "GOLD - COMMODITY EXCHANGE INC.",
+                        "commodity_code": "GOLD_COMEX",
+                        "commodity_family": "gold",
+                        "percentile_window": "156",
+                        "percentile_min_observations": "52",
+                    }],
+                    10,
+                    http,
+                ),
+                b"malformed,csv\n",
+            ),
+        )
+        for provider, parser, invoke, body in cftc_cases:
+            with self.subTest(provider=provider):
+                calls = []
+
+                def fake_get(_session, url, **kwargs):
+                    calls.append((url, kwargs))
+                    return OfficialHttpResponse(
+                        body=body,
+                        url=url,
+                        headers={},
+                        trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                    )
+
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module,
+                    parser.__name__,
+                    side_effect=ValueError(f"{provider} parser rejected fixture"),
+                ):
+                    with self.assertRaises(ProviderPhaseError) as raised:
+                        invoke(policies[provider])
+
+                self.assertEqual(raised.exception.failure_phase, "parse")
+                self.assertEqual(raised.exception.attempts, 2)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(calls[0][1]["policy"], policies[provider].policy)
+                self.assertEqual(calls[0][1]["audit_secrets"], ())
+
+        for provider, invoke in (
+            (
+                "usda_psd",
+                lambda http: providers_module._usda_psd_provider(
+                    object(), date(2026, 8, 30), [corn_psd_config()],
+                    "usda-secret", http,
+                ),
+            ),
+            (
+                "usda_esr",
+                lambda http: providers_module._usda_esr_provider(
+                    object(), date(2026, 8, 30), [corn_esr_config()],
+                    "usda-secret", http,
+                ),
+            ),
+        ):
+            with self.subTest(provider=provider):
+                calls = []
+
+                def fake_get(_session, url, **kwargs):
+                    calls.append((url, kwargs))
+                    body = json.dumps([{"fixture": "identity"}]).encode()
+                    return OfficialHttpResponse(
+                        body=body,
+                        url=url,
+                        headers={},
+                        trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                    )
+
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module,
+                    "parse_usda_lookup",
+                    side_effect=ValueError(f"{provider} lookup rejected fixture"),
+                ):
+                    with self.assertRaises(ProviderPhaseError) as raised:
+                        invoke(policies[provider])
+
+                self.assertEqual(raised.exception.failure_phase, "parse")
+                self.assertEqual(raised.exception.attempts, 2)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(calls[0][1]["policy"], policies[provider].policy)
+                self.assertEqual(calls[0][1]["audit_secrets"], ("usda-secret",))
+                self.assertEqual(calls[0][1]["headers"]["API_KEY"], "usda-secret")
+
+    def test_cme_and_usgs_binary_boundaries_preserve_each_provider_bytes_and_policy(self):
+        policies = providers_module.load_commodity_http_policies()
+        metal_specs = {
+            row["provider"]: row for row in load_config_rows("context.metals")
+        }
+
+        for provider in ("comex_copper_stocks", "comex_gold_stocks"):
+            with self.subTest(provider=provider):
+                raw = (provider + "\x00\xff").encode("latin1")
+                calls = []
+
+                def fake_get(_session, url, **kwargs):
+                    calls.append((url, kwargs))
+                    return OfficialHttpResponse(
+                        body=raw,
+                        url=url,
+                        headers={},
+                        trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                    )
+
+                unit = str(metal_specs[provider]["expected_unit"])
+                parsed = [
+                    {
+                        "report_date": date(2026, 8, 28),
+                        "scope": "exchange",
+                        "inventory_type": kind,
+                        "value": value,
+                        "unit": unit,
+                    }
+                    for kind, value in (
+                        ("registered", 1.0), ("eligible", 2.0), ("total", 3.0)
+                    )
+                ]
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module, "parse_comex_stocks", return_value=parsed
+                ), patch.object(
+                    providers_module, "comex_schema_signature", return_value="fixture"
+                ):
+                    result = providers_module._comex_stocks_provider(
+                        object(), date(2026, 8, 30), metal_specs[provider],
+                        policies[provider],
+                    )
+
+                self.assertEqual(result.raw_text, raw)
+                self.assertEqual(result.attempts, 2)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(calls[0][1]["policy"], policies[provider].policy)
+                self.assertEqual(calls[0][1]["audit_secrets"], ())
+
+                calls.clear()
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module,
+                    "parse_comex_stocks",
+                    side_effect=ValueError(f"{provider} parser rejected fixture"),
+                ):
+                    rejected = providers_module._comex_stocks_provider(
+                        object(), date(2026, 8, 30), metal_specs[provider],
+                        policies[provider],
+                    )
+                self.assertEqual(rejected.status, "FETCH_FAILED")
+                self.assertEqual(rejected.attempts, 2)
+                self.assertEqual(rejected.raw_text, raw)
+                self.assertEqual(len(calls), 1)
+
+        for provider in ("usgs_copper_structural", "usgs_gold_structural"):
+            with self.subTest(provider=provider):
+                raw = (provider + "\x00\xff").encode("latin1")
+                calls = []
+
+                def fake_get(_session, url, **kwargs):
+                    calls.append((url, kwargs))
+                    return OfficialHttpResponse(
+                        body=raw,
+                        url=url,
+                        headers={},
+                        trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                    )
+
+                unit = str(metal_specs[provider]["expected_unit"])
+                parsed = [
+                    {
+                        "measurement": measurement,
+                        "value": value,
+                        "unit": unit,
+                        "reference_period": "2025",
+                    }
+                    for measurement, value in (
+                        ("mine_production", 1.0), ("reserves", 2.0)
+                    )
+                ]
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module, "parse_usgs_mcs_pdf", return_value=parsed
+                ):
+                    result = providers_module._usgs_structural_provider(
+                        object(), date(2026, 8, 30), metal_specs[provider],
+                        policies[provider],
+                    )
+
+                self.assertEqual(result.raw_text, raw)
+                self.assertEqual(result.attempts, 2)
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(calls[0][1]["policy"], policies[provider].policy)
+                self.assertEqual(calls[0][1]["audit_secrets"], ())
+
+                calls.clear()
+                with patch.object(providers_module, "official_get", side_effect=fake_get), patch.object(
+                    providers_module,
+                    "parse_usgs_mcs_pdf",
+                    side_effect=ValueError(f"{provider} parser rejected fixture"),
+                ):
+                    rejected = providers_module._usgs_structural_provider(
+                        object(), date(2026, 8, 30), metal_specs[provider],
+                        policies[provider],
+                    )
+                self.assertEqual(rejected.status, "FETCH_FAILED")
+                self.assertEqual(rejected.attempts, 2)
+                self.assertEqual(rejected.raw_text, raw)
+                self.assertEqual(len(calls), 1)
+
+    def test_context_eia_metadata_requires_explicit_total(self):
+        spec = EiaBatchSpec(
+            route="natural-gas/stor/wkly",
+            facets={"series": ("SERIES",)},
+            frequency="weekly",
+            start="2026-08-01",
+            end="2026-08-23",
+            page_length=1,
+        )
+        policy = providers_module.load_commodity_http_policies()["eia"].policy
+        client = providers_module._OfficialEiaClient(object(), "fixture-key", policy)
+        body = json.dumps(
+            {"response": {"facets": [{"id": "SERIES"}]}}
+        ).encode()
+        response = OfficialHttpResponse(
+            body=body,
+            url="https://api.eia.gov/v2/facet/series/",
+            headers={},
+            trace=OfficialHttpTrace(1, 1, [200], "fixture"),
+        )
+
+        with patch.object(providers_module, "official_get", return_value=response):
+            with self.assertRaisesRegex(ValueError, "total"):
+                client.fetch_metadata(
+                    spec,
+                    {"SERIES": {"facets": {"series": "SERIES"}}},
+                )
+
+    def test_eia_retry_trace_survives_post_transport_parse_and_coverage_failures(self):
+        series = "NW2_EPG0_SWO_R48_BCF"
+        configured = [{
+            "provider": "eia_natural_gas",
+            "commodity_code": "NATGAS_HH",
+            "commodity_family": "natural_gas",
+            "route": "natural-gas/stor/wkly",
+            "frequency": "weekly",
+            "facets": {"duoarea": "R48", "process": "SWO", "series": series},
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_name": "Lower 48 storage",
+            "measurement_kind": "inventory",
+            "source_description": "Lower 48 storage",
+            "expected_unit": "BCF",
+            "freshness_days": "10",
+        }]
+        policy = providers_module.load_commodity_http_policies()["eia"]
+
+        def response(body, url):
+            return OfficialHttpResponse(
+                body=json.dumps(body).encode(),
+                url=url,
+                headers={},
+                trace=OfficialHttpTrace(2, 1, [503, 200], url),
+            )
+
+        for label, row, phase in (
+            (
+                "parse",
+                {
+                    "period": "2026-08-21", "series": series,
+                    "duoarea": "R48", "process": "SWO",
+                    "series-description": "Lower 48 storage",
+                    "units": "WRONG", "value": "3125",
+                },
+                "parse",
+            ),
+            (
+                "coverage",
+                None,
+                "coverage",
+            ),
+        ):
+            with self.subTest(label=label):
+                def fake_get(_session, url, **_kwargs):
+                    if "/facet/" in url:
+                        facet = url.rstrip("/").split("/")[-1]
+                        identifiers = {
+                            "duoarea": "R48", "process": "SWO", "series": series,
+                        }
+                        return response(
+                            {"response": {"total": 1, "facets": [
+                                {"id": identifiers[facet]}
+                            ]}},
+                            url,
+                        )
+                    rows = [] if row is None else [row]
+                    return response(
+                        {"response": {"total": len(rows), "data": rows}},
+                        url,
+                    )
+
+                with patch.object(providers_module, "official_get", side_effect=fake_get):
+                    with self.assertRaises(ProviderPhaseError) as raised:
+                        providers_module._eia_provider(
+                            object(), date(2026, 8, 23), configured, "fixture-key",
+                            "eia_natural_gas", policy,
+                        )
+
+                self.assertEqual(raised.exception.failure_phase, phase)
+                self.assertEqual(raised.exception.attempts, 2)
+
     def test_eia_official_transport_uses_config_policy_secret_audit_and_propagates_retry_attempts(self):
         series = "NW2_EPG0_SWO_R48_BCF"
         configured = [{
@@ -348,7 +805,10 @@ class ContextProviderTests(unittest.TestCase):
                 selected = url.rstrip("/").split("/")[-1]
                 ids = {"duoarea": "R48", "process": "SWO", "series": series}
                 body = json.dumps(
-                    {"response": {"facets": [{"id": ids[selected]}]}}
+                    {"response": {
+                        "total": 1,
+                        "facets": [{"id": ids[selected]}],
+                    }}
                 ).encode()
                 attempts = 1
             else:
@@ -581,9 +1041,20 @@ class ContextProviderTests(unittest.TestCase):
                 environ={"USDA_API_KEY": "fixture-key"},
                 session=session,
             )["usda_psd"]
-            result = provider.fetch()
+            def retrying_get(active_session, url, **kwargs):
+                response = active_session.get(url, **kwargs)
+                return OfficialHttpResponse(
+                    body=response.content,
+                    url=url,
+                    headers={},
+                    trace=OfficialHttpTrace(2, 1, [503, 200], url),
+                )
+
+            with patch.object(providers_module, "official_get", side_effect=retrying_get):
+                result = provider.fetch()
 
         self.assertEqual(result.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(result.attempts, 2)
         self.assertEqual(result.rows, [])
         self.assertIn("45 calendar days", result.notes)
         self.assertNotIn(data_url, [url for url, _kwargs in session.calls])
@@ -932,7 +1403,9 @@ class ContextProviderTests(unittest.TestCase):
                 ("total", 50.0),
             )
         ]
-        with patch.object(providers_module, "parse_comex_stocks", return_value=parsed), patch.object(
+        with patch.object(providers_module, "_official_bytes", return_value=(b"fixture", 2)), patch.object(
+            providers_module, "parse_comex_stocks", return_value=parsed
+        ), patch.object(
             providers_module,
             "comex_schema_signature",
             return_value="fixture",
@@ -957,6 +1430,7 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(boundary.status, "OK")
         self.assertEqual(len(boundary.rows), 3)
         self.assertEqual(stale.status, "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(stale.attempts, 2)
         self.assertEqual(stale.rows, [])
         self.assertIn("5 trading days", stale.notes)
 
@@ -1377,10 +1851,13 @@ class ContextProviderTests(unittest.TestCase):
                     raise RuntimeError("natural gas transport failed")
                 if "/facet/series/" in url:
                     return TextResponse(json.dumps({
-                        "response": {"facets": [{"id": "A&B", "name": "Crude"}]}
+                        "response": {
+                            "total": 1,
+                            "facets": [{"id": "A&B", "name": "Crude"}],
+                        }
                     }))
                 return TextResponse(json.dumps({
-                    "response": {"data": [
+                    "response": {"total": 2, "data": [
                         {
                             "period": "2026-08-21",
                             "series": "A&B",
@@ -1484,11 +1961,12 @@ class ContextProviderTests(unittest.TestCase):
                 if "/facet/series/" in url:
                     return TextResponse(json.dumps({
                         "response": {
+                            "total": 1,
                             "facets": [{"id": "WCESTUS1", "name": "Crude"}]
                         }
                     }))
                 return TextResponse(json.dumps({
-                    "response": {"data": [
+                    "response": {"total": 2, "data": [
                         {
                             "period": "2026-08-21",
                             "series": "WCESTUS1",
@@ -1596,8 +2074,17 @@ class ContextProviderTests(unittest.TestCase):
                 session=TextSession(text),
             )["cftc_disaggregated"]
 
-            with self.assertRaisesRegex(ValueError, "stale.*10.*088691"):
-                provider.fetch()
+            with patch.object(
+                providers_module,
+                "_official_text",
+                return_value=(text, 2),
+            ):
+                with self.assertRaises(ProviderPhaseError) as raised:
+                    provider.fetch()
+
+        self.assertEqual(raised.exception.failure_phase, "freshness")
+        self.assertEqual(raised.exception.attempts, 2)
+        self.assertRegex(raised.exception.safe_message, "stale.*10.*088691")
 
     def test_disaggregated_provider_accepts_contract_within_freshness_window(self):
         text = CFTC_COLUMNS + (
@@ -1655,11 +2142,15 @@ class ContextProviderTests(unittest.TestCase):
                 session=TextSession(text),
             )["cftc_disaggregated"]
 
-            with self.assertRaisesRegex(
-                ValueError,
-                "^CFTC response missing configured contracts for requested window: 088691$",
-            ):
+            with self.assertRaises(ProviderPhaseError) as raised:
                 provider.fetch()
+
+        self.assertEqual(raised.exception.failure_phase, "coverage")
+        self.assertEqual(raised.exception.attempts, 1)
+        self.assertEqual(
+            raised.exception.safe_message,
+            "CFTC response missing configured contracts for requested window: 088691",
+        )
 
     def test_metric_rows_emit_shared_contract(self):
         rows = metric_rows(

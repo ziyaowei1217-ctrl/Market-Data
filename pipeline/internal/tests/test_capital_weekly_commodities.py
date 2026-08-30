@@ -10,6 +10,7 @@ from pipeline.internal.capital_weekly.context.commodities import (
     parse_eia_series,
 )
 from pipeline.internal.capital_weekly.context.eia_commodities import (
+    EiaBatchError,
     EiaBatchSpec,
     build_eia_batch_specs,
     fetch_eia_batches,
@@ -179,6 +180,66 @@ class CommodityFundamentalTests(unittest.TestCase):
         duplicate = [specs[0], replace(specs[0], facets={"series": ("RWTC",)})]
         with self.assertRaisesRegex(ValueError, "duplicate.*RWTC"):
             fetch_eia_batches(Client(), duplicate, expected_metadata=metadata)
+
+    def test_fetch_eia_batches_requires_explicit_strict_and_consistent_total(self):
+        spec = EiaBatchSpec(
+            route="petroleum/pri/spt",
+            facets={"series": ("RWTC",)},
+            frequency="daily",
+            start="2026-08-01",
+            end="2026-08-23",
+            page_length=1,
+        )
+        metadata = {
+            "RWTC": {
+                "facets": {"series": "RWTC"},
+                "source_description": "Cushing, OK WTI Spot Price FOB",
+                "expected_unit": "$/BBL",
+            }
+        }
+
+        def row(period):
+            return {
+                "period": period,
+                "series": "RWTC",
+                "series-description": "Cushing, OK WTI Spot Price FOB",
+                "units": "$/BBL",
+                "value": "63.0",
+            }
+
+        class Client:
+            def __init__(self, pages):
+                self.pages = list(pages)
+
+            def fetch_metadata(self, _spec, _expected):
+                return None
+
+            def fetch_page(self, _spec, *, offset, length):
+                self.request = (offset, length)
+                return self.pages.pop(0)
+
+        malformed = (
+            ("missing", {"response": {"data": [row("2026-08-21")]}}),
+            ("negative", {"response": {"total": -1, "data": [row("2026-08-21")]}}),
+            ("float", {"response": {"total": 1.5, "data": [row("2026-08-21")]}}),
+            ("string", {"response": {"total": "1", "data": [row("2026-08-21")]}}),
+        )
+        for label, payload in malformed:
+            with self.subTest(label=label):
+                with self.assertRaisesRegex(EiaBatchError, "total") as raised:
+                    fetch_eia_batches(
+                        Client([payload]), [spec], expected_metadata=metadata
+                    )
+                self.assertEqual(raised.exception.phase, "coverage")
+
+        inconsistent = Client([
+            {"response": {"total": 2, "data": [row("2026-08-21")]}},
+            {"response": {"total": 3, "data": [row("2026-08-20")]}},
+            {"response": {"total": 3, "data": [row("2026-08-19")]}},
+        ])
+        with self.assertRaisesRegex(EiaBatchError, "changed across pages") as raised:
+            fetch_eia_batches(inconsistent, [spec], expected_metadata=metadata)
+        self.assertEqual(raised.exception.phase, "coverage")
 
     def test_current_lower_48_description_matches_production_config(self):
         spec = next(

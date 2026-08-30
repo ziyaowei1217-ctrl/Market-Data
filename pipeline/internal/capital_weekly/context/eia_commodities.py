@@ -97,6 +97,14 @@ class EiaBatchSpec:
         object.__setattr__(self, "facets", normalized)
 
 
+class EiaBatchError(ValueError):
+    """A post-transport EIA validation failure with a provider phase."""
+
+    def __init__(self, phase: str, message: str) -> None:
+        self.phase = phase
+        super().__init__(message)
+
+
 def _positive_number(value: Any, field: str) -> float:
     try:
         parsed = float(value)
@@ -230,6 +238,30 @@ def _eia_payload(value: Any) -> dict[str, Any]:
     raise ValueError("EIA batch response must be a JSON object")
 
 
+def eia_response_total(
+    response: Mapping[str, Any],
+    *,
+    offset: int,
+    page_count: int,
+    requested_length: int,
+    prior_total: int | None = None,
+) -> int:
+    if "total" not in response:
+        raise ValueError("EIA response total is required")
+    total = response["total"]
+    if isinstance(total, bool) or not isinstance(total, int) or total < 0:
+        raise ValueError("EIA response total must be a non-negative integer")
+    if offset < 0 or page_count < 0 or requested_length <= 0:
+        raise ValueError("EIA pagination offset and page size are invalid")
+    if page_count > requested_length:
+        raise ValueError("EIA page contains more rows than requested length")
+    if offset + page_count > total:
+        raise ValueError("EIA page exceeds response total")
+    if prior_total is not None and total != prior_total:
+        raise ValueError("EIA response total changed across pages")
+    return total
+
+
 def _validate_eia_batch_rows(
     payload: Mapping[str, Any],
     expected: Mapping[str, Mapping[str, Any]],
@@ -285,33 +317,51 @@ def fetch_eia_batches(
 
     for spec in specs:
         selected = {series: expected_metadata[series] for series in spec.facets["series"]}
-        client.fetch_metadata(spec, selected)
+        try:
+            client.fetch_metadata(spec, selected)
+        except ValueError as error:
+            raise EiaBatchError("metadata", str(error)) from error
 
     pages: list[dict] = []
     observed: set[str] = set()
     for spec in specs:
         selected = {series: expected_metadata[series] for series in spec.facets["series"]}
         offset = 0
+        expected_total: int | None = None
         while True:
-            payload = _eia_payload(
-                client.fetch_page(spec, offset=offset, length=spec.page_length)
-            )
-            observed.update(_validate_eia_batch_rows(payload, selected))
+            try:
+                payload = _eia_payload(
+                    client.fetch_page(spec, offset=offset, length=spec.page_length)
+                )
+                observed.update(_validate_eia_batch_rows(payload, selected))
+            except ValueError as error:
+                raise EiaBatchError("parse", str(error)) from error
             pages.append(payload)
             response = payload.get("response", {})
             data = response.get("data", [])
             try:
-                total = int(response.get("total", len(data)))
-            except (TypeError, ValueError) as error:
-                raise ValueError("EIA response total must be an integer") from error
+                total = eia_response_total(
+                    response,
+                    offset=offset,
+                    page_count=len(data),
+                    requested_length=spec.page_length,
+                    prior_total=expected_total,
+                )
+            except ValueError as error:
+                raise EiaBatchError("coverage", str(error)) from error
+            expected_total = total
             offset += len(data)
             if offset >= total:
                 break
             if not data:
-                raise ValueError("EIA pagination stopped before total coverage")
+                raise EiaBatchError(
+                    "coverage", "EIA pagination stopped before total coverage"
+                )
     missing = sorted(expected_keys - observed)
     if missing:
-        raise ValueError("EIA batch missing configured series: " + ", ".join(missing))
+        raise EiaBatchError(
+            "coverage", "EIA batch missing configured series: " + ", ".join(missing)
+        )
     return pages
 
 
@@ -668,10 +718,12 @@ def validate_facet_metadata(
 
 __all__ = [
     "CommodityHttpSpec",
+    "EiaBatchError",
     "EiaBatchSpec",
     "EIA_FAMILIES",
     "EIA_PROVIDERS",
     "build_eia_batch_specs",
+    "eia_response_total",
     "calculate_weekly_change",
     "fetch_eia_batches",
     "latest_and_changes",

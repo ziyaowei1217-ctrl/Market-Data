@@ -31,6 +31,7 @@ from pipeline.internal.capital_weekly.commodity_prices import (
 from pipeline.internal.capital_weekly.context.eia_commodities import (
     CommodityHttpSpec,
     build_eia_batch_specs,
+    eia_response_total,
     fetch_eia_batches,
     load_commodity_http_policies,
 )
@@ -385,6 +386,7 @@ class _MacroEiaClient:
         required = set(expected)
         identifiers: set[str] = set()
         offset = 0
+        expected_total: int | None = None
         while not required <= identifiers:
             body = self._get(
                 f"https://api.eia.gov/v2/{spec.route}/facet/series/",
@@ -405,7 +407,15 @@ class _MacroEiaClient:
                 for item in values
                 if isinstance(item, Mapping)
             )
-            total = int(payload.get("response", {}).get("total", len(values)))
+            response = payload.get("response", {})
+            total = eia_response_total(
+                response,
+                offset=offset,
+                page_count=len(values),
+                requested_length=spec.page_length,
+                prior_total=expected_total,
+            )
+            expected_total = total
             offset += len(values)
             if offset >= total:
                 break

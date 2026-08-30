@@ -44,9 +44,11 @@ from .commodities import (
 )
 from .eia_commodities import (
     CommodityHttpSpec,
+    EiaBatchError,
     EIA_FAMILIES,
     EIA_PROVIDERS,
     build_eia_batch_specs,
+    eia_response_total,
     fetch_eia_batches,
     latest_and_changes,
     load_commodity_http_policies,
@@ -487,6 +489,7 @@ def _usda_point_in_time_unavailable(
     label: str,
     raw_responses: list[tuple[str, bytes]],
     detail: str,
+    attempts: int,
 ) -> ProviderResult:
     return ProviderResult(
         category="commodity_fundamentals",
@@ -496,6 +499,7 @@ def _usda_point_in_time_unavailable(
         source_url=USDA_FAS_PORTAL_URL,
         status="POINT_IN_TIME_UNAVAILABLE",
         notes=f"{label} point-in-time unavailable: {detail}",
+        attempts=attempts,
     )
 
 
@@ -602,6 +606,31 @@ def _usda_psd_provider(
     api_key: str | None,
     http: CommodityHttpSpec,
 ) -> ProviderResult:
+    trace = {"attempts": 1, "requests": 0}
+    try:
+        return _usda_psd_provider_impl(
+            session, end, config, api_key, http, trace
+        )
+    except (OfficialHttpError, ProviderPhaseError):
+        raise
+    except ValueError as error:
+        phase = "parse" if trace["requests"] else "config"
+        raise ProviderPhaseError(
+            f"USDA_PSD_{phase.upper()}_FAILED",
+            phase,
+            sanitize_audit_text(error, secrets=(api_key,) if api_key else ()),
+            trace["attempts"],
+        ) from error
+
+
+def _usda_psd_provider_impl(
+    session: requests.Session,
+    end: date,
+    config: list[dict[str, Any]],
+    api_key: str | None,
+    http: CommodityHttpSpec,
+    trace: dict[str, int],
+) -> ProviderResult:
     if not api_key:
         return _usda_not_configured("usda_psd")
     specs = _validated_usda_config(config, provider="usda_psd")
@@ -614,6 +643,8 @@ def _usda_psd_provider(
             session, path, api_key, http.policy
         )
         transport_attempts = max(transport_attempts, attempts)
+        trace["attempts"] = transport_attempts
+        trace["requests"] += 1
         raw_responses.append((url, content))
         return url, payload
 
@@ -671,6 +702,7 @@ def _usda_psd_provider(
                         f"latest eligible release is older than configured "
                         f"{config_item['freshness_days']} calendar days"
                     ),
+                    attempts=transport_attempts,
                 )
             for country_name, country_code in countries.items():
                 if country_name == "World":
@@ -697,6 +729,7 @@ def _usda_psd_provider(
                         label="PSD",
                         raw_responses=raw_responses,
                         detail=str(error),
+                        attempts=transport_attempts,
                     )
                 parsed = parse_psd_records(
                     vintage_records,
@@ -770,6 +803,31 @@ def _usda_esr_provider(
     api_key: str | None,
     http: CommodityHttpSpec,
 ) -> ProviderResult:
+    trace = {"attempts": 1, "requests": 0}
+    try:
+        return _usda_esr_provider_impl(
+            session, end, config, api_key, http, trace
+        )
+    except (OfficialHttpError, ProviderPhaseError):
+        raise
+    except ValueError as error:
+        phase = "parse" if trace["requests"] else "config"
+        raise ProviderPhaseError(
+            f"USDA_ESR_{phase.upper()}_FAILED",
+            phase,
+            sanitize_audit_text(error, secrets=(api_key,) if api_key else ()),
+            trace["attempts"],
+        ) from error
+
+
+def _usda_esr_provider_impl(
+    session: requests.Session,
+    end: date,
+    config: list[dict[str, Any]],
+    api_key: str | None,
+    http: CommodityHttpSpec,
+    trace: dict[str, int],
+) -> ProviderResult:
     if not api_key:
         return _usda_not_configured("usda_esr")
     specs = _validated_usda_config(config, provider="usda_esr")
@@ -782,6 +840,8 @@ def _usda_esr_provider(
             session, path, api_key, http.policy
         )
         transport_attempts = max(transport_attempts, attempts)
+        trace["attempts"] = transport_attempts
+        trace["requests"] += 1
         raw_responses.append((url, content))
         return url, payload
 
@@ -826,6 +886,7 @@ def _usda_esr_provider(
                         f"latest eligible release is older than configured "
                         f"{config_item['freshness_days']} calendar days"
                     ),
+                    attempts=transport_attempts,
                 )
             data_path = (
                 f"/api/esr/exports/commodityCode/{api_commodity}/"
@@ -846,6 +907,7 @@ def _usda_esr_provider(
                     label="ESR",
                     raw_responses=raw_responses,
                     detail=str(error),
+                    attempts=transport_attempts,
                 )
             vintage_records = [
                 {
@@ -1143,6 +1205,7 @@ def _comex_stocks_provider(
                 source_url=spec["source_url"],
                 status="POINT_IN_TIME_UNAVAILABLE",
                 notes=f"{notes}; {cutoff_note}",
+                attempts=attempts,
             )
         rows: list[dict[str, Any]] = []
         for observation in parsed:
@@ -1521,14 +1584,23 @@ def _cftc_tff_provider(
         content, attempts = _official_bytes(session, source_url, http.policy)
         transport_attempts = max(transport_attempts, attempts)
         raw_archives.append(content)
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            members = [
-                name for name in archive.namelist() if name.lower().endswith((".txt", ".csv"))
-            ]
-            if not members:
-                raise ValueError("CFTC archive contained no text data")
-            text = archive.read(members[0]).decode("utf-8-sig", errors="replace")
-        parsed.extend(parse_cftc_tff_csv(text, contract_codes))
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as archive:
+                members = [
+                    name
+                    for name in archive.namelist()
+                    if name.lower().endswith((".txt", ".csv"))
+                ]
+                if not members:
+                    raise ValueError("CFTC archive contained no text data")
+                text = archive.read(members[0]).decode(
+                    "utf-8-sig", errors="replace"
+                )
+            parsed.extend(parse_cftc_tff_csv(text, contract_codes))
+        except (ValueError, zipfile.BadZipFile) as error:
+            raise ProviderPhaseError(
+                "CFTC_TFF_PARSE_FAILED", "parse", str(error), transport_attempts
+            ) from error
     eligible = [
         row
         for row in parsed
@@ -1542,8 +1614,11 @@ def _cftc_tff_provider(
             latest_by_code[code] = row
     missing = sorted(set(contract_codes) - set(latest_by_code))
     if missing:
-        raise ValueError(
-            "CFTC response missing eligible configured contracts: " + ", ".join(missing)
+        raise ProviderPhaseError(
+            "CFTC_TFF_COVERAGE_FAILED",
+            "coverage",
+            "CFTC response missing eligible configured contracts: " + ", ".join(missing),
+            transport_attempts,
         )
     stale = sorted(
         code
@@ -1551,9 +1626,12 @@ def _cftc_tff_provider(
         if (end - row["expected_release_date"]).days > freshness_days
     )
     if stale:
-        raise ValueError(
+        raise ProviderPhaseError(
+            "CFTC_TFF_FRESHNESS_FAILED",
+            "freshness",
             f"CFTC release is stale beyond configured {freshness_days} days: "
-            + ", ".join(stale)
+            + ", ".join(stale),
+            transport_attempts,
         )
     selected = list(latest_by_code.values())
     rows = []
@@ -1624,11 +1702,19 @@ def _cftc_disaggregated_provider(
     text, transport_attempts = _official_text(
         session, CFTC_DISAGGREGATED_URL, http.policy, params=params
     )
-    parsed = parse_cftc_disaggregated_csv(text, contracts)
-    eligible = filter_known_as_of(
-        [row for row in parsed if row["report_date"] <= end],
-        end,
-    )
+    try:
+        parsed = parse_cftc_disaggregated_csv(text, contracts)
+        eligible = filter_known_as_of(
+            [row for row in parsed if row["report_date"] <= end],
+            end,
+        )
+    except ValueError as error:
+        raise ProviderPhaseError(
+            "CFTC_DISAGGREGATED_PARSE_FAILED",
+            "parse",
+            str(error),
+            transport_attempts,
+        ) from error
     latest_by_code: dict[str, dict[str, Any]] = {}
     for row in eligible:
         code = str(row["contract_code"])
@@ -1641,9 +1727,12 @@ def _cftc_disaggregated_provider(
     selected_codes = {str(row["contract_code"]) for row in selected}
     missing_codes = sorted(configured_codes - selected_codes)
     if missing_codes:
-        raise ValueError(
+        raise ProviderPhaseError(
+            "CFTC_DISAGGREGATED_COVERAGE_FAILED",
+            "coverage",
             "CFTC response missing configured contracts for requested window: "
-            + ", ".join(missing_codes)
+            + ", ".join(missing_codes),
+            transport_attempts,
         )
     stale_codes = sorted(
         code
@@ -1652,9 +1741,12 @@ def _cftc_disaggregated_provider(
         > freshness_days
     )
     if stale_codes:
-        raise ValueError(
+        raise ProviderPhaseError(
+            "CFTC_DISAGGREGATED_FRESHNESS_FAILED",
+            "freshness",
             f"CFTC release is stale beyond configured {freshness_days} days: "
-            + ", ".join(stale_codes)
+            + ", ".join(stale_codes),
+            transport_attempts,
         )
     rows = []
     measurements = [("open_interest", "open_interest", None)]
@@ -1799,6 +1891,7 @@ class _OfficialEiaClient:
         for facet, required in sorted(wanted.items()):
             identifiers: set[str] = set()
             offset = 0
+            expected_total: int | None = None
             while not required <= identifiers:
                 body = self._get(
                     f"{EIA_SOURCE_URL}{spec.route}/facet/{facet}/",
@@ -1825,7 +1918,14 @@ class _OfficialEiaClient:
                     if isinstance(item, Mapping)
                 )
                 response = payload.get("response", {})
-                total = int(response.get("total", len(values)))
+                total = eia_response_total(
+                    response,
+                    offset=offset,
+                    page_count=len(values),
+                    requested_length=spec.page_length,
+                    prior_total=expected_total,
+                )
+                expected_total = total
                 offset += len(values)
                 if offset >= total:
                     break
@@ -1904,6 +2004,13 @@ def _eia_provider(
             error.safe_message,
             error.attempts,
         ) from None
+    except EiaBatchError as error:
+        raise ProviderPhaseError(
+            f"EIA_{error.phase.upper()}_FAILED",
+            error.phase,
+            str(error),
+            client.attempts,
+        ) from error
 
     raw_rows = [
         row
@@ -1923,13 +2030,26 @@ def _eia_provider(
             },
             separators=(",", ":"),
         )
-        parsed = parse_eia_metric_series(text, item)
-        metrics = latest_and_changes(parsed, end)
+        try:
+            parsed = parse_eia_metric_series(text, item)
+        except ValueError as error:
+            raise ProviderPhaseError(
+                "EIA_PARSE_FAILED", "parse", str(error), client.attempts
+            ) from error
+        try:
+            metrics = latest_and_changes(parsed, end)
+        except ValueError as error:
+            raise ProviderPhaseError(
+                "EIA_COVERAGE_FAILED", "coverage", str(error), client.attempts
+            ) from error
         latest_date = period_date(metrics[0]["period"])
         if (end - latest_date).days > item["freshness_days"]:
-            raise ValueError(
+            raise ProviderPhaseError(
+                "EIA_FRESHNESS_FAILED",
+                "freshness",
                 f"EIA series {item['metric_code']} is stale at "
-                f"{metrics[0]['period']}"
+                f"{metrics[0]['period']}",
+                client.attempts,
             )
         for metric in metrics:
             rows.extend(

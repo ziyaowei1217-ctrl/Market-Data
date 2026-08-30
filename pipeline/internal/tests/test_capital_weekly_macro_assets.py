@@ -14,6 +14,12 @@ import pandas as pd
 import requests
 from openpyxl import Workbook
 
+from pipeline.internal.capital_weekly import macro_assets as macro_assets_module
+from pipeline.internal.capital_weekly.context.eia_commodities import EiaBatchSpec
+from pipeline.internal.capital_weekly.official_http import (
+    OfficialHttpResponse,
+    OfficialHttpTrace,
+)
 from pipeline.internal.capital_weekly.macro_assets import (
     _atomic_write_bytes,
     _session,
@@ -40,6 +46,74 @@ from pipeline.internal.capital_weekly.macro_assets import (
 
 
 class MacroAssetUniverseTests(unittest.TestCase):
+    def test_world_bank_transport_uses_exact_policy_and_does_not_retry_parser(self):
+        page = (
+            '<a href="https://thedocs.worldbank.org/official/'
+            'CMO-Historical-Data-Monthly.xlsx">Monthly prices</a>'
+        ).encode()
+        workbook = b"invalid-world-bank-workbook\x00\xff"
+        calls = []
+
+        def fake_get(_session, url, **kwargs):
+            calls.append((url, kwargs))
+            body = page if len(calls) == 1 else workbook
+            return OfficialHttpResponse(
+                body=body,
+                url=url,
+                headers={},
+                trace=OfficialHttpTrace(2, 1, [503, 200], url),
+            )
+
+        config = replace(
+            self._config("world_bank_pink_sheet", "Gold"),
+            source_url="https://www.worldbank.org/en/research/commodity-markets",
+            level_unit="$/toz",
+        )
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        policy = macro_assets_module.load_commodity_http_policies()[
+            "world_bank_pink_sheet"
+        ].policy
+
+        with patch.object(macro_assets_module, "official_get", side_effect=fake_get), patch.object(
+            macro_assets_module,
+            "parse_world_bank_monthly_prices",
+            side_effect=ValueError("World Bank parser rejected fixture"),
+        ) as parser:
+            with self.assertRaisesRegex(ValueError, "parser rejected"):
+                _fetch_config_history(config, session)
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(parser.call_count, 1)
+        self.assertTrue(all(kwargs["policy"] == policy for _, kwargs in calls))
+        self.assertTrue(all(kwargs["audit_secrets"] == () for _, kwargs in calls))
+
+    def test_macro_eia_metadata_requires_explicit_total(self):
+        spec = EiaBatchSpec(
+            route="petroleum/pri/spt",
+            facets={"series": ("RWTC",)},
+            frequency="daily",
+            start="2026-08-01",
+            end="2026-08-23",
+            page_length=1,
+        )
+        session = unittest.mock.Mock(_macro_attempt_trace=[], _macro_raw_parts=[])
+        http = macro_assets_module.load_commodity_http_policies()["eia"]
+        client = macro_assets_module._MacroEiaClient(
+            session, "fixture-key", http
+        )
+        body = json.dumps(
+            {"response": {"facets": [{"id": "RWTC"}]}}
+        ).encode()
+
+        with patch.object(
+            macro_assets_module, "_official_macro_get", return_value=body
+        ):
+            with self.assertRaisesRegex(ValueError, "total"):
+                client.fetch_metadata(
+                    spec,
+                    {"RWTC": {"facets": {"series": "RWTC"}}},
+                )
+
     def test_fred_overrides_the_browser_user_agent_with_requests_default(self):
         self.assertEqual(
             _session().headers["User-Agent"],
@@ -267,7 +341,10 @@ class MacroAssetUniverseTests(unittest.TestCase):
             content=text.encode(), text=text, status_code=200, headers={}
         )
         metadata_text = json.dumps(
-            {"response": {"facets": [{"id": "RWTC", "name": "WTI"}]}}
+            {"response": {
+                "total": 1,
+                "facets": [{"id": "RWTC", "name": "WTI"}],
+            }}
         )
         metadata_response = unittest.mock.Mock(
             content=metadata_text.encode(), text=metadata_text,
