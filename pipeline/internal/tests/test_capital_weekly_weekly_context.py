@@ -21,6 +21,8 @@ from pipeline.internal.capital_weekly.context.economic_releases import derive_pr
 
 
 EXPECTED_EMPTY_FIELDS = {
+    "company_fundamentals": list(CATEGORY_FIELDS["company_fundamentals"]),
+    "capital_markets": list(CATEGORY_FIELDS["capital_markets"]),
     "economic_releases": [
         "record_id",
         "indicator_code",
@@ -82,6 +84,7 @@ EXPECTED_EMPTY_FIELDS = {
         "source_url",
         "qc_flag",
     ],
+    "fund_flows": list(CATEGORY_FIELDS["fund_flows"]),
 }
 
 
@@ -588,6 +591,8 @@ class WeeklyContextTests(unittest.TestCase):
             "market_internals": [metric("VIX", 18.5)],
             "positioning_flows": [],
             "fund_flows": [],
+            "company_fundamentals": [],
+            "capital_markets": [],
             "company_events": [],
             "commodity_fundamentals": [],
             "financial_conditions": [],
@@ -599,6 +604,8 @@ class WeeklyContextTests(unittest.TestCase):
             publish_weekly_context_bundle(tables, output)
 
             expected = {
+                "capital_markets.csv",
+                "company_fundamentals.csv",
                 "events.csv",
                 "economic_releases.csv",
                 "market_internals.csv",
@@ -616,9 +623,12 @@ class WeeklyContextTests(unittest.TestCase):
             )
             self.assertEqual(snapshot["market_internals"][0]["value"], 18.5)
             for category in (
+                "capital_markets",
+                "company_fundamentals",
                 "economic_releases",
                 "company_events",
                 "commodity_fundamentals",
+                "fund_flows",
             ):
                 with (output / f"{category}.csv").open(
                     newline="", encoding="utf-8"

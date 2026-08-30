@@ -1,5 +1,6 @@
 from datetime import date
 from pathlib import Path
+import json
 import tempfile
 import unittest
 
@@ -17,6 +18,9 @@ from pipeline.internal.capital_weekly.context.provider_contracts import (
     ProviderSpec,
 )
 from pipeline.internal.capital_weekly.weekly_context import run_weekly_context
+from pipeline.internal.tests.test_capital_weekly_fundamentals import (
+    company_facts_payload,
+)
 
 
 YAHOO_CONFIG = (
@@ -170,6 +174,10 @@ class ContextProviderTests(unittest.TestCase):
                 "cftc_disaggregated",
                 "finra_margin",
                 "sec_company_events",
+                "sec_company_fundamentals",
+                "sec_guidance_proxy",
+                "sec_capital_markets",
+                "hkex_capital_markets",
                 "eia_commodities",
                 "fred_financial_conditions",
                 "yahoo_volatility_signals",
@@ -183,6 +191,22 @@ class ContextProviderTests(unittest.TestCase):
         )
         self.assertTrue(all(isinstance(provider, ContextProvider) for provider in providers.values()))
         self.assertEqual(providers["sec_company_events"].spec.requiredness, "optional")
+        self.assertEqual(
+            providers["sec_company_fundamentals"].spec.category,
+            "company_fundamentals",
+        )
+        self.assertEqual(
+            providers["sec_guidance_proxy"].spec.requiredness,
+            "optional",
+        )
+        self.assertEqual(
+            providers["sec_capital_markets"].spec.category,
+            "capital_markets",
+        )
+        self.assertEqual(
+            providers["hkex_capital_markets"].spec.category,
+            "capital_markets",
+        )
         self.assertEqual(providers["eia_commodities"].spec.requiredness, "optional")
         self.assertEqual(
             providers["fred_financial_conditions"].spec.requiredness, "optional"
@@ -291,6 +315,106 @@ class ContextProviderTests(unittest.TestCase):
         self.assertEqual(decision["actual"], "maintain 3.5%-3.75%")
         self.assertEqual(decision["previous"], None)
         self.assertEqual(decision["source_url"], statement_url)
+
+    def test_enabled_watchlist_makes_sec_fundamentals_required(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_company_watchlist.csv").write_text(
+                "ticker,cik,company_name,enabled\n"
+                "AAPL,320193,Apple Inc.,true\n",
+                encoding="utf-8",
+            )
+
+            providers = build_default_providers(
+                start=date(2026, 8, 3),
+                end=date(2026, 8, 9),
+                data_dir=data_dir,
+                environ={},
+            )
+
+        fundamentals = providers["sec_company_fundamentals"]
+        self.assertEqual(fundamentals.spec.requiredness, "required")
+        self.assertEqual(fundamentals.fetch().status, "NOT_CONFIGURED")
+        self.assertIn("SEC_USER_AGENT", fundamentals.fetch().notes)
+
+    def test_sec_fundamentals_provider_applies_fact_and_price_cutoffs_before_calculation(self):
+        class Response:
+            encoding = "utf-8"
+            apparent_encoding = "utf-8"
+
+            def __init__(self, text):
+                self.text = text
+
+            def raise_for_status(self):
+                return None
+
+        class Session:
+            def __init__(self, payload):
+                self.payload = payload
+                self.calls = []
+
+            def get(self, url, **kwargs):
+                self.calls.append((url, kwargs))
+                return Response(self.payload)
+
+        download_calls = []
+
+        def fake_download(**kwargs):
+            download_calls.append(kwargs)
+            return pd.DataFrame(
+                {("AAPL", "Close"): [8.0, 10.0, 12.0, 14.0, 20.0, 200.0]},
+                index=pd.to_datetime(
+                    [
+                        "2022-02-18",
+                        "2023-02-17",
+                        "2024-02-20",
+                        "2025-02-20",
+                        "2026-08-07",
+                        "2026-08-10",
+                    ]
+                ),
+            )
+
+        session = Session(json.dumps(company_facts_payload()))
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            (data_dir / "capital_weekly_company_watchlist.csv").write_text(
+                "ticker,cik,company_name,enabled\n"
+                "AAPL,320193,Apple Inc.,true\n",
+                encoding="utf-8",
+            )
+            provider = build_default_providers(
+                start=date(2026, 8, 3),
+                end=date(2026, 8, 9),
+                data_dir=data_dir,
+                environ={"SEC_USER_AGENT": "Capital Weekly test@example.test"},
+                session=session,
+                yahoo_downloader=fake_download,
+            )["sec_company_fundamentals"]
+
+            result = provider.fetch()
+
+        self.assertEqual(provider.spec.requiredness, "required")
+        self.assertEqual(result.status, "OK")
+        self.assertEqual(
+            max(
+                (
+                    row
+                    for row in result.rows
+                    if row["metric_code"] == "share_price"
+                ),
+                key=lambda row: row["observation_date"],
+            )["value"],
+            20.0,
+        )
+        self.assertNotIn(
+            "monday-restatement",
+            {row["accession_number"] for row in result.rows},
+        )
+        self.assertTrue(session.calls[0][0].endswith("CIK0000320193.json"))
+        self.assertEqual(download_calls[0]["end"], "2026-08-10")
 
     def test_yahoo_market_state_provider_emits_registered_proxy_breadth(self):
         calls = []

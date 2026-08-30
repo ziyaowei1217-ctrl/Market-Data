@@ -29,6 +29,14 @@ from .commodities import (
     parse_eia_series,
 )
 from .company_events import load_company_watchlist, parse_sec_submissions
+from .capital_markets import (
+    build_guidance_proxy_rows,
+    build_hkex_ipo_rows,
+    build_ma_rows,
+    build_sec_ipo_rows,
+    parse_hkex_listing_table,
+    parse_sec_master_index,
+)
 from .economic_sources import (
     build_bea_provider,
     build_bls_provider,
@@ -48,6 +56,7 @@ from .financial_conditions import (
     calculate_financial_conditions,
     parse_fred_components_csv,
 )
+from .fundamentals import build_company_fundamentals
 from .market_internals import (
     calculate_registered_universe_state,
     calculate_style_relative_windows,
@@ -95,6 +104,12 @@ CFTC_URLS = {
     ),
 }
 SEC_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
+SEC_COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+SEC_DAILY_INDEX_URL = (
+    "https://www.sec.gov/Archives/edgar/daily-index/{year}/QTR{quarter}/"
+    "master.{stamp}.idx"
+)
+HKEX_NEW_LISTINGS_URL = "https://www.hkex.com.hk/Listing/IPO/Newly-Listed-Companies"
 HKEX_URL = "https://www.hkex.com.hk/eng/stat/smstat/dayquot/d{stamp}e.htm"
 HKEX_STOCK_CONNECT_URL = (
     "https://www.hkex.com.hk/eng/csm/DailyStat/"
@@ -821,6 +836,255 @@ def _sec_provider(
     )
 
 
+def _company_price_histories(
+    downloader: Callable[..., Any],
+    *,
+    tickers: tuple[str, ...],
+    end: date,
+) -> tuple[dict[str, list[dict[str, Any]]], str]:
+    frame = downloader(
+        tickers=list(tickers),
+        start=(end - timedelta(days=365 * 7)).isoformat(),
+        end=(end + timedelta(days=1)).isoformat(),
+        interval="1d",
+        auto_adjust=False,
+        actions=False,
+        group_by="ticker",
+        threads=False,
+        progress=False,
+    )
+    history = extract_yahoo_market_history(frame, tickers, end)
+    serialized = serialize_yahoo_market_history(history)
+    return (
+        {
+            ticker: [
+                {"date": row.date.isoformat(), "close": float(row.close)}
+                for row in history.loc[history["symbol"] == ticker].itertuples(index=False)
+            ]
+            for ticker in tickers
+        },
+        serialized,
+    )
+
+
+def _sec_company_fundamentals_provider(
+    session: requests.Session,
+    end: date,
+    watchlist: list[dict[str, str]],
+    user_agent: str | None,
+    downloader: Callable[..., Any],
+) -> ProviderResult:
+    source_url = "https://data.sec.gov/api/xbrl/companyfacts/"
+    if not watchlist:
+        return not_configured_result(
+            category="company_fundamentals",
+            source="SEC EDGAR Company Facts",
+            source_url=source_url,
+            notes="Company watchlist is empty; no production companies are invented.",
+        )
+    if not user_agent:
+        return not_configured_result(
+            category="company_fundamentals",
+            source="SEC EDGAR Company Facts",
+            source_url=source_url,
+            notes="Set SEC_USER_AGENT before fetching the enabled company watchlist.",
+        )
+    tickers = tuple(company["ticker"] for company in watchlist)
+    price_histories, price_raw = _company_price_histories(
+        downloader, tickers=tickers, end=end
+    )
+    rows = []
+    raw = [price_raw]
+    for company in watchlist:
+        url = SEC_COMPANY_FACTS_URL.format(cik=company["cik"])
+        text = _text(session, url, headers={"User-Agent": user_agent})
+        raw.append(text)
+        company_rows = build_company_fundamentals(
+            text,
+            ticker=company["ticker"],
+            cik=company["cik"],
+            company_name=company["company_name"],
+            as_of_date=end,
+            price_history=price_histories[company["ticker"]],
+        )
+        if not company_rows:
+            raise ValueError(
+                f"SEC Company Facts produced no eligible rows for {company['ticker']}"
+            )
+        rows.extend(company_rows)
+    return ProviderResult(
+        category="company_fundamentals",
+        rows=rows,
+        raw_text="\n".join(raw),
+        source="SEC EDGAR Company Facts and Yahoo Finance historical close",
+        source_url=source_url,
+        notes=(
+            "SEC facts and public-vendor prices are cutoff before all registered "
+            "fundamental and trailing-valuation calculations."
+        ),
+    )
+
+
+def _sec_document_candidates(
+    session: requests.Session,
+    *,
+    start: date,
+    end: date,
+    watchlist: list[dict[str, str]],
+    user_agent: str,
+) -> tuple[list[tuple[dict[str, Any], str]], list[str]]:
+    documents = []
+    raw = []
+    for company in watchlist:
+        submissions_url = SEC_URL.format(cik=company["cik"])
+        submissions = _text(
+            session, submissions_url, headers={"User-Agent": user_agent}
+        )
+        raw.append(submissions)
+        events = parse_sec_submissions(
+            submissions,
+            cik=company["cik"],
+            ticker=company["ticker"],
+            start=start,
+            end=end,
+        )
+        for event in events:
+            if event["form"] != "8-K":
+                continue
+            filing_text = _text(
+                session,
+                event["source_url"],
+                headers={"User-Agent": user_agent},
+            )
+            raw.append(filing_text)
+            event = {**event, "company_name": company["company_name"]}
+            documents.append((event, filing_text))
+    return documents, raw
+
+
+def _sec_guidance_provider(
+    session: requests.Session,
+    start: date,
+    end: date,
+    watchlist: list[dict[str, str]],
+    user_agent: str | None,
+) -> ProviderResult:
+    source_url = "https://www.sec.gov/edgar/search/"
+    if not watchlist:
+        return not_configured_result(
+            category="company_fundamentals",
+            source="SEC EDGAR filing documents",
+            source_url=source_url,
+            notes="Company watchlist is empty; guidance proxy is disabled.",
+        )
+    if not user_agent:
+        return not_configured_result(
+            category="company_fundamentals",
+            source="SEC EDGAR filing documents",
+            source_url=source_url,
+            notes="Set SEC_USER_AGENT before classifying watchlist filing text.",
+        )
+    documents, raw = _sec_document_candidates(
+        session,
+        start=start,
+        end=end,
+        watchlist=watchlist,
+        user_agent=user_agent,
+    )
+    rows = []
+    for event, filing_text in documents:
+        if event["event_type"] == "earnings_release":
+            rows.extend(
+                build_guidance_proxy_rows(
+                    filing_text, event, as_of_date=end
+                )
+            )
+    return ProviderResult(
+        category="company_fundamentals",
+        rows=rows,
+        raw_text="\n".join(raw),
+        source="SEC EDGAR filing documents",
+        source_url=source_url,
+        notes=(
+            "Rules-based guidance direction proxy; no consensus or revision "
+            "breadth is inferred."
+        ),
+    )
+
+
+def _sec_capital_markets_provider(
+    session: requests.Session,
+    start: date,
+    end: date,
+    watchlist: list[dict[str, str]],
+    user_agent: str | None,
+) -> ProviderResult:
+    source_url = "https://www.sec.gov/Archives/edgar/daily-index/"
+    if not user_agent:
+        return not_configured_result(
+            category="capital_markets",
+            source="SEC EDGAR daily index and filing documents",
+            source_url=source_url,
+            notes="Set SEC_USER_AGENT before fetching SEC capital-markets filings.",
+        )
+    raw = []
+    index_records = []
+    cursor = start
+    while cursor <= end:
+        if cursor.weekday() < 5:
+            quarter = (cursor.month - 1) // 3 + 1
+            url = SEC_DAILY_INDEX_URL.format(
+                year=cursor.year,
+                quarter=quarter,
+                stamp=cursor.strftime("%Y%m%d"),
+            )
+            text = _text(session, url, headers={"User-Agent": user_agent})
+            raw.append(text)
+            index_records.extend(parse_sec_master_index(text))
+        cursor += timedelta(days=1)
+    rows = build_sec_ipo_rows(index_records, as_of_date=end)
+    if watchlist:
+        documents, document_raw = _sec_document_candidates(
+            session,
+            start=start,
+            end=end,
+            watchlist=watchlist,
+            user_agent=user_agent,
+        )
+        raw.extend(document_raw)
+        rows.extend(build_ma_rows(documents, as_of_date=end))
+    return ProviderResult(
+        category="capital_markets",
+        rows=rows,
+        raw_text="\n".join(raw),
+        source="SEC EDGAR daily index and filing documents",
+        source_url=source_url,
+        notes=(
+            "IPO values are filing activity, not issuance dollars; M&A rows are "
+            "watchlist filing-text classifications, not comprehensive coverage."
+        ),
+    )
+
+
+def _hkex_capital_markets_provider(
+    session: requests.Session, start: date, end: date
+) -> ProviderResult:
+    text = _text(session, HKEX_NEW_LISTINGS_URL)
+    parsed = [
+        row
+        for row in parse_hkex_listing_table(text, source_url=HKEX_NEW_LISTINGS_URL)
+        if start <= row["event_date"] <= end
+    ]
+    return ProviderResult(
+        category="capital_markets",
+        rows=build_hkex_ipo_rows(parsed, as_of_date=end),
+        raw_text=text,
+        source="Hong Kong Exchanges and Clearing",
+        source_url=HKEX_NEW_LISTINGS_URL,
+        notes="Official HKEX listing records; no inferred offering size.",
+    )
+
+
 def _eia_provider(
     session: requests.Session,
     end: date,
@@ -1336,6 +1600,30 @@ def build_default_providers(
             watchlist,
             settings.get("SEC_USER_AGENT"),
         ),
+        "sec_company_fundamentals": lambda: _sec_company_fundamentals_provider(
+            client,
+            end,
+            watchlist,
+            settings.get("SEC_USER_AGENT"),
+            yahoo_download,
+        ),
+        "sec_guidance_proxy": lambda: _sec_guidance_provider(
+            client,
+            start,
+            end,
+            watchlist,
+            settings.get("SEC_USER_AGENT"),
+        ),
+        "sec_capital_markets": lambda: _sec_capital_markets_provider(
+            client,
+            start,
+            end,
+            watchlist,
+            settings.get("SEC_USER_AGENT"),
+        ),
+        "hkex_capital_markets": lambda: _hkex_capital_markets_provider(
+            client, start, end
+        ),
         "eia_commodities": lambda: _eia_provider(
             client, end, eia_config, settings.get("EIA_API_KEY")
         ),
@@ -1366,6 +1654,14 @@ def build_default_providers(
         "cftc_disaggregated": ("positioning_flows", "weekly", "required"),
         "finra_margin": ("positioning_flows", "monthly", "required"),
         "sec_company_events": ("company_events", "event", "optional"),
+        "sec_company_fundamentals": (
+            "company_fundamentals",
+            "quarterly",
+            "required" if watchlist else "optional",
+        ),
+        "sec_guidance_proxy": ("company_fundamentals", "event", "optional"),
+        "sec_capital_markets": ("capital_markets", "event", "optional"),
+        "hkex_capital_markets": ("capital_markets", "event", "optional"),
         "eia_commodities": ("commodity_fundamentals", "weekly", "optional"),
         "fred_financial_conditions": (
             "financial_conditions",
@@ -1392,7 +1688,13 @@ def build_default_providers(
                 source_tier="public",
                 requiredness=requiredness,
                 provider_version="1.0.0",
-                schema_version="context-metric-v1",
+                schema_version=(
+                    "company-fundamental-v1"
+                    if category == "company_fundamentals"
+                    else "capital-market-v1"
+                    if category == "capital_markets"
+                    else "context-metric-v1"
+                ),
                 frequency=frequency,
                 freshness_days=(
                     7
@@ -1406,7 +1708,13 @@ def build_default_providers(
                     else None
                 ),
                 failure_source=(
-                    "Yahoo Finance (registered sector ETF proxy universe)"
+                    "SEC EDGAR filing documents"
+                    if name == "sec_guidance_proxy"
+                    else "SEC EDGAR daily index and filing documents"
+                    if name == "sec_capital_markets"
+                    else "Hong Kong Exchanges and Clearing"
+                    if name == "hkex_capital_markets"
+                    else "Yahoo Finance (registered sector ETF proxy universe)"
                     if name == "yahoo_market_state"
                     else "iShares"
                     if name == "ishares_ivv_fund"
@@ -1415,7 +1723,13 @@ def build_default_providers(
                     else ""
                 ),
                 failure_source_url=(
-                    YAHOO_FINANCE_URL
+                    "https://www.sec.gov/edgar/search/"
+                    if name == "sec_guidance_proxy"
+                    else "https://www.sec.gov/Archives/edgar/daily-index/"
+                    if name == "sec_capital_markets"
+                    else HKEX_NEW_LISTINGS_URL
+                    if name == "hkex_capital_markets"
+                    else YAHOO_FINANCE_URL
                     if name == "yahoo_market_state"
                     else ISHARES_IVV_URL
                     if name == "ishares_ivv_fund"

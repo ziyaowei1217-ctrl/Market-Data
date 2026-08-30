@@ -12,6 +12,10 @@ from typing import Mapping
 import pandas as pd
 
 from .context.common import METRIC_FIELDS, normalize_metric_rows
+from .context.capital_markets import (
+    CAPITAL_MARKET_FIELDS,
+    normalize_capital_market_rows,
+)
 from .context.economic_releases import (
     ECONOMIC_RELEASE_FIELDS,
     normalize_economic_release_rows,
@@ -22,6 +26,11 @@ from .context.provider_contracts import (
     ProviderResult,
     filter_known_as_of,
 )
+from .context.fundamentals import (
+    COMPANY_FUNDAMENTAL_FIELDS,
+    normalize_company_fundamental_rows,
+    validate_company_fundamental_input_references,
+)
 
 
 CATEGORY_FILES = {
@@ -30,6 +39,8 @@ CATEGORY_FILES = {
     "market_internals": "market_internals.csv",
     "positioning_flows": "positioning_flows.csv",
     "fund_flows": "fund_flows.csv",
+    "company_fundamentals": "company_fundamentals.csv",
+    "capital_markets": "capital_markets.csv",
     "company_events": "company_events.csv",
     "commodity_fundamentals": "commodity_fundamentals.csv",
     "financial_conditions": "financial_conditions.csv",
@@ -89,6 +100,8 @@ CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {
     "market_internals": METRIC_FIELDS,
     "positioning_flows": METRIC_FIELDS,
     "fund_flows": METRIC_FIELDS,
+    "company_fundamentals": COMPANY_FUNDAMENTAL_FIELDS,
+    "capital_markets": CAPITAL_MARKET_FIELDS,
     "company_events": COMPANY_EVENT_FIELDS,
     "commodity_fundamentals": METRIC_FIELDS,
     "financial_conditions": METRIC_FIELDS,
@@ -125,13 +138,16 @@ def run_weekly_context(
                     f"Provider result category {result.category!r} does not match "
                     f"ProviderSpec category {provider.spec.category!r}"
                 )
-            rows = (
-                normalize_economic_release_rows(result.rows)
-                if result.category == "economic_releases"
-                else normalize_metric_rows(result.rows)
-                if result.category != "events"
-                else [dict(row) for row in result.rows]
-            )
+            if result.category == "economic_releases":
+                rows = normalize_economic_release_rows(result.rows)
+            elif result.category == "company_fundamentals":
+                rows = normalize_company_fundamental_rows(result.rows)
+            elif result.category == "capital_markets":
+                rows = normalize_capital_market_rows(result.rows)
+            elif result.category == "events":
+                rows = [dict(row) for row in result.rows]
+            else:
+                rows = normalize_metric_rows(result.rows)
             if provider.spec.category not in tables or provider.spec.category == "source_log":
                 raise ValueError(f"Unsupported context category: {result.category}")
             if raw_path:
@@ -216,13 +232,14 @@ def run_weekly_context(
                     "status": "FETCH_FAILED",
                     "observations": 0,
                     "as_of_date": run_date.isoformat(),
-                    "source": provider.spec.failure_source or None,
-                    "source_url": provider.spec.failure_source_url or None,
+                    "source": provider.spec.failure_source,
+                    "source_url": provider.spec.failure_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "notes": str(error),
                 }
             )
     _validate_combined_economic_releases(tables, run_date)
+    _validate_combined_company_fundamentals(tables, run_date)
     return tables
 
 
@@ -249,6 +266,42 @@ def _validate_combined_economic_releases(
                 "latest_known_as_of": None,
                 "warnings": str(error),
                 "category": "economic_releases",
+                "status": "FETCH_FAILED",
+                "observations": 0,
+                "as_of_date": as_of_date.isoformat(),
+                "source": None,
+                "source_url": None,
+                "elapsed_ms": 0,
+                "notes": str(error),
+            }
+        )
+
+
+def _validate_combined_company_fundamentals(
+    tables: dict[str, list[dict]],
+    as_of_date: date,
+) -> None:
+    try:
+        tables["company_fundamentals"] = normalize_company_fundamental_rows(
+            tables["company_fundamentals"]
+        )
+        validate_company_fundamental_input_references(
+            tables["company_fundamentals"]
+        )
+    except ValueError as error:
+        tables["company_fundamentals"] = []
+        tables["source_log"].append(
+            {
+                "provider": "company_fundamentals_validation",
+                "source_tier": "public",
+                "requiredness": "required",
+                "provider_version": "fundamentals-v1",
+                "schema_version": "company-fundamental-v1",
+                "frequency": "event",
+                "freshness_days": None,
+                "latest_known_as_of": None,
+                "warnings": str(error),
+                "category": "company_fundamentals",
                 "status": "FETCH_FAILED",
                 "observations": 0,
                 "as_of_date": as_of_date.isoformat(),
