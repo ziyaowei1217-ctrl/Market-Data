@@ -879,12 +879,16 @@ def build_research_facts(
             current = selected[-1]
             current_date = date.fromisoformat(current["observation_date"])
             current_iso_year, current_week, _ = current_date.isocalendar()
+            earliest_iso_year = current_iso_year - prior_years
             latest_by_iso_year: dict[int, dict] = {}
             for row in selected[:-1]:
                 iso_year, iso_week, _ = date.fromisoformat(
                     row["observation_date"]
                 ).isocalendar()
-                if iso_week == current_week and iso_year < current_iso_year:
+                if (
+                    iso_week == current_week
+                    and earliest_iso_year <= iso_year < current_iso_year
+                ):
                     latest_by_iso_year[iso_year] = row
             aligned = [
                 latest_by_iso_year[iso_year]

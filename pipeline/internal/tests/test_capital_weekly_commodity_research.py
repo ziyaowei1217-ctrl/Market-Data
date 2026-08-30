@@ -978,6 +978,28 @@ class RegisteredResearchFactTests(unittest.TestCase):
 
         self.assertEqual(facts, [])
 
+    def test_seasonal_deviation_rejects_years_outside_configured_window(self):
+        specs = {
+            "natgas_storage_seasonal_deviation": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=3, minimum_observations=2),
+                ),
+            )
+        }
+        history = [
+            _research_metric("season-2020", "2020-08-21", 100.0),
+            _research_metric("season-2025", "2025-08-22", 140.0),
+            _research_metric("season-2026", "2026-08-21", 170.0),
+        ]
+
+        facts = build_research_facts([], history, specs, date(2026, 8, 30))
+
+        self.assertEqual(facts, [])
+
     def test_seasonal_deviation_uses_latest_revision_per_distinct_iso_year(self):
         specs = {
             "natgas_storage_seasonal_deviation": FormulaSpec(
