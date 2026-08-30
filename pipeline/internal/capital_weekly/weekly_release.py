@@ -1155,6 +1155,75 @@ def _configured_rows(
     return configured
 
 
+def _configured_metal_rows() -> list[dict]:
+    configured: list[dict] = []
+    providers: set[str] = set()
+    scalar_fields = (
+        "provider",
+        "source",
+        "source_url",
+        "commodity_code",
+        "commodity_family",
+    )
+    for raw_row in load_config_rows("context.metals"):
+        row = {
+            field: str(raw_row.get(field) or "").strip()
+            for field in scalar_fields
+        }
+        missing = [field for field, value in row.items() if not value]
+        raw_codes = raw_row.get("expected_metric_codes")
+        if isinstance(raw_codes, str):
+            try:
+                raw_codes = json.loads(raw_codes)
+            except json.JSONDecodeError as error:
+                raise ReleaseValidationError(
+                    "context.metals expected_metric_codes must be a JSON array"
+                ) from error
+        if not isinstance(raw_codes, list):
+            missing.append("expected_metric_codes")
+            metric_codes: list[str] = []
+        else:
+            metric_codes = [str(value or "").strip() for value in raw_codes]
+            if not metric_codes or any(not value for value in metric_codes):
+                missing.append("expected_metric_codes")
+        raw_observations = str(raw_row.get("expected_observations") or "").strip()
+        if not raw_observations:
+            missing.append("expected_observations")
+        if missing:
+            raise ReleaseValidationError(
+                "context.metals configured coverage requires "
+                + ", ".join(sorted(set(missing)))
+            )
+        provider = row["provider"]
+        if provider in providers:
+            raise ReleaseValidationError(
+                f"context.metals configured coverage has duplicate provider: {provider}"
+            )
+        providers.add(provider)
+        if len(metric_codes) != len(set(metric_codes)):
+            raise ReleaseValidationError(
+                f"{provider} expected_metric_codes must be unique"
+            )
+        try:
+            expected_observations = int(raw_observations)
+        except ValueError as error:
+            raise ReleaseValidationError(
+                f"{provider} expected_observations must be an integer"
+            ) from error
+        if expected_observations <= 0 or expected_observations != len(metric_codes):
+            raise ReleaseValidationError(
+                f"{provider} expected_observations must equal expected_metric_codes"
+            )
+        configured.append(
+            {
+                **row,
+                "expected_metric_codes": tuple(metric_codes),
+                "expected_observations": expected_observations,
+            }
+        )
+    return configured
+
+
 def _require_unique_context_status(
     source_rows: list[dict[str, str]],
     provider: str,
@@ -1414,17 +1483,7 @@ def _validate_configured_commodity_coverage(
                     f"{metric_code}"
                 )
 
-    metals_config = _configured_rows(
-        "context.metals",
-        identity_field="provider",
-        required_fields=(
-            "provider",
-            "source",
-            "source_url",
-            "commodity_code",
-            "commodity_family",
-        ),
-    )
+    metals_config = _configured_metal_rows()
     for expected in metals_config:
         provider = expected["provider"]
         status_row = _require_unique_context_status(
@@ -1445,13 +1504,17 @@ def _validate_configured_commodity_coverage(
             )
         code = expected["commodity_code"]
         family = expected["commodity_family"]
-        namespace = provider.split("_", 1)[0]
-        metric_prefix = f"{code}_{namespace}_"
+        expected_metric_codes = set(expected["expected_metric_codes"])
+        identity_rows = [
+            row
+            for row in fundamental_rows
+            if (row.get("metric_code") or "").strip() in expected_metric_codes
+        ]
         provider_rows = [
             row
             for row in fundamental_rows
             if (
-                (row.get("metric_code") or "").strip().startswith(metric_prefix)
+                (row.get("metric_code") or "").strip() in expected_metric_codes
                 or (
                     (row.get("source") or "").strip() == expected["source"]
                     and (row.get("source_url") or "").strip()
@@ -1459,13 +1522,49 @@ def _validate_configured_commodity_coverage(
                 )
             )
         ]
+        raw_observations = (status_row.get("observations") or "").strip()
+        try:
+            status_observations = int(raw_observations)
+        except ValueError as error:
+            raise ReleaseValidationError(
+                f"{provider} source-log observations must be an integer"
+            ) from error
         status = (status_row.get("status") or "").strip().upper()
         if status != "OK":
-            if provider_rows:
+            if status_observations != 0:
                 raise ReleaseValidationError(
-                    f"{provider} {status} requires zero business rows"
+                    f"{provider} {status} source-log observations must be zero"
+                )
+            if identity_rows:
+                raise ReleaseValidationError(
+                    f"{provider} {status} requires zero configured exact metric rows"
                 )
             continue
+        expected_observations = expected["expected_observations"]
+        if (
+            status_observations != expected_observations
+            or status_observations != len(provider_rows)
+        ):
+            raise ReleaseValidationError(
+                f"{provider} source-log observations must equal configured and "
+                "business row counts"
+            )
+        actual_metric_codes = [
+            (row.get("metric_code") or "").strip() for row in provider_rows
+        ]
+        if (
+            len(provider_rows) != expected_observations
+            or len(identity_rows) != expected_observations
+            or set(actual_metric_codes) != expected_metric_codes
+            or any(
+                actual_metric_codes.count(metric_code) != 1
+                for metric_code in expected_metric_codes
+            )
+        ):
+            raise ReleaseValidationError(
+                f"{provider} OK requires complete business rows and exact metric "
+                "identities exactly once"
+            )
         exact_rows = [
             row
             for row in provider_rows
@@ -1482,11 +1581,6 @@ def _validate_configured_commodity_coverage(
                 value_column="value",
             )
         ]
-        if not provider_rows:
-            raise ReleaseValidationError(
-                f"{provider} OK requires configured business rows for "
-                f"{code} / {family}"
-            )
         if len(exact_rows) != len(provider_rows):
             raise ReleaseValidationError(
                 f"{provider} business rows must map to {code} / {family}"

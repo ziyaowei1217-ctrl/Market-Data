@@ -107,6 +107,7 @@ def run_weekly_context(
     as_of_date: date | None = None,
     audit_secrets: Sequence[str] = (),
 ) -> dict[str, list[dict]]:
+    normalized_audit_secrets = _normalize_audit_secrets(audit_secrets)
     tables = {category: [] for category in CATEGORY_FILES}
     raw_path = Path(raw_dir) if raw_dir else None
     if raw_path:
@@ -127,8 +128,14 @@ def run_weekly_context(
                     f"Provider result category {result.category!r} does not match "
                     f"ProviderSpec category {provider.spec.category!r}"
                 )
-            safe_result_notes = sanitize_audit_text(result.notes)
-            safe_result_source_url = sanitize_audit_text(result.source_url)
+            safe_result_notes = sanitize_audit_text(
+                result.notes,
+                secrets=normalized_audit_secrets,
+            )
+            safe_result_source_url = sanitize_audit_text(
+                result.source_url,
+                secrets=normalized_audit_secrets,
+            )
             rows = (
                 normalize_economic_release_rows(result.rows)
                 if result.category == "economic_releases"
@@ -139,9 +146,11 @@ def run_weekly_context(
             if provider.spec.category not in tables or provider.spec.category == "source_log":
                 raise ValueError(f"Unsupported context category: {result.category}")
             if (
-                isinstance(result.raw_text, bytes)
-                and not result.raw_is_diagnostic
-                and _contains_configured_secret(result.raw_text, audit_secrets)
+                not result.raw_is_diagnostic
+                and _contains_configured_secret(
+                    result.raw_text,
+                    normalized_audit_secrets,
+                )
             ):
                 qualifier = "Successful " if result.status == "OK" else ""
                 raise ValueError(
@@ -149,11 +158,19 @@ def run_weekly_context(
                 )
             if raw_path:
                 if isinstance(result.raw_text, bytes) and result.raw_is_diagnostic:
-                    raw_content = sanitize_audit_bytes(result.raw_text)
+                    raw_content = sanitize_audit_bytes(
+                        result.raw_text,
+                        secrets=normalized_audit_secrets,
+                    )
+                elif result.raw_is_diagnostic:
+                    raw_content = sanitize_audit_text(
+                        result.raw_text,
+                        secrets=normalized_audit_secrets,
+                    ).encode("utf-8")
                 elif isinstance(result.raw_text, bytes):
                     raw_content = result.raw_text
                 else:
-                    raw_content = sanitize_audit_text(result.raw_text).encode("utf-8")
+                    raw_content = result.raw_text.encode("utf-8")
                 (raw_path / f"{_safe_provider_name(provider_name)}.raw").write_bytes(
                     raw_content
                 )
@@ -196,7 +213,10 @@ def run_weekly_context(
                     continue
             for row in rows:
                 if row.get("source_url") is not None:
-                    row["source_url"] = sanitize_audit_text(row["source_url"])
+                    row["source_url"] = sanitize_audit_text(
+                        row["source_url"],
+                        secrets=normalized_audit_secrets,
+                    )
             tables[provider.spec.category].extend(rows)
             tables["source_log"].append(
                 {
@@ -220,7 +240,10 @@ def run_weekly_context(
                 }
             )
         except Exception as error:
-            safe_error = sanitize_audit_text(error)
+            safe_error = sanitize_audit_text(
+                error,
+                secrets=normalized_audit_secrets,
+            )
             tables["source_log"].append(
                 {
                     "provider": provider_name,
@@ -242,20 +265,39 @@ def run_weekly_context(
                     "notes": safe_error,
                 }
             )
-    _validate_combined_economic_releases(tables, run_date)
+    _validate_combined_economic_releases(
+        tables,
+        run_date,
+        audit_secrets=normalized_audit_secrets,
+    )
     return tables
 
 
-def _contains_configured_secret(raw_content: bytes, secrets: Sequence[str]) -> bool:
+def _normalize_audit_secrets(secrets: Sequence[str]) -> tuple[str, ...]:
+    normalized: list[str] = []
+    for raw_secret in secrets:
+        secret = str(raw_secret).strip()
+        if secret and secret not in normalized:
+            normalized.append(secret)
+    return tuple(normalized)
+
+
+def _contains_configured_secret(
+    raw_content: str | bytes,
+    secrets: Sequence[str],
+) -> bool:
+    content = (
+        raw_content
+        if isinstance(raw_content, bytes)
+        else raw_content.encode("utf-8")
+    )
     for secret in secrets:
-        if not secret:
-            continue
         candidates = {
             secret,
             quote(secret, safe=""),
             quote_plus(secret, safe=""),
         }
-        if any(candidate.encode("utf-8") in raw_content for candidate in candidates):
+        if any(candidate.encode("utf-8") in content for candidate in candidates):
             return True
     return False
 
@@ -263,6 +305,8 @@ def _contains_configured_secret(raw_content: bytes, secrets: Sequence[str]) -> b
 def _validate_combined_economic_releases(
     tables: dict[str, list[dict]],
     as_of_date: date,
+    *,
+    audit_secrets: tuple[str, ...] = (),
 ) -> None:
     try:
         tables["economic_releases"] = normalize_economic_release_rows(
@@ -270,7 +314,7 @@ def _validate_combined_economic_releases(
         )
         validate_economic_release_input_references(tables["economic_releases"])
     except ValueError as error:
-        safe_error = sanitize_audit_text(error)
+        safe_error = sanitize_audit_text(error, secrets=audit_secrets)
         tables["economic_releases"] = []
         tables["source_log"].append(
             {

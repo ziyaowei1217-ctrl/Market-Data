@@ -543,6 +543,12 @@ def exact_gate_config() -> dict:
                     "source_url": "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
                     "commodity_code": "GOLD_COMEX",
                     "commodity_family": "gold",
+                    "expected_metric_codes": [
+                        "gold_comex_registered_inventory",
+                        "gold_comex_eligible_inventory",
+                        "gold_comex_total_inventory",
+                    ],
+                    "expected_observations": "3",
                 }
             ],
         },
@@ -700,6 +706,32 @@ def merge_context_status_rows(
         CATEGORY_FIELDS["source_log"],
         [*retained, *replacements],
     )
+
+
+def configured_gold_metal_rows() -> list[dict[str, str]]:
+    return [
+        fixture_row(
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            as_of_date="2026-08-07",
+            metric_code=metric_code,
+            commodity_code="GOLD_COMEX",
+            commodity_family="gold",
+            metric_role="physical_fundamental",
+            measurement_kind="inventory",
+            participant_class="",
+            known_as_of="2026-08-07T23:59:59-05:00",
+            reference_period="2026-08-07",
+            source="CME Group",
+            source_url=(
+                "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls"
+            ),
+        )
+        for metric_code in (
+            "gold_comex_registered_inventory",
+            "gold_comex_eligible_inventory",
+            "gold_comex_total_inventory",
+        )
+    ]
 
 
 class WeekWindowTests(unittest.TestCase):
@@ -997,7 +1029,7 @@ class StagedValidationTests(unittest.TestCase):
                     category="commodity_fundamentals",
                     requiredness="optional",
                     status="OK",
-                    observations="1",
+                    observations="3",
                     source="CME Group",
                     source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
                 )
@@ -1006,7 +1038,7 @@ class StagedValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
-            r"comex_gold_stocks OK.*business rows",
+            r"comex_gold_stocks.*observations",
         ):
             validate_staged_week(self.root, self.window)
 
@@ -1021,7 +1053,7 @@ class StagedValidationTests(unittest.TestCase):
                     category="commodity_fundamentals",
                     requiredness="optional",
                     status="OK",
-                    observations="1",
+                    observations="3",
                     source="CME Group",
                     source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
                 )
@@ -1029,22 +1061,9 @@ class StagedValidationTests(unittest.TestCase):
         )
         path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
         rows = read_csv_rows(path)
-        rows.append(
-            fixture_row(
-                CATEGORY_FIELDS["commodity_fundamentals"],
-                as_of_date="2026-08-07",
-                metric_code="GOLD_COMEX_comex_total_stocks",
-                commodity_code="GOLD_COMEX",
-                commodity_family="copper",
-                metric_role="physical_fundamental",
-                measurement_kind="inventory",
-                participant_class="",
-                known_as_of="2026-08-07T23:59:59-05:00",
-                reference_period="2026-08-07",
-                source="CME Group",
-                source_url="https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
-            )
-        )
+        metal_rows = configured_gold_metal_rows()
+        metal_rows[2]["commodity_family"] = "copper"
+        rows.extend(metal_rows)
         write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
 
         with self.assertRaisesRegex(
@@ -1054,38 +1073,62 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_exact_gate_non_ok_configured_metal_requires_zero_rows(self):
-        for metric_code in (
-            "GOLD_COMEX_comex_total_stocks",
-            "MISMAPPED_METAL_PROVIDER_ROW",
-        ):
-            with self.subTest(metric_code=metric_code):
-                write_exact_gate_fixture(self.outputs)
-                path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
-                rows = read_csv_rows(path)
-                rows.append(
-                    fixture_row(
-                        CATEGORY_FIELDS["commodity_fundamentals"],
-                        as_of_date="2026-08-07",
-                        metric_code=metric_code,
-                        commodity_code="GOLD_COMEX",
-                        commodity_family="gold",
-                        metric_role="physical_fundamental",
-                        measurement_kind="inventory",
-                        participant_class="",
-                        known_as_of="2026-08-07T23:59:59-05:00",
-                        reference_period="2026-08-07",
-                        source="CME Group",
-                        source_url=(
-                            "https://www.cmegroup.com/delivery_reports/"
-                            "Gold_Stocks.xls"
-                        ),
-                    )
-                )
-                write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
+        write_exact_gate_fixture(self.outputs)
+        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        rows = read_csv_rows(path)
+        residual = configured_gold_metal_rows()[2]
+        residual["source_url"] = (
+            "https://www.cmegroup.com/delivery_reports/Gold_Stocks_Alternate.xls"
+        )
+        rows.append(residual)
+        write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
 
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"comex_gold_stocks FETCH_FAILED.*zero.*exact",
+        ):
+            validate_staged_week(self.root, self.window)
+
+    def test_exact_gate_requires_complete_unique_metal_identities_and_count(self):
+        mutations = {
+            "partial_ok": lambda rows, status: rows.__delitem__(slice(1, None)),
+            "missing": lambda rows, status: rows.pop(1),
+            "duplicate": lambda rows, status: rows.__setitem__(2, dict(rows[0])),
+            "wrong_metric": lambda rows, status: rows[2].__setitem__(
+                "metric_code", "gold_comex_wrong_inventory"
+            ),
+            "observations_mismatch": lambda rows, status: status.__setitem__(
+                "observations", "2"
+            ),
+        }
+        for mutation, mutate in mutations.items():
+            with self.subTest(mutation=mutation):
+                write_exact_gate_fixture(self.outputs)
+                status = fixture_row(
+                    CATEGORY_FIELDS["source_log"],
+                    provider="comex_gold_stocks",
+                    category="commodity_fundamentals",
+                    requiredness="optional",
+                    status="OK",
+                    observations="3",
+                    source="CME Group",
+                    source_url=(
+                        "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls"
+                    ),
+                )
+                rows = configured_gold_metal_rows()
+                mutate(rows, status)
+                path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+                existing = read_csv_rows(path)
+                write_csv(
+                    path,
+                    CATEGORY_FIELDS["commodity_fundamentals"],
+                    [*existing, *rows],
+                )
+                merge_context_status_rows(self.outputs, [status])
                 with self.assertRaisesRegex(
                     ReleaseValidationError,
-                    r"comex_gold_stocks FETCH_FAILED.*zero business rows",
+                    r"comex_gold_stocks.*(?:metric identities|observations)",
                 ):
                     validate_staged_week(self.root, self.window)
 

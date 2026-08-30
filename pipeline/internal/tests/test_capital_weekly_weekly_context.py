@@ -5,6 +5,7 @@ import csv
 import hashlib
 import json
 import unittest
+from urllib.parse import quote, quote_plus
 
 import pandas as pd
 
@@ -302,6 +303,142 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertNotIn(secret, serialized)
         self.assertIn("api_key=[REDACTED]", serialized)
 
+    def test_explicit_secrets_are_redacted_from_diagnostic_bytes_and_text(self):
+        secret = "diagnostic secret/+value"
+        candidates = (secret, quote(secret, safe=""), quote_plus(secret, safe=""))
+        spec = ProviderSpec(
+            name="diagnostic_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+        for raw_text in (
+            " | ".join(candidates),
+            " | ".join(candidates).encode("utf-8"),
+        ):
+            with self.subTest(raw_type=type(raw_text).__name__):
+                provider = ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="market_internals",
+                        rows=[],
+                        raw_text=raw_text,
+                        source="Fixture",
+                        source_url="https://example.test/diagnostic",
+                        status="FETCH_FAILED",
+                        raw_is_diagnostic=True,
+                    ),
+                )
+                with TemporaryDirectory() as directory:
+                    raw_dir = Path(directory) / "raw"
+                    run_weekly_context(
+                        {"diagnostic_fixture": provider},
+                        raw_dir=raw_dir,
+                        as_of_date=date(2026, 8, 9),
+                        audit_secrets=(f" {secret} ",),
+                    )
+                    cached = (raw_dir / "diagnostic_fixture.raw").read_text(
+                        encoding="utf-8"
+                    )
+
+                for candidate in candidates:
+                    self.assertNotIn(candidate, cached)
+                self.assertIn("[REDACTED]", cached)
+
+    def test_explicit_secret_is_redacted_from_notes_urls_rows_and_exceptions(self):
+        secret = "bare-runtime-secret"
+        result_url = f"https://example.test/result/{secret}"
+        row_url = f"https://example.test/row/{secret}"
+        success_spec = ProviderSpec(
+            name="secret_result_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+        row = metric("SECRET_RESULT")
+        row["source_url"] = row_url
+        failure_spec = ProviderSpec(
+            name="secret_exception_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+
+        def failed():
+            raise RuntimeError(f"transport failed with {secret}")
+
+        tables = run_weekly_context(
+            {
+                "secret_result_fixture": ContextProvider(
+                    success_spec,
+                    lambda: ProviderResult(
+                        category="market_internals",
+                        rows=[row],
+                        raw_text="official source without credential",
+                        source="Fixture",
+                        source_url=result_url,
+                        notes=f"provider note contains {secret}",
+                    ),
+                ),
+                "secret_exception_fixture": ContextProvider(failure_spec, failed),
+            },
+            as_of_date=date(2026, 8, 9),
+            audit_secrets=(secret,),
+        )
+        serialized = json.dumps(tables)
+
+        self.assertNotIn(secret, serialized)
+        self.assertGreaterEqual(serialized.count("[REDACTED]"), 4)
+
+    def test_successful_string_source_with_actual_secret_fails_without_cache_write(self):
+        secret = "successful-string-runtime-secret"
+        spec = ProviderSpec(
+            name="official_string_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+        provider = ContextProvider(
+            spec,
+            lambda: ProviderResult(
+                category="market_internals",
+                rows=[],
+                raw_text=f"official source contains {secret}",
+                source="Fixture",
+                source_url="https://example.test/official",
+            ),
+        )
+
+        with TemporaryDirectory() as directory:
+            raw_dir = Path(directory) / "raw"
+            tables = run_weekly_context(
+                {"official_string_fixture": provider},
+                raw_dir=raw_dir,
+                as_of_date=date(2026, 8, 9),
+                audit_secrets=(secret,),
+            )
+            self.assertFalse((raw_dir / "official_string_fixture.raw").exists())
+
+        audit = tables["source_log"][0]
+        self.assertEqual(audit["status"], "FETCH_FAILED")
+        self.assertNotIn(secret, json.dumps(audit))
+
     def test_successful_binary_source_is_cached_byte_exact_with_matching_hash(self):
         raw_bytes = b"\x00official?api_key=published-cell-value\xff"
         raw_sha256 = hashlib.sha256(raw_bytes).hexdigest()
@@ -378,7 +515,7 @@ class WeeklyContextTests(unittest.TestCase):
                 {"official_binary_fixture": provider},
                 raw_dir=raw_dir,
                 as_of_date=date(2026, 8, 9),
-                audit_secrets=(secret,),
+                audit_secrets=(f" {secret} ",),
             )
             self.assertFalse((raw_dir / "official_binary_fixture.raw").exists())
 
@@ -389,7 +526,7 @@ class WeeklyContextTests(unittest.TestCase):
         uncached_tables = run_weekly_context(
             {"official_binary_fixture": provider},
             as_of_date=date(2026, 8, 9),
-            audit_secrets=(secret,),
+            audit_secrets=(f" {secret} ",),
         )
         self.assertEqual(uncached_tables["source_log"][0]["status"], "FETCH_FAILED")
         self.assertNotIn(secret, json.dumps(uncached_tables["source_log"][0]))
