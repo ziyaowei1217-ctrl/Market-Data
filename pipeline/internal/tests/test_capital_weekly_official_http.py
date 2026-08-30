@@ -42,6 +42,17 @@ class _Clock:
         return self.now
 
 
+class _DeadlineResponseSession(_Session):
+    def __init__(self, clock, response):
+        super().__init__([response])
+        self.clock = clock
+
+    def get(self, url, **kwargs):
+        result = super().get(url, **kwargs)
+        self.clock.now = 1.0
+        return result
+
+
 class OfficialHttpTests(unittest.TestCase):
     def setUp(self):
         self.policy = OfficialHttpPolicy(2, 5, 20, 3, (0.5, 1.0), 5)
@@ -148,6 +159,37 @@ class OfficialHttpTests(unittest.TestCase):
             )
 
         self.assertEqual(len(session.calls), 1)
+        self.assertEqual(raised.exception.code, "DEADLINE_EXCEEDED")
+        self.assertEqual(raised.exception.attempts, 1)
+
+    def test_remaining_deadline_limits_connect_and_read_timeout(self):
+        clock = _Clock()
+        monotonic_values = iter((0.0, 0.10, 0.10, 0.10))
+        session = _Session([_Response(200, b"ok")])
+
+        official_get(
+            session,
+            "https://example.test/data",
+            policy=OfficialHttpPolicy(2, 5, 0.25, 1, (), 5),
+            monotonic=lambda: next(monotonic_values),
+        )
+
+        timeout = session.calls[0][1]["timeout"]
+        self.assertAlmostEqual(timeout[0], 0.15)
+        self.assertAlmostEqual(timeout[1], 0.15)
+
+    def test_response_after_total_deadline_is_rejected_even_when_http_200(self):
+        clock = _Clock()
+        session = _DeadlineResponseSession(clock, _Response(200, b"late"))
+
+        with self.assertRaises(OfficialHttpError) as raised:
+            official_get(
+                session,
+                "https://example.test/data",
+                policy=OfficialHttpPolicy(2, 5, 0.25, 1, (), 5),
+                monotonic=clock,
+            )
+
         self.assertEqual(raised.exception.code, "DEADLINE_EXCEEDED")
         self.assertEqual(raised.exception.attempts, 1)
 

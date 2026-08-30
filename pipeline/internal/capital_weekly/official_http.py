@@ -96,8 +96,12 @@ def official_get(
         if remaining <= 0:
             raise _deadline_error(attempts)
         attempts += 1
+        request_timeout = (
+            min(float(policy.connect_timeout), remaining),
+            min(float(policy.read_timeout), remaining),
+        )
         request_kwargs: dict[str, Any] = {
-            "timeout": (policy.connect_timeout, policy.read_timeout),
+            "timeout": request_timeout,
         }
         if headers is not None:
             request_kwargs["headers"] = headers
@@ -119,6 +123,9 @@ def official_get(
             raise _request_error(error, attempts, audit_secrets) from None
         except Exception as error:
             raise _schema_error(error, attempts, audit_secrets) from None
+
+        if _remaining(policy, started, monotonic) <= 0:
+            raise _deadline_error(attempts)
 
         try:
             status_code = int(response.status_code)
