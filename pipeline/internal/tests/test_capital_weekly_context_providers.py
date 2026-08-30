@@ -156,7 +156,14 @@ class ContextProviderTests(unittest.TestCase):
         self.assertTrue(
             {
                 "bls_calendar",
+                "bls_economic_releases",
+                "bea_economic_releases",
+                "census_retail_sales",
+                "census_housing",
+                "census_durable_goods",
+                "ism_manufacturing_pmi",
                 "federal_reserve_calendar",
+                "fomc_calendar",
                 "census_calendar",
                 "nasdaq_market_summary",
                 "cftc_tff",
@@ -180,12 +187,100 @@ class ContextProviderTests(unittest.TestCase):
             providers["yahoo_volatility_signals"].spec.requiredness, "optional"
         )
         self.assertEqual(providers["bls_calendar"].spec.requiredness, "required")
+        self.assertEqual(
+            providers["bls_economic_releases"].spec.category,
+            "economic_releases",
+        )
+        self.assertEqual(
+            providers["bea_economic_releases"].spec.requiredness,
+            "required",
+        )
+        self.assertEqual(providers["census_housing"].spec.requiredness, "required")
+        self.assertEqual(
+            providers["census_durable_goods"].spec.requiredness,
+            "required",
+        )
+        self.assertEqual(providers["fomc_calendar"].spec.category, "events")
+        self.assertEqual(
+            providers["ism_manufacturing_pmi"].spec.source_tier,
+            "licensed",
+        )
+        licensed_gap = providers["ism_manufacturing_pmi"].fetch()
+        self.assertEqual(licensed_gap.status, "UNAVAILABLE_LICENSED")
+        self.assertEqual(licensed_gap.rows, [])
         self.assertEqual(providers["nasdaq_market_summary"].spec.source_tier, "public")
         self.assertEqual(providers["nasdaq_market_summary"].spec.provider_version, "1.0.0")
         self.assertEqual(
             providers["nasdaq_market_summary"].spec.schema_version,
             "context-metric-v1",
         )
+
+    def test_fomc_provider_enriches_only_completed_window_decisions(self):
+        calendar_url = (
+            "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+        )
+        statement_url = (
+            "https://www.federalreserve.gov/newsevents/pressreleases/"
+            "monetary20260729a.htm"
+        )
+        calendar = """
+        <div class="panel-heading"><h4><a>2026 FOMC Meetings</a></h4></div>
+        <div class="row fomc-meeting">
+          <div class="fomc-meeting__month col-xs-5">July</div>
+          <div class="fomc-meeting__date col-xs-4">28-29</div>
+        </div>
+        <div class="row fomc-meeting">
+          <div class="fomc-meeting__month col-xs-5">September</div>
+          <div class="fomc-meeting__date col-xs-4">15-16</div>
+        </div>
+        """
+        statement = """
+        <p>July 29, 2026</p><p>For release at 2:00 p.m. EDT</p>
+        <p>The Committee decided to maintain the target range for the federal
+        funds rate at 3-1/2 to 3-3/4 percent.</p>
+        """
+
+        class Response:
+            encoding = "utf-8"
+            apparent_encoding = "utf-8"
+
+            def __init__(self, text):
+                self.text = text
+
+            def raise_for_status(self):
+                return None
+
+        class Session:
+            def __init__(self):
+                self.calls = []
+
+            def get(self, url, **kwargs):
+                self.calls.append((url, kwargs))
+                return Response({calendar_url: calendar, statement_url: statement}[url])
+
+        session = Session()
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            provider = build_default_providers(
+                start=date(2026, 7, 27),
+                end=date(2026, 8, 2),
+                data_dir=data_dir,
+                environ={},
+                session=session,
+            )["fomc_calendar"]
+            result = provider.fetch()
+
+        self.assertEqual(
+            [url for url, _ in session.calls],
+            [calendar_url, statement_url],
+        )
+        self.assertEqual(len(result.rows), 1)
+        decision = result.rows[0]
+        self.assertEqual(decision["event_type"], "fomc_policy_decision")
+        self.assertEqual(decision["actual"], "maintain 3.5%-3.75%")
+        self.assertEqual(decision["previous"], None)
+        self.assertEqual(decision["source_url"], statement_url)
 
     def test_yahoo_volatility_provider_uses_bounded_deterministic_download(self):
         calls = []

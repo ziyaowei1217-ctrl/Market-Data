@@ -112,6 +112,32 @@ class EconomicReleaseTests(unittest.TestCase):
         self.assertAlmostEqual(values["PCE_PRICE_INDEX_3M_ANN_PCT"], 6.609385438988, places=10)
         self._assert_derived_metadata(derived)
 
+    def test_price_index_momentum_gap_is_an_explicit_actual_data_proxy(self):
+        rows = [
+            release_row("CORE_PCE_PRICE_INDEX", "2025-06", 120.0, "2026-07-31T08:30:00-04:00"),
+            release_row("CORE_PCE_PRICE_INDEX", "2026-03", 124.0, "2026-07-31T08:30:00-04:00"),
+            release_row("CORE_PCE_PRICE_INDEX", "2026-06", 126.0, "2026-07-31T08:30:00-04:00"),
+        ]
+
+        derived = derive_price_index_rows(rows, "CORE_PCE_PRICE_INDEX")
+        by_code = {row["indicator_code"]: row for row in derived}
+        proxy = by_code["CORE_PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY"]
+        three_month = by_code["CORE_PCE_PRICE_INDEX_3M_ANN_PCT"]
+        yoy = by_code["CORE_PCE_PRICE_INDEX_YOY_PCT"]
+
+        self.assertAlmostEqual(
+            proxy["value"], three_month["value"] - yoy["value"], places=12
+        )
+        self.assertEqual(proxy["calculation_id"], "price_index_momentum_gap_proxy")
+        self.assertEqual(proxy["unit"], "percentage_points")
+        self.assertIn("momentum gap proxy", proxy["indicator_name"].lower())
+        self.assertEqual(
+            set(proxy["input_record_ids"].split("|")),
+            {three_month["record_id"], yoy["record_id"]},
+        )
+        self.assertIsNone(proxy["consensus_value"])
+        self.assertIsNone(proxy["surprise_value"])
+
     def test_post_sunday_base_cannot_contribute_to_an_eligible_price_derived_row(self):
         rows = [
             release_row("CPI_INDEX_SA", "2026-05", 324.0, "2026-08-10T08:30:00-04:00"),

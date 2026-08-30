@@ -80,6 +80,17 @@ EMPLOYMENT_ARCHIVE_HTML = """
   </tbody>
   <tfoot><tr><td colspan="5">(p) Preliminary</td></tr></tfoot>
 </table>
+<table>
+  <caption>Table B-3. Average hourly and weekly earnings of all employees on private nonfarm payrolls by industry sector, seasonally adjusted</caption>
+  <thead>
+    <tr><th rowspan="2">Industry</th><th colspan="4">Average hourly earnings</th><th colspan="4">Average weekly earnings</th></tr>
+    <tr><th>May 2025</th><th>Mar. 2026</th><th>Apr. 2026<sup>p</sup></th><th>May 2026<sup>p</sup></th><th>May 2025</th><th>Mar. 2026</th><th>Apr. 2026<sup>p</sup></th><th>May 2026<sup>p</sup></th></tr>
+  </thead>
+  <tbody>
+    <tr><th>Total private</th><td>$35.10</td><td>$36.02</td><td>$36.10</td><td>$36.22</td><td>$1,201.00</td><td>$1,232.00</td><td>$1,236.00</td><td>$1,241.00</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="9">(p) Preliminary</td></tr></tfoot>
+</table>
 </body></html>
 """
 
@@ -129,6 +140,7 @@ class BlsEconomicReleaseTests(unittest.TestCase):
             for row in rows
             if row["calculation_id"] == "observed"
             and row["observation_period"] == "2026-07"
+            and row["indicator_code"] in {"CPI_INDEX_NSA", "CORE_CPI_INDEX_NSA"}
         }
         self.assertEqual(observed["CPI_INDEX_NSA"]["value"], 327.0)
         self.assertEqual(observed["CORE_CPI_INDEX_NSA"]["value"], 333.0)
@@ -141,6 +153,30 @@ class BlsEconomicReleaseTests(unittest.TestCase):
         codes = {row["indicator_code"] for row in rows}
         self.assertIn("CPI_INDEX_NSA_MOM_PCT", codes)
         self.assertIn("CPI_INDEX_NSA_YOY_PCT", codes)
+        self.assertIn("CPI_MOMENTUM_GAP_PROXY", codes)
+        self.assertIn("CORE_CPI_MOMENTUM_GAP_PROXY", codes)
+        by_code = {
+            row["indicator_code"]: row
+            for row in rows
+            if row["observation_period"] == "2026-07"
+        }
+        three_month = by_code["CPI_3M_ANN_SA_PCT"]
+        yoy = by_code["CPI_INDEX_NSA_YOY_PCT"]
+        proxy = by_code["CPI_MOMENTUM_GAP_PROXY"]
+        expected_three_month = (
+            ((1.0 + 0.2 / 100) * (1.0 + 0.3 / 100) * (1.0 + 0.4 / 100))
+            ** 4
+            - 1.0
+        ) * 100
+        self.assertAlmostEqual(three_month["value"], expected_three_month, places=12)
+        self.assertAlmostEqual(
+            proxy["value"], three_month["value"] - yoy["value"], places=12
+        )
+        self.assertEqual(proxy["unit"], "percentage_points")
+        self.assertEqual(
+            set(proxy["input_record_ids"].split("|")),
+            {three_month["record_id"], yoy["record_id"]},
+        )
 
     def test_cpi_requires_headline_and_core_for_the_same_latest_period(self):
         stale_core = CPI_ARCHIVE_HTML.replace(
@@ -194,6 +230,38 @@ class BlsEconomicReleaseTests(unittest.TestCase):
         self.assertEqual(unemployment["observation_period"], "2026-05")
         self.assertEqual(unemployment["value"], 4.3)
         self.assertEqual(unemployment["previous_value"], 4.3)
+        wages = {
+            row["indicator_code"]: row
+            for row in rows
+            if row["observation_period"] == "2026-05"
+            and row["indicator_code"].startswith("AVERAGE_HOURLY_EARNINGS")
+        }
+        self.assertEqual(wages["AVERAGE_HOURLY_EARNINGS"]["value"], 36.22)
+        self.assertEqual(wages["AVERAGE_HOURLY_EARNINGS"]["previous_value"], 36.10)
+        self.assertEqual(wages["AVERAGE_HOURLY_EARNINGS"]["unit"], "usd_per_hour")
+        self.assertAlmostEqual(
+            wages["AVERAGE_HOURLY_EARNINGS_MOM_PCT"]["value"],
+            (36.22 / 36.10 - 1.0) * 100.0,
+            places=12,
+        )
+        self.assertAlmostEqual(
+            wages["AVERAGE_HOURLY_EARNINGS_YOY_PCT"]["value"],
+            (36.22 / 35.10 - 1.0) * 100.0,
+            places=12,
+        )
+        self.assertEqual(
+            wages["AVERAGE_HOURLY_EARNINGS_MOM_PCT"]["calculation_id"],
+            "average_hourly_earnings_mom",
+        )
+        self.assertEqual(
+            set(wages["AVERAGE_HOURLY_EARNINGS_YOY_PCT"]["input_record_ids"].split("|")),
+            {
+                row["record_id"]
+                for row in rows
+                if row["indicator_code"] == "AVERAGE_HOURLY_EARNINGS"
+                and row["observation_period"] in {"2025-05", "2026-05"}
+            },
+        )
 
     def test_monday_release_is_excluded_from_the_prior_sunday(self):
         monday = EMPLOYMENT_ARCHIVE_HTML.replace(
@@ -254,7 +322,78 @@ class BlsEconomicReleaseTests(unittest.TestCase):
             called_urls, [CPI_ARCHIVE, cpi_url, EMPLOYMENT_ARCHIVE, jobs_url]
         )
         self.assertTrue(any(row["indicator_code"] == "CPI_INDEX_NSA" for row in result.rows))
+        self.assertTrue(
+            any(
+                row["indicator_code"] == "AVERAGE_HOURLY_EARNINGS_YOY_PCT"
+                for row in result.rows
+            )
+        )
         self.assertTrue(all(kwargs["allow_redirects"] is False for _, kwargs in session.calls))
+
+    def test_provider_ignores_official_pdf_companions_when_html_is_available(self):
+        cpi_url = "https://www.bls.gov/news.release/archives/cpi_07142026.htm"
+        cpi_pdf = "https://www.bls.gov/news.release/archives/cpi_07142026.pdf"
+        jobs_url = "https://www.bls.gov/news.release/archives/empsit_06052026.htm"
+        session = FakeSession(
+            {
+                CPI_ARCHIVE: FakeResponse(
+                    archive_index(cpi_pdf, cpi_url), CPI_ARCHIVE
+                ),
+                EMPLOYMENT_ARCHIVE: FakeResponse(
+                    archive_index(jobs_url), EMPLOYMENT_ARCHIVE
+                ),
+                cpi_url: FakeResponse(CPI_ARCHIVE_HTML, cpi_url),
+                jobs_url: FakeResponse(EMPLOYMENT_ARCHIVE_HTML, jobs_url),
+                cpi_pdf: RuntimeError("PDF companion must not be fetched"),
+            }
+        )
+
+        result = build_bls_provider(
+            date(2026, 7, 13), date(2026, 7, 19), session
+        ).fetch()
+
+        self.assertNotIn(cpi_pdf, [url for url, _ in session.calls])
+        self.assertTrue(
+            any(row["indicator_code"] == "CPI_INDEX_NSA" for row in result.rows)
+        )
+
+    def test_employment_accepts_current_release_id_caption_and_header_layout(self):
+        current_layout = (
+            EMPLOYMENT_ARCHIVE_HTML.replace(
+                "embargoed until\n8:30",
+                "embargoed until USDL-26-1291\n8:30",
+            )
+            .replace(
+                "<caption>Summary table A.",
+                "<caption>HOUSEHOLD DATA<br /> Summary table A.",
+            )
+            .replace(
+                "<caption>Summary table B.",
+                "<caption>ESTABLISHMENT DATA<br /> Summary table B.",
+            )
+            .replace(
+                "<caption>Table B-3.",
+                "<caption>ESTABLISHMENT DATA<br /> Table B-3.",
+            )
+            .replace("Mar. 2026</th>", "Mar. 2026 ( p )</th>")
+            .replace("Apr. 2026<sup>p</sup>", "Apr. 2026 ( p )")
+            .replace("May 2026<sup>p</sup>", "May 2026 ( p )")
+        )
+
+        rows = parse_employment_release(
+            current_layout,
+            "https://www.bls.gov/news.release/archives/empsit_06052026.htm",
+            date(2026, 6, 7),
+        )
+
+        current = {
+            row["indicator_code"]: row
+            for row in rows
+            if row["observation_period"] == "2026-05"
+        }
+        self.assertEqual(current["NFP_CHANGE"]["value"], 172000.0)
+        self.assertEqual(current["UNEMPLOYMENT_RATE"]["value"], 4.3)
+        self.assertEqual(current["AVERAGE_HOURLY_EARNINGS"]["value"], 36.22)
 
     def test_malformed_latest_filename_candidate_fails_instead_of_falling_back(self):
         latest = "https://www.bls.gov/news.release/archives/cpi_07142026.htm"

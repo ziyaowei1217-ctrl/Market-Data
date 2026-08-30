@@ -335,7 +335,7 @@ def _table_section(text: str, number: int, next_number: int) -> str:
 
 def _unique_total_row(section: str, value_count: int, table_name: str) -> list[float]:
     pattern = re.compile(
-        r"Retail\s*&\s*food services,\s*total\s+"
+        r"Retail\s*&\s*food services,\s*total(?:[\s.…⋯·•]+)"
         + rf"({_NUMBER}(?:\s+{_NUMBER}){{{value_count - 1}}})",
         re.IGNORECASE,
     )

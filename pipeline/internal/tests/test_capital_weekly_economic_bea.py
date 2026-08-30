@@ -1,13 +1,17 @@
 from datetime import date
 import io
+import json
 import re
 import unittest
+from unittest.mock import patch
 
 import pandas as pd
 
 from pipeline.internal.capital_weekly.context.economic_releases import select_latest_vintages
 from pipeline.internal.capital_weekly.context.economic_sources.bea import (
     BEA_ARCHIVE,
+    _reject_conflicting_artifacts,
+    _validate_api_revision,
     build_bea_provider,
     parse_gdp_release,
     parse_pio_release,
@@ -68,6 +72,22 @@ PIO_NEWS_HTML = _release_page(
     "EDT, Friday, September 26, 2025",
     ("Full Release & Tables", "/sites/default/files/2025-09/pi0825.pdf"),
     ("Tables Only", "/sites/default/files/2025-09/pi0825.xlsx"),
+).replace(
+    "</body>",
+    """
+    <p>Personal income increased $77.8 billion (0.3 percent at a monthly rate)
+    in August. Disposable personal income (DPI)—personal income less personal
+    current taxes—increased $62.0 billion (0.2 percent), and personal
+    consumption expenditures (PCE) increased $129.2 billion (0.6 percent).</p>
+    <table><caption>Personal Income and Related Measures [Percent change from preceding month]</caption>
+      <thead><tr><th></th><th>July</th><th>August</th></tr></thead>
+      <tbody>
+        <tr><th>Current-dollar personal income</th><td>0.2</td><td>0.3</td></tr>
+        <tr><th>Current-dollar DPI</th><td>0.1</td><td>0.2</td></tr>
+        <tr><th>Current-dollar PCE</th><td>0.5</td><td>0.6</td></tr>
+      </tbody>
+    </table>
+    </body>""",
 )
 
 
@@ -257,6 +277,15 @@ class FakeSession:
             raise response
         return response
 
+    def post(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        table_name = kwargs.get("data", {}).get("TableName")
+        response = self.responses[f"BEA_API:{table_name}"]
+        response.url = url
+        if isinstance(response, Exception):
+            raise response
+        return response
+
 
 def _archive_page(entries, next_url=None):
     rows = "".join(
@@ -271,6 +300,170 @@ def _archive_page(entries, next_url=None):
 
 
 class BeaEconomicReleaseTests(unittest.TestCase):
+    def test_bea_api_revision_after_selected_release_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "revision.*selected release"):
+            _validate_api_revision(
+                {
+                    "Notes": [
+                        {
+                            "NoteRef": "T10106",
+                            "NoteText": "Official table - LastRevised: August 1, 2026",
+                        }
+                    ]
+                },
+                "T10106",
+                date(2026, 7, 30),
+            )
+
+    def test_current_release_page_uses_revision_matched_bea_api_tables(self):
+        gdp_url = "https://www.bea.gov/news/2026/gdp-advance-estimate-2nd-quarter-2026"
+        pio_url = "https://www.bea.gov/news/2026/personal-income-and-outlays-june-2026"
+        archive = _archive_page(
+            [
+                (gdp_url, "GDP (Advance Estimate), 2nd Quarter 2026", "2026-07-30T08:31:00-04:00"),
+                (pio_url, "Personal Income and Outlays, June 2026", "2026-07-30T08:30:00-04:00"),
+            ]
+        )
+        gdp_page = _release_page(
+            "Gross Domestic Product, 2nd Quarter 2026 (Advance Estimate)",
+            "EDT, Thursday, July 30, 2026",
+            ("Full Release", "/sites/default/files/2026-07/gdp2q26-adv.pdf"),
+        )
+        pio_page = _release_page(
+            "Personal Income and Outlays, June 2026",
+            "EDT, Thursday, July 30, 2026",
+            ("Full Release", "/sites/default/files/2026-07/pi0626.pdf"),
+        ).replace(
+            "</body>",
+            """
+            <p>Personal income increased $98.0 billion (0.4 percent at a monthly rate).
+            Disposable personal income (DPI)—personal income less personal current
+            taxes—increased $73.0 billion (0.3 percent), and personal consumption
+            expenditures (PCE) decreased $25.0 billion (0.1 percent).</p>
+            <table><caption>Personal Income and Related Measures [Percent change from preceding month]</caption>
+              <thead><tr><th></th><th>May</th><th>June</th></tr></thead>
+              <tbody>
+                <tr><th>Current-dollar personal income</th><td>0.7</td><td>0.4</td></tr>
+                <tr><th>Current-dollar DPI</th><td>0.7</td><td>0.3</td></tr>
+                <tr><th>Current-dollar PCE</th><td>0.7</td><td>-0.1</td></tr>
+              </tbody>
+            </table></body>""",
+        )
+
+        def api_body(table_name, rows):
+            return json.dumps(
+                {
+                    "BEAAPI": {
+                        "Results": {
+                            "Data": rows,
+                            "Notes": [
+                                {
+                                    "NoteRef": table_name,
+                                    "NoteText": f"Official table - LastRevised: July 30, 2026",
+                                }
+                            ],
+                        }
+                    }
+                }
+            )
+
+        gdp_rows = [
+            {
+                "TableName": "T10106",
+                "LineNumber": "1",
+                "LineDescription": "Gross domestic product",
+                "TimePeriod": period,
+                "DataValue": value,
+                "UNIT_MULT": "6",
+                "CL_UNIT": "Level",
+            }
+            for period, value in (
+                ("2025Q2", "23,770,976"),
+                ("2026Q1", "24,180,419"),
+                ("2026Q2", "24,270,599"),
+            )
+        ]
+        pce_rows = [
+            {
+                "TableName": "T20804",
+                "LineNumber": line,
+                "LineDescription": description,
+                "TimePeriod": period,
+                "DataValue": value,
+                "UNIT_MULT": "0",
+                "CL_UNIT": "Level",
+            }
+            for line, description, values in (
+                (
+                    "1",
+                    "Personal consumption expenditures (PCE)",
+                    (("2025M06", "126.743"), ("2026M03", "130.403"), ("2026M04", "130.932"), ("2026M05", "131.535"), ("2026M06", "131.392")),
+                ),
+                (
+                    "25",
+                    "PCE excluding food and energy",
+                    (("2025M06", "126.121"), ("2026M03", "129.343"), ("2026M04", "129.663"), ("2026M05", "130.094"), ("2026M06", "130.266")),
+                ),
+            )
+            for period, value in values
+        ]
+        session = FakeSession(
+            {
+                BEA_ARCHIVE: FakeResponse(archive, BEA_ARCHIVE),
+                gdp_url: FakeResponse(gdp_page, gdp_url),
+                pio_url: FakeResponse(pio_page, pio_url),
+                "BEA_API:T10106": FakeResponse(
+                    api_body("T10106", gdp_rows),
+                    "https://apps.bea.gov/api/data",
+                    content_type="application/json",
+                ),
+                "BEA_API:T20804": FakeResponse(
+                    api_body("T20804", pce_rows),
+                    "https://apps.bea.gov/api/data",
+                    content_type="application/json",
+                ),
+            }
+        )
+
+        with patch.dict("os.environ", {"BEA_API_KEY": "test-key"}):
+            result = build_bea_provider(
+                date(2026, 8, 17), date(2026, 8, 23), session
+            ).fetch()
+
+        current = {
+            row["indicator_code"]: row
+            for row in result.rows
+            if row["observation_period"] in {"2026-Q2", "2026-06"}
+        }
+        self.assertIn("REAL_GDP_QOQ_SAAR", current)
+        self.assertIn("REAL_GDP_YOY_PCT", current)
+        self.assertIn("PCE_PRICE_INDEX_3M_ANN_PCT", current)
+        self.assertIn("CORE_PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY", current)
+        self.assertEqual(current["PERSONAL_INCOME_MOM_PCT"]["value"], 0.4)
+        self.assertEqual(current["PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT"]["value"], -0.1)
+        self.assertTrue(
+            all("test-key" not in str(row["source_url"]) for row in result.rows)
+        )
+        self.assertNotIn("test-key", result.raw_text)
+
+    def test_equal_time_artifacts_compare_previous_values_and_lineage(self):
+        rows = parse_pio_release(
+            PIO_ARCHIVED_TABLE_HTML,
+            PIO_XLSX_URL,
+            date(2025, 9, 28),
+        )
+        conflicting = [dict(row) for row in rows]
+        conflicting[0]["previous_value"] = 999.0
+
+        with self.assertRaisesRegex(ValueError, "Conflicting BEA PIO artifacts"):
+            _reject_conflicting_artifacts(
+                [
+                    (rows, "first", PIO_XLSX_URL),
+                    (conflicting, "second", PIO_PDF_URL),
+                ],
+                "PIO",
+            )
+
     def test_release_specific_html_artifacts_keep_public_parser_interfaces(self):
         gdp = parse_gdp_release(GDP_ARCHIVED_TABLE_HTML, GDP_SECOND_XLSX_URL, date(2025, 8, 31))
         pio = parse_pio_release(PIO_ARCHIVED_TABLE_HTML, PIO_XLSX_URL, date(2025, 9, 28))
@@ -320,13 +513,36 @@ class BeaEconomicReleaseTests(unittest.TestCase):
         self.assertNotIn(BEA_ARCHIVE + "?page=2", called)
         gdp_row = next(row for row in result.rows if row["indicator_code"] == "REAL_GDP_QOQ_SAAR")
         pce_row = next(row for row in result.rows if row["indicator_code"] == "PCE_PRICE_INDEX_MOM_PCT")
+        income = next(
+            row
+            for row in result.rows
+            if row["indicator_code"] == "PERSONAL_INCOME_MOM_PCT"
+        )
+        disposable = next(
+            row
+            for row in result.rows
+            if row["indicator_code"] == "DISPOSABLE_PERSONAL_INCOME_MOM_PCT"
+        )
+        spending = next(
+            row
+            for row in result.rows
+            if row["indicator_code"]
+            == "PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT"
+        )
         self.assertEqual(gdp_row["source_url"], GDP_SECOND_XLSX_URL)
         self.assertEqual(pce_row["source_url"], PIO_XLSX_URL)
+        self.assertEqual(income["value"], 0.3)
+        self.assertEqual(income["previous_value"], 0.2)
+        self.assertEqual(disposable["value"], 0.2)
+        self.assertEqual(spending["value"], 0.6)
+        self.assertEqual(spending["previous_value"], 0.5)
+        self.assertEqual(spending["source_url"], PIO_NEWS_URL)
+        self.assertEqual(spending["known_as_of"], "2025-09-26T08:30:00-04:00")
         self.assertEqual(gdp_row["vintage_date"], "second")
         self.assertTrue(
             all(
                 row["source_url"]
-                in {GDP_SECOND_XLSX_URL, PIO_XLSX_URL}
+                in {GDP_SECOND_XLSX_URL, PIO_XLSX_URL, PIO_NEWS_URL}
                 for row in result.rows
             )
         )
@@ -382,10 +598,9 @@ class BeaEconomicReleaseTests(unittest.TestCase):
                 (PIO_NEWS_URL, "Personal Income and Outlays, August 2025", "2025-09-26T08:30:00-04:00"),
             ]
         )
-        pio_pdf_page = _release_page(
-            "Personal Income and Outlays, August 2025",
-            "EDT, Friday, September 26, 2025",
-            ("Full Release & Tables", "/sites/default/files/2025-09/pi0825.pdf"),
+        pio_pdf_page = PIO_NEWS_HTML.replace(
+            '<h3><a href="/sites/default/files/2025-09/pi0825.xlsx">Tables Only</a></h3>',
+            "",
         )
         session = FakeSession(
             {

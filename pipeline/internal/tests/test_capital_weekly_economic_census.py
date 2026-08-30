@@ -292,6 +292,24 @@ class CensusEconomicReleaseTests(unittest.TestCase):
                 wrong_units, CURRENT_RELEASE_PDF, date(2026, 8, 9)
             )
 
+    def test_release_accepts_official_table_dotted_leaders_before_values(self):
+        dotted = JUNE_2026_PDF_TEXT.replace(
+            "Retail & food services, total 4,420,287",
+            "Retail & food services, total ……………………………….………..…… … 4,420,287",
+        )
+
+        rows = parse_retail_sales_release(
+            dotted, CURRENT_RELEASE_PDF, date(2026, 8, 9)
+        )
+
+        current = next(
+            row
+            for row in rows
+            if row["indicator_code"] == "RETAIL_SALES_MOM"
+            and row["observation_period"] == "2026-06"
+        )
+        self.assertEqual(current["value"], 0.2)
+
     def test_provider_follows_official_pages_and_uses_only_release_pdf(self):
         session = _session()
 

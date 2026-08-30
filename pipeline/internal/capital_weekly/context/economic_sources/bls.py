@@ -8,7 +8,13 @@ from typing import Callable
 from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
 
-from ..economic_releases import build_release_row, derive_price_index_rows
+from ..economic_releases import (
+    AVERAGE_HOURLY_EARNINGS_MOM_CALCULATION_ID,
+    AVERAGE_HOURLY_EARNINGS_YOY_CALCULATION_ID,
+    build_release_row,
+    derive_price_index_rows,
+    derive_published_price_momentum_rows,
+)
 from ..provider_contracts import (
     ContextProvider,
     HONG_KONG,
@@ -154,6 +160,14 @@ def parse_cpi_release(text: str, source_url: str, as_of_date: date) -> list[dict
         "CPI Table 1 index table",
     )
     values = _cpi_index_series(table)
+    change_table = _one_table(
+        document.tables,
+        lambda caption: caption.startswith(
+            "table a. percent changes in cpi for all urban consumers (cpi-u):"
+        ),
+        "CPI Table A monthly-change table",
+    )
+    monthly_changes = _cpi_monthly_change_series(change_table)
     headline = values.get("CPI_INDEX_NSA")
     core = values.get("CORE_CPI_INDEX_NSA")
     if not headline:
@@ -166,6 +180,11 @@ def parse_cpi_release(text: str, source_url: str, as_of_date: date) -> list[dict
         raise ValueError(
             "Archived BLS CPI and Core CPI must share the same latest observation period"
         )
+    for code in ("CPI_MOM_SA_PUBLISHED", "CORE_CPI_MOM_SA_PUBLISHED"):
+        if len(monthly_changes.get(code, {})) < 3:
+            raise ValueError(
+                "Archived BLS CPI Table A requires three published monthly changes"
+            )
 
     observed: list[dict] = []
     for code in ("CPI_INDEX_NSA", "CORE_CPI_INDEX_NSA"):
@@ -196,7 +215,59 @@ def parse_cpi_release(text: str, source_url: str, as_of_date: date) -> list[dict
     derived: list[dict] = []
     for code in ("CPI_INDEX_NSA", "CORE_CPI_INDEX_NSA"):
         derived.extend(derive_price_index_rows(observed, code))
-    return observed + derived
+    published_changes: list[dict] = []
+    for code, name in (
+        ("CPI_MOM_SA_PUBLISHED", "Consumer Price Index published MoM"),
+        (
+            "CORE_CPI_MOM_SA_PUBLISHED",
+            "Consumer Price Index less food and energy published MoM",
+        ),
+    ):
+        series = monthly_changes[code]
+        for period in sorted(series):
+            published_changes.append(
+                build_release_row(
+                    indicator_code=code,
+                    indicator_name=name,
+                    observation_period=period,
+                    release_at_bjt=released.astimezone(HONG_KONG).isoformat(),
+                    value=series[period],
+                    previous_value=series.get(_previous_month(period)),
+                    unit="percent",
+                    frequency="monthly",
+                    seasonal_adjustment="seasonally adjusted",
+                    source=SOURCE,
+                    source_url=source_url,
+                    known_as_of=released.isoformat(),
+                    vintage_date=released.date().isoformat(),
+                    as_of_date=as_of_date,
+                )
+            )
+    momentum: list[dict] = []
+    for monthly_code, yoy_code, prefix, name in (
+        (
+            "CPI_MOM_SA_PUBLISHED",
+            "CPI_INDEX_NSA_YOY_PCT",
+            "CPI",
+            "Consumer Price Index",
+        ),
+        (
+            "CORE_CPI_MOM_SA_PUBLISHED",
+            "CORE_CPI_INDEX_NSA_YOY_PCT",
+            "CORE_CPI",
+            "Consumer Price Index less food and energy",
+        ),
+    ):
+        momentum.extend(
+            derive_published_price_momentum_rows(
+                published_changes + derived,
+                monthly_change_code=monthly_code,
+                yoy_code=yoy_code,
+                output_prefix=prefix,
+                indicator_name=name,
+            )
+        )
+    return observed + published_changes + derived + momentum
 
 
 def parse_employment_release(
@@ -210,16 +281,16 @@ def parse_employment_release(
 
     household = _one_table(
         document.tables,
-        lambda caption: caption.startswith(
+        lambda caption: (
             "summary table a. household data, seasonally adjusted"
-        ),
+        ) in caption,
         "Employment Summary table A",
     )
     establishment = _one_table(
         document.tables,
-        lambda caption: caption.startswith(
+        lambda caption: (
             "summary table b. establishment data, seasonally adjusted"
-        ),
+        ) in caption,
         "Employment Summary table B",
     )
     unemployment = _employment_series(
@@ -230,13 +301,28 @@ def parse_employment_release(
         "total nonfarm",
         required_section="over-the-month change, in thousands",
     )
+    earnings_table = _one_table(
+        document.tables,
+        lambda caption: (
+            "table b-3. average hourly and weekly earnings of all employees "
+            "on private nonfarm payrolls"
+        ) in caption,
+        "Employment Table B-3 earnings table",
+    )
+    hourly_earnings = _average_hourly_earnings_series(earnings_table)
     if not unemployment:
         raise ValueError("Archived BLS employment release is missing unemployment")
     if not payroll:
         raise ValueError("Archived BLS employment release is missing NFP")
+    if not hourly_earnings:
+        raise ValueError("Archived BLS employment release is missing average hourly earnings")
     current_period = max(payroll)
     if max(unemployment) != current_period:
         raise ValueError("BLS NFP and unemployment must share the release observation period")
+    if max(hourly_earnings) != current_period:
+        raise ValueError(
+            "BLS NFP and average hourly earnings must share the release observation period"
+        )
 
     revisions = _nfp_revisions(document.text, current_period)
     required_revision_periods = (
@@ -298,6 +384,53 @@ def parse_employment_release(
             **common,
         )
     )
+    wage_levels = [
+        build_release_row(
+            indicator_code="AVERAGE_HOURLY_EARNINGS",
+            indicator_name="Average hourly earnings of total private employees",
+            observation_period=period,
+            value=hourly_earnings[period],
+            previous_value=hourly_earnings.get(_previous_month(period)),
+            unit="usd_per_hour",
+            **common,
+        )
+        for period in sorted(hourly_earnings)
+    ]
+    wage_by_period = {row["observation_period"]: row for row in wage_levels}
+    previous_period = _previous_month(current_period)
+    year_ago_period = f"{int(current_period[:4]) - 1:04d}-{current_period[5:]}"
+    if previous_period not in wage_by_period or year_ago_period not in wage_by_period:
+        raise ValueError(
+            "Archived BLS Employment Table B-3 requires prior-month and year-ago wages"
+        )
+    current_wage = wage_by_period[current_period]
+    previous_wage = wage_by_period[previous_period]
+    year_ago_wage = wage_by_period[year_ago_period]
+    wage_changes = [
+        build_release_row(
+            indicator_code="AVERAGE_HOURLY_EARNINGS_MOM_PCT",
+            indicator_name="Average hourly earnings MoM",
+            observation_period=current_period,
+            value=(current_wage["value"] / previous_wage["value"] - 1.0) * 100.0,
+            unit="percent",
+            calculation_id=AVERAGE_HOURLY_EARNINGS_MOM_CALCULATION_ID,
+            formula_version="economic-v1",
+            input_record_ids=(current_wage["record_id"], previous_wage["record_id"]),
+            **common,
+        ),
+        build_release_row(
+            indicator_code="AVERAGE_HOURLY_EARNINGS_YOY_PCT",
+            indicator_name="Average hourly earnings YoY",
+            observation_period=current_period,
+            value=(current_wage["value"] / year_ago_wage["value"] - 1.0) * 100.0,
+            unit="percent",
+            calculation_id=AVERAGE_HOURLY_EARNINGS_YOY_CALCULATION_ID,
+            formula_version="economic-v1",
+            input_record_ids=(current_wage["record_id"], year_ago_wage["record_id"]),
+            **common,
+        ),
+    ]
+    rows.extend(wage_levels + wage_changes)
     return rows
 
 
@@ -320,8 +453,13 @@ def build_bls_provider(start: date, end: date, session) -> ContextProvider:
         required = {
             "CPI_INDEX_NSA": "CPI",
             "CORE_CPI_INDEX_NSA": "Core CPI",
+            "CPI_MOMENTUM_GAP_PROXY": "CPI momentum gap proxy",
+            "CORE_CPI_MOMENTUM_GAP_PROXY": "Core CPI momentum gap proxy",
             "NFP_CHANGE": "NFP",
             "UNEMPLOYMENT_RATE": "unemployment",
+            "AVERAGE_HOURLY_EARNINGS": "average hourly earnings",
+            "AVERAGE_HOURLY_EARNINGS_MOM_PCT": "average hourly earnings MoM",
+            "AVERAGE_HOURLY_EARNINGS_YOY_PCT": "average hourly earnings YoY",
         }
         present = {str(row["indicator_code"]) for row in rows}
         missing = [label for code, label in required.items() if code not in present]
@@ -441,9 +579,13 @@ def _archive_links(
         url = urljoin(archive_url, href)
         _require_release_url(url, expected_stem)
         filename = urlparse(url).path.rsplit("/", 1)[-1]
-        match = re.fullmatch(re.escape(expected_stem) + r"(\d{8})\.htm", filename)
+        match = re.fullmatch(
+            re.escape(expected_stem) + r"(\d{8})\.(htm|pdf)", filename
+        )
         if match is None:
             raise ValueError(f"BLS archive filename lacks a release date: {url}")
+        if match.group(2) == "pdf":
+            continue
         stamp = datetime.strptime(match.group(1), "%m%d%Y").date()
         candidate = (stamp, url)
         if candidate not in accepted:
@@ -504,6 +646,35 @@ def _cpi_index_series(table: _Table) -> dict[str, dict[str, float]]:
     )
 
 
+def _cpi_monthly_change_series(table: _Table) -> dict[str, dict[str, float]]:
+    grid = table.grid()
+    header_rows = _header_row_indexes(table)
+    if not header_rows:
+        raise ValueError("BLS CPI Table A is missing headers")
+    headers = _column_headers(grid, header_rows)
+    period_columns: dict[int, str] = {}
+    for column, parts in headers.items():
+        normalized = [_label(part) for part in parts]
+        period = _first_month_period(parts)
+        if period and any(
+            "seasonally adjusted changes from preceding month" in part
+            for part in normalized
+        ):
+            period_columns[column] = period
+    if len(period_columns) < 3:
+        raise ValueError(
+            "BLS CPI Table A has fewer than three monthly-change columns"
+        )
+    return _labeled_series(
+        table,
+        period_columns,
+        {
+            "all items": "CPI_MOM_SA_PUBLISHED",
+            "all items less food and energy": "CORE_CPI_MOM_SA_PUBLISHED",
+        },
+    )
+
+
 def _employment_series(
     table: _Table, row_label: str, *, required_section: str
 ) -> dict[str, float]:
@@ -533,6 +704,25 @@ def _employment_series(
                 continue
             _store_value(output, period, _number(row[column]), row_label)
     return output
+
+
+def _average_hourly_earnings_series(table: _Table) -> dict[str, float]:
+    grid = table.grid()
+    header_rows = _header_row_indexes(table)
+    headers = _column_headers(grid, header_rows)
+    period_columns = {
+        column: period
+        for column, parts in headers.items()
+        if any("average hourly earnings" in _label(part) for part in parts)
+        and (period := _first_month_period(parts)) is not None
+    }
+    if not period_columns:
+        raise ValueError("BLS Employment Table B-3 has no hourly-earnings columns")
+    return _labeled_series(
+        table,
+        period_columns,
+        {"total private": "AVERAGE_HOURLY_EARNINGS"},
+    ).get("AVERAGE_HOURLY_EARNINGS", {})
 
 
 def _labeled_series(
@@ -658,7 +848,8 @@ def _revision_period(month_name: str, current_period: str) -> str:
 
 def _embargo_timestamp(text: str) -> datetime:
     match = re.search(
-        r"embargoed\s+until\s+(\d{1,2}):(\d{2})\s*"
+        r"embargoed\s+until\s+(?:USDL[-–—]\d{2}[-–—]\d{4}\s+)?"
+        r"(\d{1,2}):(\d{2})\s*"
         r"([ap])\.?m\.?\s*\((ET|EST|EDT)\)\s*"
         r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?[,]?\s*"
         r"([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})",
@@ -711,7 +902,8 @@ def _first_month_period(parts: tuple[str, ...]) -> str | None:
 
 def _month_period(value: str) -> str | None:
     match = re.fullmatch(
-        r"([A-Za-z]+)\.?\s+(\d{4})(?:\s*\(?[pP]\)?)?", _space(value)
+        r"([A-Za-z]+)\.?\s+(\d{4})(?:\s*(?:\(\s*[pP]\s*\)|[pP]))?",
+        _space(value),
     )
     if match is None:
         return None
@@ -729,7 +921,7 @@ def _previous_month(period: str) -> str:
 
 
 def _number(value: str) -> float:
-    normalized = value.strip().replace(",", "").replace("−", "-")
+    normalized = value.strip().replace(",", "").replace("$", "").replace("−", "-")
     normalized = re.sub(r"[*†‡]+$", "", normalized).strip()
     try:
         return float(normalized)

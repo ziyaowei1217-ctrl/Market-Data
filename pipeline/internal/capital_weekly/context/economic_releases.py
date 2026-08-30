@@ -21,10 +21,16 @@ OBSERVED_CALCULATION_ID = "observed"
 PRICE_INDEX_MOM_CALCULATION_ID = "price_index_mom_pct"
 PRICE_INDEX_YOY_CALCULATION_ID = "price_index_yoy_pct"
 PRICE_INDEX_THREE_MONTH_CALCULATION_ID = "price_index_3m_annualized_pct"
+PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID = "price_index_momentum_gap_proxy"
+PUBLISHED_THREE_MONTH_CALCULATION_ID = (
+    "published_monthly_changes_3m_annualized_pct"
+)
 REAL_GDP_QOQ_SAAR_CALCULATION_ID = "real_gdp_qoq_saar_pct"
 REAL_GDP_YOY_CALCULATION_ID = "real_gdp_yoy_pct"
 ISM_DISTANCE_50_CALCULATION_ID = "ism_distance_from_50"
 RETAIL_SALES_YOY_CALCULATION_ID = "retail_sales_yoy_pct"
+AVERAGE_HOURLY_EARNINGS_MOM_CALCULATION_ID = "average_hourly_earnings_mom"
+AVERAGE_HOURLY_EARNINGS_YOY_CALCULATION_ID = "average_hourly_earnings_yoy"
 
 REGISTERED_CALCULATION_IDS = frozenset(
     {
@@ -32,20 +38,28 @@ REGISTERED_CALCULATION_IDS = frozenset(
         PRICE_INDEX_MOM_CALCULATION_ID,
         PRICE_INDEX_YOY_CALCULATION_ID,
         PRICE_INDEX_THREE_MONTH_CALCULATION_ID,
+        PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID,
+        PUBLISHED_THREE_MONTH_CALCULATION_ID,
         REAL_GDP_QOQ_SAAR_CALCULATION_ID,
         REAL_GDP_YOY_CALCULATION_ID,
         ISM_DISTANCE_50_CALCULATION_ID,
         RETAIL_SALES_YOY_CALCULATION_ID,
+        AVERAGE_HOURLY_EARNINGS_MOM_CALCULATION_ID,
+        AVERAGE_HOURLY_EARNINGS_YOY_CALCULATION_ID,
     }
 )
 CALCULATION_INPUT_ARITY = {
     PRICE_INDEX_MOM_CALCULATION_ID: 2,
     PRICE_INDEX_YOY_CALCULATION_ID: 2,
     PRICE_INDEX_THREE_MONTH_CALCULATION_ID: 2,
+    PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID: 2,
+    PUBLISHED_THREE_MONTH_CALCULATION_ID: 3,
     REAL_GDP_QOQ_SAAR_CALCULATION_ID: 2,
     REAL_GDP_YOY_CALCULATION_ID: 2,
     ISM_DISTANCE_50_CALCULATION_ID: 2,
     RETAIL_SALES_YOY_CALCULATION_ID: 2,
+    AVERAGE_HOURLY_EARNINGS_MOM_CALCULATION_ID: 2,
+    AVERAGE_HOURLY_EARNINGS_YOY_CALCULATION_ID: 2,
 }
 
 
@@ -201,6 +215,7 @@ def derive_price_index_rows(rows: Iterable[dict], indicator_code: str) -> list[d
         periods = {_month_period(row["observation_period"]): row for row in artifact_rows}
         for period in sorted(periods):
             current = periods[period]
+            period_derived: dict[str, dict] = {}
             for suffix, calculation_id, months, calculator in (
                 ("MOM_PCT", PRICE_INDEX_MOM_CALCULATION_ID, 1, percent_change),
                 ("YOY_PCT", PRICE_INDEX_YOY_CALCULATION_ID, 12, percent_change),
@@ -214,16 +229,99 @@ def derive_price_index_rows(rows: Iterable[dict], indicator_code: str) -> list[d
                 base = periods.get(_shift_month(period, -months))
                 if base is None:
                     continue
+                derived = _derived_row(
+                    current,
+                    indicator_code=f"{indicator_code}_{suffix}",
+                    indicator_name=f"{current['indicator_name']} {suffix}",
+                    value=calculator(float(current["value"]), float(base["value"])),
+                    calculation_id=calculation_id,
+                    input_rows=(current, base),
+                )
+                output.append(derived)
+                period_derived[calculation_id] = derived
+            three_month = period_derived.get(
+                PRICE_INDEX_THREE_MONTH_CALCULATION_ID
+            )
+            yoy = period_derived.get(PRICE_INDEX_YOY_CALCULATION_ID)
+            if three_month is not None and yoy is not None:
                 output.append(
                     _derived_row(
                         current,
-                        indicator_code=f"{indicator_code}_{suffix}",
-                        indicator_name=f"{current['indicator_name']} {suffix}",
-                        value=calculator(float(current["value"]), float(base["value"])),
-                        calculation_id=calculation_id,
-                        input_rows=(current, base),
+                        indicator_code=f"{indicator_code}_MOMENTUM_GAP_PROXY",
+                        indicator_name=(
+                            f"{current['indicator_name']} momentum gap proxy "
+                            "(3m annualized minus YoY)"
+                        ),
+                        value=float(three_month["value"]) - float(yoy["value"]),
+                        calculation_id=PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID,
+                        input_rows=(three_month, yoy),
                     )
                 )
+    return output
+
+
+def derive_published_price_momentum_rows(
+    rows: Iterable[dict],
+    *,
+    monthly_change_code: str,
+    yoy_code: str,
+    output_prefix: str,
+    indicator_name: str,
+) -> list[dict]:
+    source_rows = [
+        dict(row)
+        for row in rows
+        if row["indicator_code"] in {monthly_change_code, yoy_code}
+    ]
+    output: list[dict] = []
+    for artifact_rows in _rows_by_artifact(source_rows).values():
+        monthly = {
+            _month_period(row["observation_period"]): row
+            for row in artifact_rows
+            if row["indicator_code"] == monthly_change_code
+        }
+        yoy = {
+            _month_period(row["observation_period"]): row
+            for row in artifact_rows
+            if row["indicator_code"] == yoy_code
+        }
+        for period in sorted(monthly):
+            change_rows = tuple(
+                monthly.get(_shift_month(period, offset))
+                for offset in (-2, -1, 0)
+            )
+            if any(row is None for row in change_rows) or period not in yoy:
+                continue
+            typed_change_rows = tuple(dict(row) for row in change_rows if row)
+            three_month = _derived_row(
+                monthly[period],
+                indicator_code=f"{output_prefix}_3M_ANN_SA_PCT",
+                indicator_name=(
+                    f"{indicator_name} 3m annualized from published monthly changes"
+                ),
+                value=_annualized_monthly_changes(
+                    tuple(float(row["value"]) for row in typed_change_rows)
+                ),
+                calculation_id=PUBLISHED_THREE_MONTH_CALCULATION_ID,
+                input_rows=typed_change_rows,
+            )
+            output.extend(
+                (
+                    three_month,
+                    _derived_row(
+                        monthly[period],
+                        indicator_code=f"{output_prefix}_MOMENTUM_GAP_PROXY",
+                        indicator_name=(
+                            f"{indicator_name} momentum gap proxy "
+                            "(3m annualized SA minus YoY NSA)"
+                        ),
+                        value=float(three_month["value"])
+                        - float(yoy[period]["value"]),
+                        calculation_id=PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID,
+                        input_rows=(three_month, yoy[period]),
+                    ),
+                )
+            )
     return output
 
 
@@ -322,7 +420,7 @@ def _derived_row(
     indicator_name: str,
     value: float,
     calculation_id: str,
-    input_rows: tuple[dict, dict],
+    input_rows: tuple[dict, ...],
 ) -> dict:
     return build_release_row(
         indicator_code=indicator_code,
@@ -330,7 +428,13 @@ def _derived_row(
         observation_period=str(current["observation_period"]),
         release_at_bjt=str(current["release_at_bjt"]),
         value=value,
-        unit="percent" if calculation_id != ISM_DISTANCE_50_CALCULATION_ID else "index_points",
+        unit=(
+            "percentage_points"
+            if calculation_id == PRICE_INDEX_MOMENTUM_GAP_CALCULATION_ID
+            else "index_points"
+            if calculation_id == ISM_DISTANCE_50_CALCULATION_ID
+            else "percent"
+        ),
         frequency=str(current["frequency"]),
         source=str(current["source"]),
         source_url=str(current["source_url"]),
@@ -423,7 +527,7 @@ def _rows_by_artifact(rows: Iterable[dict]) -> dict[tuple[str, ...], list[dict]]
     return grouped
 
 
-def _latest_input_timestamp(input_rows: tuple[dict, dict], field: str) -> str:
+def _latest_input_timestamp(input_rows: tuple[dict, ...], field: str) -> str:
     return max(
         ((
             _aware_timestamp(row[field], field),
@@ -431,6 +535,17 @@ def _latest_input_timestamp(input_rows: tuple[dict, dict], field: str) -> str:
         ) for row in input_rows),
         key=lambda item: item[0],
     )[1]
+
+
+def _annualized_monthly_changes(changes: tuple[float, ...]) -> float:
+    if len(changes) != 3:
+        raise ValueError("Published price momentum requires three monthly changes")
+    compounded = 1.0
+    for change in changes:
+        if change <= -100.0:
+            raise ValueError("Published monthly price change must exceed -100 percent")
+        compounded *= 1.0 + change / 100.0
+    return (compounded**4 - 1.0) * 100.0
 
 
 def _month_period(value: Any) -> tuple[int, int]:
@@ -465,6 +580,7 @@ __all__ = [
     "annualized_three_month_change",
     "build_release_row",
     "derive_ism_rows",
+    "derive_published_price_momentum_rows",
     "derive_price_index_rows",
     "derive_real_gdp_rows",
     "derive_retail_sales_rows",

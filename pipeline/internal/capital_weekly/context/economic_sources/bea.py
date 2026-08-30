@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import io
+import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from html import escape
 from html.parser import HTMLParser
 from typing import Callable
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from ..economic_releases import (
+    ECONOMIC_RELEASE_FIELDS,
     build_release_row,
     derive_price_index_rows,
     derive_real_gdp_rows,
@@ -27,7 +30,12 @@ from ..provider_contracts import (
 )
 
 
-BEA_ARCHIVE = "https://www.bea.gov/news/archive"
+BEA_ARCHIVE = "https://www.bea.gov/news/current-releases"
+BEA_HISTORICAL_ARCHIVE = (
+    "https://www.bea.gov/news/archive?"
+    "field_related_product_target_id=All&created_1=All&title="
+)
+BEA_API = "https://apps.bea.gov/api/data"
 SOURCE = "U.S. Bureau of Economic Analysis"
 EASTERN = ZoneInfo("America/New_York")
 ALLOWED_RELEASE_HOSTS = frozenset({"bea.gov", "www.bea.gov"})
@@ -397,9 +405,11 @@ def _parse_pio_artifact(
         "PCE_PRICE_INDEX_MOM_PCT",
         "PCE_PRICE_INDEX_YOY_PCT",
         "PCE_PRICE_INDEX_3M_ANN_PCT",
+        "PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY",
         "CORE_PCE_PRICE_INDEX_MOM_PCT",
         "CORE_PCE_PRICE_INDEX_YOY_PCT",
         "CORE_PCE_PRICE_INDEX_3M_ANN_PCT",
+        "CORE_PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY",
     }
     current_codes = {
         str(row["indicator_code"])
@@ -440,9 +450,14 @@ def build_bea_provider(start: date, end: date, session) -> ContextProvider:
             "PCE_PRICE_INDEX_MOM_PCT",
             "PCE_PRICE_INDEX_YOY_PCT",
             "PCE_PRICE_INDEX_3M_ANN_PCT",
+            "PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY",
             "CORE_PCE_PRICE_INDEX_MOM_PCT",
             "CORE_PCE_PRICE_INDEX_YOY_PCT",
             "CORE_PCE_PRICE_INDEX_3M_ANN_PCT",
+            "CORE_PCE_PRICE_INDEX_MOMENTUM_GAP_PROXY",
+            "PERSONAL_INCOME_MOM_PCT",
+            "DISPOSABLE_PERSONAL_INCOME_MOM_PCT",
+            "PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT",
         }
         present = {str(row["indicator_code"]) for row in rows}
         missing = sorted(required - present)
@@ -517,18 +532,30 @@ def _latest_release(
             if family == "gdp"
             else _parse_pio_artifact(artifact, artifact_url, as_of_date, metadata)
         )
+        raw_text = artifact
+        if family == "pio":
+            rows.extend(
+                _parse_pio_income_outlays_release(
+                    release_page,
+                    entry.url,
+                    as_of_date,
+                    metadata,
+                )
+            )
+            raw_text = release_page + "\n" + artifact
         if not rows:
             raise ValueError(
                 "BEA archive timestamp is eligible but artifact timestamp is not: "
                 f"{artifact_url}"
             )
-        parsed.append((rows, artifact, artifact_url))
+        parsed.append((rows, raw_text, artifact_url))
     _reject_conflicting_artifacts(parsed, description)
     return parsed[0]
 
 
 def _collect_archive_entries(session, as_of_date: date) -> list[_ArchiveEntry]:
     current_url = BEA_ARCHIVE
+    historical_started = False
     visited: set[str] = set()
     entries: list[_ArchiveEntry] = []
     seen_entries: set[tuple[str, datetime]] = set()
@@ -558,6 +585,10 @@ def _collect_archive_entries(session, as_of_date: date) -> list[_ArchiveEntry]:
 
         next_url = _archive_next_url(document, current_url)
         if next_url is None:
+            if not historical_started:
+                current_url = BEA_HISTORICAL_ARCHIVE
+                historical_started = True
+                continue
             break
         current_url = next_url
 
@@ -609,19 +640,12 @@ def _reject_conflicting_artifacts(
             )
 
 
-def _semantic_rows(rows: list[dict]) -> dict[tuple[str, str, str], tuple[object, ...]]:
+def _semantic_rows(rows: list[dict]) -> dict[str, tuple[object, ...]]:
+    published_fields = tuple(
+        field for field in ECONOMIC_RELEASE_FIELDS if field != "record_id"
+    )
     return {
-        (
-            str(row["indicator_code"]),
-            str(row["observation_period"]),
-            str(row["calculation_id"]),
-        ): (
-            row["value"],
-            row["unit"],
-            row["seasonal_adjustment"],
-            row["vintage_date"],
-            row["known_as_of"],
-        )
+        str(row["record_id"]): tuple(row[field] for field in published_fields)
         for row in rows
     }
 
@@ -718,6 +742,28 @@ def _release_artifact(
                 f"BEA Tables Only link is not an official BEA attachment: {artifact_url}"
             ) from error
     else:
+        api_fallback_links = [
+            (href, label)
+            for href, label, _ in document.links
+            if _label(label) == "full release"
+        ]
+        if api_fallback_links:
+            if len(api_fallback_links) != 1:
+                raise ValueError("BEA release has ambiguous Full Release attachments")
+            release_pdf_url = urljoin(release_url, api_fallback_links[0][0])
+            try:
+                kind = _require_artifact_url(
+                    release_pdf_url, machine_readable=False
+                )
+            except ValueError as error:
+                raise ValueError(
+                    "BEA Full Release link is not an official BEA attachment: "
+                    f"{release_pdf_url}"
+                ) from error
+            if kind != "pdf":
+                raise ValueError("BEA Full Release attachment must be a PDF")
+            _require_family_artifact_identity(release_pdf_url, family)
+            return _bea_api_artifact(session, metadata)
         pdf_links = [
             (href, label)
             for href, label, _ in document.links
@@ -765,6 +811,206 @@ def _release_artifact(
         tables = _pdf_tables_html(content, metadata)
         _validate_artifact_tables(tables, family)
     return tables, artifact_url
+
+
+def _bea_api_artifact(
+    session, metadata: _ReleaseMetadata
+) -> tuple[str, str]:
+    api_key = os.environ.get("BEA_API_KEY", "").strip()
+    if not api_key:
+        raise ValueError("BEA_API_KEY is required for current BEA release tables")
+    observation_year = int(metadata.observation_period[:4])
+    if metadata.family == "gdp":
+        table_name = "T10106"
+        frequency = "Q"
+    elif metadata.family == "pio":
+        table_name = "T20804"
+        frequency = "M"
+    else:
+        raise ValueError(f"Unsupported BEA release family: {metadata.family}")
+    public_parameters = {
+        "method": "GETDATA",
+        "datasetname": "NIPA",
+        "TableName": table_name,
+        "Frequency": frequency,
+        "Year": f"{observation_year - 1},{observation_year}",
+        "ResultFormat": "JSON",
+    }
+    request_parameters = {"UserID": api_key, **public_parameters}
+    response = _post_response(session, BEA_API, request_parameters)
+    media_type = str(response.headers.get("Content-Type", "")).split(";", 1)[0].lower()
+    if media_type != "application/json":
+        raise ValueError("BEA API response must be JSON")
+    try:
+        payload = json.loads(_response_content(response))
+    except (TypeError, ValueError) as error:
+        raise ValueError("BEA API response is not valid JSON") from error
+    results = payload.get("BEAAPI", {}).get("Results")
+    if not isinstance(results, dict) or "Error" in results:
+        raise ValueError("BEA API response contains an error")
+    _validate_api_revision(results, table_name, metadata.released.date())
+    data = results.get("Data")
+    if not isinstance(data, list):
+        raise ValueError("BEA API response contains no data rows")
+    tables = _api_tables_html(data, metadata)
+    public_url = BEA_API + "?" + urlencode(public_parameters)
+    _require_api_source_url(public_url)
+    return tables, public_url
+
+
+def _post_response(session, url: str, data: dict[str, str]):
+    response = session.post(
+        url,
+        data=data,
+        timeout=30,
+        allow_redirects=False,
+    )
+    status = int(getattr(response, "status_code", 200))
+    history = getattr(response, "history", ())
+    final_url = str(getattr(response, "url", url))
+    if history or 300 <= status < 400 or final_url != url:
+        raise ValueError(f"BEA request must not redirect: {url}")
+    response.raise_for_status()
+    return response
+
+
+def _validate_api_revision(
+    results: dict, table_name: str, release_date: date
+) -> None:
+    notes = results.get("Notes")
+    if not isinstance(notes, list):
+        raise ValueError("BEA API response has no revision note")
+    matches = []
+    for note in notes:
+        if not isinstance(note, dict) or note.get("NoteRef") != table_name:
+            continue
+        match = re.search(
+            r"LastRevised:\s*([A-Za-z]+\s+\d{1,2},\s+\d{4})",
+            str(note.get("NoteText") or ""),
+        )
+        if match:
+            matches.append(datetime.strptime(match.group(1), "%B %d, %Y").date())
+    if matches != [release_date]:
+        raise ValueError(
+            "BEA API table revision must match the selected release date"
+        )
+
+
+def _api_tables_html(data: list[dict], metadata: _ReleaseMetadata) -> str:
+    if metadata.family == "gdp":
+        series = _api_series(
+            data,
+            table_name="T10106",
+            line_number="1",
+            line_description="Gross domestic product",
+            unit_multiplier="6",
+            period_pattern=r"(\d{4})Q([1-4])",
+            period_builder=lambda match: f"{match.group(1)}-Q{match.group(2)}",
+            scale=1_000.0,
+            latest_period=metadata.observation_period,
+        )
+        periods = sorted(series)
+        rows = [
+            ["Line", ""] + periods,
+            ["Line", ""]
+            + ["Seasonally adjusted at annual rates"] * len(periods),
+            ["1", "Gross domestic product (GDP)"]
+            + [str(series[period]) for period in periods],
+        ]
+        return _matrix_table_html(
+            "Table 3. Gross Domestic Product: Level and Change from Preceding "
+            "Period [Billions of chained (2017) dollars]",
+            rows,
+            2,
+        )
+
+    headline = _api_series(
+        data,
+        table_name="T20804",
+        line_number="1",
+        line_description="Personal consumption expenditures (PCE)",
+        unit_multiplier="0",
+        period_pattern=r"(\d{4})M(\d{2})",
+        period_builder=lambda match: f"{match.group(1)}-{match.group(2)}",
+        scale=1.0,
+        latest_period=metadata.observation_period,
+    )
+    core = _api_series(
+        data,
+        table_name="T20804",
+        line_number="25",
+        line_description="PCE excluding food and energy",
+        unit_multiplier="0",
+        period_pattern=r"(\d{4})M(\d{2})",
+        period_builder=lambda match: f"{match.group(1)}-{match.group(2)}",
+        scale=1.0,
+        latest_period=metadata.observation_period,
+    )
+    if set(headline) != set(core):
+        raise ValueError("BEA API headline and Core PCE periods must match")
+    periods = sorted(headline)
+    month_names = (
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    )
+    headers = [
+        f"{period[:4]} {month_names[int(period[-2:]) - 1]}" for period in periods
+    ]
+    rows = [
+        ["Line", ""] + headers,
+        ["", "Chain-type price indexes (2017=100), seasonally adjusted"],
+        ["1", "Personal consumption expenditures (PCE)"]
+        + [str(headline[period]) for period in periods],
+        ["6", "PCE excluding food and energy"]
+        + [str(core[period]) for period in periods],
+    ]
+    return _matrix_table_html(
+        "Table 5. Price Indexes for Personal Consumption Expenditures: "
+        "Level and Percent Change from Preceding Period (Months)",
+        rows,
+        1,
+    )
+
+
+def _api_series(
+    data: list[dict],
+    *,
+    table_name: str,
+    line_number: str,
+    line_description: str,
+    unit_multiplier: str,
+    period_pattern: str,
+    period_builder: Callable[[re.Match], str],
+    scale: float,
+    latest_period: str,
+) -> dict[str, float]:
+    output: dict[str, float] = {}
+    for row in data:
+        if not isinstance(row, dict) or row.get("LineNumber") != line_number:
+            continue
+        if (
+            row.get("TableName") != table_name
+            or row.get("LineDescription") != line_description
+            or row.get("UNIT_MULT") != unit_multiplier
+            or row.get("CL_UNIT") != "Level"
+        ):
+            raise ValueError(f"BEA API {table_name} line identity is invalid")
+        match = re.fullmatch(period_pattern, str(row.get("TimePeriod") or ""))
+        if match is None:
+            raise ValueError(f"BEA API {table_name} period is invalid")
+        period = period_builder(match)
+        if period > latest_period:
+            continue
+        try:
+            value = float(str(row.get("DataValue") or "").replace(",", "")) / scale
+        except ValueError as error:
+            raise ValueError(f"BEA API {table_name} value is invalid") from error
+        if period in output:
+            raise ValueError(f"BEA API {table_name} has duplicate {period} rows")
+        output[period] = value
+    if not output or max(output) != latest_period:
+        raise ValueError(f"BEA API {table_name} latest period conflicts with release")
+    return output
 
 
 def _xlsx_tables_html(content: bytes, family: str) -> str:
@@ -838,6 +1084,146 @@ def _matrix_table_html(
         + "".join(rendered_row(row, "td") for row in rows[header_count:])
         + "</tbody></table>"
     )
+
+
+def _parse_pio_income_outlays_release(
+    text: str,
+    source_url: str,
+    as_of_date: date,
+    metadata: _ReleaseMetadata,
+) -> list[dict]:
+    _require_news_url(source_url)
+    if metadata.released.astimezone(HONG_KONG) > target_sunday_cutoff(as_of_date):
+        return []
+    document = _parse_document(text)
+    narrative = _pio_narrative_changes(document.text)
+    table_values = _pio_measure_table_values(
+        document.tables, metadata.observation_period
+    )
+    current_period = metadata.observation_period
+    required = {
+        "PERSONAL_INCOME_MOM_PCT": "Current-dollar personal income",
+        "DISPOSABLE_PERSONAL_INCOME_MOM_PCT": "Current-dollar DPI",
+        "PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT": "Current-dollar PCE",
+    }
+    for code in required:
+        current = table_values.get(code, {}).get(current_period)
+        if current is None:
+            current = narrative.get(code)
+        if current is None:
+            raise ValueError(f"Archived BEA PIO release is missing {required[code]}")
+        if code in narrative and abs(float(current) - narrative[code]) > 1e-12:
+            raise ValueError(
+                f"Archived BEA PIO release table conflicts with narrative {required[code]}"
+            )
+
+    common = {
+        "release_at_bjt": metadata.released.astimezone(HONG_KONG).isoformat(),
+        "frequency": "monthly",
+        "source": SOURCE,
+        "source_url": source_url,
+        "known_as_of": metadata.released.isoformat(),
+        "vintage_date": metadata.vintage_date,
+        "as_of_date": as_of_date,
+        "seasonal_adjustment": "seasonally adjusted",
+    }
+    previous_period = _previous_month(current_period)
+    rows = []
+    for code, name in required.items():
+        series = table_values.get(code, {})
+        value = series.get(current_period, narrative[code])
+        rows.append(
+            build_release_row(
+                indicator_code=code,
+                indicator_name=name,
+                observation_period=current_period,
+                value=value,
+                previous_value=series.get(previous_period),
+                unit="percent",
+                **common,
+            )
+        )
+    return rows
+
+
+def _pio_narrative_changes(text: str) -> dict[str, float]:
+    patterns = {
+        "PERSONAL_INCOME_MOM_PCT": (
+            r"personal income (increased|decreased) \$[\d,.]+ billion "
+            r"\(([\d.]+) percent(?: at a monthly rate)?\)"
+        ),
+        "DISPOSABLE_PERSONAL_INCOME_MOM_PCT": (
+            r"disposable personal income \(dpi\).*?"
+            r"(increased|decreased) \$[\d,.]+ billion \(([\d.]+) percent\)"
+        ),
+        "PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT": (
+            r"personal consumption expenditures \(pce\) "
+            r"(increased|decreased) \$[\d,.]+ billion \(([\d.]+) percent\)"
+        ),
+    }
+    normalized = _space(text).lower().replace("—", " ").replace("–", " ")
+    values: dict[str, float] = {}
+    for code, pattern in patterns.items():
+        matches = re.findall(pattern, normalized, flags=re.IGNORECASE)
+        if len(matches) != 1:
+            raise ValueError(f"Archived BEA PIO release requires one narrative value for {code}")
+        direction, raw_value = matches[0]
+        value = float(raw_value)
+        values[code] = -value if direction.lower() == "decreased" else value
+    return values
+
+
+def _pio_measure_table_values(
+    tables: list[_Table], observation_period: str
+) -> dict[str, dict[str, float]]:
+    matches = [
+        table
+        for table in tables
+        if _label(table.searchable_title).startswith(
+            "personal income and related measures"
+        )
+    ]
+    if not matches:
+        return {}
+    if len(matches) != 1:
+        raise ValueError("Archived BEA PIO release has ambiguous income-measures tables")
+    table = matches[0]
+    grid = table.grid()
+    header_rows = _header_row_indexes(table)
+    headers = _column_headers(grid, header_rows)
+    current_year, current_month = (int(value) for value in observation_period.split("-"))
+    period_columns: dict[int, str] = {}
+    for column, parts in headers.items():
+        month = next(
+            (
+                _MONTHS[_label(part)]
+                for part in parts
+                if _label(part) in _MONTHS
+            ),
+            None,
+        )
+        if month is None:
+            continue
+        year = current_year if month <= current_month else current_year - 1
+        period_columns[column] = f"{year:04d}-{month:02d}"
+    labels = {
+        "current-dollar personal income": "PERSONAL_INCOME_MOM_PCT",
+        "current-dollar dpi": "DISPOSABLE_PERSONAL_INCOME_MOM_PCT",
+        "current-dollar pce": "PERSONAL_CONSUMPTION_EXPENDITURES_MOM_PCT",
+    }
+    output: dict[str, dict[str, float]] = {}
+    for row_index, row in enumerate(grid):
+        if row_index in header_rows or not row:
+            continue
+        code = labels.get(_label(row[0]))
+        if code is None:
+            continue
+        series = output.setdefault(code, {})
+        for column, period in period_columns.items():
+            if column >= len(row) or _missing(row[column]):
+                continue
+            _store_value(series, period, _number(row[column]), code)
+    return output
 
 
 def _excel_cell(value: object) -> str:
@@ -1059,8 +1445,13 @@ def _require_release_url(url: str) -> None:
     except ValueError:
         try:
             _require_artifact_url(url, machine_readable=None)
-        except ValueError as error:
-            raise ValueError(f"URL is outside an official BEA release: {url}") from error
+        except ValueError:
+            try:
+                _require_api_source_url(url)
+            except ValueError as error:
+                raise ValueError(
+                    f"URL is outside an official BEA release: {url}"
+                ) from error
 
 
 def _require_news_url(url: str) -> None:
@@ -1078,15 +1469,68 @@ def _require_news_url(url: str) -> None:
 
 def _require_archive_url(url: str) -> None:
     parsed = urlparse(url)
+    if parsed.path == "/news/current-releases":
+        query_is_valid = not parsed.query or re.fullmatch(
+            r"page=\d+", parsed.query
+        ) is not None
+    elif parsed.path == "/news/archive":
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        query_is_valid = (
+            set(query) <= {
+                "field_related_product_target_id",
+                "created_1",
+                "title",
+                "page",
+            }
+            and query.get("field_related_product_target_id") == ["All"]
+            and query.get("created_1") == ["All"]
+            and query.get("title") == [""]
+            and (
+                "page" not in query
+                or len(query["page"]) == 1
+                and re.fullmatch(r"\d+", query["page"][0]) is not None
+            )
+        )
+    else:
+        query_is_valid = False
     if (
         parsed.scheme != "https"
         or parsed.hostname not in ALLOWED_RELEASE_HOSTS
-        or parsed.path != "/news/archive"
         or parsed.params
-        or (parsed.query and re.fullmatch(r"page=\d+", parsed.query) is None)
+        or not query_is_valid
         or parsed.fragment
     ):
         raise ValueError(f"URL is outside the official BEA archive: {url}")
+
+
+def _require_api_source_url(url: str) -> None:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "apps.bea.gov"
+        or parsed.path != "/api/data"
+        or parsed.params
+        or parsed.fragment
+        or set(query)
+        != {
+            "method",
+            "datasetname",
+            "TableName",
+            "Frequency",
+            "Year",
+            "ResultFormat",
+        }
+        or query.get("method") != ["GETDATA"]
+        or query.get("datasetname") != ["NIPA"]
+        or query.get("TableName") not in [["T10106"], ["T20804"]]
+        or query.get("Frequency") not in [["Q"], ["M"]]
+        or query.get("ResultFormat") != ["JSON"]
+        or len(query.get("Year", [])) != 1
+        or re.fullmatch(r"\d{4},\d{4}", query["Year"][0]) is None
+        or "UserID" in query
+    ):
+        raise ValueError(f"URL is outside the official BEA API: {url}")
 
 
 def _require_artifact_url(

@@ -29,10 +29,19 @@ from .commodities import (
     parse_eia_series,
 )
 from .company_events import load_company_watchlist, parse_sec_submissions
+from .economic_sources import (
+    build_bea_provider,
+    build_bls_provider,
+    build_census_provider,
+    build_census_durable_goods_provider,
+    build_census_housing_provider,
+)
 from .events import (
     parse_bls_calendar,
     parse_census_calendar,
     parse_fed_calendar,
+    parse_fomc_calendar,
+    parse_fomc_statement,
     select_event_window,
 )
 from .financial_conditions import (
@@ -58,7 +67,12 @@ from .volatility import (
 
 BLS_URL = "https://www.bls.gov/schedule/{year}/home.htm"
 FED_URL = "https://www.federalreserve.gov/newsevents/calendar.htm"
+FOMC_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 CENSUS_URL = "https://www.census.gov/economic-indicators/calendar-listview.html"
+ISM_URL = (
+    "https://www.ismworld.org/supply-management-news-and-reports/"
+    "reports/ism-pmi-reports/"
+)
 NASDAQ_URL = "https://www.nasdaqtrader.com/Trader.aspx?id=DailyMarketSummary"
 FINRA_URL = "https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics"
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
@@ -287,6 +301,76 @@ def _fed_provider(
         raw_text="\n".join(raw),
         source="Federal Reserve Board",
         source_url=FED_URL,
+    )
+
+
+def _fomc_provider(
+    session: requests.Session, start: date, end: date
+) -> ProviderResult:
+    calendar = _text(session, FOMC_URL)
+    events = select_event_window(parse_fomc_calendar(calendar), start, end)
+    raw = [calendar]
+    enriched = []
+    for event in events:
+        if "notation vote" in str(event["event_name"]).lower():
+            enriched.append(event)
+            continue
+        event_date = event["event_date"]
+        statement_url = (
+            "https://www.federalreserve.gov/newsevents/pressreleases/"
+            f"monetary{event_date.strftime('%Y%m%d')}a.htm"
+        )
+        statement = _text(session, statement_url)
+        raw.append(statement)
+        decision = parse_fomc_statement(statement, statement_url, event_date)
+        row = dict(event)
+        row.update(
+            {
+                "event_type": "fomc_policy_decision",
+                "actual": (
+                    f"{decision['action']} {decision['target_lower']:g}%-"
+                    f"{decision['target_upper']:g}%"
+                ),
+                "source_url": statement_url,
+            }
+        )
+        enriched.append(row)
+    return ProviderResult(
+        category="events",
+        rows=enriched,
+        raw_text="\n".join(raw),
+        source="Federal Reserve Board",
+        source_url=FOMC_URL,
+    )
+
+
+def _ism_licensed_provider() -> ContextProvider:
+    def fetch() -> ProviderResult:
+        return ProviderResult(
+            category="economic_releases",
+            rows=[],
+            raw_text="",
+            source="Institute for Supply Management",
+            source_url=ISM_URL,
+            status="UNAVAILABLE_LICENSED",
+            notes=(
+                "ISM PMI time-series reproduction requires permission; no value "
+                "or substitute series is published."
+            ),
+        )
+
+    return ContextProvider(
+        spec=ProviderSpec(
+            name="ism_manufacturing_pmi",
+            category="economic_releases",
+            source_tier="licensed",
+            requiredness="optional",
+            provider_version="1.0.0",
+            schema_version="economic-release-v1",
+            frequency="monthly",
+            freshness_days=None,
+        ),
+        fetch=fetch,
     )
 
 
@@ -960,6 +1044,7 @@ def build_default_providers(
     fetchers: dict[str, Callable[[], ProviderResult]] = {
         "bls_calendar": lambda: _bls_provider(client, start, end),
         "federal_reserve_calendar": lambda: _fed_provider(client, start, end),
+        "fomc_calendar": lambda: _fomc_provider(client, start, end),
         "census_calendar": lambda: _event_provider(
             client,
             url=CENSUS_URL,
@@ -996,6 +1081,7 @@ def build_default_providers(
     definitions = {
         "bls_calendar": ("events", "event", "required"),
         "federal_reserve_calendar": ("events", "event", "required"),
+        "fomc_calendar": ("events", "event", "required"),
         "census_calendar": ("events", "event", "required"),
         "nasdaq_market_summary": ("market_internals", "daily", "required"),
         "cftc_tff": ("positioning_flows", "weekly", "required"),
@@ -1016,7 +1102,7 @@ def build_default_providers(
         "sse_microstructure": ("market_internals", "daily", "required"),
         "szse_microstructure": ("market_internals", "daily", "required"),
     }
-    return {
+    providers = {
         name: ContextProvider(
             spec=ProviderSpec(
                 name=name,
@@ -1032,6 +1118,19 @@ def build_default_providers(
         )
         for name, (category, frequency, requiredness) in definitions.items()
     }
+    providers.update(
+        {
+            "bls_economic_releases": build_bls_provider(start, end, client),
+            "bea_economic_releases": build_bea_provider(start, end, client),
+            "census_retail_sales": build_census_provider(start, end, client),
+            "census_housing": build_census_housing_provider(start, end, client),
+            "census_durable_goods": build_census_durable_goods_provider(
+                start, end, client
+            ),
+            "ism_manufacturing_pmi": _ism_licensed_provider(),
+        }
+    )
+    return providers
 
 
 __all__ = [
