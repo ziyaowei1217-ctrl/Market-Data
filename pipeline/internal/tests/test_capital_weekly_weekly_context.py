@@ -984,6 +984,27 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(tables["source_log"][0]["status"], "FETCH_FAILED")
         self.assertIn("does not match", tables["source_log"][0]["notes"])
 
+    def test_history_config_must_be_injected_as_a_complete_pair(self):
+        limits = {
+            "daily": 400,
+            "weekly": 160,
+            "monthly": 84,
+            "annual": 12,
+            "marketing_year": 12,
+        }
+
+        for kwargs in (
+            {"history_limits": limits},
+            {"commodity_registry": {"NATGAS_HH": "natural_gas"}},
+        ):
+            with self.subTest(kwargs=kwargs):
+                with self.assertRaisesRegex(ValueError, "injected together"):
+                    run_weekly_context(
+                        {},
+                        as_of_date=date(2026, 8, 30),
+                        **kwargs,
+                    )
+
     def test_weekly_context_adds_bounded_metric_history_without_changing_existing_arrays(self):
         rows = []
         for observation_date, value in (
@@ -1037,6 +1058,7 @@ class WeeklyContextTests(unittest.TestCase):
                 "annual": 12,
                 "marketing_year": 12,
             },
+            commodity_registry={"NATGAS_HH": "natural_gas"},
         )
 
         self.assertEqual(
@@ -1108,6 +1130,7 @@ class WeeklyContextTests(unittest.TestCase):
                 "annual": 12,
                 "marketing_year": 12,
             },
+            commodity_registry={"NATGAS_HH": "natural_gas"},
         )
 
         self.assertEqual(tables["commodity_metric_history"], [])

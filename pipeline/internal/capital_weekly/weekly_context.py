@@ -17,7 +17,6 @@ from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
 from .commodity_research import (
     METRIC_HISTORY_FIELDS,
     bounded_metric_history,
-    load_history_limits,
 )
 
 from .context.common import (
@@ -124,6 +123,7 @@ def run_weekly_context(
     as_of_date: date | None = None,
     audit_secrets: Sequence[str] = (),
     history_limits: Mapping[str, object] | None = None,
+    commodity_registry: Mapping[str, object] | None = None,
 ) -> dict[str, list[dict]]:
     normalized_audit_secrets = _normalize_audit_secrets(audit_secrets)
     tables = {category: [] for category in CATEGORY_FILES}
@@ -313,11 +313,19 @@ def run_weekly_context(
         run_date,
         audit_secrets=normalized_audit_secrets,
     )
-    tables["commodity_metric_history"] = bounded_metric_history(
-        commodity_history_inputs,
-        run_date,
-        history_limits if history_limits is not None else load_history_limits(),
-    )
+    if history_limits is None and commodity_registry is None:
+        tables["commodity_metric_history"] = []
+    elif history_limits is None or commodity_registry is None:
+        raise ValueError(
+            "history_limits and commodity_registry must be injected together"
+        )
+    else:
+        tables["commodity_metric_history"] = bounded_metric_history(
+            commodity_history_inputs,
+            run_date,
+            history_limits,
+            commodity_registry,
+        )
     return tables
 
 

@@ -1790,6 +1790,69 @@ class MacroAssetHistoryBundleTests(unittest.TestCase):
         self.assertIsInstance(legacy[0], pd.DataFrame)
         self.assertIsInstance(legacy[1], pd.DataFrame)
 
+    def test_future_known_as_of_cannot_become_the_macro_snapshot(self):
+        as_of = date(2026, 8, 30)
+        universe = [
+            self._config(
+                "WTI",
+                "eia_v2",
+                commodity_code="WTI",
+                commodity_family="refined_products",
+                frequency="daily",
+                price_kind="official_cash",
+                level_unit="$/BBL",
+                sort_order=1,
+            )
+        ]
+        for invalid_known_as_of in (
+            "2026-08-31T00:00:00Z",
+            "2026-08-29T12:00:00",
+        ):
+            with self.subTest(known_as_of=invalid_known_as_of):
+                history = [
+                    {
+                        "date": date(2026, 8, 22),
+                        "known_as_of": "2026-08-22T12:00:00Z",
+                        "value": 70.0,
+                        "unit": "$/BBL",
+                    },
+                    {
+                        "date": date(2026, 8, 29),
+                        "known_as_of": invalid_known_as_of,
+                        "value": 99.0,
+                        "unit": "$/BBL",
+                    },
+                ]
+
+                with patch.object(
+                    macro_assets_module,
+                    "load_macro_asset_universe",
+                    return_value=universe,
+                ), patch.object(
+                    macro_assets_module,
+                    "_fetch_config_history",
+                    return_value=(
+                        history,
+                        b"official raw",
+                        "https://official.example.test/WTI",
+                    ),
+                ):
+                    bundle = fetch_macro_asset_bundle(
+                        as_of_date=as_of,
+                        allow_partial=True,
+                    )
+
+                self.assertEqual(
+                    bundle.detail.loc[0, "qc_flag"],
+                    "FETCH_FAILED",
+                )
+                self.assertIsNone(bundle.detail.loc[0, "latest_value"])
+                self.assertEqual(
+                    bundle.source_log.loc[0, "status"],
+                    "FETCH_FAILED",
+                )
+                self.assertTrue(bundle.commodity_price_history.empty)
+
 
 if __name__ == "__main__":
     unittest.main()

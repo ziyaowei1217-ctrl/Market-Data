@@ -2,15 +2,12 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import hashlib
 import json
 import math
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
-
-from pipeline.internal.common import DEFAULT_CONFIG_PATH
 
 from .context.common import (
     MEASUREMENT_KIND_VALUES,
@@ -98,17 +95,7 @@ def stable_record_id(namespace: str, identity: Mapping[str, object]) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
-def load_history_limits(path: str | Path | None = None) -> dict[str, int]:
-    config_path = Path(path) if path is not None else DEFAULT_CONFIG_PATH
-    document = json.loads(config_path.read_text(encoding="utf-8"))
-    try:
-        limits = document["commodity_research"]["history_limits"]
-    except (KeyError, TypeError) as error:
-        raise ValueError("commodity_research.history_limits must be configured") from error
-    return _validated_limits(limits)
-
-
-def _validated_limits(limits: Mapping[str, object]) -> dict[str, int]:
+def validate_history_limits(limits: Mapping[str, object]) -> dict[str, int]:
     if not isinstance(limits, Mapping):
         raise ValueError("history_limits must be a mapping")
     if set(limits) != set(HISTORY_FREQUENCIES):
@@ -132,6 +119,38 @@ def _validated_limits(limits: Mapping[str, object]) -> dict[str, int]:
             )
         normalized[frequency] = value
     return normalized
+
+
+def validate_commodity_registry(
+    registry: Mapping[str, object],
+) -> dict[str, str]:
+    if not isinstance(registry, Mapping) or not registry:
+        raise ValueError("commodity_registry must be a nonempty mapping")
+    normalized: dict[str, str] = {}
+    for raw_code, raw_family in registry.items():
+        code = _required_text(raw_code, "commodity_code")
+        family = _validate_family(raw_family)
+        if code in normalized:
+            raise ValueError(f"Duplicate commodity_code in registry: {code}")
+        normalized[code] = family
+    return normalized
+
+
+def _validate_code_family(
+    commodity_code: str,
+    commodity_family: str,
+    registry: Mapping[str, str],
+) -> None:
+    expected_family = registry.get(commodity_code)
+    if expected_family is None:
+        raise ValueError(
+            f"Unsupported commodity_code in commodity registry: {commodity_code}"
+        )
+    if expected_family != commodity_family:
+        raise ValueError(
+            "Commodity code-family mismatch: "
+            f"{commodity_code} requires {expected_family}, got {commodity_family}"
+        )
 
 
 def _field(record: object, name: str, default: Any = None) -> Any:
@@ -176,7 +195,8 @@ def _known_as_of(value: object) -> tuple[datetime | None, str | None]:
         raise ValueError("known_as_of must be an ISO timestamp with a UTC offset") from error
     if known.tzinfo is None or known.utcoffset() is None:
         raise ValueError("known_as_of must include a UTC offset")
-    return known, known.isoformat()
+    canonical = known.astimezone(timezone.utc)
+    return canonical, canonical.isoformat().replace("+00:00", "Z")
 
 
 def _finite_value(value: object) -> int | float | None:
@@ -209,15 +229,20 @@ def bounded_price_history(
     universe: Iterable[object],
     as_of_date: date,
     limits: Mapping[str, object],
+    commodity_registry: Mapping[str, object],
 ) -> list[dict]:
-    normalized_limits = _validated_limits(limits)
+    normalized_limits = validate_history_limits(limits)
+    normalized_registry = validate_commodity_registry(commodity_registry)
     if isinstance(as_of_date, datetime) or not isinstance(as_of_date, date):
         raise ValueError("as_of_date must be a date")
     if not isinstance(histories, Mapping):
         raise TypeError("histories must be a mapping")
     universe_rows = list(universe)
     cutoff = target_sunday_cutoff(as_of_date)
-    grouped: dict[tuple[str, str], list[tuple[date, str | None, dict]]] = defaultdict(list)
+    grouped: dict[
+        tuple[str, str],
+        list[tuple[date, datetime | None, dict]],
+    ] = defaultdict(list)
     frequencies: dict[str, str] = {}
     seen_ids: set[str] = set()
     seen_series: set[str] = set()
@@ -238,6 +263,11 @@ def bounded_price_history(
             _field(config, "commodity_code"), "commodity_code"
         )
         commodity_family = _validate_family(_field(config, "commodity_family"))
+        _validate_code_family(
+            commodity_code,
+            commodity_family,
+            normalized_registry,
+        )
         price_kind = _required_text(_field(config, "price_kind"), "price_kind")
         if price_kind not in PRICE_KINDS:
             raise ValueError(f"Unsupported price_kind: {price_kind}")
@@ -253,10 +283,16 @@ def bounded_price_history(
             known, known_text = _known_as_of(
                 raw.get("known_as_of", config_known)
             )
-            if observation > as_of_date or (
-                known is not None and known.astimezone(cutoff.tzinfo) > cutoff
-            ):
-                continue
+            if observation > as_of_date:
+                raise ValueError(
+                    "observation_date exceeds as_of_date: "
+                    f"{observation.isoformat()} > {as_of_date.isoformat()}"
+                )
+            if known is not None and known > cutoff:
+                raise ValueError(
+                    "known_as_of exceeds target Sunday cutoff: "
+                    f"{known_text} > {cutoff.isoformat()}"
+                )
             qc_flag = str(raw.get("qc_flag", "OK") or "").strip()
             if qc_flag != "OK":
                 raise ValueError(f"qc_flag must be OK, got {qc_flag or 'blank'}")
@@ -297,14 +333,18 @@ def bounded_price_history(
                 },
             )
             grouped[(commodity_code, series_code)].append(
-                (observation, known_text, row)
+                (observation, known, row)
             )
 
     selected: list[dict] = []
     for key in sorted(grouped):
         rows = sorted(
             grouped[key],
-            key=lambda item: (item[0], item[1] or "", item[2]["record_id"]),
+            key=lambda item: (
+                item[0],
+                item[1] or datetime.min.replace(tzinfo=timezone.utc),
+                item[2]["record_id"],
+            ),
         )
         series_code = key[1]
         selected.extend(
@@ -317,12 +357,17 @@ def bounded_metric_history(
     rows: Iterable[dict],
     as_of_date: date,
     limits: Mapping[str, object],
+    commodity_registry: Mapping[str, object],
 ) -> list[dict]:
-    normalized_limits = _validated_limits(limits)
+    normalized_limits = validate_history_limits(limits)
+    normalized_registry = validate_commodity_registry(commodity_registry)
     if isinstance(as_of_date, datetime) or not isinstance(as_of_date, date):
         raise ValueError("as_of_date must be a date")
     cutoff = target_sunday_cutoff(as_of_date)
-    grouped: dict[tuple[str, str, str, str, str | None], list[tuple[date, str | None, dict]]] = defaultdict(list)
+    grouped: dict[
+        tuple[str, str, str, str, str | None],
+        list[tuple[date, datetime | None, dict]],
+    ] = defaultdict(list)
     frequencies: dict[tuple[str, str, str, str, str | None], str] = {}
     seen_ids: set[str] = set()
 
@@ -334,10 +379,16 @@ def bounded_metric_history(
             raw.get("observation_date", raw.get("as_of_date"))
         )
         known, known_text = _known_as_of(raw.get("known_as_of"))
-        if observation > as_of_date or (
-            known is not None and known.astimezone(cutoff.tzinfo) > cutoff
-        ):
-            continue
+        if observation > as_of_date:
+            raise ValueError(
+                "observation_date exceeds as_of_date: "
+                f"{observation.isoformat()} > {as_of_date.isoformat()}"
+            )
+        if known is not None and known > cutoff:
+            raise ValueError(
+                "known_as_of exceeds target Sunday cutoff: "
+                f"{known_text} > {cutoff.isoformat()}"
+            )
         qc_flag = str(raw.get("qc_flag") or "").strip()
         if qc_flag != "OK":
             raise ValueError(f"qc_flag must be OK, got {qc_flag or 'blank'}")
@@ -346,6 +397,11 @@ def bounded_metric_history(
             continue
         commodity_code = _required_text(raw.get("commodity_code"), "commodity_code")
         commodity_family = _validate_family(raw.get("commodity_family"))
+        _validate_code_family(
+            commodity_code,
+            commodity_family,
+            normalized_registry,
+        )
         metric_code = _required_text(raw.get("metric_code"), "metric_code")
         metric_role = _required_text(raw.get("metric_role"), "metric_role")
         if metric_role not in METRIC_ROLE_VALUES:
@@ -422,13 +478,17 @@ def bounded_metric_history(
             raise ValueError(
                 f"Metric history identity has mixed frequencies: {metric_code}"
             )
-        grouped[group].append((observation, known_text, row))
+        grouped[group].append((observation, known, row))
 
     selected: list[dict] = []
     for group in sorted(grouped, key=lambda item: tuple(value or "" for value in item)):
         history = sorted(
             grouped[group],
-            key=lambda item: (item[0], item[1] or "", item[2]["record_id"]),
+            key=lambda item: (
+                item[0],
+                item[1] or datetime.min.replace(tzinfo=timezone.utc),
+                item[2]["record_id"],
+            ),
         )
         selected.extend(
             item[2]
@@ -442,6 +502,7 @@ __all__ = [
     "PRICE_HISTORY_FIELDS",
     "bounded_metric_history",
     "bounded_price_history",
-    "load_history_limits",
     "stable_record_id",
+    "validate_commodity_registry",
+    "validate_history_limits",
 ]

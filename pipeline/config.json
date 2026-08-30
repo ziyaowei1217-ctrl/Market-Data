@@ -7,7 +7,28 @@
       "monthly": 84,
       "annual": 12,
       "marketing_year": 12
-    }
+    },
+    "universe": [
+      {"commodity_code": "NATGAS_HH", "commodity_family": "natural_gas"},
+      {"commodity_code": "WTI", "commodity_family": "refined_products"},
+      {"commodity_code": "BRENT", "commodity_family": "refined_products"},
+      {"commodity_code": "RBOB_US", "commodity_family": "refined_products"},
+      {"commodity_code": "ULSD_US", "commodity_family": "refined_products"},
+      {"commodity_code": "JET_US", "commodity_family": "refined_products"},
+      {"commodity_code": "PROPANE_US", "commodity_family": "refined_products"},
+      {"commodity_code": "COPPER_COMEX", "commodity_family": "copper"},
+      {"commodity_code": "GOLD_COMEX", "commodity_family": "gold"},
+      {"commodity_code": "CORN", "commodity_family": "grains_oilseeds"},
+      {"commodity_code": "SOYBEANS", "commodity_family": "grains_oilseeds"},
+      {"commodity_code": "WHEAT", "commodity_family": "grains_oilseeds"},
+      {"commodity_code": "RICE", "commodity_family": "grains_oilseeds"},
+      {"commodity_code": "COTTON", "commodity_family": "softs"},
+      {"commodity_code": "SUGAR", "commodity_family": "softs"},
+      {"commodity_code": "COFFEE", "commodity_family": "softs"},
+      {"commodity_code": "COCOA", "commodity_family": "softs"},
+      {"commodity_code": "CATTLE", "commodity_family": "livestock"},
+      {"commodity_code": "HOGS", "commodity_family": "livestock"}
+    ]
   },
   "indices": [
     {

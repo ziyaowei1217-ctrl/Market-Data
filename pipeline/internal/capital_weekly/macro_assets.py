@@ -19,6 +19,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from pipeline.internal.common import (
+    DEFAULT_CONFIG_PATH,
     load_config_rows,
     sanitize_audit_bytes,
     sanitize_audit_text,
@@ -31,7 +32,8 @@ from pipeline.internal.capital_weekly.commodity_prices import (
 from pipeline.internal.capital_weekly.commodity_research import (
     PRICE_HISTORY_FIELDS,
     bounded_price_history,
-    load_history_limits,
+    validate_commodity_registry,
+    validate_history_limits,
 )
 from pipeline.internal.capital_weekly.context.eia_commodities import (
     CommodityHttpSpec,
@@ -39,6 +41,9 @@ from pipeline.internal.capital_weekly.context.eia_commodities import (
     eia_response_total,
     fetch_eia_batches,
     load_commodity_http_policies,
+)
+from pipeline.internal.capital_weekly.context.provider_contracts import (
+    target_sunday_cutoff,
 )
 from pipeline.internal.capital_weekly.official_http import official_get
 from pipeline.internal.capital_weekly.returns import calculate_macro_snapshot, parse_date
@@ -85,6 +90,43 @@ class MacroAssetBundle:
     detail: pd.DataFrame
     source_log: pd.DataFrame
     commodity_price_history: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class CommodityResearchConfig:
+    history_limits: dict[str, int]
+    commodity_registry: dict[str, str]
+
+
+def load_commodity_research_config(
+    path: str | Path | None = None,
+) -> CommodityResearchConfig:
+    config_path = Path(path) if path is not None else DEFAULT_CONFIG_PATH
+    document = json.loads(config_path.read_text(encoding="utf-8"))
+    try:
+        research = document["commodity_research"]
+        raw_limits = research["history_limits"]
+        raw_universe = research["universe"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "commodity_research history_limits and universe must be configured"
+        ) from error
+    if not isinstance(raw_universe, list) or not all(
+        isinstance(row, Mapping) for row in raw_universe
+    ):
+        raise ValueError("commodity_research.universe must be a row list")
+    registry: dict[str, object] = {}
+    for row in raw_universe:
+        code = str(row.get("commodity_code") or "").strip()
+        if code in registry:
+            raise ValueError(
+                f"Duplicate commodity_code in commodity_research.universe: {code}"
+            )
+        registry[code] = row.get("commodity_family")
+    return CommodityResearchConfig(
+        history_limits=validate_history_limits(raw_limits),
+        commodity_registry=validate_commodity_registry(registry),
+    )
 
 
 def load_macro_asset_universe(
@@ -1408,6 +1450,28 @@ def _iso(value):
     return value.isoformat() if value else None
 
 
+def _validate_history_known_as_of(history: Iterable[dict], target_date: date) -> None:
+    cutoff = target_sunday_cutoff(target_date)
+    for point in history:
+        raw = point.get("known_as_of")
+        if raw is None or not str(raw).strip():
+            continue
+        try:
+            known = datetime.fromisoformat(
+                str(raw).strip().replace("Z", "+00:00")
+            )
+        except ValueError as error:
+            raise ValueError(
+                "known_as_of must be an ISO timestamp with a UTC offset"
+            ) from error
+        if known.tzinfo is None or known.utcoffset() is None:
+            raise ValueError("known_as_of must include a UTC offset")
+        if known.astimezone(cutoff.tzinfo) > cutoff:
+            raise ValueError(
+                f"known_as_of exceeds target Sunday {target_date.isoformat()}"
+            )
+
+
 def _snapshot_fields(snapshot) -> dict:
     return {
         "latest_date": _iso(snapshot.latest_date), "latest_value": snapshot.latest_value,
@@ -1578,6 +1642,10 @@ def fetch_macro_asset_bundle(
                     for point in history
                     if parse_date(point["date"]) <= as_of_date
                 ]
+            _validate_history_known_as_of(
+                history,
+                as_of_date or date.today(),
+            )
             snapshot = calculate_macro_snapshot(history, config.change_unit)
             if config.provider == "world_bank_pink_sheet":
                 if not str(config.freshness_days).strip():
@@ -1699,11 +1767,13 @@ def fetch_macro_asset_bundle(
         and Path(universe_path).suffix.lower() == ".csv"
         else universe
     )
+    research_config = load_commodity_research_config(config_path)
     history_rows = bounded_price_history(
         price_histories,
         history_universe,
         as_of_date or date.today(),
-        load_history_limits(config_path),
+        research_config.history_limits,
+        research_config.commodity_registry,
     )
     return MacroAssetBundle(
         detail=detail,

@@ -7,12 +7,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from pipeline.internal.capital_weekly import macro_assets as macro_assets_module
 from pipeline.internal.capital_weekly.commodity_research import (
     METRIC_HISTORY_FIELDS,
     PRICE_HISTORY_FIELDS,
     bounded_metric_history,
     bounded_price_history,
-    load_history_limits,
     stable_record_id,
 )
 
@@ -23,6 +23,10 @@ LIMITS = {
     "monthly": 84,
     "annual": 12,
     "marketing_year": 12,
+}
+REGISTRY = {
+    "NATGAS_HH": "natural_gas",
+    "WTI": "refined_products",
 }
 
 
@@ -135,7 +139,20 @@ class HistoryLimitConfigTests(unittest.TestCase):
         root.mkdir(parents=True, exist_ok=True)
         path = root / "config.json"
         path.write_text(
-            json.dumps({"commodity_research": {"history_limits": limits}}),
+            json.dumps(
+                {
+                    "commodity_research": {
+                        "history_limits": limits,
+                        "universe": [
+                            {
+                                "commodity_code": code,
+                                "commodity_family": family,
+                            }
+                            for code, family in REGISTRY.items()
+                        ],
+                    }
+                }
+            ),
             encoding="utf-8",
         )
         return path
@@ -144,7 +161,12 @@ class HistoryLimitConfigTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = self._write_config(Path(directory), LIMITS)
 
-            self.assertEqual(load_history_limits(path), LIMITS)
+            self.assertEqual(
+                macro_assets_module.load_commodity_research_config(
+                    path
+                ).history_limits,
+                LIMITS,
+            )
 
     def test_missing_or_nonpositive_limit_fails_without_a_default(self):
         invalid_limits = [
@@ -160,7 +182,53 @@ class HistoryLimitConfigTests(unittest.TestCase):
                 with self.subTest(limits=limits):
                     path = self._write_config(root / str(index), limits)
                     with self.assertRaisesRegex(ValueError, "history_limits"):
-                        load_history_limits(path)
+                        macro_assets_module.load_commodity_research_config(path)
+
+    def test_production_config_declares_the_exact_code_family_registry(self):
+        loader = getattr(
+            macro_assets_module,
+            "load_commodity_research_config",
+            None,
+        )
+        self.assertIsNotNone(loader)
+
+        config = loader()
+
+        self.assertEqual(
+            config.commodity_registry,
+            {
+                "NATGAS_HH": "natural_gas",
+                "WTI": "refined_products",
+                "BRENT": "refined_products",
+                "RBOB_US": "refined_products",
+                "ULSD_US": "refined_products",
+                "JET_US": "refined_products",
+                "PROPANE_US": "refined_products",
+                "COPPER_COMEX": "copper",
+                "GOLD_COMEX": "gold",
+                "CORN": "grains_oilseeds",
+                "SOYBEANS": "grains_oilseeds",
+                "WHEAT": "grains_oilseeds",
+                "RICE": "grains_oilseeds",
+                "COTTON": "softs",
+                "SUGAR": "softs",
+                "COFFEE": "softs",
+                "COCOA": "softs",
+                "CATTLE": "livestock",
+                "HOGS": "livestock",
+            },
+        )
+        for price_config in macro_assets_module.load_macro_asset_universe():
+            if price_config.provider not in {
+                "eia_v2",
+                "world_bank_pink_sheet",
+            }:
+                continue
+            with self.subTest(series_code=price_config.series_code):
+                self.assertEqual(
+                    config.commodity_registry.get(price_config.commodity_code),
+                    price_config.commodity_family,
+                )
 
 
 class BoundedPriceHistoryTests(unittest.TestCase):
@@ -179,23 +247,18 @@ class BoundedPriceHistoryTests(unittest.TestCase):
             universe.append(_price_config(series, frequency, provider=provider))
             points = _price_points(as_of, count=count, step_days=step)
             expected_oldest[series] = points[-limit]["date"].isoformat()
-            points.extend(
-                [
-                    {
-                        "date": as_of + timedelta(days=1),
-                        "known_as_of": "2026-08-31T00:00:00+00:00",
-                        "value": 999_001.0,
-                    },
-                    {
-                        "date": as_of,
-                        "known_as_of": "2026-08-31T00:00:00+00:00",
-                        "value": 999_002.0,
-                    },
-                ]
-            )
             histories[series] = points
 
-        rows = bounded_price_history(histories, universe, as_of, LIMITS)
+        rows = bounded_price_history(
+            histories,
+            universe,
+            as_of,
+            LIMITS,
+            {
+                config["commodity_code"]: config["commodity_family"]
+                for config in universe
+            },
+        )
 
         self.assertTrue(all(tuple(row) == PRICE_HISTORY_FIELDS for row in rows))
         for series, _frequency, _count, _step, limit, _provider in definitions:
@@ -208,8 +271,38 @@ class BoundedPriceHistoryTests(unittest.TestCase):
                     sorted(row["observation_date"] for row in selected),
                 )
                 self.assertEqual(selected[-1]["unit"], f"native-{_frequency}")
-                self.assertNotIn(999_001.0, [row["value"] for row in selected])
-                self.assertNotIn(999_002.0, [row["value"] for row in selected])
+
+    def test_future_price_observation_or_vintage_is_rejected(self):
+        as_of = date(2026, 8, 30)
+        invalid = (
+            (
+                {
+                    "date": as_of + timedelta(days=1),
+                    "known_as_of": "2026-08-30T12:00:00Z",
+                    "value": 99.0,
+                },
+                "observation_date exceeds as_of_date",
+            ),
+            (
+                {
+                    "date": as_of,
+                    "known_as_of": "2026-08-31T00:00:00Z",
+                    "value": 99.0,
+                },
+                "known_as_of exceeds target Sunday",
+            ),
+        )
+
+        for point, message in invalid:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    bounded_price_history(
+                        {"WTI": [point]},
+                        [_price_config("WTI", "daily")],
+                        as_of,
+                        LIMITS,
+                        REGISTRY,
+                    )
 
     def test_duplicate_semantic_identity_fails_even_when_values_match(self):
         as_of = date(2026, 8, 30)
@@ -225,6 +318,31 @@ class BoundedPriceHistoryTests(unittest.TestCase):
                 [_price_config("WTI", "daily")],
                 as_of,
                 LIMITS,
+                REGISTRY,
+            )
+
+    def test_equivalent_known_as_of_offsets_are_one_semantic_identity(self):
+        as_of = date(2026, 8, 30)
+        points = [
+            {
+                "date": as_of,
+                "known_as_of": "2026-08-30T08:00:00Z",
+                "value": 78.5,
+            },
+            {
+                "date": as_of,
+                "known_as_of": "2026-08-30T16:00:00+08:00",
+                "value": 78.5,
+            },
+        ]
+
+        with self.assertRaisesRegex(ValueError, "Duplicate.*identity"):
+            bounded_price_history(
+                {"WTI": points},
+                [_price_config("WTI", "daily")],
+                as_of,
+                LIMITS,
+                REGISTRY,
             )
 
     def test_nonfinite_price_is_omitted_and_never_coerced_to_zero(self):
@@ -246,6 +364,7 @@ class BoundedPriceHistoryTests(unittest.TestCase):
             [_price_config("WTI", "daily")],
             date(2026, 8, 30),
             LIMITS,
+            REGISTRY,
         )
 
         self.assertEqual([row["value"] for row in rows], [78.5])
@@ -264,9 +383,46 @@ class BoundedPriceHistoryTests(unittest.TestCase):
             ],
             date(2026, 8, 30),
             LIMITS,
+            REGISTRY,
         )
 
         self.assertEqual(rows, [])
+
+    def test_price_history_rejects_unconfigured_and_mismatched_code_family(self):
+        as_of = date(2026, 8, 30)
+        point = {
+            "date": as_of,
+            "known_as_of": "2026-08-30T12:00:00Z",
+            "value": 78.5,
+        }
+        invalid = (
+            (
+                _price_config(
+                    "MADE_UP",
+                    "daily",
+                    commodity_code="MADE_UP",
+                ),
+                "commodity_code",
+            ),
+            (
+                {
+                    **_price_config("WTI", "daily"),
+                    "commodity_family": "gold",
+                },
+                "code-family",
+            ),
+        )
+
+        for config, message in invalid:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    bounded_price_history(
+                        {config["series_code"]: [point]},
+                        [config],
+                        as_of,
+                        LIMITS,
+                        REGISTRY,
+                    )
 
 
 class BoundedMetricHistoryTests(unittest.TestCase):
@@ -278,7 +434,7 @@ class BoundedMetricHistoryTests(unittest.TestCase):
             for index in range(162)
         ]
 
-        rows = bounded_metric_history(inputs, as_of, LIMITS)
+        rows = bounded_metric_history(inputs, as_of, LIMITS, REGISTRY)
 
         self.assertEqual(len(rows), 160)
         self.assertTrue(all(tuple(row) == METRIC_HISTORY_FIELDS for row in rows))
@@ -293,7 +449,7 @@ class BoundedMetricHistoryTests(unittest.TestCase):
         as_of = date(2026, 8, 30)
         row = _metric_row(as_of)
         with self.assertRaisesRegex(ValueError, "Duplicate.*identity"):
-            bounded_metric_history([row, dict(row)], as_of, LIMITS)
+            bounded_metric_history([row, dict(row)], as_of, LIMITS, REGISTRY)
 
         selected = bounded_metric_history(
             [
@@ -302,8 +458,33 @@ class BoundedMetricHistoryTests(unittest.TestCase):
             ],
             as_of,
             LIMITS,
+            REGISTRY,
         )
         self.assertEqual([item["value"] for item in selected], [12.0])
+
+    def test_metric_trimming_orders_vintages_by_aware_timestamp(self):
+        as_of = date(2026, 8, 30)
+        observation = date(2026, 8, 29)
+        nine_utc = _metric_row(
+            observation,
+            value=9.0,
+            known_as_of="2026-08-30T09:00:00Z",
+        )
+        ten_utc = _metric_row(
+            observation,
+            value=10.0,
+            known_as_of="2026-08-30T02:00:00-08:00",
+        )
+
+        rows = bounded_metric_history(
+            [nine_utc, ten_utc],
+            as_of,
+            {**LIMITS, "weekly": 1},
+            REGISTRY,
+        )
+
+        self.assertEqual([row["value"] for row in rows], [10.0])
+        self.assertEqual(rows[0]["known_as_of"], "2026-08-30T10:00:00Z")
 
     def test_invalid_source_qc_taxonomy_or_timestamp_fails_closed(self):
         as_of = date(2026, 8, 30)
@@ -317,16 +498,61 @@ class BoundedMetricHistoryTests(unittest.TestCase):
         for row, message in invalid:
             with self.subTest(message=message):
                 with self.assertRaisesRegex(ValueError, message):
-                    bounded_metric_history([row], as_of, LIMITS)
+                    bounded_metric_history([row], as_of, LIMITS, REGISTRY)
 
-        self.assertEqual(
-            bounded_metric_history(
-                [_metric_row(as_of, known_as_of="2026-08-31T00:00:00+00:00")],
-                as_of,
-                LIMITS,
+    def test_future_metric_observation_or_vintage_is_rejected(self):
+        as_of = date(2026, 8, 30)
+        invalid = (
+            (
+                _metric_row(
+                    as_of + timedelta(days=1),
+                    known_as_of="2026-08-30T12:00:00Z",
+                ),
+                "observation_date exceeds as_of_date",
             ),
-            [],
+            (
+                _metric_row(
+                    as_of,
+                    known_as_of="2026-08-31T00:00:00Z",
+                ),
+                "known_as_of exceeds target Sunday",
+            ),
         )
+
+        for row, message in invalid:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    bounded_metric_history(
+                        [row],
+                        as_of,
+                        LIMITS,
+                        REGISTRY,
+                    )
+
+    def test_metric_history_rejects_unconfigured_and_mismatched_code_family(self):
+        as_of = date(2026, 8, 30)
+        made_up = {
+            **_metric_row(as_of),
+            "commodity_code": "MADE_UP",
+            "commodity_family": "gold",
+        }
+        mismatched = {
+            **_metric_row(as_of),
+            "commodity_family": "gold",
+        }
+
+        for row, message in (
+            (made_up, "commodity_code"),
+            (mismatched, "code-family"),
+        ):
+            with self.subTest(row=row):
+                with self.assertRaisesRegex(ValueError, message):
+                    bounded_metric_history(
+                        [row],
+                        as_of,
+                        LIMITS,
+                        commodity_registry=REGISTRY,
+                    )
 
 
 if __name__ == "__main__":

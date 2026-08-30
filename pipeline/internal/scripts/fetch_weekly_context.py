@@ -12,7 +12,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from pipeline.internal.capital_weekly.context.providers import build_default_providers
-from pipeline.internal.capital_weekly.commodity_research import load_history_limits
+from pipeline.internal.capital_weekly.macro_assets import (
+    load_commodity_research_config,
+)
 from pipeline.internal.capital_weekly.weekly_context import (
     publish_weekly_context_bundle,
     run_weekly_context,
@@ -61,16 +63,18 @@ def main() -> None:
         for name in ("EIA_API_KEY", "USDA_API_KEY")
         if (secret := os.environ.get(name, "").strip())
     )
+    research_config = load_commodity_research_config(
+        args.data_dir
+        if args.data_dir and Path(args.data_dir).suffix.lower() == ".json"
+        else None
+    )
     tables = run_weekly_context(
         providers,
         raw_dir=raw_dir,
         as_of_date=end,
         audit_secrets=audit_secrets,
-        history_limits=load_history_limits(
-            args.data_dir
-            if args.data_dir and Path(args.data_dir).suffix.lower() == ".json"
-            else None
-        ),
+        history_limits=research_config.history_limits,
+        commodity_registry=research_config.commodity_registry,
     )
     publish_weekly_context_bundle(tables, output)
     print(f"saved: {output}")
