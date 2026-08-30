@@ -14,7 +14,12 @@ import pandas as pd
 
 from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
 
-from .context.common import METRIC_FIELDS, normalize_metric_rows
+from .context.common import (
+    METRIC_FIELDS,
+    normalize_metric_rows,
+    validate_provider_attempts,
+    validate_provider_phase,
+)
 from .context.economic_releases import (
     ECONOMIC_RELEASE_FIELDS,
     normalize_economic_release_rows,
@@ -22,6 +27,7 @@ from .context.economic_releases import (
 )
 from .context.provider_contracts import (
     ContextProvider,
+    ProviderPhaseError,
     ProviderResult,
     filter_known_as_of,
 )
@@ -72,6 +78,9 @@ SOURCE_LOG_FIELDS = (
     "source_url",
     "elapsed_ms",
     "notes",
+    "phase",
+    "attempts",
+    "error_code",
 )
 COMPANY_EVENT_FIELDS = METRIC_FIELDS + (
     "event_date",
@@ -123,6 +132,11 @@ def run_weekly_context(
                     f"ProviderSpec name {provider.spec.name!r}"
                 )
             result = provider.fetch()
+            completed_phase = validate_provider_phase(
+                result.completed_phase,
+                completed=True,
+            )
+            attempts = validate_provider_attempts(result.attempts)
             if result.category != provider.spec.category:
                 raise ValueError(
                     f"Provider result category {result.category!r} does not match "
@@ -208,6 +222,9 @@ def run_weekly_context(
                             "source_url": safe_result_source_url,
                             "elapsed_ms": int((time.monotonic() - started) * 1000),
                             "notes": notes,
+                            "phase": completed_phase,
+                            "attempts": attempts,
+                            "error_code": None,
                         }
                     )
                     continue
@@ -237,10 +254,13 @@ def run_weekly_context(
                     "source_url": safe_result_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "notes": safe_result_notes,
+                    "phase": completed_phase,
+                    "attempts": attempts,
+                    "error_code": None,
                 }
             )
         except Exception as error:
-            safe_error = sanitize_audit_text(
+            phase, attempts, error_code, safe_error = _provider_error_metadata(
                 error,
                 secrets=normalized_audit_secrets,
             )
@@ -263,6 +283,9 @@ def run_weekly_context(
                     "source_url": None,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "notes": safe_error,
+                    "phase": phase,
+                    "attempts": attempts,
+                    "error_code": error_code,
                 }
             )
     _validate_combined_economic_releases(
@@ -302,6 +325,32 @@ def _contains_configured_secret(
     return False
 
 
+def _provider_error_metadata(
+    error: Exception,
+    *,
+    secrets: Sequence[str],
+) -> tuple[str, int, str, str]:
+    if isinstance(error, ProviderPhaseError):
+        try:
+            phase = validate_provider_phase(error.failure_phase, completed=False)
+            attempts = validate_provider_attempts(error.attempts)
+        except ValueError:
+            pass
+        else:
+            return (
+                phase,
+                attempts,
+                sanitize_audit_text(error.error_code, secrets=secrets),
+                sanitize_audit_text(error.safe_message, secrets=secrets),
+            )
+    return (
+        "retrieve",
+        1,
+        "UNCLASSIFIED_PROVIDER_FAILURE",
+        sanitize_audit_text(error, secrets=secrets),
+    )
+
+
 def _validate_combined_economic_releases(
     tables: dict[str, list[dict]],
     as_of_date: date,
@@ -335,6 +384,9 @@ def _validate_combined_economic_releases(
                 "source_url": None,
                 "elapsed_ms": 0,
                 "notes": safe_error,
+                "phase": "normalized",
+                "attempts": 1,
+                "error_code": "UNCLASSIFIED_PROVIDER_FAILURE",
             }
         )
 

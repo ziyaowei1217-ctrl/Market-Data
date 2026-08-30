@@ -17,7 +17,11 @@ from pipeline.internal.capital_weekly.weekly_context import (
     publish_weekly_context_bundle,
     run_weekly_context,
 )
-from pipeline.internal.capital_weekly.context.provider_contracts import ContextProvider, ProviderSpec
+from pipeline.internal.capital_weekly.context.provider_contracts import (
+    ContextProvider,
+    ProviderPhaseError,
+    ProviderSpec,
+)
 from pipeline.internal.capital_weekly.context.economic_releases import build_release_row
 from pipeline.internal.capital_weekly.context.economic_releases import derive_price_index_rows
 from pipeline.internal.capital_weekly.context.providers import metric_rows
@@ -212,7 +216,12 @@ class WeeklyContextTests(unittest.TestCase):
             )
 
         def failed():
-            raise RuntimeError("public page changed")
+            raise ProviderPhaseError(
+                "EIA_TIMEOUT",
+                "retrieve",
+                "request timed out",
+                3,
+            )
 
         success_spec = ProviderSpec(
             name="successful",
@@ -255,6 +264,96 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(successful_log["requiredness"], "required")
         self.assertEqual(successful_log["provider_version"], "1.0.0")
         self.assertEqual(successful_log["schema_version"], "economic-release-v1")
+        self.assertEqual(successful_log["phase"], "normalized")
+        self.assertEqual(successful_log["attempts"], 1)
+        self.assertIsNone(successful_log["error_code"])
+        failed_log = next(
+            row for row in tables["source_log"] if row["provider"] == "failed"
+        )
+        self.assertEqual(failed_log["phase"], "retrieve")
+        self.assertEqual(failed_log["attempts"], 3)
+        self.assertEqual(failed_log["error_code"], "EIA_TIMEOUT")
+        self.assertEqual(failed_log["observations"], 0)
+        self.assertEqual(len(tables["market_internals"]), 1)
+
+    def test_invalid_provider_phase_metadata_cannot_write_raw_or_business_rows(self):
+        spec = ProviderSpec(
+            name="invalid_phase_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+        cases = (
+            ("unknown phase", {"completed_phase": "discovery"}),
+            ("zero attempts", {"attempts": 0}),
+        )
+        for label, metadata in cases:
+            with self.subTest(label=label):
+                provider = ContextProvider(
+                    spec,
+                    lambda metadata=metadata: ProviderResult(
+                        category="market_internals",
+                        rows=[metric("MUST_NOT_PUBLISH")],
+                        raw_text="must not cache",
+                        source="Fixture",
+                        source_url="https://example.test/provider",
+                        **metadata,
+                    ),
+                )
+                with TemporaryDirectory() as directory:
+                    raw_dir = Path(directory) / "raw"
+                    tables = run_weekly_context(
+                        {"invalid_phase_fixture": provider},
+                        raw_dir=raw_dir,
+                        as_of_date=date(2026, 8, 9),
+                    )
+                    self.assertFalse(
+                        (raw_dir / "invalid_phase_fixture.raw").exists()
+                    )
+
+                self.assertEqual(tables["market_internals"], [])
+                audit = tables["source_log"][0]
+                self.assertEqual(audit["status"], "FETCH_FAILED")
+                self.assertEqual(audit["phase"], "retrieve")
+                self.assertEqual(audit["attempts"], 1)
+                self.assertEqual(
+                    audit["error_code"], "UNCLASSIFIED_PROVIDER_FAILURE"
+                )
+
+    def test_provider_phase_error_sanitizes_its_safe_message(self):
+        secret = "provider-phase-secret"
+        spec = ProviderSpec(
+            name="safe_message_fixture",
+            category="market_internals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="fixture-v1",
+            schema_version="context-metric-v1",
+            frequency="daily",
+            freshness_days=1,
+        )
+
+        def failed():
+            raise ProviderPhaseError(
+                "EIA_TIMEOUT",
+                "retrieve",
+                f"request timed out with {secret}",
+                3,
+            )
+
+        tables = run_weekly_context(
+            {"safe_message_fixture": ContextProvider(spec, failed)},
+            as_of_date=date(2026, 8, 9),
+            audit_secrets=(secret,),
+        )
+
+        audit = tables["source_log"][0]
+        self.assertNotIn(secret, json.dumps(audit))
+        self.assertIn("[REDACTED]", audit["notes"])
 
     def test_credential_query_values_are_redacted_from_context_audit_artifacts(self):
         secret = "audit-sentinel-context-key"

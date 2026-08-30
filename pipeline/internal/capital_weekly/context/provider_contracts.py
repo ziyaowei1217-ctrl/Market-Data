@@ -10,10 +10,40 @@ from zoneinfo import ZoneInfo
 HONG_KONG = ZoneInfo("Asia/Hong_Kong")
 SOURCE_TIERS = frozenset({"public", "licensed"})
 REQUIREDNESS_VALUES = frozenset({"required", "optional"})
+PROVIDER_PHASES = frozenset(
+    {
+        "config",
+        "metadata",
+        "retrieve",
+        "raw",
+        "parse",
+        "point_in_time",
+        "freshness",
+        "coverage",
+        "normalized",
+    }
+)
 
 
 class PointInTimeUnavailable(RuntimeError):
     """Raised when no source artifact can prove its target-week vintage."""
+
+
+class ProviderPhaseError(RuntimeError):
+    """A provider failure with a stable, credential-safe diagnostic contract."""
+
+    def __init__(
+        self,
+        error_code: str,
+        failure_phase: str,
+        safe_message: str,
+        attempts: int = 1,
+    ) -> None:
+        self.error_code = error_code
+        self.failure_phase = failure_phase
+        self.safe_message = safe_message
+        self.attempts = attempts
+        super().__init__(safe_message)
 
 
 @dataclass(frozen=True)
@@ -26,6 +56,8 @@ class ProviderResult:
     status: str = "OK"
     notes: str = ""
     raw_is_diagnostic: bool = False
+    attempts: int = 1
+    completed_phase: str = "normalized"
 
 
 @dataclass(frozen=True)
@@ -102,6 +134,8 @@ __all__ = [
     "ContextProvider",
     "HONG_KONG",
     "PointInTimeUnavailable",
+    "PROVIDER_PHASES",
+    "ProviderPhaseError",
     "ProviderResult",
     "ProviderSpec",
     "filter_known_as_of",

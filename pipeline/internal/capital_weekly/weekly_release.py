@@ -448,7 +448,7 @@ RELEASE_DATASETS = (
             if category == "economic_releases"
             else ("value",)
             if "value" in fields
-            else ("freshness_days", "observations", "elapsed_ms")
+            else ("freshness_days", "observations", "elapsed_ms", "attempts")
             if category == "source_log"
             else (),
             source_url_column="source_url",

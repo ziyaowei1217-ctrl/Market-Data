@@ -4,6 +4,8 @@ import math
 from datetime import date, datetime
 from typing import Any, Iterable
 
+from .provider_contracts import PROVIDER_PHASES
+
 
 BASE_METRIC_FIELDS = (
     "as_of_date",
@@ -52,6 +54,23 @@ PARTICIPANT_CLASS_VALUES = frozenset(
     }
 )
 METRIC_FIELDS = BASE_METRIC_FIELDS + COMMODITY_METRIC_FIELDS
+
+
+def validate_provider_phase(phase: str, *, completed: bool) -> str:
+    normalized = str(phase).strip()
+    if normalized not in PROVIDER_PHASES:
+        raise ValueError(f"Unsupported provider phase: {normalized or 'blank'}")
+    if completed and normalized != "normalized":
+        raise ValueError(
+            f"Successful provider result must complete normalized phase, got {normalized}"
+        )
+    return normalized
+
+
+def validate_provider_attempts(attempts: int) -> int:
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts <= 0:
+        raise ValueError("Provider attempts must be a positive integer")
+    return attempts
 
 
 def iso_date(value: Any) -> str:

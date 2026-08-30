@@ -125,6 +125,28 @@ LEGACY_CONTEXT_SOURCE_LOG_FIELDS = [
     "elapsed_ms",
     "notes",
 ]
+STAGED_CONTEXT_SOURCE_LOG_FIELDS = [
+    "provider",
+    "source_tier",
+    "requiredness",
+    "provider_version",
+    "schema_version",
+    "frequency",
+    "freshness_days",
+    "latest_known_as_of",
+    "warnings",
+    "category",
+    "status",
+    "observations",
+    "as_of_date",
+    "source",
+    "source_url",
+    "elapsed_ms",
+    "notes",
+    "phase",
+    "attempts",
+    "error_code",
+]
 
 NUMERIC_FIELDS = set(RETURN_NUMERIC_FIELDS + RANK_FIELDS) | {
     "sort_order", "observations", "elapsed_ms", "valid_count", "positive_count",
@@ -155,8 +177,12 @@ def fixture_row(fields, **overrides) -> dict:
             row[field] = "2026-08-07"
         elif field == "requiredness":
             row[field] = "required"
-        elif field in {"freshness_days", "latest_known_as_of"}:
+        elif field in {"freshness_days", "latest_known_as_of", "error_code"}:
             row[field] = ""
+        elif field == "phase":
+            row[field] = "normalized"
+        elif field == "attempts":
+            row[field] = "1"
         elif field in NUMERIC_FIELDS:
             row[field] = "1"
         elif field == "source_url":
@@ -334,6 +360,9 @@ def write_valid_pipeline_output(pipeline: str, output: Path) -> None:
                         "source_url": "https://example.test/context",
                         "elapsed_ms": "1",
                         "notes": "",
+                        "phase": "normalized",
+                        "attempts": "1",
+                        "error_code": "",
                     },
                     *usda_source_rows(
                         status="NOT_CONFIGURED",
@@ -1507,6 +1536,22 @@ class StagedValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ReleaseValidationError, "unexpected columns"):
             validate_staged_week(self.root, self.window)
+
+    def test_current_staged_context_source_log_accepts_provider_phase_columns(self):
+        path = self.outputs["weekly_context"] / "source_log.csv"
+        row = fixture_row(
+            STAGED_CONTEXT_SOURCE_LOG_FIELDS,
+            provider="fixture",
+            category="market_internals",
+            status="OK",
+            as_of_date="2026-08-09",
+            phase="normalized",
+            attempts="1",
+            error_code="",
+        )
+        merge_context_status_rows(self.outputs, [row])
+
+        validate_staged_week(self.root, self.window)
 
     def test_rejects_an_extra_legacy_context_source_log_column(self):
         (self.outputs["weekly_context"] / "economic_releases.csv").unlink()
