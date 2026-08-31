@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import ast
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
 import fcntl
 import hashlib
@@ -185,6 +186,53 @@ STAGED_CONTEXT_SOURCE_LOG_FIELDS = [
     "attempts",
     "error_code",
 ]
+PUBLIC_CONTEXT_SOURCE_LOG_FIELDS = STAGED_CONTEXT_SOURCE_LOG_FIELDS[:-3]
+PUBLIC_MACRO_FIELDS = [
+    field for field in MACRO_FIELDS if field not in COMMODITY_MACRO_FIELDS
+]
+PUBLIC_MACRO_V3_FIELDS = [
+    *PUBLIC_MACRO_FIELDS,
+    "calculation_id",
+    "formula_version",
+    "input_series_codes",
+    "known_as_of",
+    "window_observations",
+    "minimum_observations",
+    "correlation_observations",
+]
+PUBLIC_METRIC_FIELDS = [
+    "as_of_date",
+    "category",
+    "metric_code",
+    "metric_name",
+    "value",
+    "unit",
+    "frequency",
+    "market",
+    "source",
+    "source_url",
+    "qc_flag",
+]
+PUBLIC_COMPANY_EVENT_FIELDS = [
+    *PUBLIC_METRIC_FIELDS,
+    "event_date",
+    "ticker",
+    "cik",
+    "form",
+    "event_type",
+    "accession_number",
+    "report_date",
+    "accepted_at",
+    "items",
+    "evidence_status",
+]
+PUBLIC_CONTRACT_SPEC_FINGERPRINTS = {
+    1: "18050dccb95c3988eee0bb104c34bd9d43aa4ba745d9e93f0a1e3526a9f72876",
+    2: "b6617b7094d00bd89ba3355e95d5c1fb60f0564508d72a4b95328d89c7e8b868",
+    3: "20f07dfd8e3eca157d30691bd69173ceb65e56dfe92ae0eb5d9a70bed276747c",
+    4: "4309e4c0e4ae67df639ece6d4b59f63e9a43ccba0cfd0441dba2302cad2e04f3",
+    5: "b56c2fbe9154d23b6edf6b091bb192b783e1ceb98cd423cc2d69b81c07cce746",
+}
 
 NUMERIC_FIELDS = set(RETURN_NUMERIC_FIELDS + RANK_FIELDS) | {
     "sort_order", "observations", "elapsed_ms", "valid_count", "positive_count",
@@ -490,6 +538,152 @@ def write_valid_staged_week(root: Path, window) -> dict[str, Path]:
     for pipeline, output in directories.items():
         write_valid_pipeline_output(pipeline, output)
     return directories
+
+
+def write_legacy_contract_fixture(
+    outputs: dict[str, Path],
+    dataset_contract_version: int,
+) -> None:
+    if dataset_contract_version not in range(1, 6):
+        raise ValueError("legacy fixture contract must be in 1..5")
+
+    macro_fields = (
+        PUBLIC_MACRO_FIELDS
+        if dataset_contract_version <= 2
+        else PUBLIC_MACRO_V3_FIELDS
+    )
+
+    def select_fields(
+        rows: list[dict[str, str]],
+        fields: list[str],
+    ) -> list[dict[str, str]]:
+        return [
+            {field: row.get(field, "") for field in fields}
+            for row in rows
+        ]
+
+    for filename in (
+        "fixed_income.csv",
+        "commodities.csv",
+        "foreign_exchange.csv",
+        "policy_rates.csv",
+        "money_market.csv",
+    ):
+        rows = read_csv_rows(outputs["macro_assets"] / filename)
+        for row in rows:
+            row["known_as_of"] = ""
+        write_csv(
+            outputs["macro_assets"] / filename,
+            macro_fields,
+            select_fields(rows, macro_fields),
+        )
+    if dataset_contract_version >= 3:
+        for filename in ("liquidity.csv", "cross_asset.csv"):
+            rows = read_csv_rows(outputs["macro_assets"] / filename)
+            for row in rows:
+                row["known_as_of"] = ""
+            write_csv(
+                outputs["macro_assets"] / filename,
+                PUBLIC_MACRO_V3_FIELDS,
+                select_fields(rows, PUBLIC_MACRO_V3_FIELDS),
+            )
+    macro_source_fields = (
+        MACRO_SOURCE_LOG_FIELDS
+        if dataset_contract_version <= 2
+        else MACRO_SOURCE_LOG_V3_FIELDS
+    )
+    write_csv(
+        outputs["macro_assets"] / "source_log.csv",
+        macro_source_fields,
+        select_fields(
+            read_csv_rows(outputs["macro_assets"] / "source_log.csv"),
+            macro_source_fields,
+        ),
+    )
+
+    for category in (
+        "market_internals",
+        "positioning_flows",
+        "commodity_fundamentals",
+        "financial_conditions",
+    ):
+        path = outputs["weekly_context"] / f"{category}.csv"
+        write_csv(
+            path,
+            PUBLIC_METRIC_FIELDS,
+            select_fields(read_csv_rows(path), PUBLIC_METRIC_FIELDS),
+        )
+    if dataset_contract_version >= 4:
+        path = outputs["weekly_context"] / "fund_flows.csv"
+        write_csv(
+            path,
+            PUBLIC_METRIC_FIELDS,
+            select_fields(read_csv_rows(path), PUBLIC_METRIC_FIELDS),
+        )
+    company_events_path = outputs["weekly_context"] / "company_events.csv"
+    write_csv(
+        company_events_path,
+        PUBLIC_COMPANY_EVENT_FIELDS,
+        select_fields(
+            read_csv_rows(company_events_path),
+            PUBLIC_COMPANY_EVENT_FIELDS,
+        ),
+    )
+    context_source_fields = (
+        LEGACY_CONTEXT_SOURCE_LOG_FIELDS
+        if dataset_contract_version == 1
+        else PUBLIC_CONTEXT_SOURCE_LOG_FIELDS
+    )
+    write_csv(
+        outputs["weekly_context"] / "source_log.csv",
+        context_source_fields,
+        select_fields(
+            [
+                row
+                for row in read_csv_rows(
+                    outputs["weekly_context"] / "source_log.csv"
+                )
+                if row.get("status") == "OK"
+            ],
+            context_source_fields,
+        ),
+    )
+
+    macro_csv_files = {
+        "fixed_income.csv",
+        "commodities.csv",
+        "foreign_exchange.csv",
+        "policy_rates.csv",
+        "money_market.csv",
+        "macro_divergence.csv",
+        "source_log.csv",
+    }
+    if dataset_contract_version >= 3:
+        macro_csv_files.update({"liquidity.csv", "cross_asset.csv"})
+    context_csv_files = {
+        "events.csv",
+        "market_internals.csv",
+        "positioning_flows.csv",
+        "company_events.csv",
+        "commodity_fundamentals.csv",
+        "financial_conditions.csv",
+        "source_log.csv",
+    }
+    if dataset_contract_version >= 2:
+        context_csv_files.add("economic_releases.csv")
+    if dataset_contract_version >= 4:
+        context_csv_files.add("fund_flows.csv")
+    if dataset_contract_version >= 5:
+        context_csv_files.update(
+            {"company_fundamentals.csv", "capital_markets.csv"}
+        )
+    for output, allowed in (
+        (outputs["macro_assets"], macro_csv_files),
+        (outputs["weekly_context"], context_csv_files),
+    ):
+        for path in output.glob("*.csv"):
+            if path.name not in allowed:
+                path.unlink()
 
 
 def write_complete_commodity_research_fixture(outputs: dict[str, Path]) -> None:
@@ -1439,6 +1633,16 @@ class SafeErrorReasonTests(unittest.TestCase):
 
 
 class StagedValidationTests(unittest.TestCase):
+    _SHARED_COMMODITY_GATE_MARKERS = (
+        "usda_",
+        "active_eia_",
+        "unrelated_same_family_",
+        "metal_supplemental_",
+        "world_bank_",
+        "cftc_open_interest_",
+        "official_provenance_",
+    )
+
     def setUp(self):
         self.temporary = TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -1447,14 +1651,31 @@ class StagedValidationTests(unittest.TestCase):
             datetime(2026, 8, 11, 10, 0, tzinfo=ZoneInfo("Asia/Hong_Kong"))
         )
         self.outputs = write_valid_staged_week(self.root, self.window)
-        self.config_path = self._exact_gate_config_path()
-        self.config_patcher = patch(
-            "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-            self.config_path,
-        )
-        self.config_patcher.start()
-        self.addCleanup(self.config_patcher.stop)
-        write_exact_gate_fixture(self.outputs)
+        if (
+            self._testMethodName.startswith("test_exact_")
+            or any(
+                marker in self._testMethodName
+                for marker in self._SHARED_COMMODITY_GATE_MARKERS
+            )
+            or self._testMethodName
+            == "test_accepts_not_configured_from_an_optional_context_provider"
+        ):
+            self.config_path = self._exact_gate_config_path()
+            self.config_patcher = patch(
+                "pipeline.internal.common.DEFAULT_CONFIG_PATH",
+                self.config_path,
+            )
+            self.config_patcher.start()
+            self.addCleanup(self.config_patcher.stop)
+            write_exact_gate_fixture(self.outputs)
+            validation_patcher = patch(
+                f"{__name__}.validate_staged_week",
+                self._validate_shared_commodity_fixture,
+            )
+            validation_patcher.start()
+            self.addCleanup(validation_patcher.stop)
+        else:
+            write_complete_v2_release_fixture(self.outputs)
 
     def _exact_gate_config_path(self) -> Path:
         config_path = Path(self.temporary.name) / "exact-gate-config.json"
@@ -1463,6 +1684,111 @@ class StagedValidationTests(unittest.TestCase):
             encoding="utf-8",
         )
         return config_path
+
+    def _validate_shared_commodity_fixture(self, root, window, **_kwargs):
+        datasets = {
+            ("macro_assets", filename): read_csv_rows(
+                self.outputs["macro_assets"] / filename
+            )
+            for filename in ("commodities.csv", "source_log.csv")
+        }
+        datasets.update({
+            ("weekly_context", filename): read_csv_rows(
+                self.outputs["weekly_context"] / filename
+            )
+            for filename in (
+                "commodity_fundamentals.csv",
+                "positioning_flows.csv",
+                "source_log.csv",
+            )
+        })
+        weekly_release_module._validate_usda_agriculture_coverage(datasets)
+        weekly_release_module._validate_eia_physical_coverage(datasets)
+        weekly_release_module._validate_configured_commodity_coverage(
+            datasets,
+            window,
+        )
+
+    def test_contracts_one_through_five_match_public_parent_dataset_specs(self):
+        for version, expected_fingerprint in PUBLIC_CONTRACT_SPEC_FINGERPRINTS.items():
+            with self.subTest(version=version):
+                specs = []
+                for spec in release_datasets_for_contract(version):
+                    item = asdict(spec)
+                    item["accepted_statuses"] = sorted(item["accepted_statuses"])
+                    specs.append(item)
+                canonical = json.dumps(
+                    specs,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                self.assertEqual(
+                    hashlib.sha256(canonical).hexdigest(),
+                    expected_fingerprint,
+                )
+
+                by_identity = {
+                    (spec.pipeline, spec.filename): spec
+                    for spec in release_datasets_for_contract(version)
+                }
+                macro = by_identity[("macro_assets", "commodities.csv")]
+                self.assertEqual(
+                    macro.required_columns,
+                    tuple(
+                        PUBLIC_MACRO_FIELDS
+                        if version <= 2
+                        else PUBLIC_MACRO_V3_FIELDS
+                    ),
+                )
+                self.assertEqual(macro.timestamp_columns, ())
+                self.assertEqual(
+                    macro.date_columns,
+                    tuple(
+                        RETURN_DATE_FIELDS
+                        if version <= 2
+                        else (*RETURN_DATE_FIELDS, "known_as_of")
+                    ),
+                )
+                context_metric = by_identity[
+                    ("weekly_context", "commodity_fundamentals.csv")
+                ]
+                self.assertEqual(
+                    context_metric.required_columns,
+                    tuple(PUBLIC_METRIC_FIELDS),
+                )
+                source_log = by_identity[("weekly_context", "source_log.csv")]
+                self.assertEqual(
+                    source_log.required_columns,
+                    tuple(
+                        LEGACY_CONTEXT_SOURCE_LOG_FIELDS
+                        if version == 1
+                        else PUBLIC_CONTEXT_SOURCE_LOG_FIELDS
+                    ),
+                )
+                self.assertEqual(
+                    source_log.numeric_columns,
+                    ("freshness_days", "observations", "elapsed_ms"),
+                )
+
+    def test_valid_public_legacy_fixtures_without_v6_fields_pass_contracts_one_to_five(self):
+        for version in range(1, 6):
+            with self.subTest(version=version):
+                root = Path(self.temporary.name) / f"legacy-v{version}"
+                outputs = write_valid_staged_week(root, self.window)
+                write_exact_gate_fixture(outputs)
+                write_legacy_contract_fixture(outputs, version)
+
+                with patch(
+                    "pipeline.internal.common.DEFAULT_CONFIG_PATH",
+                    self._exact_gate_config_path(),
+                ):
+                    manifest = validate_staged_week(
+                        root,
+                        self.window,
+                        dataset_contract_version=version,
+                    )
+
+                self.assertEqual(manifest["dataset_contract_version"], version)
 
     def test_exact_configured_commodity_gate_accepts_complete_fixture(self):
         config_path = self._exact_gate_config_path()
@@ -1794,25 +2120,7 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_contract_v2_keeps_the_pre_wave_1_file_set(self):
-        (self.outputs["macro_assets"] / "liquidity.csv").unlink()
-        (self.outputs["macro_assets"] / "cross_asset.csv").unlink()
-        write_csv(
-            self.outputs["macro_assets"] / "source_log.csv",
-            MACRO_SOURCE_LOG_FIELDS,
-            [fixture_row(MACRO_SOURCE_LOG_FIELDS, series_code="MACRO")],
-        )
-        for filename in (
-            "fixed_income.csv",
-            "commodities.csv",
-            "foreign_exchange.csv",
-            "policy_rates.csv",
-            "money_market.csv",
-        ):
-            write_csv(
-                self.outputs["macro_assets"] / filename,
-                MACRO_FIELDS,
-                [fixture_row(MACRO_FIELDS, series_code=filename)],
-            )
+        write_legacy_contract_fixture(self.outputs, 2)
 
         manifest = validate_staged_week(
             self.root,
@@ -1823,9 +2131,7 @@ class StagedValidationTests(unittest.TestCase):
         self.assertEqual(manifest["dataset_contract_version"], 2)
 
     def test_contract_v3_keeps_the_pre_fund_flow_file_set(self):
-        (self.outputs["weekly_context"] / "fund_flows.csv").unlink()
-        (self.outputs["weekly_context"] / "company_fundamentals.csv").unlink()
-        (self.outputs["weekly_context"] / "capital_markets.csv").unlink()
+        write_legacy_contract_fixture(self.outputs, 3)
 
         manifest = validate_staged_week(
             self.root,
@@ -1836,8 +2142,7 @@ class StagedValidationTests(unittest.TestCase):
         self.assertEqual(manifest["dataset_contract_version"], 3)
 
     def test_contract_v4_keeps_the_pre_company_data_file_set(self):
-        (self.outputs["weekly_context"] / "company_fundamentals.csv").unlink()
-        (self.outputs["weekly_context"] / "capital_markets.csv").unlink()
+        write_legacy_contract_fixture(self.outputs, 4)
 
         manifest = validate_staged_week(
             self.root,
@@ -3333,7 +3638,12 @@ class StagedValidationTests(unittest.TestCase):
             context_files[
                 "capital_weekly_context_20260809/commodity_fundamentals.csv"
             ],
-            2,
+            len(
+                read_csv_rows(
+                    self.outputs["weekly_context"]
+                    / "commodity_fundamentals.csv"
+                )
+            ),
         )
         json.dumps(manifest, allow_nan=False)
 
@@ -3347,7 +3657,7 @@ class StagedValidationTests(unittest.TestCase):
         manifest = validate_staged_week(self.root, self.window)
 
         self.assertEqual(manifest["manifest_schema_version"], 3)
-        self.assertEqual(manifest["dataset_contract_version"], 5)
+        self.assertEqual(manifest["dataset_contract_version"], 6)
         self.assertEqual(manifest["publication_mode"], "coordinated")
         self.assertEqual(manifest["week_start"], "2026-08-03")
         self.assertEqual(manifest["week_end"], "2026-08-09")

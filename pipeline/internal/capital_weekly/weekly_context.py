@@ -346,7 +346,11 @@ def run_weekly_context(
         run_date,
         audit_secrets=normalized_audit_secrets,
     )
-    _validate_combined_company_fundamentals(tables, run_date)
+    _validate_combined_company_fundamentals(
+        tables,
+        run_date,
+        audit_secrets=normalized_audit_secrets,
+    )
     if history_limits is None or commodity_registry is None:
         if history_limits is None and commodity_registry is None:
             if commodity_history_inputs:
@@ -478,6 +482,8 @@ def _validate_combined_economic_releases(
 def _validate_combined_company_fundamentals(
     tables: dict[str, list[dict]],
     as_of_date: date,
+    *,
+    audit_secrets: tuple[str, ...] = (),
 ) -> None:
     try:
         tables["company_fundamentals"] = normalize_company_fundamental_rows(
@@ -487,6 +493,7 @@ def _validate_combined_company_fundamentals(
             tables["company_fundamentals"]
         )
     except ValueError as error:
+        safe_error = sanitize_audit_text(error, secrets=audit_secrets)
         tables["company_fundamentals"] = []
         tables["source_log"].append(
             {
@@ -498,7 +505,7 @@ def _validate_combined_company_fundamentals(
                 "frequency": "event",
                 "freshness_days": None,
                 "latest_known_as_of": None,
-                "warnings": str(error),
+                "warnings": safe_error,
                 "category": "company_fundamentals",
                 "status": "FETCH_FAILED",
                 "observations": 0,
@@ -506,7 +513,10 @@ def _validate_combined_company_fundamentals(
                 "source": None,
                 "source_url": None,
                 "elapsed_ms": 0,
-                "notes": str(error),
+                "notes": safe_error,
+                "phase": "normalized",
+                "attempts": 1,
+                "error_code": "UNCLASSIFIED_PROVIDER_FAILURE",
             }
         )
 
@@ -547,12 +557,7 @@ def publish_weekly_context_bundle(
     )
     backup = destination.with_name(f".{destination.name}.backup")
     try:
-        published_categories = tuple(
-            category
-            for category in CATEGORY_FILES
-            if category != "commodity_research_facts" or category in tables
-        )
-        for category in published_categories:
+        for category in CATEGORY_FILES:
             filename = CATEGORY_FILES[category]
             pd.DataFrame(
                 tables.get(category, []), columns=CATEGORY_FIELDS[category]
@@ -561,7 +566,7 @@ def publish_weekly_context_bundle(
             )
         snapshot = {
             category: _json_ready(tables.get(category, []))
-            for category in published_categories
+            for category in CATEGORY_FILES
         }
         (staging / "weekly_context_snapshot.json").write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2, allow_nan=False),

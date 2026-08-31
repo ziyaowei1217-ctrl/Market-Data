@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
-from unittest.mock import patch
 
 from pipeline.internal.capital_weekly.weekly_release import (
     ReleaseValidationError,
@@ -17,9 +16,9 @@ from pipeline.internal.capital_weekly.weekly_release import (
     validate_staged_week,
 )
 from pipeline.internal.tests.test_capital_weekly_weekly_release import (
-    exact_gate_config,
-    write_complete_commodity_research_fixture,
     write_complete_v2_release_fixture,
+    write_exact_gate_fixture,
+    write_legacy_contract_fixture,
     write_valid_staged_week,
 )
 
@@ -36,9 +35,10 @@ EXPECTED_FILES = {
 SUPPORTED_COMMODITY_CODES = {
     "NATGAS_HH": "natural_gas",
     "WTI": "refined_products",
+    "BRENT": "refined_products",
     "RBOB_US": "refined_products",
     "ULSD_US": "refined_products",
-    "JET_FUEL_US": "refined_products",
+    "JET_US": "refined_products",
     "PROPANE_US": "refined_products",
     "COPPER_COMEX": "copper",
     "GOLD_COMEX": "gold",
@@ -77,6 +77,46 @@ UNVERSIONED_LEGACY_TABLES = {
     },
 }
 
+VERSIONED_TABLES = {
+    version: {
+        "indices": {"indices"},
+        "sectors": {"sectors", "divergence"},
+        "gics": {"sectors"},
+        "macro": {
+            "fixed_income",
+            "policy_rates",
+            "money_market",
+            "foreign_exchange",
+            "commodities",
+            "divergence",
+            *({"liquidity", "cross_asset"} if version >= 3 else set()),
+            *({"commodity_price_history"} if version == 6 else set()),
+        },
+        "context": {
+            "events",
+            "financial_conditions",
+            "market_internals",
+            "positioning_flows",
+            "company_events",
+            "commodity_fundamentals",
+            "capability_audit",
+            *({"economic_releases"} if version >= 2 else set()),
+            *({"fund_flows"} if version >= 4 else set()),
+            *(
+                {"company_fundamentals", "capital_markets"}
+                if version >= 5
+                else set()
+            ),
+            *(
+                {"commodity_metric_history", "commodity_research_facts"}
+                if version == 6
+                else set()
+            ),
+        },
+    }
+    for version in range(1, 7)
+}
+
 
 class LatestJsonOutputTests(unittest.TestCase):
     def setUp(self):
@@ -88,17 +128,13 @@ class LatestJsonOutputTests(unittest.TestCase):
             "week_20260803-20260809",
         )
         self.staged_week = self.root / self.window.week_id
-        config_path = self.root / "exact-gate-config.json"
-        config_path.write_text(json.dumps(exact_gate_config()), encoding="utf-8")
-        config_patcher = patch(
-            "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-            config_path,
-        )
-        config_patcher.start()
-        self.addCleanup(config_patcher.stop)
         outputs = write_valid_staged_week(self.staged_week, self.window)
-        write_complete_commodity_research_fixture(outputs)
-        manifest = validate_staged_week(self.staged_week, self.window)
+        write_complete_v2_release_fixture(outputs)
+        manifest = validate_staged_week(
+            self.staged_week,
+            self.window,
+            dataset_contract_version=6,
+        )
         (self.staged_week / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -349,6 +385,48 @@ class LatestJsonOutputTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "capability audit"):
             validate_output_bundle(self.output)
 
+    def test_unversioned_legacy_table_rows_must_be_json_objects(self):
+        release = self._make_unversioned_legacy_output(include_capabilities=False)
+        context = json.loads(
+            (self.output / "context.json").read_text(encoding="utf-8")
+        )
+        context["tables"]["events"] = [None]
+        self._write_document_and_refresh_file_entry(
+            release,
+            "context.json",
+            context,
+        )
+        context_pipeline = next(
+            item for item in release["pipelines"] if item["name"] == "context"
+        )
+        context_pipeline["rows"]["events"] = 1
+        (self.output / "release.json").write_text(
+            json.dumps(release, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ReleaseValidationError, "rows must be JSON objects"):
+            validate_output_bundle(self.output)
+
+    def test_unversioned_legacy_source_log_rows_must_be_json_objects(self):
+        release = self._make_unversioned_legacy_output(include_capabilities=False)
+        macro = json.loads(
+            (self.output / "macro.json").read_text(encoding="utf-8")
+        )
+        macro["source_log"] = ["not-an-object"]
+        self._write_document_and_refresh_file_entry(release, "macro.json", macro)
+        macro_pipeline = next(
+            item for item in release["pipelines"] if item["name"] == "macro"
+        )
+        macro_pipeline["rows"]["source_log"] = 1
+        (self.output / "release.json").write_text(
+            json.dumps(release, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(ReleaseValidationError, "rows must be JSON objects"):
+            validate_output_bundle(self.output)
+
     def test_versioned_contract_table_mismatch_remains_rejected(self):
         release = build_output_bundle(self.staged_week, self.output)
         macro_path = self.output / "macro.json"
@@ -366,6 +444,54 @@ class LatestJsonOutputTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ReleaseValidationError, "table contract"):
             validate_output_bundle(self.output)
+
+
+class VersionedJsonOutputRoutingTests(unittest.TestCase):
+    def test_contracts_one_through_six_build_and_validate_exact_table_identities(self):
+        window = WeekWindow(
+            date(2026, 8, 3),
+            date(2026, 8, 9),
+            "week_20260803-20260809",
+        )
+        for version in range(1, 7):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                staged_week = root / window.week_id
+                outputs = write_valid_staged_week(staged_week, window)
+                if version <= 5:
+                    write_exact_gate_fixture(outputs)
+                    write_legacy_contract_fixture(outputs, version)
+                else:
+                    write_complete_v2_release_fixture(outputs)
+                manifest = validate_staged_week(
+                    staged_week,
+                    window,
+                    dataset_contract_version=version,
+                )
+                (staged_week / "manifest.json").write_text(
+                    json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                output = root / "output"
+                release = build_output_bundle(
+                    staged_week,
+                    output,
+                    release_id=f"contract-{version}",
+                )
+
+                self.assertEqual(release["dataset_contract_version"], version)
+                for pipeline, expected_tables in VERSIONED_TABLES[version].items():
+                    document = json.loads(
+                        (output / f"{pipeline}.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    self.assertEqual(
+                        set(document["tables"]),
+                        expected_tables,
+                        (version, pipeline),
+                    )
+                self.assertEqual(validate_output_bundle(output), release)
 
 
 class ContractSixJsonOutputTests(unittest.TestCase):

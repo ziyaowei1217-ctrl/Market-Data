@@ -19,6 +19,7 @@ from pipeline.internal.capital_weekly.weekly_release import (
 from pipeline.internal.tests.test_capital_weekly_weekly_release import (
     exact_gate_config,
     write_exact_gate_fixture,
+    write_legacy_contract_fixture,
     write_valid_staged_week,
 )
 
@@ -28,7 +29,12 @@ def write_complete_week(outputs: Path, start: date, end: date) -> Path:
     week = outputs / window.week_id
     staged_outputs = write_valid_staged_week(week, window)
     write_exact_gate_fixture(staged_outputs)
-    manifest = validate_staged_week(week, window)
+    write_legacy_contract_fixture(staged_outputs, 5)
+    manifest = validate_staged_week(
+        week,
+        window,
+        dataset_contract_version=5,
+    )
     (week / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

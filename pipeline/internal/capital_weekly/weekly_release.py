@@ -128,13 +128,6 @@ OUTPUT_TABLES = {
         ),
     ),
 }
-V6_ADDITIVE_OUTPUT_TABLES = frozenset(
-    {
-        ("macro", "commodity_price_history"),
-        ("context", "commodity_metric_history"),
-        ("context", "commodity_research_facts"),
-    }
-)
 UNVERSIONED_LEGACY_OUTPUT_TABLES = {
     "indices": frozenset({"indices"}),
     "sectors": frozenset({"sectors", "divergence"}),
@@ -244,11 +237,14 @@ GICS_COLUMNS = (
     *RETURN_DATE_COLUMNS, *RETURN_NUMERIC_COLUMNS, "change_unit", "qc_flag",
     "source_url",
 )
-MACRO_COLUMNS = (
+PUBLIC_MACRO_COLUMNS = (
     "asset_class", "group", "series_code", "name_cn", "name_en", "provider",
     "provider_symbol", "source", "source_url", "frequency", "level_unit",
     "change_unit", "sort_order", "notes", *RETURN_DATE_COLUMNS,
     *RETURN_NUMERIC_COLUMNS, "qc_flag", *RANK_COLUMNS,
+)
+MACRO_COLUMNS = (
+    *PUBLIC_MACRO_COLUMNS,
     "commodity_code", "commodity_family", "price_kind", "known_as_of",
     "provider_route",
 )
@@ -263,6 +259,13 @@ COMMODITY_RESEARCH_FAMILIES = frozenset({
 })
 REFINED_PRODUCT_CODES = frozenset(
     {"WTI", "BRENT", "RBOB_US", "ULSD_US", "JET_US", "PROPANE_US"}
+)
+PUBLIC_MACRO_V3_COLUMNS = (
+    *PUBLIC_MACRO_COLUMNS,
+    "calculation_id", "formula_version", "input_series_codes",
+    "known_as_of",
+    "window_observations", "minimum_observations",
+    "correlation_observations",
 )
 MACRO_V3_COLUMNS = (
     *MACRO_COLUMNS,
@@ -342,6 +345,48 @@ CONTEXT_SOURCE_STATUSES = frozenset(
         "FETCH_FAILED",
     }
 )
+PUBLIC_CONTEXT_OPTIONAL_STATUS_POLICIES = {
+    "NOT_CONFIGURED": frozenset(
+        {
+            ("sec_company_events", "company_events"),
+            ("sec_company_fundamentals", "company_fundamentals"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
+            ("eia_commodities", "commodity_fundamentals"),
+        }
+    ),
+    "INSUFFICIENT_DATA": frozenset(
+        {("fred_financial_conditions", "financial_conditions")}
+    ),
+    "POINT_IN_TIME_UNAVAILABLE": frozenset(
+        {
+            ("sec_company_events", "company_events"),
+            ("eia_commodities", "commodity_fundamentals"),
+            ("fred_financial_conditions", "financial_conditions"),
+            ("ishares_ivv_fund", "fund_flows"),
+            ("sec_company_fundamentals", "company_fundamentals"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
+        }
+    ),
+    "UNAVAILABLE_LICENSED": frozenset(
+        {("ism_manufacturing_pmi", "economic_releases")}
+    ),
+    "FETCH_FAILED": frozenset(
+        {
+            ("yahoo_volatility_signals", "financial_conditions"),
+            ("yahoo_market_state", "market_internals"),
+            ("hkex_stock_connect_flows", "fund_flows"),
+            ("ishares_ivv_fund", "fund_flows"),
+            ("sec_guidance_proxy", "company_fundamentals"),
+            ("sec_capital_markets", "capital_markets"),
+            ("hkex_capital_markets", "capital_markets"),
+            ("eia_commodities", "commodity_fundamentals"),
+        }
+    ),
+}
 CONTEXT_OPTIONAL_STATUS_POLICIES = {
     "NOT_CONFIGURED": frozenset(
         {
@@ -675,6 +720,36 @@ LEGACY_CONTEXT_SOURCE_LOG_COLUMNS = (
     "elapsed_ms",
     "notes",
 )
+PUBLIC_CONTEXT_SOURCE_LOG_COLUMNS = (
+    "provider",
+    "source_tier",
+    "requiredness",
+    "provider_version",
+    "schema_version",
+    "frequency",
+    "freshness_days",
+    "latest_known_as_of",
+    "warnings",
+    "category",
+    "status",
+    "observations",
+    "as_of_date",
+    "source",
+    "source_url",
+    "elapsed_ms",
+    "notes",
+)
+V6_CONTEXT_METRIC_ONLY_COLUMNS = frozenset(
+    {
+        "commodity_code",
+        "commodity_family",
+        "metric_role",
+        "measurement_kind",
+        "participant_class",
+        "known_as_of",
+        "reference_period",
+    }
+)
 CURRENT_CONTEXT_SOURCE_LOG_ONLY_COLUMNS = frozenset(
     CATEGORY_FIELDS["source_log"]
 ) - frozenset(LEGACY_CONTEXT_SOURCE_LOG_COLUMNS)
@@ -685,8 +760,54 @@ V6_ADDITIVE_DATASETS = frozenset(
         ("weekly_context", "commodity_research_facts.csv"),
     }
 )
+
+
+def _public_green_dataset_spec(dataset: DatasetSpec) -> DatasetSpec:
+    if dataset.pipeline == "macro_assets" and dataset.filename in {
+        "fixed_income.csv",
+        "commodities.csv",
+        "foreign_exchange.csv",
+        "policy_rates.csv",
+        "money_market.csv",
+        "liquidity.csv",
+        "cross_asset.csv",
+    }:
+        return replace(
+            dataset,
+            required_columns=PUBLIC_MACRO_V3_COLUMNS,
+            date_columns=(*RETURN_DATE_COLUMNS, "known_as_of"),
+            timestamp_columns=(),
+        )
+    if dataset.pipeline == "weekly_context" and dataset.filename in {
+        "market_internals.csv",
+        "positioning_flows.csv",
+        "fund_flows.csv",
+        "company_events.csv",
+        "commodity_fundamentals.csv",
+        "financial_conditions.csv",
+    }:
+        return replace(
+            dataset,
+            required_columns=tuple(
+                column
+                for column in dataset.required_columns
+                if column not in V6_CONTEXT_METRIC_ONLY_COLUMNS
+            ),
+        )
+    if (
+        dataset.pipeline == "weekly_context"
+        and dataset.filename == "source_log.csv"
+    ):
+        return replace(
+            dataset,
+            required_columns=PUBLIC_CONTEXT_SOURCE_LOG_COLUMNS,
+            numeric_columns=("freshness_days", "observations", "elapsed_ms"),
+        )
+    return dataset
+
+
 VERSION_5_RELEASE_DATASETS = tuple(
-    dataset
+    _public_green_dataset_spec(dataset)
     for dataset in RELEASE_DATASETS
     if (dataset.pipeline, dataset.filename) not in V6_ADDITIVE_DATASETS
 )
@@ -720,7 +841,7 @@ VERSION_2_RELEASE_DATASETS = tuple(
     if dataset.pipeline == "macro_assets" and dataset.filename == "source_log.csv"
     else replace(
         dataset,
-        required_columns=MACRO_COLUMNS,
+        required_columns=PUBLIC_MACRO_COLUMNS,
         allow_empty=False,
         require_valid_row=True,
         date_columns=RETURN_DATE_COLUMNS,
@@ -906,7 +1027,7 @@ def build_release_manifest(
     *,
     publication_mode: str,
     pipeline_runs: list[dict],
-    dataset_contract_version: int = PUBLIC_GREEN_DATASET_CONTRACT_VERSION,
+    dataset_contract_version: int = DATASET_CONTRACT_VERSION,
     generated_at: str | None = None,
     migrated_at: str | None = None,
 ) -> dict:
@@ -1167,7 +1288,10 @@ def _validate_row(
                     f"{path.name} row {row_number} latest_known_as_of "
                     f"exceeds {window.end}"
                 )
-        if is_current_context_source_log:
+        if (
+            is_current_context_source_log
+            and dataset_contract_version == DATASET_CONTRACT_VERSION
+        ):
             phase = (row.get("phase") or "").strip()
             if phase not in PROVIDER_PHASES:
                 raise ReleaseValidationError(
@@ -1222,10 +1346,12 @@ def _validate_row(
             status_is_accepted = status in spec.accepted_statuses and (
                 status == "OK"
                 or (
-                    optional_identity in CONTEXT_OPTIONAL_STATUS_POLICIES.get(
-                        status,
-                        frozenset(),
-                    )
+                    optional_identity
+                    in (
+                        CONTEXT_OPTIONAL_STATUS_POLICIES
+                        if dataset_contract_version == DATASET_CONTRACT_VERSION
+                        else PUBLIC_CONTEXT_OPTIONAL_STATUS_POLICIES
+                    ).get(status, frozenset())
                     and (
                         not is_current_context_source_log
                         or requiredness == "optional"
@@ -1288,7 +1414,11 @@ def _validate_row(
             raise ReleaseValidationError(
                 f"{path.name} row {row_number} {column} exceeds {window.end}"
             )
-    if spec.pipeline == "macro_assets" and spec.filename == "commodities.csv":
+    if (
+        dataset_contract_version == DATASET_CONTRACT_VERSION
+        and spec.pipeline == "macro_assets"
+        and spec.filename == "commodities.csv"
+    ):
         raw_known_as_of = (row.get("known_as_of") or "").strip()
         if raw_known_as_of:
             try:
@@ -1356,7 +1486,10 @@ def _validate_row(
             )
         )
     )
-    if not (is_macro_commodity or is_context_commodity):
+    if (
+        dataset_contract_version != DATASET_CONTRACT_VERSION
+        or not (is_macro_commodity or is_context_commodity)
+    ):
         return
     if not commodity_code:
         raise ReleaseValidationError(
@@ -1418,7 +1551,7 @@ def validate_staged_week(
     root: Path,
     window: WeekWindow,
     *,
-    dataset_contract_version: int = PUBLIC_GREEN_DATASET_CONTRACT_VERSION,
+    dataset_contract_version: int = DATASET_CONTRACT_VERSION,
 ) -> dict:
     release_root = Path(root)
     _validate_dataset_contract_boundary(
@@ -1482,11 +1615,10 @@ def validate_staged_week(
             validate_company_fundamental_input_references(company_fundamental_rows)
         except ValueError as error:
             raise ReleaseValidationError(str(error)) from error
-    if dataset_contract_version >= PUBLIC_GREEN_DATASET_CONTRACT_VERSION:
+    if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_usda_agriculture_coverage(validated_rows)
         _validate_eia_physical_coverage(validated_rows)
         _validate_configured_commodity_coverage(validated_rows, window)
-    if dataset_contract_version == DATASET_CONTRACT_VERSION:
         _validate_commodity_research_v2(validated_rows, window)
     pipelines = [
         {
@@ -3654,15 +3786,17 @@ def _new_output_release_id() -> str:
 def _output_tables_for_contract(
     dataset_contract_version: int,
 ) -> dict[str, tuple[str, tuple[tuple[str, str], ...]]]:
-    release_datasets_for_contract(dataset_contract_version)
+    registered_datasets = {
+        (dataset.pipeline, dataset.filename)
+        for dataset in release_datasets_for_contract(dataset_contract_version)
+    }
     return {
         public_name: (
             source_pipeline,
             tuple(
                 (table_name, filename)
                 for table_name, filename in table_files
-                if dataset_contract_version == DATASET_CONTRACT_VERSION
-                or (public_name, table_name) not in V6_ADDITIVE_OUTPUT_TABLES
+                if (source_pipeline, filename) in registered_datasets
             ),
         )
         for public_name, (source_pipeline, table_files) in OUTPUT_TABLES.items()
@@ -3878,6 +4012,14 @@ def validate_output_bundle(output_root: Path) -> dict:
             for rows in document["tables"].values()
         ):
             raise ReleaseValidationError(f"Output table contract mismatch: {name}")
+        if any(
+            not isinstance(row, dict)
+            for rows in document["tables"].values()
+            for row in rows
+        ) or any(not isinstance(row, dict) for row in document["source_log"]):
+            raise ReleaseValidationError(
+                f"Output rows must be JSON objects: {name}"
+            )
         actual_hash = hashlib.sha256((root / name).read_bytes()).hexdigest()
         if by_name[name].get("sha256") != actual_hash:
             raise ReleaseValidationError(f"Output hash mismatch: {name}")

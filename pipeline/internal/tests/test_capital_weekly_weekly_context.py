@@ -24,10 +24,14 @@ from pipeline.internal.capital_weekly.context.provider_contracts import (
 )
 from pipeline.internal.capital_weekly.context.economic_releases import build_release_row
 from pipeline.internal.capital_weekly.context.economic_releases import derive_price_index_rows
+from pipeline.internal.capital_weekly.context.fundamentals import (
+    make_company_fundamental_row,
+)
 from pipeline.internal.capital_weekly.context.providers import metric_rows
 
 
 EXPECTED_EMPTY_FIELDS = {
+    "commodity_research_facts": list(CATEGORY_FIELDS["commodity_research_facts"]),
     "company_fundamentals": list(CATEGORY_FIELDS["company_fundamentals"]),
     "capital_markets": list(CATEGORY_FIELDS["capital_markets"]),
     "economic_releases": [
@@ -990,6 +994,68 @@ class WeeklyContextTests(unittest.TestCase):
             )
         )
 
+    def test_combined_company_failure_audit_is_exact_and_secret_safe(self):
+        secret = "combined company secret/+value"
+        broken = make_company_fundamental_row(
+            ticker="FIX",
+            cik="123456",
+            company_name="Fixture Corp.",
+            metric_code="trailing_pe",
+            observation_date="2026-08-07",
+            known_as_of="2026-08-07T16:00:00-04:00",
+            value=12.5,
+            unit="multiple",
+            frequency="trailing",
+            source="Official fixture",
+            source_url="https://example.test/company",
+            calculation_id="fixture_calculation",
+            formula_version="fundamentals-v1",
+            input_record_ids=(secret,),
+        )
+        spec = ProviderSpec(
+            name="company_fixture",
+            category="company_fundamentals",
+            source_tier="public",
+            requiredness="required",
+            provider_version="fundamentals-v1",
+            schema_version="company-fundamental-v1",
+            frequency="event",
+            freshness_days=None,
+        )
+
+        tables = run_weekly_context(
+            {
+                "company_fixture": ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="company_fundamentals",
+                        rows=[broken],
+                        raw_text="company fixture",
+                        source="Official fixture",
+                        source_url="https://example.test/company",
+                    ),
+                )
+            },
+            as_of_date=date(2026, 8, 9),
+            audit_secrets=(f" {secret} ",),
+        )
+
+        self.assertEqual(tables["company_fundamentals"], [])
+        audit = next(
+            row for row in tables["source_log"]
+            if row["provider"] == "company_fundamentals_validation"
+        )
+        self.assertEqual(set(audit), set(CATEGORY_FIELDS["source_log"]))
+        self.assertEqual(audit["phase"], "normalized")
+        self.assertEqual(audit["attempts"], 1)
+        self.assertEqual(
+            audit["error_code"], "UNCLASSIFIED_PROVIDER_FAILURE"
+        )
+        serialized = json.dumps(audit)
+        for candidate in (secret, quote(secret, safe=""), quote_plus(secret)):
+            self.assertNotIn(candidate, serialized)
+        self.assertIn("[REDACTED]", serialized)
+
     def test_provider_mapping_key_mismatch_cannot_populate_a_table(self):
         spec = ProviderSpec(
             name="registered_name",
@@ -1319,6 +1385,7 @@ class WeeklyContextTests(unittest.TestCase):
                 "company_events.csv",
                 "commodity_fundamentals.csv",
                 "commodity_metric_history.csv",
+                "commodity_research_facts.csv",
                 "financial_conditions.csv",
                 "source_log.csv",
                 "weekly_context_snapshot.json",
@@ -1328,6 +1395,9 @@ class WeeklyContextTests(unittest.TestCase):
                 (output / "weekly_context_snapshot.json").read_text(encoding="utf-8")
             )
             self.assertEqual(snapshot["market_internals"][0]["value"], 18.5)
+            self.assertEqual(set(snapshot), set(CATEGORY_FILES))
+            self.assertEqual(len(snapshot), 13)
+            self.assertEqual(snapshot["commodity_research_facts"], [])
             with (output / "commodity_metric_history.csv").open(
                 newline="", encoding="utf-8"
             ) as file:
@@ -1341,6 +1411,7 @@ class WeeklyContextTests(unittest.TestCase):
                 "economic_releases",
                 "company_events",
                 "commodity_fundamentals",
+                "commodity_research_facts",
                 "fund_flows",
             ):
                 with (output / f"{category}.csv").open(
