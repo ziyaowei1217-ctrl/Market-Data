@@ -8,14 +8,29 @@ import tempfile
 import time
 from datetime import date, datetime
 from pathlib import Path
-from typing import Mapping
+from typing import Mapping, Sequence
+from urllib.parse import quote, quote_plus
 
 import pandas as pd
 
-from .context.common import METRIC_FIELDS, normalize_metric_rows
+from pipeline.internal.common import sanitize_audit_bytes, sanitize_audit_text
+
+from .commodity_research import (
+    METRIC_HISTORY_FIELDS,
+    RESEARCH_FACT_FIELDS,
+    FormulaSpec,
+    bounded_metric_history,
+    build_research_facts,
+)
 from .context.capital_markets import (
     CAPITAL_MARKET_FIELDS,
     normalize_capital_market_rows,
+)
+from .context.common import (
+    METRIC_FIELDS,
+    normalize_metric_rows,
+    validate_provider_attempts,
+    validate_provider_phase,
 )
 from .context.economic_releases import (
     ECONOMIC_RELEASE_FIELDS,
@@ -24,6 +39,7 @@ from .context.economic_releases import (
 )
 from .context.provider_contracts import (
     ContextProvider,
+    ProviderPhaseError,
     ProviderResult,
     filter_known_as_of,
 )
@@ -44,6 +60,8 @@ CATEGORY_FILES = {
     "capital_markets": "capital_markets.csv",
     "company_events": "company_events.csv",
     "commodity_fundamentals": "commodity_fundamentals.csv",
+    "commodity_metric_history": "commodity_metric_history.csv",
+    "commodity_research_facts": "commodity_research_facts.csv",
     "financial_conditions": "financial_conditions.csv",
     "source_log": "source_log.csv",
 }
@@ -82,6 +100,9 @@ SOURCE_LOG_FIELDS = (
     "source_url",
     "elapsed_ms",
     "notes",
+    "phase",
+    "attempts",
+    "error_code",
 )
 COMPANY_EVENT_FIELDS = METRIC_FIELDS + (
     "event_date",
@@ -105,6 +126,8 @@ CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {
     "capital_markets": CAPITAL_MARKET_FIELDS,
     "company_events": COMPANY_EVENT_FIELDS,
     "commodity_fundamentals": METRIC_FIELDS,
+    "commodity_metric_history": METRIC_HISTORY_FIELDS,
+    "commodity_research_facts": RESEARCH_FACT_FIELDS,
     "financial_conditions": METRIC_FIELDS,
     "source_log": SOURCE_LOG_FIELDS,
 }
@@ -126,8 +149,15 @@ def run_weekly_context(
     providers: Mapping[str, ContextProvider],
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
+    audit_secrets: Sequence[str] = (),
+    history_limits: Mapping[str, object] | None = None,
+    commodity_registry: Mapping[str, object] | None = None,
+    formula_specs: Mapping[str, FormulaSpec] | None = None,
+    price_history: Sequence[dict] = (),
 ) -> dict[str, list[dict]]:
+    normalized_audit_secrets = _normalize_audit_secrets(audit_secrets)
     tables = {category: [] for category in CATEGORY_FILES}
+    commodity_history_inputs: list[dict] = []
     raw_path = Path(raw_dir) if raw_dir else None
     if raw_path:
         raw_path.mkdir(parents=True, exist_ok=True)
@@ -142,11 +172,24 @@ def run_weekly_context(
                     f"ProviderSpec name {provider.spec.name!r}"
                 )
             result = provider.fetch()
+            completed_phase = validate_provider_phase(
+                result.completed_phase,
+                completed=result.status == "OK",
+            )
+            attempts = validate_provider_attempts(result.attempts)
             if result.category != provider.spec.category:
                 raise ValueError(
                     f"Provider result category {result.category!r} does not match "
                     f"ProviderSpec category {provider.spec.category!r}"
                 )
+            safe_result_notes = sanitize_audit_text(
+                result.notes,
+                secrets=normalized_audit_secrets,
+            )
+            safe_result_source_url = sanitize_audit_text(
+                result.source_url,
+                secrets=normalized_audit_secrets,
+            )
             if result.category == "economic_releases":
                 rows = normalize_economic_release_rows(result.rows)
             elif result.category == "company_fundamentals":
@@ -159,17 +202,37 @@ def run_weekly_context(
                 rows = normalize_metric_rows(result.rows)
             if provider.spec.category not in tables or provider.spec.category == "source_log":
                 raise ValueError(f"Unsupported context category: {result.category}")
-            if raw_path:
-                raw_content = (
-                    result.raw_text
-                    if isinstance(result.raw_text, bytes)
-                    else result.raw_text.encode("utf-8")
+            if (
+                not result.raw_is_diagnostic
+                and _contains_configured_secret(
+                    result.raw_text,
+                    normalized_audit_secrets,
                 )
+            ):
+                qualifier = "Successful " if result.status == "OK" else ""
+                raise ValueError(
+                    f"{qualifier}raw source contains a configured credential"
+                )
+            if raw_path:
+                if isinstance(result.raw_text, bytes) and result.raw_is_diagnostic:
+                    raw_content = sanitize_audit_bytes(
+                        result.raw_text,
+                        secrets=normalized_audit_secrets,
+                    )
+                elif result.raw_is_diagnostic:
+                    raw_content = sanitize_audit_text(
+                        result.raw_text,
+                        secrets=normalized_audit_secrets,
+                    ).encode("utf-8")
+                elif isinstance(result.raw_text, bytes):
+                    raw_content = result.raw_text
+                else:
+                    raw_content = result.raw_text.encode("utf-8")
                 (raw_path / f"{_safe_provider_name(provider_name)}.raw").write_bytes(
                     raw_content
                 )
             rows_declare_known_as_of = any(
-                "known_as_of" in row for row in rows
+                row.get("known_as_of") is not None for row in rows
             )
             if rows_declare_known_as_of:
                 rows = filter_known_as_of(rows, run_date)
@@ -179,7 +242,9 @@ def run_weekly_context(
                         f"{run_date.isoformat()}."
                     )
                     notes = "; ".join(
-                        note for note in (result.notes, unavailable_note) if note
+                        note
+                        for note in (safe_result_notes, unavailable_note)
+                        if note
                     )
                     tables["source_log"].append(
                         {
@@ -197,12 +262,31 @@ def run_weekly_context(
                             "observations": 0,
                             "as_of_date": run_date.isoformat(),
                             "source": result.source,
-                            "source_url": result.source_url,
+                            "source_url": safe_result_source_url,
                             "elapsed_ms": int((time.monotonic() - started) * 1000),
                             "notes": notes,
+                            "phase": "point_in_time",
+                            "attempts": attempts,
+                            "error_code": "POINT_IN_TIME_UNAVAILABLE",
                         }
                     )
                     continue
+            for row in rows:
+                if row.get("source_url") is not None:
+                    row["source_url"] = sanitize_audit_text(
+                        row["source_url"],
+                        secrets=normalized_audit_secrets,
+                    )
+            if (
+                result.status == "OK"
+                and result.category
+                in {"commodity_fundamentals", "positioning_flows"}
+            ):
+                commodity_history_inputs.extend(
+                    row
+                    for row in rows
+                    if row.get("commodity_code") not in (None, "")
+                )
             tables[provider.spec.category].extend(rows)
             tables["source_log"].append(
                 {
@@ -214,19 +298,25 @@ def run_weekly_context(
                     "frequency": provider.spec.frequency,
                     "freshness_days": provider.spec.freshness_days,
                     "latest_known_as_of": _latest_known_as_of(rows),
-                    "warnings": result.notes,
+                    "warnings": safe_result_notes,
                     "category": provider.spec.category,
                     "status": result.status,
                     "observations": len(rows),
                     "as_of_date": run_date.isoformat(),
                     "source": result.source,
-                    "source_url": result.source_url,
+                    "source_url": safe_result_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
-                    "notes": result.notes,
+                    "notes": safe_result_notes,
+                    "phase": completed_phase,
+                    "attempts": attempts,
+                    "error_code": None,
                 }
             )
         except Exception as error:
-            safe_error = _safe_provider_error(error)
+            phase, attempts, error_code, safe_error = _provider_error_metadata(
+                error,
+                secrets=normalized_audit_secrets,
+            )
             tables["source_log"].append(
                 {
                     "provider": provider_name,
@@ -246,16 +336,110 @@ def run_weekly_context(
                     "source_url": provider.spec.failure_source_url,
                     "elapsed_ms": int((time.monotonic() - started) * 1000),
                     "notes": safe_error,
+                    "phase": phase,
+                    "attempts": attempts,
+                    "error_code": error_code,
                 }
             )
-    _validate_combined_economic_releases(tables, run_date)
+    _validate_combined_economic_releases(
+        tables,
+        run_date,
+        audit_secrets=normalized_audit_secrets,
+    )
     _validate_combined_company_fundamentals(tables, run_date)
+    if history_limits is None or commodity_registry is None:
+        if history_limits is None and commodity_registry is None:
+            if commodity_history_inputs:
+                raise ValueError(
+                    "commodity history requires history_limits and "
+                    "commodity_registry"
+                )
+            tables["commodity_metric_history"] = []
+            tables["commodity_research_facts"] = build_research_facts(
+                price_history,
+                [],
+                formula_specs or {},
+                run_date,
+            )
+            return tables
+        raise ValueError(
+            "history_limits and commodity_registry must be injected together"
+        )
+    tables["commodity_metric_history"] = bounded_metric_history(
+        commodity_history_inputs,
+        run_date,
+        history_limits,
+        commodity_registry,
+    )
+    tables["commodity_research_facts"] = build_research_facts(
+        price_history,
+        tables["commodity_metric_history"],
+        formula_specs or {},
+        run_date,
+    )
     return tables
+
+
+def _normalize_audit_secrets(secrets: Sequence[str]) -> tuple[str, ...]:
+    normalized: list[str] = []
+    for raw_secret in secrets:
+        secret = str(raw_secret).strip()
+        if secret and secret not in normalized:
+            normalized.append(secret)
+    return tuple(normalized)
+
+
+def _contains_configured_secret(
+    raw_content: str | bytes,
+    secrets: Sequence[str],
+) -> bool:
+    content = (
+        raw_content
+        if isinstance(raw_content, bytes)
+        else raw_content.encode("utf-8")
+    )
+    for secret in secrets:
+        candidates = {
+            secret,
+            quote(secret, safe=""),
+            quote_plus(secret, safe=""),
+        }
+        if any(candidate.encode("utf-8") in content for candidate in candidates):
+            return True
+    return False
+
+
+def _provider_error_metadata(
+    error: Exception,
+    *,
+    secrets: Sequence[str],
+) -> tuple[str, int, str, str]:
+    if isinstance(error, ProviderPhaseError):
+        try:
+            phase = validate_provider_phase(error.failure_phase, completed=False)
+            attempts = validate_provider_attempts(error.attempts)
+        except ValueError:
+            pass
+        else:
+            return (
+                phase,
+                attempts,
+                sanitize_audit_text(error.error_code, secrets=secrets),
+                sanitize_audit_text(error.safe_message, secrets=secrets),
+            )
+    return (
+        "retrieve",
+        1,
+        "UNCLASSIFIED_PROVIDER_FAILURE",
+        sanitize_audit_text(error, secrets=secrets),
+    )
 
 
 def _validate_combined_economic_releases(
     tables: dict[str, list[dict]],
     as_of_date: date,
+    *,
+    audit_secrets: tuple[str, ...] = (),
 ) -> None:
     try:
         tables["economic_releases"] = normalize_economic_release_rows(
@@ -263,6 +447,7 @@ def _validate_combined_economic_releases(
         )
         validate_economic_release_input_references(tables["economic_releases"])
     except ValueError as error:
+        safe_error = sanitize_audit_text(error, secrets=audit_secrets)
         tables["economic_releases"] = []
         tables["source_log"].append(
             {
@@ -274,7 +459,7 @@ def _validate_combined_economic_releases(
                 "frequency": "event",
                 "freshness_days": None,
                 "latest_known_as_of": None,
-                "warnings": str(error),
+                "warnings": safe_error,
                 "category": "economic_releases",
                 "status": "FETCH_FAILED",
                 "observations": 0,
@@ -282,7 +467,10 @@ def _validate_combined_economic_releases(
                 "source": None,
                 "source_url": None,
                 "elapsed_ms": 0,
-                "notes": str(error),
+                "notes": safe_error,
+                "phase": "normalized",
+                "attempts": 1,
+                "error_code": "UNCLASSIFIED_PROVIDER_FAILURE",
             }
         )
 
@@ -329,7 +517,7 @@ def _latest_known_as_of(rows: list[dict]) -> str | None:
         if not row.get("known_as_of"):
             continue
         raw = str(row["known_as_of"])
-        known = datetime.fromisoformat(raw)
+        known = datetime.fromisoformat(raw.replace("Z", "+00:00"))
         if known.tzinfo is None:
             raise ValueError("known_as_of must include a UTC offset")
         known_values.append((known, raw))
@@ -359,7 +547,13 @@ def publish_weekly_context_bundle(
     )
     backup = destination.with_name(f".{destination.name}.backup")
     try:
-        for category, filename in CATEGORY_FILES.items():
+        published_categories = tuple(
+            category
+            for category in CATEGORY_FILES
+            if category != "commodity_research_facts" or category in tables
+        )
+        for category in published_categories:
+            filename = CATEGORY_FILES[category]
             pd.DataFrame(
                 tables.get(category, []), columns=CATEGORY_FIELDS[category]
             ).to_csv(
@@ -367,7 +561,7 @@ def publish_weekly_context_bundle(
             )
         snapshot = {
             category: _json_ready(tables.get(category, []))
-            for category in CATEGORY_FILES
+            for category in published_categories
         }
         (staging / "weekly_context_snapshot.json").write_text(
             json.dumps(snapshot, ensure_ascii=False, indent=2, allow_nan=False),

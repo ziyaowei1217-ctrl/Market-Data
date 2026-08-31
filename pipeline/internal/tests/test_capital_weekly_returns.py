@@ -9,6 +9,26 @@ from pipeline.internal.capital_weekly.returns import (
 
 
 class ReturnSnapshotTests(unittest.TestCase):
+    def test_macro_absolute_change_units_return_level_differences(self):
+        history = [
+            {"date": "2025-12-31", "value": 0.1},
+            {"date": "2026-06-30", "value": 0.2},
+            {"date": "2026-07-03", "value": 0.3},
+            {"date": "2026-07-06", "value": 0.4},
+            {"date": "2026-07-07", "value": 0.5},
+        ]
+
+        for change_unit in ("usd_billions", "correlation_points"):
+            with self.subTest(change_unit=change_unit):
+                try:
+                    result = calculate_macro_snapshot(history, change_unit)
+                except ValueError as error:
+                    self.fail(f"absolute change unit was rejected: {error}")
+                self.assertAlmostEqual(result.daily_change, 0.1)
+                self.assertAlmostEqual(result.weekly_change, 0.3)
+                self.assertAlmostEqual(result.mtd_change, 0.3)
+                self.assertAlmostEqual(result.ytd_change, 0.4)
+
     def test_bp_change_allows_zero_base_yield(self):
         history = [
             {"date": "2025-12-31", "value": 0.00},

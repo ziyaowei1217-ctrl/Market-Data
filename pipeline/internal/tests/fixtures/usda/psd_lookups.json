@@ -1,0 +1,23 @@
+{
+  "commodities": [
+    {"commodityCode": "0440000", "commodityName": "Corn"},
+    {"commodityCode": "2222000", "commodityName": "Oilseed, Soybean"}
+  ],
+  "attributes": [
+    {"attributeId": 1, "attributeName": "Beginning Stocks"},
+    {"attributeId": 4, "attributeName": "Production"},
+    {"attributeId": 6, "attributeName": "MY Imports"},
+    {"attributeId": 7, "attributeName": "MY Exports"},
+    {"attributeId": 10, "attributeName": "Feed Dom. Consumption"},
+    {"attributeId": 11, "attributeName": "Industrial Dom. Consumption"},
+    {"attributeId": 12, "attributeName": "Total Dom. Consumption"},
+    {"attributeId": 13, "attributeName": "Ending Stocks"}
+  ],
+  "countries": [
+    {"countryCode": "00", "countryName": "World"},
+    {"countryCode": "US", "countryName": "United States"}
+  ],
+  "units": [
+    {"unitId": 8, "unitDescription": "1000 MT"}
+  ]
+}

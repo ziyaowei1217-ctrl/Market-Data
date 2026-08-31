@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 from typing import Iterable, Literal
 
 
-ChangeUnit = Literal["pct", "bp"]
+ChangeUnit = Literal["pct", "bp", "usd_billions", "correlation_points"]
 WeeklyMode = Literal["iso_week", "trailing_7d"]
 
 
@@ -84,6 +84,8 @@ def _change(latest: float, base: float, unit: ChangeUnit) -> float | None:
         return latest / base - 1
     if unit == "bp":
         return (latest - base) * 100
+    if unit in {"usd_billions", "correlation_points"}:
+        return latest - base
     raise ValueError(f"Unsupported change unit: {unit}")
 
 

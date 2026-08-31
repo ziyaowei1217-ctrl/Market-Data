@@ -7,8 +7,8 @@ import os
 import tempfile
 import re
 import html
-from urllib.parse import urljoin
-from dataclasses import asdict, dataclass
+from urllib.parse import urljoin, urlparse
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
@@ -18,11 +18,39 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from pipeline.internal.common import load_config_rows
+from pipeline.internal.common import (
+    DEFAULT_CONFIG_PATH,
+    load_config_rows,
+    sanitize_audit_bytes,
+    sanitize_audit_text,
+)
+
+from pipeline.internal.capital_weekly.commodity_prices import (
+    parse_eia_price_series,
+    parse_world_bank_monthly_prices,
+)
+from pipeline.internal.capital_weekly.commodity_research import (
+    PRICE_HISTORY_FIELDS,
+    bounded_price_history,
+    validate_commodity_registry,
+    validate_history_limits,
+)
+from pipeline.internal.capital_weekly.context.eia_commodities import (
+    CommodityHttpSpec,
+    build_eia_batch_specs,
+    eia_metadata_facet_ids,
+    eia_response_total,
+    fetch_eia_batches,
+    load_commodity_http_policies,
+)
+from pipeline.internal.capital_weekly.context.provider_contracts import (
+    target_sunday_cutoff,
+)
 from pipeline.internal.capital_weekly.cross_asset import (
     DailyTransform,
     rolling_correlation_history,
 )
+from pipeline.internal.capital_weekly.official_http import official_get
 from pipeline.internal.capital_weekly.returns import calculate_macro_snapshot, parse_date
 
 
@@ -53,6 +81,62 @@ class MacroAssetConfig:
     calculation_id: str = ""
     formula_version: str = ""
     input_series_codes: str = ""
+    commodity_code: str = ""
+    commodity_family: str = ""
+    price_kind: str = ""
+    known_as_of: str = ""
+    provider_route: str = ""
+    freshness_days: str = ""
+    source_description: str = ""
+    correlation_proxy_provider: str = ""
+    correlation_proxy_symbol: str = ""
+    correlation_proxy_source: str = ""
+    correlation_proxy_source_url: str = ""
+    correlation_proxy_frequency: str = ""
+
+
+@dataclass(frozen=True)
+class MacroAssetBundle:
+    detail: pd.DataFrame
+    source_log: pd.DataFrame
+    commodity_price_history: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class CommodityResearchConfig:
+    history_limits: dict[str, int]
+    commodity_registry: dict[str, str]
+
+
+def load_commodity_research_config(
+    path: str | Path | None = None,
+) -> CommodityResearchConfig:
+    config_path = Path(path) if path is not None else DEFAULT_CONFIG_PATH
+    document = json.loads(config_path.read_text(encoding="utf-8"))
+    try:
+        research = document["commodity_research"]
+        raw_limits = research["history_limits"]
+        raw_universe = research["universe"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "commodity_research history_limits and universe must be configured"
+        ) from error
+    if not isinstance(raw_universe, list) or not all(
+        isinstance(row, Mapping) for row in raw_universe
+    ):
+        raise ValueError("commodity_research.universe must be a row list")
+    registry: dict[str, object] = {}
+    for row in raw_universe:
+        code = str(row.get("commodity_code") or "").strip()
+        if code in registry:
+            raise ValueError(
+                f"Duplicate commodity_code in commodity_research.universe: {code}"
+            )
+        registry[code] = row.get("commodity_family")
+    return CommodityResearchConfig(
+        history_limits=validate_history_limits(raw_limits),
+        commodity_registry=validate_commodity_registry(registry),
+    )
 
 
 @dataclass(frozen=True)
@@ -283,6 +367,99 @@ def _requiredness(config: MacroAssetConfig) -> str:
     return "optional" if _source_tier(config) == "public_proxy" else "required"
 
 
+_INTERNAL_DETAIL_FIELDS = (
+    "freshness_days",
+    "source_description",
+    "correlation_proxy_provider",
+    "correlation_proxy_symbol",
+    "correlation_proxy_source",
+    "correlation_proxy_source_url",
+    "correlation_proxy_frequency",
+)
+
+
+def _detail_config_fields(config: MacroAssetConfig) -> dict:
+    detail = asdict(config)
+    for field in _INTERNAL_DETAIL_FIELDS:
+        detail.pop(field, None)
+    return detail
+
+
+def _is_valid_https_url(url: str) -> bool:
+    if not url or any(character.isspace() for character in url):
+        return False
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname
+        parsed.port
+    except (AttributeError, TypeError, ValueError):
+        return False
+    return (
+        parsed.scheme.lower() == "https"
+        and bool(host)
+        and parsed.username is None
+        and parsed.password is None
+    )
+
+
+def _correlation_proxy_config(
+    config: MacroAssetConfig,
+) -> MacroAssetConfig | None:
+    values = {
+        "provider": str(config.correlation_proxy_provider or "").strip(),
+        "provider_symbol": str(config.correlation_proxy_symbol or "").strip(),
+        "source": str(config.correlation_proxy_source or "").strip(),
+        "source_url": str(config.correlation_proxy_source_url or "").strip(),
+        "frequency": str(config.correlation_proxy_frequency or "").strip(),
+    }
+    if not any(values.values()):
+        return None
+    missing = [field for field, value in values.items() if not value]
+    if missing:
+        raise ValueError(
+            f"{config.series_code} correlation proxy is missing: "
+            + ", ".join(missing)
+        )
+    if not _is_valid_https_url(values["source_url"]):
+        raise ValueError(
+            f"{config.series_code} correlation proxy source_url must be a valid "
+            "HTTPS URL"
+        )
+    if config.provider == "calculated":
+        raise ValueError("Calculated series cannot configure a correlation proxy")
+    if values["provider"] not in PUBLIC_PROXY_PROVIDERS:
+        raise ValueError(
+            f"{config.series_code} correlation proxy must use a public proxy provider"
+        )
+    if values["frequency"] != "daily":
+        raise ValueError(
+            f"{config.series_code} correlation proxy frequency must be daily"
+        )
+    return replace(
+        config,
+        provider=values["provider"],
+        provider_symbol=values["provider_symbol"],
+        source=values["source"],
+        source_url=values["source_url"],
+        frequency=values["frequency"],
+        calculation_id="",
+        formula_version="",
+        input_series_codes="",
+        commodity_code="",
+        commodity_family="",
+        price_kind="",
+        known_as_of="",
+        provider_route="",
+        freshness_days="",
+        source_description="",
+        correlation_proxy_provider="",
+        correlation_proxy_symbol="",
+        correlation_proxy_source="",
+        correlation_proxy_source_url="",
+        correlation_proxy_frequency="",
+    )
+
+
 def align_curve_spread(
     ten_year: Iterable[dict],
     two_year: Iterable[dict],
@@ -407,17 +584,167 @@ def _response_bytes(response) -> bytes:
     return response.content if hasattr(response, "content") else response.text.encode("utf-8")
 
 
-def _get(session, url: str, *, headers: dict[str, str] | None = None):
+def _get(
+    session,
+    url: str,
+    *,
+    headers: dict[str, str] | None = None,
+    params: dict[str, object] | None = None,
+):
     attempt = {"method": "GET", "url": url, "status": "attempting"}
     session._macro_attempt_trace.append(attempt)
     request_options = {"timeout": (5, 25)}
     if headers is not None:
         request_options["headers"] = headers
+    if params is not None:
+        request_options["params"] = params
     response = session.get(url, **request_options)
     session._macro_raw_parts.append(_response_bytes(response))
     response.raise_for_status()
     attempt["status"] = "completed"
     return response
+
+
+def _macro_http_spec(session, provider: str) -> CommodityHttpSpec:
+    policies = getattr(session, "_macro_commodity_http", None)
+    if not isinstance(policies, dict):
+        policies = load_commodity_http_policies()
+        session._macro_commodity_http = policies
+    try:
+        return policies[provider]
+    except KeyError as error:
+        raise ValueError(f"Missing commodity HTTP policy: {provider}") from error
+
+
+def _official_macro_get(
+    session,
+    url: str,
+    provider: str,
+    *,
+    headers: Mapping[str, str] | None = None,
+    params: Mapping[str, object] | None = None,
+    audit_secrets: tuple[str, ...] = (),
+) -> bytes:
+    attempt = {"method": "GET", "url": url, "status": "attempting"}
+    session._macro_attempt_trace.append(attempt)
+    transport_session = getattr(session, "__dict__", {}).get(
+        "_macro_official_session", session
+    )
+    response = official_get(
+        transport_session,
+        url,
+        policy=_macro_http_spec(session, provider).policy,
+        headers=headers,
+        params=params,
+        audit_secrets=audit_secrets,
+    )
+    session._macro_raw_parts.append(response.body)
+    attempt["status"] = "completed"
+    attempt["attempts"] = response.trace.attempts
+    return response.body
+
+
+class _MacroEiaClient:
+    def __init__(self, session, api_key: str, http: CommodityHttpSpec):
+        self.session = session
+        self.api_key = api_key
+        self.http = http
+        self.raw_bodies: list[bytes] = []
+
+    def _get(self, url: str, params: Mapping[str, object]) -> bytes:
+        body = _official_macro_get(
+            self.session,
+            url,
+            "eia",
+            params=params,
+            audit_secrets=(self.api_key,),
+        )
+        self.raw_bodies.append(body)
+        return body
+
+    def fetch_metadata(self, spec, expected):
+        required = set(expected)
+        body = self._get(
+            f"https://api.eia.gov/v2/{spec.route}/facet/series/",
+            {
+                "api_key": self.api_key,
+                "offset": 0,
+                "length": spec.page_length,
+            },
+        )
+        payload = json.loads(body.decode("utf-8"))
+        identifiers = eia_metadata_facet_ids(payload.get("response", {}))
+        missing = sorted(required - identifiers)
+        if missing:
+            raise ValueError(
+                f"EIA configured facet is unavailable for {spec.route}/series: "
+                + ", ".join(missing)
+            )
+
+    def fetch_page(self, spec, *, offset: int, length: int):
+        params: dict[str, object] = {
+            "api_key": self.api_key,
+            "frequency": spec.frequency,
+            "data[0]": "value",
+            "start": spec.start,
+            "end": spec.end,
+            "sort[0][column]": "period",
+            "sort[0][direction]": "asc",
+            "offset": offset,
+            "length": length,
+        }
+        for facet, values in spec.facets.items():
+            params[f"facets[{facet}][]"] = list(values)
+        body = self._get(
+            f"https://api.eia.gov/v2/{spec.route}/data/",
+            params,
+        )
+        payload = json.loads(body.decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("EIA price response must be a JSON object")
+        return payload
+
+
+def _is_official_world_bank_https(url: str) -> bool:
+    if not _is_valid_https_url(url):
+        return False
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    return (
+        host == "worldbank.org"
+        or host.endswith(".worldbank.org")
+    )
+
+
+def _discover_world_bank_monthly_url(text: str, page_url: str) -> str:
+    if not _is_official_world_bank_https(page_url):
+        raise ValueError("World Bank commodity page must use an official HTTPS host")
+    candidates = []
+    for href, raw_label in re.findall(
+        r'<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+        text,
+        flags=re.I | re.S,
+    ):
+        label = " ".join(_plain_html(raw_label).casefold().split())
+        indicates_monthly_prices = (
+            label == "monthly prices"
+            or all(term in label for term in ("monthly", "historical", "price"))
+        )
+        if not indicates_monthly_prices:
+            continue
+        candidate = urljoin(page_url, html.unescape(href).strip())
+        parsed = urlparse(candidate)
+        if (
+            _is_official_world_bank_https(candidate)
+            and parsed.path.lower().endswith(".xlsx")
+        ):
+            candidates.append(candidate)
+    unique = list(dict.fromkeys(candidates))
+    if len(unique) != 1:
+        raise ValueError(
+            "World Bank commodity page did not expose one official monthly workbook link"
+        )
+    return unique[0]
 
 
 def _post(session, url: str, data=b""):
@@ -889,6 +1216,146 @@ def _fetch_config_history(
                 for point in history
             ]
         return history, _response_bytes(response), url
+    if config.provider == "eia_v2":
+        if not re.fullmatch(r"[a-z0-9][a-z0-9/_-]*", config.provider_route):
+            raise ValueError(f"Invalid EIA v2 provider route: {config.provider_route}")
+        api_key = os.environ.get("EIA_API_KEY", "").strip()
+        if not api_key:
+            raise ValueError("EIA_API_KEY is required for official EIA prices")
+        if not config.source_description.strip():
+            raise ValueError(f"{config.series_code} requires source_description")
+        cached_eia = getattr(session, "_macro_eia_prices", None)
+        if not isinstance(cached_eia, dict):
+            cached_eia = {}
+        if config.provider_symbol not in cached_eia:
+            price_configs = getattr(session, "_macro_eia_configs", None)
+            if not isinstance(price_configs, list) or not price_configs:
+                price_configs = [config]
+            price_configs = [
+                item
+                for item in price_configs
+                if item.provider_route == config.provider_route
+                and item.frequency == config.frequency
+            ]
+            http = _macro_http_spec(session, "eia")
+            if http.request_batch_size is None or http.page_length is None:
+                raise ValueError("EIA HTTP policy requires batching and pagination")
+            batch_rows = [
+                {
+                    "route": item.provider_route,
+                    "frequency": item.frequency,
+                    "facets": {"series": item.provider_symbol},
+                }
+                for item in price_configs
+            ]
+            specs = build_eia_batch_specs(
+                batch_rows,
+                request_batch_size=http.request_batch_size,
+                page_length=http.page_length,
+                start=start.isoformat(),
+                end=today.isoformat(),
+            )
+            expected = {
+                item.provider_symbol: {
+                    "facets": {"series": item.provider_symbol},
+                    "source_description": item.source_description,
+                    "expected_unit": item.level_unit,
+                }
+                for item in price_configs
+            }
+            client = _MacroEiaClient(session, api_key, http)
+            pages = fetch_eia_batches(client, specs, expected_metadata=expected)
+            all_rows = [
+                row
+                for payload in pages
+                for row in payload["response"]["data"]
+            ]
+            fetched = {
+                item.provider_symbol: (
+                    json.dumps(
+                        {"response": {"data": [
+                            row
+                            for row in all_rows
+                            if str(row.get("series") or "") == item.provider_symbol
+                        ]}},
+                        separators=(",", ":"),
+                    ),
+                    b"\n".join(client.raw_bodies),
+                )
+                for item in price_configs
+            }
+            cached_eia.update(fetched)
+            session._macro_eia_prices = cached_eia
+        try:
+            text, raw = cached_eia[config.provider_symbol]
+        except KeyError as error:
+            raise ValueError(
+                f"EIA batch did not cache configured series: {config.provider_symbol}"
+            ) from error
+        url = f"https://api.eia.gov/v2/{config.provider_route.strip('/')}/data/"
+        return (
+            parse_eia_price_series(
+                text,
+                config.provider_symbol,
+                config.level_unit,
+                expected_description=config.source_description,
+            ),
+            raw,
+            url,
+        )
+    if config.provider == "world_bank_pink_sheet":
+        def official_cached(url: str) -> tuple[bytes, str]:
+            key = ("OFFICIAL_GET", url)
+            if key not in shared:
+                body = _official_macro_get(
+                    session, url, "world_bank_pink_sheet"
+                )
+                shared[key] = (body, body.decode("utf-8", errors="strict"))
+            else:
+                session._macro_attempt_trace.append(
+                    {"method": "GET", "url": url, "status": "cache_hit"}
+                )
+                session._macro_raw_parts.append(shared[key][0])
+            return shared[key]
+
+        page_content, page_text = official_cached(config.source_url)
+        del page_content
+        workbook_url = _discover_world_bank_monthly_url(
+            page_text,
+            config.source_url,
+        )
+        key = ("OFFICIAL_GET", workbook_url)
+        if key not in shared:
+            workbook_content = _official_macro_get(
+                session, workbook_url, "world_bank_pink_sheet"
+            )
+            shared[key] = (workbook_content, "")
+        else:
+            workbook_content = shared[key][0]
+            session._macro_attempt_trace.append(
+                {"method": "GET", "url": workbook_url, "status": "cache_hit"}
+            )
+            session._macro_raw_parts.append(workbook_content)
+        parsed = getattr(session, "_macro_world_bank_prices", None)
+        if not isinstance(parsed, dict):
+            requested_columns = getattr(
+                session,
+                "_macro_world_bank_columns",
+                {config.provider_symbol: config.level_unit},
+            )
+            parsed = parse_world_bank_monthly_prices(
+                workbook_content,
+                requested_columns,
+            )
+            session._macro_world_bank_prices = parsed
+        try:
+            history = parsed[config.provider_symbol]
+        except KeyError as error:
+            raise ValueError(
+                "World Bank workbook was not parsed for requested column: "
+                f"{config.provider_symbol}"
+            ) from error
+        return history, workbook_content, workbook_url
     if config.provider == "yahoo_chart":
         symbol = requests.utils.quote(config.provider_symbol, safe="")
         period1 = int(datetime.combine(today - timedelta(days=550), datetime.min.time(), tzinfo=timezone.utc).timestamp())
@@ -1188,6 +1655,45 @@ def _iso(value):
     return value.isoformat() if value else None
 
 
+def _prepare_history_for_snapshot(
+    history: Iterable[dict],
+    target_date: date,
+    fallback_known_as_of: str,
+) -> list[dict]:
+    cutoff = target_sunday_cutoff(target_date)
+    prepared = []
+    for raw_point in history:
+        point = dict(raw_point)
+        observation = parse_date(point["date"])
+        if observation > target_date:
+            continue
+        raw = point.get("known_as_of") or fallback_known_as_of or None
+        if raw is None or not str(raw).strip():
+            prepared.append(point)
+            continue
+        try:
+            known = datetime.fromisoformat(
+                str(raw).strip().replace("Z", "+00:00")
+            )
+        except ValueError as error:
+            raise ValueError(
+                "known_as_of must be an ISO timestamp with a UTC offset"
+            ) from error
+        if known.tzinfo is None or known.utcoffset() is None:
+            raise ValueError("known_as_of must include a UTC offset")
+        if known.astimezone(cutoff.tzinfo) > cutoff:
+            raise ValueError(
+                f"known_as_of exceeds target Sunday {target_date.isoformat()}"
+            )
+        point["known_as_of"] = (
+            known.astimezone(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        prepared.append(point)
+    return prepared
+
+
 def _snapshot_fields(snapshot) -> dict:
     return {
         "latest_date": _iso(snapshot.latest_date), "latest_value": snapshot.latest_value,
@@ -1205,9 +1711,11 @@ def _snapshot_fields(snapshot) -> dict:
 
 def _attempt_provenance(trace: list[dict], fallback: str) -> str:
     if not trace:
-        return fallback
+        return sanitize_audit_text(fallback)
     return " | ".join(
-        f'{attempt["method"]} {attempt["url"]} [{attempt["status"]}]'
+        sanitize_audit_text(
+            f'{attempt["method"]} {attempt["url"]} [{attempt["status"]}]'
+        )
         for attempt in trace
     )
 
@@ -1216,10 +1724,13 @@ def _cache_raw_failure(raw_path, config, raw_parts):
     if raw_path is None or not raw_parts:
         return "NOT_WRITTEN", ""
     try:
-        _atomic_write_bytes(raw_path / f"{config.series_code}.raw", b"\n".join(raw_parts))
+        _atomic_write_bytes(
+            raw_path / f"{config.series_code}.raw",
+            sanitize_audit_bytes(b"\n".join(raw_parts)),
+        )
         return "OK", ""
     except Exception as cache_error:
-        return "CACHE_WRITE_FAILED", str(cache_error)
+        return "CACHE_WRITE_FAILED", sanitize_audit_text(cache_error)
 
 
 def _source_audit_metadata(
@@ -1228,13 +1739,25 @@ def _source_audit_metadata(
     *,
     warnings: str = "",
 ) -> dict:
-    freshness_days = {
-        "daily": 7,
-        "weekly": 14,
-        "monthly": 45,
-        "quarterly": 120,
-        "event": 365,
-    }.get(config.frequency)
+    if str(config.freshness_days).strip():
+        try:
+            freshness_days = int(str(config.freshness_days).strip())
+        except ValueError as error:
+            raise ValueError(
+                f"{config.series_code} freshness_days must be a positive integer"
+            ) from error
+        if freshness_days <= 0:
+            raise ValueError(
+                f"{config.series_code} freshness_days must be a positive integer"
+            )
+    else:
+        freshness_days = {
+            "daily": 7,
+            "weekly": 14,
+            "monthly": 45,
+            "quarterly": 120,
+            "event": 365,
+        }.get(config.frequency)
     return {
         "provider": config.provider,
         "provider_symbol": config.provider_symbol,
@@ -1245,24 +1768,44 @@ def _source_audit_metadata(
         "frequency": config.frequency,
         "freshness_days": freshness_days,
         "known_as_of": known_as_of,
-        "warnings": warnings,
+        "warnings": sanitize_audit_text(warnings),
         "calculation_id": config.calculation_id,
         "formula_version": config.formula_version,
         "input_series_codes": config.input_series_codes,
     }
 
 
-def fetch_macro_assets(
+def fetch_macro_asset_bundle(
     universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
     raw_dir: str | Path | None = None,
     as_of_date: date | None = None,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+    *,
+    allow_partial: bool = False,
+) -> MacroAssetBundle:
     session = _session()
+    session._macro_official_session = requests.Session()
+    if isinstance(getattr(session, "headers", None), Mapping):
+        session._macro_official_session.headers.update(session.headers)
     detail_rows = []
     source_rows = []
     histories = {}
+    calculation_source_urls = {}
+    calculation_input_errors = {}
+    price_histories = {}
     raw_path = Path(raw_dir) if raw_dir is not None else None
-    for config in load_macro_asset_universe(universe_path):
+    universe = load_macro_asset_universe(universe_path)
+    session._macro_commodity_http = load_commodity_http_policies(
+        universe_path if universe_path is not None and Path(universe_path).suffix == ".json" else None
+    )
+    session._macro_eia_configs = [
+        config for config in universe if config.provider == "eia_v2"
+    ]
+    session._macro_world_bank_columns = {
+        config.provider_symbol: config.level_unit
+        for config in universe
+        if config.provider == "world_bank_pink_sheet"
+    }
+    for config in universe:
         started = datetime.now()
         url = config.source_url
         raw = None
@@ -1299,6 +1842,19 @@ def fetch_macro_assets(
                         f"{config.series_code} input_series_codes do not match registry"
                     )
                 if correlation_spec is not None:
+                    failed_inputs = [
+                        code
+                        for code in correlation_spec.input_codes
+                        if code in calculation_input_errors
+                    ]
+                    if failed_inputs:
+                        raise ValueError(
+                            "Correlation proxy input failure(s): "
+                            + " | ".join(
+                                f"{code}: {calculation_input_errors[code]}"
+                                for code in failed_inputs
+                            )
+                        )
                     history = rolling_correlation_history(
                         histories,
                         correlation_spec.left_code,
@@ -1316,6 +1872,14 @@ def fetch_macro_assets(
                     )
                 raw = json.dumps(history, default=str).encode("utf-8")
                 url = CALCULATED_SOURCE_REFERENCES[config.series_code]
+                if correlation_spec is not None:
+                    input_urls = [
+                        calculation_source_urls[code]
+                        for code in correlation_spec.input_codes
+                        if code in calculation_source_urls
+                    ]
+                    if input_urls:
+                        url += " | inputs: " + " | ".join(input_urls)
             else:
                 if any(
                     (
@@ -1333,34 +1897,116 @@ def fetch_macro_assets(
                     history, raw, url = _fetch_config_history(
                         config, session, as_of_date=as_of_date
                     )
-            if as_of_date is not None:
-                history = [
-                    point
-                    for point in history
-                    if _known_as_of_date(
-                        config.series_code,
-                        parse_date(point["date"]),
-                    ) <= as_of_date
-                ]
+            target_date = as_of_date or date.today()
+            history = _prepare_history_for_snapshot(
+                history,
+                target_date,
+                config.known_as_of,
+            )
+            history = [
+                point
+                for point in history
+                if _known_as_of_date(
+                    config.series_code,
+                    parse_date(point["date"]),
+                )
+                <= target_date
+            ]
             snapshot = calculate_macro_snapshot(history, config.change_unit)
-            histories[config.series_code] = history
+            if config.provider == "world_bank_pink_sheet":
+                if not str(config.freshness_days).strip():
+                    raise ValueError(
+                        f"{config.series_code} requires configured freshness_days"
+                    )
+                freshness_days = int(str(config.freshness_days).strip())
+                target_date = as_of_date or date.today()
+                if (target_date - snapshot.latest_date).days > freshness_days:
+                    raise ValueError(
+                        f"{config.series_code} is stale beyond configured "
+                        f"{freshness_days} calendar days"
+                    )
+            calculation_history = history
+            calculation_source_url = sanitize_audit_text(url)
+            proxy_config = _correlation_proxy_config(config)
+            if proxy_config is not None:
+                try:
+                    if as_of_date is None:
+                        proxy_history, _proxy_raw, proxy_url = _fetch_config_history(
+                            proxy_config,
+                            session,
+                        )
+                    else:
+                        proxy_history, _proxy_raw, proxy_url = _fetch_config_history(
+                            proxy_config,
+                            session,
+                            as_of_date=as_of_date,
+                        )
+                    proxy_history = _prepare_history_for_snapshot(
+                        proxy_history,
+                        target_date,
+                        proxy_config.known_as_of,
+                    )
+                    proxy_history = [
+                        point
+                        for point in proxy_history
+                        if _known_as_of_date(
+                            proxy_config.series_code,
+                            parse_date(point["date"]),
+                        )
+                        <= target_date
+                    ]
+                    if not proxy_history:
+                        raise ValueError("correlation proxy returned no bounded history")
+                except Exception as proxy_error:
+                    calculation_input_errors[config.series_code] = (
+                        sanitize_audit_text(proxy_error)
+                    )
+                    calculation_source_urls[config.series_code] = (
+                        sanitize_audit_text(proxy_config.source_url)
+                    )
+                else:
+                    calculation_history = proxy_history
+                    calculation_source_url = sanitize_audit_text(proxy_url)
+            if config.series_code not in calculation_input_errors:
+                histories[config.series_code] = calculation_history
+                calculation_source_urls[config.series_code] = calculation_source_url
+            price_histories[config.series_code] = [
+                {
+                    **point,
+                    "known_as_of": point.get("known_as_of") or None,
+                    "source": config.source,
+                    "source_url": sanitize_audit_text(url),
+                    "qc_flag": "OK",
+                }
+                for point in history
+            ]
             raw_cache_status = "DISABLED"
             raw_cache_error = ""
             if raw_path is not None:
                 try:
-                    _atomic_write_bytes(raw_path / f"{config.series_code}.raw", raw)
+                    _atomic_write_bytes(
+                        raw_path / f"{config.series_code}.raw",
+                        sanitize_audit_bytes(raw),
+                    )
                     raw_cache_status = "OK"
                 except Exception as cache_error:
                     raw_cache_status = "CACHE_WRITE_FAILED"
-                    raw_cache_error = str(cache_error)
-            detail = asdict(config)
+                    raw_cache_error = sanitize_audit_text(cache_error)
+            detail = _detail_config_fields(config)
             detail.update(_snapshot_fields(snapshot))
-            detail["source_url"] = url
-            known_as_of = _known_as_of_date(
-                config.series_code,
-                snapshot.latest_date,
+            detail["source_url"] = sanitize_audit_text(url)
+            latest_point = next(
+                point
+                for point in reversed(history)
+                if parse_date(point["date"]) == snapshot.latest_date
             )
-            detail["known_as_of"] = _iso(known_as_of)
+            known_as_of = latest_point.get("known_as_of") or _iso(
+                _known_as_of_date(
+                    config.series_code,
+                    snapshot.latest_date,
+                )
+            )
+            detail["known_as_of"] = known_as_of
             correlation_spec = CORRELATION_SPECS.get(config.series_code)
             detail.update(
                 {
@@ -1380,12 +2026,13 @@ def fetch_macro_assets(
                 "series_code": config.series_code, "sort_order": config.sort_order,
                 "source": config.source, "status": "OK", "error": "",
                 "observations": len(history), "latest_date": _iso(snapshot.latest_date),
-                "latest_value": snapshot.latest_value, "source_url": url,
+                "latest_value": snapshot.latest_value,
+                "source_url": sanitize_audit_text(url),
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status, "raw_cache_error": raw_cache_error,
                 **_source_audit_metadata(
                     config,
-                    _iso(known_as_of),
+                    known_as_of,
                     warnings=raw_cache_error,
                 ),
             })
@@ -1395,17 +2042,19 @@ def fetch_macro_assets(
             raw_cache_status, raw_cache_error = _cache_raw_failure(
                 raw_path, config, raw_parts
             )
-            detail = asdict(config)
+            detail = _detail_config_fields(config)
             for field in (
                 "latest_date", "latest_value", "daily_base_date", "daily_base_value", "daily_change",
                 "weekly_base_date", "weekly_base_value", "weekly_change", "mtd_base_date",
                 "mtd_base_value", "mtd_change", "ytd_base_date", "ytd_base_value", "ytd_change",
             ):
                 detail[field] = None
+            safe_error = sanitize_audit_text(error)
+            safe_url = sanitize_audit_text(url)
             detail.update(
                 {
                     "qc_flag": "FETCH_FAILED",
-                    "source_url": url,
+                    "source_url": safe_url,
                     "known_as_of": None,
                     "window_observations": None,
                     "minimum_observations": None,
@@ -1415,9 +2064,9 @@ def fetch_macro_assets(
             detail_rows.append(detail)
             source_rows.append({
                 "series_code": config.series_code, "sort_order": config.sort_order,
-                "source": config.source, "status": "FETCH_FAILED", "error": str(error),
+                "source": config.source, "status": "FETCH_FAILED", "error": safe_error,
                 "observations": 0, "latest_date": None, "latest_value": None,
-                "source_url": url,
+                "source_url": safe_url,
                 "elapsed_ms": int((datetime.now() - started).total_seconds() * 1000),
                 "raw_cache_status": raw_cache_status,
                 "raw_cache_error": raw_cache_error,
@@ -1427,4 +2076,67 @@ def fetch_macro_assets(
                     warnings=raw_cache_error,
                 ),
             })
-    return pd.DataFrame(detail_rows), pd.DataFrame(source_rows)
+    detail = pd.DataFrame(detail_rows)
+    source_log = pd.DataFrame(source_rows)
+    blocking_failures = source_log["status"].eq("FETCH_FAILED") & ~source_log[
+        "requiredness"
+    ].eq("optional")
+    failures = source_log.loc[blocking_failures, "series_code"].tolist()
+    if failures and not allow_partial:
+        raise ValueError(
+            "Required macro source failure(s) block partial publication: "
+            + ", ".join(failures)
+        )
+    config_path = (
+        universe_path
+        if universe_path is not None and Path(universe_path).suffix.lower() == ".json"
+        else None
+    )
+    history_universe = (
+        [
+            config
+            for config in universe
+            if any(
+                (
+                    config.commodity_code,
+                    config.commodity_family,
+                    config.price_kind,
+                )
+            )
+        ]
+        if universe_path is not None
+        and Path(universe_path).suffix.lower() == ".csv"
+        else universe
+    )
+    research_config = load_commodity_research_config(config_path)
+    history_rows = bounded_price_history(
+        price_histories,
+        history_universe,
+        as_of_date or date.today(),
+        research_config.history_limits,
+        research_config.commodity_registry,
+    )
+    return MacroAssetBundle(
+        detail=detail,
+        source_log=source_log,
+        commodity_price_history=pd.DataFrame(
+            history_rows,
+            columns=PRICE_HISTORY_FIELDS,
+        ),
+    )
+
+
+def fetch_macro_assets(
+    universe_path: str | Path | None = DEFAULT_UNIVERSE_PATH,
+    raw_dir: str | Path | None = None,
+    as_of_date: date | None = None,
+    *,
+    allow_partial: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    bundle = fetch_macro_asset_bundle(
+        universe_path,
+        raw_dir=raw_dir,
+        as_of_date=as_of_date,
+        allow_partial=allow_partial,
+    )
+    return bundle.detail, bundle.source_log

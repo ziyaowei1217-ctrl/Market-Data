@@ -1,0 +1,18 @@
+[
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 1, "unitId": 8, "value": 31000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 4, "unitId": 8, "value": 1210000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 6, "unitId": 8, "value": 190000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 7, "unitId": 8, "value": 195000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 10, "unitId": 8, "value": 760000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 11, "unitId": 8, "value": 310000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 12, "unitId": 8, "value": 1070000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 13, "unitId": 8, "value": 166000, "releaseDate": "2026-08-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 1, "unitId": 8, "value": 32000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 4, "unitId": 8, "value": 1220000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 6, "unitId": 8, "value": 191000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 7, "unitId": 8, "value": 196000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 10, "unitId": 8, "value": 765000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 11, "unitId": 8, "value": 315000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 12, "unitId": 8, "value": 1080000, "releaseDate": "2026-09-12T12:00:00-04:00"},
+  {"commodityCode": "0440000", "countryCode": "00", "marketYear": 2026, "attributeId": 13, "unitId": 8, "value": 167000, "releaseDate": "2026-09-12T12:00:00-04:00"}
+]

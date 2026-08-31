@@ -1322,57 +1322,76 @@
       "group": "commodities",
       "series_code": "WTI",
       "name_cn": "WTI原油",
-      "name_en": "WTI Crude Oil Continuous Proxy",
-      "provider": "yahoo_chart",
-      "provider_symbol": "CL=F",
-      "source": "Yahoo Finance chart API (public vendor proxy)",
-      "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/CL%3DF",
+      "name_en": "WTI Crude Oil Spot Price",
+      "provider": "eia_v2",
+      "provider_symbol": "RWTC",
+      "source": "U.S. Energy Information Administration Open Data",
+      "source_url": "https://www.eia.gov/opendata/browser/petroleum/pri/spt",
       "frequency": "daily",
-      "level_unit": "usd_per_barrel",
+      "level_unit": "$/BBL",
       "change_unit": "pct",
       "sort_order": "21",
-      "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
+      "notes": "Official EIA-published Cushing, Oklahoma WTI spot price FOB; source-native daily cash benchmark.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "WTI",
+      "commodity_family": "refined_products",
+      "price_kind": "official_cash",
+      "provider_route": "petroleum/pri/spt",
+      "source_description": "Cushing, OK WTI Spot Price FOB"
     },
     {
       "asset_class": "commodity",
       "group": "commodities",
       "series_code": "BRENT",
       "name_cn": "布伦特原油",
-      "name_en": "Brent Crude Oil Continuous Proxy",
-      "provider": "yahoo_chart",
-      "provider_symbol": "BZ=F",
-      "source": "Yahoo Finance chart API (public vendor proxy)",
-      "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/BZ%3DF",
+      "name_en": "Brent Crude Oil Spot Price",
+      "provider": "eia_v2",
+      "provider_symbol": "RBRTE",
+      "source": "U.S. Energy Information Administration Open Data",
+      "source_url": "https://www.eia.gov/opendata/browser/petroleum/pri/spt",
       "frequency": "daily",
-      "level_unit": "usd_per_barrel",
+      "level_unit": "$/BBL",
       "change_unit": "pct",
       "sort_order": "22",
-      "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
+      "notes": "Official EIA-published Europe Brent spot price FOB; source-native daily cash benchmark.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "BRENT",
+      "commodity_family": "refined_products",
+      "price_kind": "official_cash",
+      "provider_route": "petroleum/pri/spt",
+      "source_description": "Europe Brent Spot Price FOB"
     },
     {
       "asset_class": "commodity",
       "group": "commodities",
       "series_code": "COMEX_GOLD",
       "name_cn": "COMEX黄金",
-      "name_en": "COMEX Gold Continuous Proxy",
-      "provider": "yahoo_chart",
-      "provider_symbol": "GC=F",
-      "source": "Yahoo Finance chart API (public vendor proxy)",
-      "source_url": "https://query2.finance.yahoo.com/v8/finance/chart/GC%3DF",
-      "frequency": "daily",
-      "level_unit": "usd_per_troy_ounce",
+      "name_en": "World Bank Gold Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Gold",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/troy oz",
       "change_unit": "pct",
       "sort_order": "23",
-      "notes": "Continuous/nearby futures close proxy; not an official exchange settlement series; vendor roll rule is undocumented and may create roll discontinuities.",
+      "notes": "Official World Bank monthly gold benchmark retained at its source-native monthly frequency; not a COMEX settlement price.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "GOLD_COMEX",
+      "commodity_family": "gold",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45",
+      "correlation_proxy_provider": "yahoo_chart",
+      "correlation_proxy_symbol": "GC=F",
+      "correlation_proxy_source": "Yahoo Finance chart API (public vendor proxy)",
+      "correlation_proxy_source_url": "https://query2.finance.yahoo.com/v8/finance/chart/GC%3DF",
+      "correlation_proxy_frequency": "daily"
     },
     {
       "asset_class": "policy_rate",
@@ -1828,7 +1847,10 @@
       "notes": "Public vendor-proxy close for BTC/USD; not an official consolidated market price and crypto venues trade continuously.",
       "calculation_id": "",
       "formula_version": "",
-      "input_series_codes": ""
+      "input_series_codes": "",
+      "commodity_code": "BTC_USD",
+      "commodity_family": "digital_asset",
+      "price_kind": "vendor_proxy"
     },
     {
       "asset_class": "fixed_income",
@@ -2266,43 +2288,263 @@
       "calculation_id": "rolling_correlation",
       "formula_version": "rolling-correlation-v1",
       "input_series_codes": "WTI|US_BE10Y"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "NATGAS_HH",
+      "name_cn": "亨利港天然气",
+      "name_en": "Henry Hub Natural Gas Spot Price",
+      "provider": "eia_v2",
+      "provider_symbol": "RNGWHHD",
+      "source": "U.S. Energy Information Administration Open Data",
+      "source_url": "https://www.eia.gov/opendata/browser/natural-gas/pri/fut",
+      "frequency": "daily",
+      "level_unit": "$/MMBTU",
+      "change_unit": "pct",
+      "sort_order": "48",
+      "notes": "Official EIA-published Henry Hub daily spot price at its source-native unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "NATGAS_HH",
+      "commodity_family": "natural_gas",
+      "price_kind": "official_cash",
+      "provider_route": "natural-gas/pri/fut",
+      "source_description": "Henry Hub Natural Gas Spot Price"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "COPPER_COMEX",
+      "name_cn": "铜月度基准",
+      "name_en": "World Bank Copper Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Copper",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/mt",
+      "change_unit": "pct",
+      "sort_order": "49",
+      "notes": "Official World Bank monthly copper benchmark; not a COMEX settlement price.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "COPPER_COMEX",
+      "commodity_family": "copper",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "CORN",
+      "name_cn": "玉米月度基准",
+      "name_en": "World Bank Maize Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Maize",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/mt",
+      "change_unit": "pct",
+      "sort_order": "50",
+      "notes": "Official World Bank monthly maize benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "CORN",
+      "commodity_family": "grains_oilseeds",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "SOYBEANS",
+      "name_cn": "大豆月度基准",
+      "name_en": "World Bank Soybeans Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Soybeans",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/mt",
+      "change_unit": "pct",
+      "sort_order": "51",
+      "notes": "Official World Bank monthly soybeans benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "SOYBEANS",
+      "commodity_family": "grains_oilseeds",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "WHEAT",
+      "name_cn": "美国软红冬麦月度基准",
+      "name_en": "World Bank U.S. SRW Wheat Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Wheat, US SRW",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/mt",
+      "change_unit": "pct",
+      "sort_order": "52",
+      "notes": "Official World Bank monthly U.S. SRW wheat benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "WHEAT",
+      "commodity_family": "grains_oilseeds",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "RICE",
+      "name_cn": "泰国5%大米月度基准",
+      "name_en": "World Bank Thai 5% Rice Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Rice, Thai 5%",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/mt",
+      "change_unit": "pct",
+      "sort_order": "53",
+      "notes": "Official World Bank monthly Thai 5% rice benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "RICE",
+      "commodity_family": "grains_oilseeds",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "COTTON",
+      "name_cn": "棉花A指数月度基准",
+      "name_en": "World Bank Cotton A Index Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Cotton, A Index",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/kg",
+      "change_unit": "pct",
+      "sort_order": "54",
+      "notes": "Official World Bank monthly Cotton A Index benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "COTTON",
+      "commodity_family": "softs",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "SUGAR",
+      "name_cn": "世界糖价月度基准",
+      "name_en": "World Bank World Sugar Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Sugar, world",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/kg",
+      "change_unit": "pct",
+      "sort_order": "55",
+      "notes": "Official World Bank monthly world sugar benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "SUGAR",
+      "commodity_family": "softs",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "COFFEE",
+      "name_cn": "阿拉比卡咖啡月度基准",
+      "name_en": "World Bank Arabica Coffee Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Coffee, Arabica",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/kg",
+      "change_unit": "pct",
+      "sort_order": "56",
+      "notes": "Official World Bank monthly Arabica coffee benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "COFFEE",
+      "commodity_family": "softs",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "COCOA",
+      "name_cn": "可可月度基准",
+      "name_en": "World Bank Cocoa Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Cocoa",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/kg",
+      "change_unit": "pct",
+      "sort_order": "57",
+      "notes": "Official World Bank monthly cocoa benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "COCOA",
+      "commodity_family": "softs",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
+    },
+    {
+      "asset_class": "commodity",
+      "group": "commodities",
+      "series_code": "CATTLE",
+      "name_cn": "牛肉月度基准",
+      "name_en": "World Bank Beef Monthly Benchmark",
+      "provider": "world_bank_pink_sheet",
+      "provider_symbol": "Beef **",
+      "source": "World Bank Commodity Price Data (Pink Sheet)",
+      "source_url": "https://www.worldbank.org/en/research/commodity-markets",
+      "frequency": "monthly",
+      "level_unit": "$/kg",
+      "change_unit": "pct",
+      "sort_order": "58",
+      "notes": "Official World Bank monthly beef benchmark retained at source-native frequency and unit.",
+      "calculation_id": "",
+      "formula_version": "",
+      "input_series_codes": "",
+      "commodity_code": "CATTLE",
+      "commodity_family": "livestock",
+      "price_kind": "official_monthly_benchmark",
+      "freshness_days": "45"
     }
   ],
   "context": {
-    "cftc_contracts": [
-      {
-        "contract_code": "13874A",
-        "metric_code": "SP500_COT",
-        "report_type": "tff",
-        "name_en": "S&P 500 Consolidated",
-        "source": "CFTC Traders in Financial Futures",
-        "notes": "Tuesday position snapshot released with a standard three-day lag."
-      },
-      {
-        "contract_code": "098662",
-        "metric_code": "DXY_COT",
-        "report_type": "tff",
-        "name_en": "U.S. Dollar Index",
-        "source": "CFTC Traders in Financial Futures",
-        "notes": "Legacy financial contract code."
-      },
-      {
-        "contract_code": "088691",
-        "metric_code": "GOLD_COT",
-        "report_type": "disaggregated",
-        "name_en": "Gold",
-        "source": "CFTC Disaggregated Commitments of Traders",
-        "notes": "Commodity positioning."
-      },
-      {
-        "contract_code": "067651",
-        "metric_code": "WTI_COT",
-        "report_type": "disaggregated",
-        "name_en": "WTI Crude Oil",
-        "source": "CFTC Disaggregated Commitments of Traders",
-        "notes": "Commodity positioning."
-      }
-    ],
     "breadth_universe": [
       {
         "symbol": "XLC",
@@ -2360,15 +2602,919 @@
         "enabled": "1"
       }
     ],
+    "cftc_contracts": [
+      {
+        "contract_code": "13874A",
+        "metric_code": "SP500_COT",
+        "report_family": "tff",
+        "market_name": "S&P 500 Consolidated",
+        "commodity_code": null,
+        "commodity_family": null,
+        "percentile_window": null,
+        "percentile_min_observations": null,
+        "name_en": "S&P 500 Consolidated",
+        "source": "CFTC Traders in Financial Futures",
+        "freshness_days": "10",
+        "notes": "Tuesday position snapshot released with a standard three-day lag."
+      },
+      {
+        "contract_code": "098662",
+        "metric_code": "DXY_COT",
+        "report_family": "tff",
+        "market_name": "U.S. Dollar Index",
+        "commodity_code": null,
+        "commodity_family": null,
+        "percentile_window": null,
+        "percentile_min_observations": null,
+        "name_en": "U.S. Dollar Index",
+        "source": "CFTC Traders in Financial Futures",
+        "freshness_days": "10",
+        "notes": "Legacy financial contract code."
+      },
+      {
+        "contract_code": "023651",
+        "metric_code": "NATGAS_HH_COT",
+        "report_family": "disaggregated",
+        "market_name": "NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Henry Hub Natural Gas",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "067651",
+        "metric_code": "WTI_COT",
+        "report_family": "disaggregated",
+        "market_name": "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "WTI Crude Oil",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "111659",
+        "metric_code": "RBOB_US_COT",
+        "report_family": "disaggregated",
+        "market_name": "GASOLINE RBOB - NEW YORK MERCANTILE EXCHANGE",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "RBOB Gasoline",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "022651",
+        "metric_code": "ULSD_US_COT",
+        "report_family": "disaggregated",
+        "market_name": "NY HARBOR ULSD - NEW YORK MERCANTILE EXCHANGE",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "New York Harbor ULSD",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "085692",
+        "metric_code": "COPPER_COMEX_COT",
+        "report_family": "disaggregated",
+        "market_name": "COPPER- #1 - COMMODITY EXCHANGE INC.",
+        "commodity_code": "COPPER_COMEX",
+        "commodity_family": "copper",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "COMEX Copper",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "088691",
+        "metric_code": "GOLD_COMEX_COT",
+        "report_family": "disaggregated",
+        "market_name": "GOLD - COMMODITY EXCHANGE INC.",
+        "commodity_code": "GOLD_COMEX",
+        "commodity_family": "gold",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "COMEX Gold",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "002602",
+        "metric_code": "CORN_COT",
+        "report_family": "disaggregated",
+        "market_name": "CORN - CHICAGO BOARD OF TRADE",
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Corn",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "005602",
+        "metric_code": "SOYBEANS_COT",
+        "report_family": "disaggregated",
+        "market_name": "SOYBEANS - CHICAGO BOARD OF TRADE",
+        "commodity_code": "SOYBEANS",
+        "commodity_family": "grains_oilseeds",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Soybeans",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "001602",
+        "metric_code": "WHEAT_COT",
+        "report_family": "disaggregated",
+        "market_name": "WHEAT-SRW - CHICAGO BOARD OF TRADE",
+        "commodity_code": "WHEAT",
+        "commodity_family": "grains_oilseeds",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Chicago SRW Wheat",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "039601",
+        "metric_code": "RICE_COT",
+        "report_family": "disaggregated",
+        "market_name": "ROUGH RICE - CHICAGO BOARD OF TRADE",
+        "commodity_code": "RICE",
+        "commodity_family": "grains_oilseeds",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Rough Rice",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "033661",
+        "metric_code": "COTTON_COT",
+        "report_family": "disaggregated",
+        "market_name": "COTTON NO. 2 - ICE FUTURES U.S.",
+        "commodity_code": "COTTON",
+        "commodity_family": "softs",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Cotton No. 2",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "080732",
+        "metric_code": "SUGAR_COT",
+        "report_family": "disaggregated",
+        "market_name": "SUGAR NO. 11 - ICE FUTURES U.S.",
+        "commodity_code": "SUGAR",
+        "commodity_family": "softs",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Sugar No. 11",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "083731",
+        "metric_code": "COFFEE_COT",
+        "report_family": "disaggregated",
+        "market_name": "COFFEE C - ICE FUTURES U.S.",
+        "commodity_code": "COFFEE",
+        "commodity_family": "softs",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Coffee C",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "073732",
+        "metric_code": "COCOA_COT",
+        "report_family": "disaggregated",
+        "market_name": "COCOA - ICE FUTURES U.S.",
+        "commodity_code": "COCOA",
+        "commodity_family": "softs",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Cocoa",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "057642",
+        "metric_code": "CATTLE_COT",
+        "report_family": "disaggregated",
+        "market_name": "LIVE CATTLE - CHICAGO MERCANTILE EXCHANGE",
+        "commodity_code": "CATTLE",
+        "commodity_family": "livestock",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Live Cattle",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      },
+      {
+        "contract_code": "054642",
+        "metric_code": "HOGS_COT",
+        "report_family": "disaggregated",
+        "market_name": "LEAN HOGS - CHICAGO MERCANTILE EXCHANGE",
+        "commodity_code": "HOGS",
+        "commodity_family": "livestock",
+        "percentile_window": "156",
+        "percentile_min_observations": "52",
+        "name_en": "Lean Hogs",
+        "source": "CFTC Disaggregated Futures Only",
+        "freshness_days": "10",
+        "notes": "Official physical-commodity contract mapping."
+      }
+    ],
+    "commodity_http": [
+      {
+        "provider": "eia",
+        "connect_timeout": 5,
+        "read_timeout": 25,
+        "total_timeout": 90,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10,
+        "request_batch_size": 5,
+        "page_length": 400
+      },
+      {
+        "provider": "world_bank_pink_sheet",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 120,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "cftc_tff",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 120,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "cftc_disaggregated",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 120,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "comex_copper_stocks",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 90,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "comex_gold_stocks",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 90,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "usgs_copper_structural",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 90,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "usgs_gold_structural",
+        "connect_timeout": 5,
+        "read_timeout": 45,
+        "total_timeout": 90,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "usda_psd",
+        "connect_timeout": 5,
+        "read_timeout": 30,
+        "total_timeout": 120,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      },
+      {
+        "provider": "usda_esr",
+        "connect_timeout": 5,
+        "read_timeout": 30,
+        "total_timeout": 120,
+        "max_attempts": 3,
+        "retry_backoff_seconds": [
+          0.5,
+          1.0
+        ],
+        "retry_after_cap": 10
+      }
+    ],
     "company_watchlist": [],
     "eia_series": [
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R48",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R48_BCF"
+        },
+        "metric_code": "eia_ng_storage_lower48",
+        "metric_name": "Lower 48 working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly Lower 48 States Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R31",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R31_BCF"
+        },
+        "metric_code": "eia_ng_storage_east",
+        "metric_name": "East working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly East Region Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R32",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R32_BCF"
+        },
+        "metric_code": "eia_ng_storage_midwest",
+        "metric_name": "Midwest working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly Midwest Region Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R34",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R34_BCF"
+        },
+        "metric_code": "eia_ng_storage_mountain",
+        "metric_name": "Mountain working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly Mountain Region Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R35",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R35_BCF"
+        },
+        "metric_code": "eia_ng_storage_pacific",
+        "metric_name": "Pacific working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly Pacific Region Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/stor/wkly",
+        "frequency": "weekly",
+        "facets": {
+          "duoarea": "R33",
+          "process": "SWO",
+          "series": "NW2_EPG0_SWO_R33_BCF"
+        },
+        "metric_code": "eia_ng_storage_south_central",
+        "metric_name": "South Central working gas in underground storage",
+        "measurement_kind": "inventory",
+        "source_description": "Weekly South Central  Region Natural Gas Working Underground Storage (Billion Cubic Feet)",
+        "expected_unit": "BCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/sum/snd",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N9070US2"
+        },
+        "metric_code": "eia_ng_dry_production",
+        "metric_name": "U.S. dry natural gas production",
+        "measurement_kind": "supply",
+        "source_description": "U.S. Dry Natural Gas Production (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/cons/sum",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N3010US2"
+        },
+        "metric_code": "eia_ng_consumption_residential",
+        "metric_name": "U.S. residential natural gas consumption",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Residential Consumption (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/cons/sum",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N3020US2"
+        },
+        "metric_code": "eia_ng_consumption_commercial",
+        "metric_name": "U.S. commercial natural gas consumption",
+        "measurement_kind": "demand",
+        "source_description": "Natural Gas Deliveries to Commercial Consumers (Including Vehicle Fuel through 1996) in the U.S. (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/cons/sum",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N3035US2"
+        },
+        "metric_code": "eia_ng_consumption_industrial",
+        "metric_name": "U.S. industrial natural gas consumption",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Industrial Consumption (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/cons/sum",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N3045US2"
+        },
+        "metric_code": "eia_ng_consumption_electric_power",
+        "metric_name": "U.S. electric-power natural gas consumption",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Natural Gas Deliveries to Electric Power Consumers (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/move/impc",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N9103US2"
+        },
+        "metric_code": "eia_ng_lng_imports",
+        "metric_name": "U.S. liquefied natural gas imports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Liquefied Natural Gas Imports (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "route": "natural-gas/move/expc",
+        "frequency": "monthly",
+        "facets": {
+          "series": "N9133US2"
+        },
+        "metric_code": "eia_ng_lng_exports",
+        "metric_name": "U.S. liquefied natural gas exports",
+        "measurement_kind": "trade",
+        "source_description": "Liquefied U.S. Natural Gas Exports (MMcf)",
+        "expected_unit": "MMCF",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WCESTUS1"
+        },
+        "metric_code": "eia_crude_stocks_ex_spr",
+        "metric_name": "U.S. crude oil stocks excluding SPR",
+        "measurement_kind": "inventory",
+        "source_description": "U.S. Ending Stocks excluding SPR of Crude Oil (Thousand Barrels)",
+        "expected_unit": "MBBL",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WGTSTUS1"
+        },
+        "metric_code": "eia_gasoline_stocks",
+        "metric_name": "U.S. total motor gasoline stocks",
+        "measurement_kind": "inventory",
+        "source_description": "U.S. Ending Stocks of Total Gasoline (Thousand Barrels)",
+        "expected_unit": "MBBL",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WDISTUS1"
+        },
+        "metric_code": "eia_distillate_stocks",
+        "metric_name": "U.S. distillate fuel oil stocks",
+        "measurement_kind": "inventory",
+        "source_description": "U.S. Ending Stocks of Distillate Fuel Oil (Thousand Barrels)",
+        "expected_unit": "MBBL",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WKJSTUS1"
+        },
+        "metric_code": "eia_jet_fuel_stocks",
+        "metric_name": "U.S. kerosene-type jet fuel stocks",
+        "measurement_kind": "inventory",
+        "source_description": "U.S. Ending Stocks of Kerosene-Type Jet Fuel (Thousand Barrels)",
+        "expected_unit": "MBBL",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "PROPANE_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WPRSTUS1"
+        },
+        "metric_code": "eia_propane_stocks",
+        "metric_name": "U.S. propane and propylene stocks",
+        "measurement_kind": "inventory",
+        "source_description": "U.S. Propane and Propylene Ending Stocks Excluding Propylene at Terminal (Thousand Barrels)",
+        "expected_unit": "MBBL",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WPULEUS3"
+        },
+        "metric_code": "eia_refinery_utilization",
+        "metric_name": "U.S. refinery operable utilization",
+        "measurement_kind": "utilization",
+        "source_description": "U.S. Percent Utilization of Refinery Operable Capacity",
+        "expected_unit": "%",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WCRRIUS2"
+        },
+        "metric_code": "eia_refinery_crude_inputs",
+        "metric_name": "U.S. refinery crude oil inputs",
+        "measurement_kind": "supply",
+        "source_description": "U.S. Refiner Net Input of Crude Oil (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WGFRPUS2"
+        },
+        "metric_code": "eia_gasoline_production",
+        "metric_name": "U.S. finished motor gasoline production",
+        "measurement_kind": "supply",
+        "source_description": "U.S. Refiner and Blender Adjusted Net Production of Finished Motor Gasoline (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WDIRPUS2"
+        },
+        "metric_code": "eia_distillate_production",
+        "metric_name": "U.S. distillate fuel oil production",
+        "measurement_kind": "supply",
+        "source_description": "U.S. Refiner and Blender Net Production of Distillate Fuel Oil (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WKJRPUS2"
+        },
+        "metric_code": "eia_jet_fuel_production",
+        "metric_name": "U.S. kerosene-type jet fuel production",
+        "measurement_kind": "supply",
+        "source_description": "U.S. Refiner and Blender Net Production of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WGFUPUS2"
+        },
+        "metric_code": "eia_gasoline_product_supplied",
+        "metric_name": "U.S. finished motor gasoline product supplied",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Product Supplied of Finished Motor Gasoline (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WDIUPUS2"
+        },
+        "metric_code": "eia_distillate_product_supplied",
+        "metric_name": "U.S. distillate fuel oil product supplied",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Product Supplied of Distillate Fuel Oil (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WKJUPUS2"
+        },
+        "metric_code": "eia_jet_fuel_product_supplied",
+        "metric_name": "U.S. kerosene-type jet fuel product supplied",
+        "measurement_kind": "demand",
+        "source_description": "U.S. Product Supplied of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WGTIMUS2"
+        },
+        "metric_code": "eia_gasoline_imports",
+        "metric_name": "U.S. total motor gasoline imports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Imports of Total Gasoline (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WDIIMUS2"
+        },
+        "metric_code": "eia_distillate_imports",
+        "metric_name": "U.S. distillate fuel oil imports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Imports of Distillate Fuel Oil (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WKJIMUS2"
+        },
+        "metric_code": "eia_jet_fuel_imports",
+        "metric_name": "U.S. kerosene-type jet fuel imports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Imports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "W_EPM0F_EEX_NUS-Z00_MBBLD"
+        },
+        "metric_code": "eia_gasoline_exports",
+        "metric_name": "U.S. total motor gasoline exports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Exports of Total Motor Gasoline (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WDIEXUS2"
+        },
+        "metric_code": "eia_distillate_exports",
+        "metric_name": "U.S. distillate fuel oil exports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Exports of Total Distillate (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
+      {
+        "provider": "eia_refined_products",
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products",
+        "route": "petroleum/sum/sndw",
+        "frequency": "weekly",
+        "facets": {
+          "series": "WKJEXUS2"
+        },
+        "metric_code": "eia_jet_fuel_exports",
+        "metric_name": "U.S. kerosene-type jet fuel exports",
+        "measurement_kind": "trade",
+        "source_description": "U.S. Exports of Kerosene-Type Jet Fuel (Thousand Barrels per Day)",
+        "expected_unit": "MBBL/D",
+        "freshness_days": "10"
+      },
       {
         "metric_code": "eia_weekly_petroleum_wtestus1",
         "metric_name": "EIA weekly petroleum series WTESTUS1",
         "route": "petroleum/sum/sndw",
         "frequency": "weekly",
         "series": "WTESTUS1",
-        "expected_unit": "Thousand Barrels"
+        "expected_unit": "Thousand Barrels",
+        "provider": "eia_commodities",
+        "freshness_days": "10"
       }
     ],
     "financial_conditions": [
@@ -2401,6 +3547,460 @@
         "metric_name": "US high-yield option-adjusted spread",
         "series_id": "BAMLH0A0HYM2",
         "risk_direction": "1"
+      }
+    ],
+    "metals": [
+      {
+        "provider": "comex_copper_stocks",
+        "source_url": "https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls",
+        "source": "CME Group",
+        "commodity_code": "COPPER_COMEX",
+        "commodity_family": "copper",
+        "market": "COMEX",
+        "frequency": "daily",
+        "freshness_days": "5",
+        "freshness_basis": "trading_days",
+        "holiday_calendar": "CME_US",
+        "expected_metric_codes": [
+          "copper_comex_registered_inventory",
+          "copper_comex_eligible_inventory",
+          "copper_comex_total_inventory"
+        ],
+        "expected_observations": "3",
+        "expected_sheet": "Daily Metal Stocks Report",
+        "commodity_title": "COPPER - HIGH GRADE",
+        "expected_unit": "Short Tons",
+        "location_header": "DELIVERY POINT",
+        "registered_total_label": "Total Registered (warranted)",
+        "eligible_total_label": "Total Eligible (non-warranted)",
+        "combined_total_label": "TOTAL COPPER",
+        "table_kind": null,
+        "reference_year": null,
+        "publication_date": null,
+        "publication_month": null,
+        "limitation_note": "deliverable_inventory_proxy; LME not included"
+      },
+      {
+        "provider": "comex_gold_stocks",
+        "source_url": "https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls",
+        "source": "CME Group",
+        "commodity_code": "GOLD_COMEX",
+        "commodity_family": "gold",
+        "market": "COMEX",
+        "frequency": "daily",
+        "freshness_days": "5",
+        "freshness_basis": "trading_days",
+        "holiday_calendar": "CME_US",
+        "expected_metric_codes": [
+          "gold_comex_registered_inventory",
+          "gold_comex_eligible_inventory",
+          "gold_comex_total_inventory"
+        ],
+        "expected_observations": "3",
+        "expected_sheet": "Daily Metal Stocks Report",
+        "commodity_title": "GOLD",
+        "expected_unit": "Troy Ounce",
+        "location_header": "DEPOSITORY",
+        "registered_total_label": "TOTAL REGISTERED",
+        "eligible_total_label": "TOTAL ELIGIBLE",
+        "combined_total_label": "COMBINED TOTAL",
+        "table_kind": null,
+        "reference_year": null,
+        "publication_date": null,
+        "publication_month": null,
+        "limitation_note": "exchange_deliverable_inventory_proxy; not global above-ground bullion"
+      },
+      {
+        "provider": "usgs_copper_structural",
+        "source_url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-copper.pdf",
+        "source": "U.S. Geological Survey",
+        "commodity_code": "COPPER_COMEX",
+        "commodity_family": "copper",
+        "market": "World",
+        "frequency": "annual",
+        "freshness_days": "400",
+        "freshness_basis": "calendar_days",
+        "holiday_calendar": "NONE",
+        "expected_metric_codes": [
+          "usgs_copper_world_mine_production",
+          "usgs_copper_world_reserves"
+        ],
+        "expected_observations": "2",
+        "expected_sheet": null,
+        "commodity_title": "COPPER",
+        "expected_unit": "thousand metric tons, copper content",
+        "location_header": null,
+        "registered_total_label": null,
+        "eligible_total_label": null,
+        "combined_total_label": null,
+        "table_kind": "mine_refinery_reserves",
+        "reference_year": "2025",
+        "publication_date": "2026-02-06",
+        "publication_month": "February 2026",
+        "limitation_note": "annual structural context; monthly Mineral Industry Survey paused; no old monthly survey carried forward"
+      },
+      {
+        "provider": "usgs_gold_structural",
+        "source_url": "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-gold.pdf",
+        "source": "U.S. Geological Survey",
+        "commodity_code": "GOLD_COMEX",
+        "commodity_family": "gold",
+        "market": "World",
+        "frequency": "annual",
+        "freshness_days": "400",
+        "freshness_basis": "calendar_days",
+        "holiday_calendar": "NONE",
+        "expected_metric_codes": [
+          "usgs_gold_world_mine_production",
+          "usgs_gold_world_reserves"
+        ],
+        "expected_observations": "2",
+        "expected_sheet": null,
+        "commodity_title": "GOLD",
+        "expected_unit": "metric tons, gold content",
+        "location_header": null,
+        "registered_total_label": null,
+        "eligible_total_label": null,
+        "combined_total_label": null,
+        "table_kind": "mine_reserves",
+        "reference_year": "2025",
+        "publication_date": "2026-02-06",
+        "publication_month": "February 2026",
+        "limitation_note": "annual structural context; monthly Mineral Industry Survey paused; no old monthly survey carried forward"
+      }
+    ],
+    "usda_esr": [
+      {
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Corn",
+        "route": "allCountries",
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "unit_name": "Metric Tons",
+        "freshness_days": "14"
+      },
+      {
+        "commodity_code": "SOYBEANS",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Soybeans",
+        "route": "allCountries",
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "unit_name": "Metric Tons",
+        "freshness_days": "14"
+      },
+      {
+        "commodity_code": "WHEAT",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Wheat - All",
+        "route": "allCountries",
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "unit_name": "Metric Tons",
+        "freshness_days": "14"
+      },
+      {
+        "commodity_code": "RICE",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Rice - Total",
+        "route": "allCountries",
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "unit_name": "Metric Tons",
+        "freshness_days": "14"
+      },
+      {
+        "commodity_code": "COTTON",
+        "commodity_family": "softs",
+        "commodity_name": "Cotton - Upland",
+        "route": "allCountries",
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "unit_name": "Running Bales",
+        "freshness_days": "14"
+      }
+    ],
+    "usda_psd": [
+      {
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Corn",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "United States",
+          "China",
+          "Brazil"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "MY Imports",
+          "exports": "MY Exports",
+          "feed_use": "Feed Dom. Consumption",
+          "industrial_use": "FSI Consumption",
+          "domestic_use": "Total Dom. Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "SOYBEANS",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Oilseed, Soybean",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "United States",
+          "Brazil",
+          "China"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "MY Imports",
+          "exports": "MY Exports",
+          "crush": "Crush",
+          "domestic_use": "Total Dom. Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "WHEAT",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Wheat",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "United States",
+          "China",
+          "India"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "MY Imports",
+          "exports": "MY Exports",
+          "feed_use": "Feed Dom. Consumption",
+          "domestic_use": "Total Dom. Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "RICE",
+        "commodity_family": "grains_oilseeds",
+        "commodity_name": "Rice, Milled",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "China",
+          "India",
+          "United States"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Milled Production",
+          "imports": "MY Imports",
+          "exports": "MY Exports",
+          "domestic_use": "Total Dom. Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "COTTON",
+        "commodity_family": "softs",
+        "commodity_name": "Cotton",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "China",
+          "India",
+          "United States"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "MY Imports",
+          "exports": "MY Exports",
+          "domestic_use": "Domestic Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 480 lb. Bales"
+        ]
+      },
+      {
+        "commodity_code": "SUGAR",
+        "commodity_family": "softs",
+        "commodity_name": "Sugar, Centrifugal",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "Brazil",
+          "India",
+          "United States"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "Imports",
+          "exports": "Exports",
+          "domestic_use": "Domestic Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "COFFEE",
+        "commodity_family": "softs",
+        "commodity_name": "Coffee, Green",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "Brazil",
+          "Vietnam",
+          "Colombia"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "Imports",
+          "exports": "Exports",
+          "domestic_use": "Domestic Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 60-KG BAGS"
+        ]
+      },
+      {
+        "commodity_code": "COCOA",
+        "commodity_family": "softs",
+        "commodity_name": "Cocoa Beans",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "Cote d'Ivoire",
+          "Ghana",
+          "Indonesia"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "beginning_stocks": "Beginning Stocks",
+          "production": "Production",
+          "imports": "Imports",
+          "exports": "Exports",
+          "domestic_use": "Domestic Consumption",
+          "ending_stocks": "Ending Stocks"
+        },
+        "unit_names": [
+          "1000 MT"
+        ]
+      },
+      {
+        "commodity_code": "CATTLE",
+        "commodity_family": "livestock",
+        "commodity_name": "Meat, Beef and Veal",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "United States",
+          "Brazil",
+          "China"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "production": "Production",
+          "imports": "Imports",
+          "exports": "Exports",
+          "domestic_use": "Domestic Consumption"
+        },
+        "unit_names": [
+          "1000 MT CWE"
+        ]
+      },
+      {
+        "commodity_code": "HOGS",
+        "commodity_family": "livestock",
+        "commodity_name": "Meat, Swine",
+        "freshness_days": "45",
+        "country_names": [
+          "World",
+          "China",
+          "United States",
+          "European Union"
+        ],
+        "market_year_offsets": [
+          -1,
+          0
+        ],
+        "attributes": {
+          "production": "Production",
+          "imports": "Imports",
+          "exports": "Exports",
+          "domestic_use": "Domestic Consumption"
+        },
+        "unit_names": [
+          "1000 MT CWE"
+        ]
       }
     ],
     "yahoo_volatility": [
@@ -2438,6 +4038,639 @@
         "ticker": "^SKEW",
         "unit": "index_points",
         "role": "skew"
+      }
+    ]
+  },
+  "commodity_research": {
+    "history_limits": {
+      "daily": 400,
+      "weekly": 160,
+      "monthly": 84,
+      "annual": 12,
+      "marketing_year": 12
+    },
+    "metric_registry": {
+      "eia_variants": [
+        {
+          "suffix": "",
+          "unit": "configured",
+          "metric_role": "physical_fundamental"
+        },
+        {
+          "suffix": "_change",
+          "unit": "configured",
+          "metric_role": "physical_fundamental"
+        },
+        {
+          "suffix": "_change_pct",
+          "unit": "ratio",
+          "metric_role": "physical_fundamental"
+        },
+        {
+          "suffix": "_seasonal_deviation",
+          "unit": "configured",
+          "metric_role": "physical_fundamental"
+        }
+      ],
+      "cftc_variants": [
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "open_interest",
+          "metric_role": "positioning",
+          "measurement_kind": "open_interest",
+          "participant_class": null,
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "producer_net",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "producer",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "producer_net_change",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "producer",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "producer_percentile",
+          "metric_role": "positioning",
+          "measurement_kind": "percentile",
+          "participant_class": "producer",
+          "unit": "ratio",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "swap_dealer_net",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "swap_dealer",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "swap_dealer_net_change",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "swap_dealer",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "swap_dealer_percentile",
+          "metric_role": "positioning",
+          "measurement_kind": "percentile",
+          "participant_class": "swap_dealer",
+          "unit": "ratio",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "managed_money_net",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "managed_money",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "managed_money_net_change",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "managed_money",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "managed_money_percentile",
+          "metric_role": "positioning",
+          "measurement_kind": "percentile",
+          "participant_class": "managed_money",
+          "unit": "ratio",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "other_reportable_net",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "other_reportable",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "other_reportable_net_change",
+          "metric_role": "positioning",
+          "measurement_kind": "net_position",
+          "participant_class": "other_reportable",
+          "unit": "contracts",
+          "frequency": "weekly"
+        },
+        {
+          "provider": "cftc_disaggregated",
+          "suffix": "other_reportable_percentile",
+          "metric_role": "positioning",
+          "measurement_kind": "percentile",
+          "participant_class": "other_reportable",
+          "unit": "ratio",
+          "frequency": "weekly"
+        }
+      ],
+      "usda_psd": {
+        "provider": "usda_psd",
+        "metric_role": "physical_fundamental",
+        "frequency": "monthly",
+        "metric_code_pattern": "^usda_psd_(?P<commodity>[a-z0-9]+)_(?P<country>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "country_identifiers": [
+          {
+            "identifier": "00",
+            "market": "World"
+          },
+          {
+            "identifier": "US",
+            "market": "United States"
+          },
+          {
+            "identifier": "CH",
+            "market": "China"
+          },
+          {
+            "identifier": "BR",
+            "market": "Brazil"
+          },
+          {
+            "identifier": "IN",
+            "market": "India"
+          },
+          {
+            "identifier": "VM",
+            "market": "Vietnam"
+          },
+          {
+            "identifier": "CO",
+            "market": "Colombia"
+          },
+          {
+            "identifier": "IV",
+            "market": "Cote d'Ivoire"
+          },
+          {
+            "identifier": "GH",
+            "market": "Ghana"
+          },
+          {
+            "identifier": "ID",
+            "market": "Indonesia"
+          },
+          {
+            "identifier": "E4",
+            "market": "European Union"
+          }
+        ],
+        "reference_period": "market_year",
+        "metrics": [
+          {
+            "metric": "beginning_stocks",
+            "measurement_kind": "inventory",
+            "unit": "configured"
+          },
+          {
+            "metric": "production",
+            "measurement_kind": "supply",
+            "unit": "configured"
+          },
+          {
+            "metric": "imports",
+            "measurement_kind": "trade",
+            "unit": "configured"
+          },
+          {
+            "metric": "exports",
+            "measurement_kind": "trade",
+            "unit": "configured"
+          },
+          {
+            "metric": "feed_use",
+            "measurement_kind": "demand",
+            "unit": "configured"
+          },
+          {
+            "metric": "industrial_use",
+            "measurement_kind": "demand",
+            "unit": "configured"
+          },
+          {
+            "metric": "crush",
+            "measurement_kind": "demand",
+            "unit": "configured"
+          },
+          {
+            "metric": "domestic_use",
+            "measurement_kind": "demand",
+            "unit": "configured"
+          },
+          {
+            "metric": "ending_stocks",
+            "measurement_kind": "inventory",
+            "unit": "configured"
+          },
+          {
+            "metric": "stock_to_use",
+            "measurement_kind": "structural",
+            "unit": "ratio"
+          }
+        ]
+      },
+      "usda_esr": {
+        "provider": "usda_esr",
+        "metric_role": "physical_fundamental",
+        "frequency": "weekly",
+        "metric_code_pattern": "^usda_esr_(?P<commodity>[a-z0-9]+)_(?P<market_year>[0-9]{4})_(?P<metric>[a-z0-9_]+)$",
+        "market": "United States export sales (all destinations)",
+        "reference_period": "observation_date",
+        "metrics": [
+          {
+            "metric": "net_sales",
+            "measurement_kind": "trade",
+            "unit": "configured"
+          },
+          {
+            "metric": "weekly_exports",
+            "measurement_kind": "trade",
+            "unit": "configured"
+          },
+          {
+            "metric": "outstanding_sales",
+            "measurement_kind": "trade",
+            "unit": "configured"
+          }
+        ]
+      }
+    },
+    "providers": [
+      {
+        "provider": "eia_v2",
+        "dataset": "price_history",
+        "source": "U.S. Energy Information Administration Open Data",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/opendata/"
+      },
+      {
+        "provider": "world_bank_pink_sheet",
+        "dataset": "price_history",
+        "source": "World Bank Commodity Price Data (Pink Sheet)",
+        "official_host": "worldbank.org",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/en/research/commodity-markets"
+      },
+      {
+        "provider": "eia_natural_gas",
+        "dataset": "metric_history",
+        "source": "U.S. Energy Information Administration",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/v2/"
+      },
+      {
+        "provider": "eia_refined_products",
+        "dataset": "metric_history",
+        "source": "U.S. Energy Information Administration",
+        "official_host": "eia.gov",
+        "frequency": "configured",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/v2/"
+      },
+      {
+        "provider": "cftc_disaggregated",
+        "dataset": "metric_history",
+        "source": "U.S. Commodity Futures Trading Commission",
+        "official_host": "cftc.gov",
+        "frequency": "weekly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/resource/"
+      },
+      {
+        "provider": "comex_copper_stocks",
+        "dataset": "metric_history",
+        "source": "CME Group",
+        "official_host": "cmegroup.com",
+        "frequency": "daily",
+        "measurement_kind": "inventory",
+        "source_url_path_prefix": "/delivery_reports/Copper_Stocks.xls"
+      },
+      {
+        "provider": "comex_gold_stocks",
+        "dataset": "metric_history",
+        "source": "CME Group",
+        "official_host": "cmegroup.com",
+        "frequency": "daily",
+        "measurement_kind": "inventory",
+        "source_url_path_prefix": "/delivery_reports/Gold_Stocks.xls"
+      },
+      {
+        "provider": "usgs_copper_structural",
+        "dataset": "metric_history",
+        "source": "U.S. Geological Survey",
+        "official_host": "usgs.gov",
+        "frequency": "annual",
+        "measurement_kind": "structural",
+        "source_url_path_prefix": "/periodicals/mcs2026/mcs2026-copper.pdf"
+      },
+      {
+        "provider": "usgs_gold_structural",
+        "dataset": "metric_history",
+        "source": "U.S. Geological Survey",
+        "official_host": "usgs.gov",
+        "frequency": "annual",
+        "measurement_kind": "structural",
+        "source_url_path_prefix": "/periodicals/mcs2026/mcs2026-gold.pdf"
+      },
+      {
+        "provider": "usda_psd",
+        "dataset": "metric_history",
+        "source": "USDA Foreign Agricultural Service",
+        "official_host": "fas.usda.gov",
+        "frequency": "monthly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/api/psd/"
+      },
+      {
+        "provider": "usda_esr",
+        "dataset": "metric_history",
+        "source": "USDA Foreign Agricultural Service",
+        "official_host": "fas.usda.gov",
+        "frequency": "weekly",
+        "measurement_kind": "configured",
+        "source_url_path_prefix": "/api/esr/"
+      }
+    ],
+    "universe": [
+      {
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas"
+      },
+      {
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "BRENT",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "RBOB_US",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "ULSD_US",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "JET_US",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "PROPANE_US",
+        "commodity_family": "refined_products"
+      },
+      {
+        "commodity_code": "COPPER_COMEX",
+        "commodity_family": "copper"
+      },
+      {
+        "commodity_code": "GOLD_COMEX",
+        "commodity_family": "gold"
+      },
+      {
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds"
+      },
+      {
+        "commodity_code": "SOYBEANS",
+        "commodity_family": "grains_oilseeds"
+      },
+      {
+        "commodity_code": "WHEAT",
+        "commodity_family": "grains_oilseeds"
+      },
+      {
+        "commodity_code": "RICE",
+        "commodity_family": "grains_oilseeds"
+      },
+      {
+        "commodity_code": "COTTON",
+        "commodity_family": "softs"
+      },
+      {
+        "commodity_code": "SUGAR",
+        "commodity_family": "softs"
+      },
+      {
+        "commodity_code": "COFFEE",
+        "commodity_family": "softs"
+      },
+      {
+        "commodity_code": "COCOA",
+        "commodity_family": "softs"
+      },
+      {
+        "commodity_code": "CATTLE",
+        "commodity_family": "livestock"
+      },
+      {
+        "commodity_code": "HOGS",
+        "commodity_family": "livestock"
+      }
+    ],
+    "facts": [
+      {
+        "fact_code": "wti_absolute_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "absolute_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "absolute_change",
+        "output_unit": "$/BBL",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2
+          }
+        ]
+      },
+      {
+        "fact_code": "wti_percentage_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "percentage_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "percentage_change",
+        "output_unit": "percent",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2
+          }
+        ]
+      },
+      {
+        "fact_code": "wti_year_over_year_change",
+        "commodity_code": "WTI",
+        "commodity_family": "refined_products",
+        "formula_id": "year_over_year_change_v1",
+        "version": "1.0.0",
+        "fact_kind": "year_over_year_change",
+        "output_unit": "$/BBL",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "price_history",
+            "commodity_code": "WTI",
+            "series_code": "WTI",
+            "observation_count": 2,
+            "comparison_years": 1
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_managed_money_trailing_percentile",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "trailing_percentile_v1",
+        "version": "1.0.0",
+        "fact_kind": "trailing_percentile",
+        "output_unit": "percentile",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "NATGAS_HH_managed_money_net",
+            "metric_role": "positioning",
+            "measurement_kind": "net_position",
+            "participant_class": "managed_money",
+            "trailing_observations": 156,
+            "minimum_observations": 52
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_seasonal_deviation",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "seasonal_deviation_v1",
+        "version": "1.0.0",
+        "fact_kind": "seasonal_deviation",
+        "output_unit": "BCF",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "prior_years": 5,
+            "minimum_observations": 5
+          }
+        ]
+      },
+      {
+        "fact_code": "corn_world_2026_stock_to_use",
+        "commodity_code": "CORN",
+        "commodity_family": "grains_oilseeds",
+        "formula_id": "stock_to_use_v1",
+        "version": "1.0.0",
+        "fact_kind": "stock_to_use",
+        "output_unit": "ratio",
+        "required_inputs": [
+          {
+            "role": "numerator",
+            "dataset": "metric_history",
+            "commodity_code": "CORN",
+            "metric_code": "usda_psd_corn_00_2026_ending_stocks",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null
+          },
+          {
+            "role": "denominator",
+            "dataset": "metric_history",
+            "commodity_code": "CORN",
+            "metric_code": "usda_psd_corn_00_2026_domestic_use",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "demand",
+            "participant_class": null
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_coverage",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "coverage_count_v1",
+        "version": "1.0.0",
+        "fact_kind": "coverage_count",
+        "output_unit": "count",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "trailing_observations": 160
+          }
+        ]
+      },
+      {
+        "fact_code": "natgas_storage_freshness",
+        "commodity_code": "NATGAS_HH",
+        "commodity_family": "natural_gas",
+        "formula_id": "freshness_age_days_v1",
+        "version": "1.0.0",
+        "fact_kind": "freshness_age_days",
+        "output_unit": "days",
+        "required_inputs": [
+          {
+            "role": "series",
+            "dataset": "metric_history",
+            "commodity_code": "NATGAS_HH",
+            "metric_code": "eia_ng_storage_lower48",
+            "metric_role": "physical_fundamental",
+            "measurement_kind": "inventory",
+            "participant_class": null,
+            "observation_count": 1
+          }
+        ]
       }
     ]
   }

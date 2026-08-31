@@ -4,8 +4,10 @@ import math
 from datetime import date, datetime
 from typing import Any, Iterable
 
+from .provider_contracts import PROVIDER_PHASES
 
-METRIC_FIELDS = (
+
+BASE_METRIC_FIELDS = (
     "as_of_date",
     "category",
     "metric_code",
@@ -18,6 +20,57 @@ METRIC_FIELDS = (
     "source_url",
     "qc_flag",
 )
+COMMODITY_METRIC_FIELDS = (
+    "commodity_code",
+    "commodity_family",
+    "metric_role",
+    "measurement_kind",
+    "participant_class",
+    "known_as_of",
+    "reference_period",
+)
+METRIC_ROLE_VALUES = frozenset({"physical_fundamental", "positioning"})
+MEASUREMENT_KIND_VALUES = frozenset(
+    {
+        "inventory",
+        "supply",
+        "demand",
+        "trade",
+        "utilization",
+        "price",
+        "open_interest",
+        "net_position",
+        "percentile",
+        "structural",
+    }
+)
+PARTICIPANT_CLASS_VALUES = frozenset(
+    {
+        "producer",
+        "swap_dealer",
+        "managed_money",
+        "other_reportable",
+        "index_trader",
+    }
+)
+METRIC_FIELDS = BASE_METRIC_FIELDS + COMMODITY_METRIC_FIELDS
+
+
+def validate_provider_phase(phase: str, *, completed: bool) -> str:
+    normalized = str(phase).strip()
+    if normalized not in PROVIDER_PHASES:
+        raise ValueError(f"Unsupported provider phase: {normalized or 'blank'}")
+    if completed and normalized != "normalized":
+        raise ValueError(
+            f"Successful provider result must complete normalized phase, got {normalized}"
+        )
+    return normalized
+
+
+def validate_provider_attempts(attempts: int) -> int:
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts <= 0:
+        raise ValueError("Provider attempts must be a positive integer")
+    return attempts
 
 
 def iso_date(value: Any) -> str:
@@ -30,10 +83,20 @@ def normalize_metric_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]
     normalized = []
     seen = set()
     for raw in rows:
-        missing = [field for field in METRIC_FIELDS if field not in raw]
+        missing = [field for field in BASE_METRIC_FIELDS if field not in raw]
         if missing:
             raise ValueError(f"Metric row missing required fields: {', '.join(missing)}")
         row = dict(raw)
+        for field in COMMODITY_METRIC_FIELDS:
+            row.setdefault(field, None)
+        for field, allowed in (
+            ("metric_role", METRIC_ROLE_VALUES),
+            ("measurement_kind", MEASUREMENT_KIND_VALUES),
+            ("participant_class", PARTICIPANT_CLASS_VALUES),
+        ):
+            value = row.get(field)
+            if value not in (None, "") and value not in allowed:
+                raise ValueError(f"Unsupported {field}: {value}")
         row["as_of_date"] = iso_date(row["as_of_date"])
         key = (
             row["as_of_date"],

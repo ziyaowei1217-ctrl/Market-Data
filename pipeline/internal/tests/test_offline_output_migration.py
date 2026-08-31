@@ -17,6 +17,8 @@ from pipeline.internal.capital_weekly.weekly_release import (
     validate_staged_week,
 )
 from pipeline.internal.tests.test_capital_weekly_weekly_release import (
+    exact_gate_config,
+    write_exact_gate_fixture,
     write_valid_staged_week,
 )
 
@@ -24,7 +26,8 @@ from pipeline.internal.tests.test_capital_weekly_weekly_release import (
 def write_complete_week(outputs: Path, start: date, end: date) -> Path:
     window = WeekWindow(start, end, f"week_{start:%Y%m%d}-{end:%Y%m%d}")
     week = outputs / window.week_id
-    write_valid_staged_week(week, window)
+    staged_outputs = write_valid_staged_week(week, window)
+    write_exact_gate_fixture(staged_outputs)
     manifest = validate_staged_week(week, window)
     (week / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -40,6 +43,14 @@ class OfflineOutputMigrationTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.outputs = self.root / "outputs"
         self.outputs.mkdir()
+        config_path = self.root / "exact-gate-config.json"
+        config_path.write_text(json.dumps(exact_gate_config()), encoding="utf-8")
+        config_patcher = patch(
+            "pipeline.internal.common.DEFAULT_CONFIG_PATH",
+            config_path,
+        )
+        config_patcher.start()
+        self.addCleanup(config_patcher.stop)
 
     def test_selects_newest_valid_formal_week_only(self):
         older = write_complete_week(

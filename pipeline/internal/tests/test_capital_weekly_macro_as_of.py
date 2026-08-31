@@ -12,7 +12,7 @@ from pipeline.internal.scripts import fetch_macro_assets as fetch_cli
 
 
 class MacroAsOfTests(unittest.TestCase):
-    def test_explicit_as_of_date_excludes_later_observations(self):
+    def test_explicit_as_of_date_uses_provider_bounded_observations(self):
         header = (
             "asset_class,group,series_code,name_cn,name_en,provider,provider_symbol,"
             "source,source_url,frequency,level_unit,change_unit,sort_order,notes\n"
@@ -31,9 +31,22 @@ class MacroAsOfTests(unittest.TestCase):
                 {"date": date(2026, 7, 31), "value": 105.0},
                 {"date": date(2026, 8, 3), "value": 999.0},
             ]
+
+            def bounded_fetch(config, session, as_of_date=None):
+                del config, session
+                return (
+                    [
+                        point
+                        for point in history
+                        if point["date"] <= as_of_date
+                    ],
+                    b"fixture",
+                    "https://example.test",
+                )
+
             with patch(
                 "pipeline.internal.capital_weekly.macro_assets._fetch_config_history",
-                return_value=(history, b"fixture", "https://example.test"),
+                side_effect=bounded_fetch,
             ):
                 detail, source_log = fetch_macro_assets(
                     universe,
@@ -80,12 +93,17 @@ class MacroAsOfTests(unittest.TestCase):
         }
 
         def fake_fetch(config, session, as_of_date=None):
+            del session
             latest = latest_values[config.series_code]
             return (
                 [
-                    {"date": date(2025, 12, 31), "value": latest - 0.5},
-                    {"date": date(2026, 8, 7), "value": latest},
-                    {"date": date(2026, 8, 10), "value": latest + 0.2},
+                    point
+                    for point in (
+                        {"date": date(2025, 12, 31), "value": latest - 0.5},
+                        {"date": date(2026, 8, 7), "value": latest},
+                        {"date": date(2026, 8, 10), "value": latest + 0.2},
+                    )
+                    if point["date"] <= as_of_date
                 ],
                 b"fixture",
                 config.source_url,

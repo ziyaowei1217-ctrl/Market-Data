@@ -11,12 +11,23 @@ import uuid
 from datetime import date, datetime
 from pathlib import Path
 
+import pandas as pd
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from pipeline.internal.capital_weekly.macro_assets import fetch_macro_assets
+from pipeline.internal.capital_weekly.commodity_research import PRICE_HISTORY_FIELDS
+from pipeline.internal.capital_weekly.macro_assets import (
+    MacroAssetBundle,
+    fetch_macro_asset_bundle,
+)
 from pipeline.internal.capital_weekly.macro_divergence import add_macro_ranks, build_macro_divergence
+
+
+def fetch_macro_assets(*args, **kwargs):
+    """CLI seam retaining the legacy injectable fetcher name."""
+    return fetch_macro_asset_bundle(*args, **kwargs)
 
 
 def strict_records(frame):
@@ -61,11 +72,18 @@ def main() -> None:
         raw_dir = None if args.no_raw_cache else staging_dir / "raw"
         if raw_dir is not None:
             raw_dir.mkdir()
-        detail, source_log = fetch_macro_assets(
+        fetched = fetch_macro_assets(
             args.universe,
             raw_dir=raw_dir,
             as_of_date=args.as_of_date,
         )
+        if isinstance(fetched, MacroAssetBundle):
+            detail = fetched.detail
+            source_log = fetched.source_log
+            commodity_price_history = fetched.commodity_price_history
+        else:
+            detail, source_log = fetched
+            commodity_price_history = pd.DataFrame(columns=PRICE_HISTORY_FIELDS)
         optional_codes = (
             set(
                 source_log.loc[
@@ -100,6 +118,10 @@ def main() -> None:
 
         fixed_income.to_csv(staging_dir / "fixed_income.csv", index=False)
         commodities.to_csv(staging_dir / "commodities.csv", index=False)
+        commodity_price_history.to_csv(
+            staging_dir / "commodity_price_history.csv",
+            index=False,
+        )
         foreign_exchange.to_csv(staging_dir / "foreign_exchange.csv", index=False)
         policy_rates.to_csv(staging_dir / "policy_rates.csv", index=False)
         money_market.to_csv(staging_dir / "money_market.csv", index=False)
@@ -111,6 +133,7 @@ def main() -> None:
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "fixed_income": strict_records(fixed_income),
             "commodities": strict_records(commodities),
+            "commodity_price_history": strict_records(commodity_price_history),
             "foreign_exchange": strict_records(foreign_exchange),
             "policy_rates": strict_records(policy_rates),
             "money_market": strict_records(money_market),
