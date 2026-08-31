@@ -1537,6 +1537,37 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
     }
 
 
+def rewrite_v2_research_facts(outputs: dict[str, Path]) -> None:
+    def normalized_rows(path: Path) -> list[dict]:
+        return [
+            {key: (None if value == "" else value) for key, value in row.items()}
+            for row in read_csv_rows(path)
+        ]
+
+    facts = build_research_facts(
+        normalized_rows(
+            outputs["macro_assets"] / "commodity_price_history.csv"
+        ),
+        normalized_rows(
+            outputs["weekly_context"] / "commodity_metric_history.csv"
+        ),
+        load_formula_specs(PRODUCTION_CONFIG_PATH),
+        date(2026, 8, 9),
+    )
+    write_csv(
+        outputs["weekly_context"] / "commodity_research_facts.csv",
+        RESEARCH_FACT_FIELDS,
+        [
+            {
+                **fact,
+                "input_record_ids": repr(fact["input_record_ids"]),
+                "source_urls": repr(fact["source_urls"]),
+            }
+            for fact in facts
+        ],
+    )
+
+
 class WeekWindowTests(unittest.TestCase):
     def test_tuesday_targets_the_previous_finished_sunday(self):
         now = datetime(2026, 8, 11, 10, 0, tzinfo=ZoneInfo("Asia/Hong_Kong"))
@@ -1633,16 +1664,6 @@ class SafeErrorReasonTests(unittest.TestCase):
 
 
 class StagedValidationTests(unittest.TestCase):
-    _SHARED_COMMODITY_GATE_MARKERS = (
-        "usda_",
-        "active_eia_",
-        "unrelated_same_family_",
-        "metal_supplemental_",
-        "world_bank_",
-        "cftc_open_interest_",
-        "official_provenance_",
-    )
-
     def setUp(self):
         self.temporary = TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -1651,31 +1672,7 @@ class StagedValidationTests(unittest.TestCase):
             datetime(2026, 8, 11, 10, 0, tzinfo=ZoneInfo("Asia/Hong_Kong"))
         )
         self.outputs = write_valid_staged_week(self.root, self.window)
-        if (
-            self._testMethodName.startswith("test_exact_")
-            or any(
-                marker in self._testMethodName
-                for marker in self._SHARED_COMMODITY_GATE_MARKERS
-            )
-            or self._testMethodName
-            == "test_accepts_not_configured_from_an_optional_context_provider"
-        ):
-            self.config_path = self._exact_gate_config_path()
-            self.config_patcher = patch(
-                "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-                self.config_path,
-            )
-            self.config_patcher.start()
-            self.addCleanup(self.config_patcher.stop)
-            write_exact_gate_fixture(self.outputs)
-            validation_patcher = patch(
-                f"{__name__}.validate_staged_week",
-                self._validate_shared_commodity_fixture,
-            )
-            validation_patcher.start()
-            self.addCleanup(validation_patcher.stop)
-        else:
-            write_complete_v2_release_fixture(self.outputs)
+        write_complete_v2_release_fixture(self.outputs)
 
     def _exact_gate_config_path(self) -> Path:
         config_path = Path(self.temporary.name) / "exact-gate-config.json"
@@ -1684,30 +1681,6 @@ class StagedValidationTests(unittest.TestCase):
             encoding="utf-8",
         )
         return config_path
-
-    def _validate_shared_commodity_fixture(self, root, window, **_kwargs):
-        datasets = {
-            ("macro_assets", filename): read_csv_rows(
-                self.outputs["macro_assets"] / filename
-            )
-            for filename in ("commodities.csv", "source_log.csv")
-        }
-        datasets.update({
-            ("weekly_context", filename): read_csv_rows(
-                self.outputs["weekly_context"] / filename
-            )
-            for filename in (
-                "commodity_fundamentals.csv",
-                "positioning_flows.csv",
-                "source_log.csv",
-            )
-        })
-        weekly_release_module._validate_usda_agriculture_coverage(datasets)
-        weekly_release_module._validate_eia_physical_coverage(datasets)
-        weekly_release_module._validate_configured_commodity_coverage(
-            datasets,
-            window,
-        )
 
     def test_contracts_one_through_five_match_public_parent_dataset_specs(self):
         for version, expected_fingerprint in PUBLIC_CONTRACT_SPEC_FINGERPRINTS.items():
@@ -1770,6 +1743,20 @@ class StagedValidationTests(unittest.TestCase):
                     ("freshness_days", "observations", "elapsed_ms"),
                 )
 
+    def test_exact_contract_six_fixture_reaches_research_validation(self):
+        with patch.object(
+            weekly_release_module,
+            "_validate_commodity_research_v2",
+            side_effect=ReleaseValidationError(
+                "contract-six-entrypoint-sentinel"
+            ),
+        ):
+            with self.assertRaisesRegex(
+                ReleaseValidationError,
+                "contract-six-entrypoint-sentinel",
+            ):
+                validate_staged_week(self.root, self.window)
+
     def test_valid_public_legacy_fixtures_without_v6_fields_pass_contracts_one_to_five(self):
         for version in range(1, 6):
             with self.subTest(version=version):
@@ -1791,17 +1778,14 @@ class StagedValidationTests(unittest.TestCase):
                 self.assertEqual(manifest["dataset_contract_version"], version)
 
     def test_exact_configured_commodity_gate_accepts_complete_fixture(self):
-        config_path = self._exact_gate_config_path()
-        write_exact_gate_fixture(self.outputs)
+        manifest = validate_staged_week(self.root, self.window)
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            validate_staged_week(self.root, self.window)
+        self.assertEqual(manifest["dataset_contract_version"], 6)
 
     def test_exact_gate_rejects_missing_configured_macro_price_and_status(self):
-        config_path = self._exact_gate_config_path()
         for missing_artifact in ("price", "status"):
             with self.subTest(missing_artifact=missing_artifact):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
                 if missing_artifact == "price":
                     path = self.outputs["macro_assets"] / "commodities.csv"
                     rows = [
@@ -1818,19 +1802,13 @@ class StagedValidationTests(unittest.TestCase):
                         if row["series_code"] != "WTI"
                     ]
                     write_csv(path, MACRO_SOURCE_LOG_V3_FIELDS, rows)
-                with patch(
-                    "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-                    config_path,
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    r"configured macro.*WTI",
                 ):
-                    with self.assertRaisesRegex(
-                        ReleaseValidationError,
-                        r"configured macro.*WTI",
-                    ):
-                        validate_staged_week(self.root, self.window)
+                    validate_staged_week(self.root, self.window)
 
     def test_exact_gate_rejects_missing_configured_eia_metric(self):
-        config_path = self._exact_gate_config_path()
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
         rows = [
             row
@@ -1839,43 +1817,39 @@ class StagedValidationTests(unittest.TestCase):
         ]
         write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], rows)
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                r"eia_refined_products.*eia_gasoline_stocks",
-            ):
-                validate_staged_week(self.root, self.window)
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"eia_refined_products.*eia_gasoline_stocks",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_exact_gate_rejects_duplicate_configured_provider_status(self):
-        config_path = self._exact_gate_config_path()
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["weekly_context"] / "source_log.csv"
         rows = read_csv_rows(path)
-        rows.append(dict(rows[0]))
+        target = next(
+            row for row in rows if row["provider"] == "eia_refined_products"
+        )
+        rows.append(dict(target))
         write_csv(path, CATEGORY_FIELDS["source_log"], rows)
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                r"status.*unique.*eia_refined_products",
-            ):
-                validate_staged_week(self.root, self.window)
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"status.*unique.*eia_refined_products",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_exact_gate_rejects_missing_configured_cftc_commodity(self):
-        config_path = self._exact_gate_config_path()
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["weekly_context"] / "positioning_flows.csv"
         rows = [
             row for row in read_csv_rows(path) if row["commodity_code"] != "WTI"
         ]
         write_csv(path, CATEGORY_FIELDS["positioning_flows"], rows)
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                r"cftc_disaggregated.*WTI",
-            ):
-                validate_staged_week(self.root, self.window)
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"cftc_disaggregated.*WTI",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_exact_gate_rejects_mismapped_cftc_open_interest_identity(self):
         for field, bad_value in (
@@ -1883,10 +1857,14 @@ class StagedValidationTests(unittest.TestCase):
             ("metric_code", "WTI_managed_money_net"),
         ):
             with self.subTest(field=field):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
                 path = self.outputs["weekly_context"] / "positioning_flows.csv"
                 rows = read_csv_rows(path)
-                target = next(row for row in rows if row["commodity_code"] == "WTI")
+                target = next(
+                    row
+                    for row in rows
+                    if row["metric_code"] == "WTI_open_interest"
+                )
                 target[field] = bad_value
                 write_csv(path, CATEGORY_FIELDS["positioning_flows"], rows)
 
@@ -1897,7 +1875,6 @@ class StagedValidationTests(unittest.TestCase):
                     validate_staged_week(self.root, self.window)
 
     def test_exact_gate_not_configured_eia_rejects_residual_derived_rows(self):
-        write_exact_gate_fixture(self.outputs)
         merge_context_status_rows(
             self.outputs,
             [
@@ -1927,7 +1904,19 @@ class StagedValidationTests(unittest.TestCase):
             source="U.S. Energy Information Administration",
             source_url="https://api.eia.gov/v2/petroleum/sum/sndw/data/",
         )
-        write_csv(path, CATEGORY_FIELDS["commodity_fundamentals"], [derived])
+        retained = [
+            row
+            for row in read_csv_rows(path)
+            if not (
+                row["source"] == "U.S. Energy Information Administration"
+                and row["commodity_family"] == "refined_products"
+            )
+        ]
+        write_csv(
+            path,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [*retained, derived],
+        )
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
@@ -1936,8 +1925,6 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_exact_gate_requires_each_configured_supplemental_status(self):
-        config_path = self._exact_gate_config_path()
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["weekly_context"] / "source_log.csv"
         rows = [
             row
@@ -1946,15 +1933,13 @@ class StagedValidationTests(unittest.TestCase):
         ]
         write_csv(path, CATEGORY_FIELDS["source_log"], rows)
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                r"status.*comex_gold_stocks",
-            ):
-                validate_staged_week(self.root, self.window)
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            r"status.*comex_gold_stocks",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_exact_gate_requires_business_rows_for_ok_configured_metal(self):
-        write_exact_gate_fixture(self.outputs)
         merge_context_status_rows(
             self.outputs,
             [
@@ -1978,7 +1963,6 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_exact_gate_rejects_wrong_family_for_configured_metal(self):
-        write_exact_gate_fixture(self.outputs)
         merge_context_status_rows(
             self.outputs,
             [
@@ -2010,7 +1994,23 @@ class StagedValidationTests(unittest.TestCase):
     def test_exact_gate_non_ok_configured_metal_requires_zero_rows(self):
         for mutation in ("real_metric_mutated_url", "mutated_metric_exact_url"):
             with self.subTest(mutation=mutation):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
+                merge_context_status_rows(
+                    self.outputs,
+                    [_provider_status(
+                        provider="comex_gold_stocks",
+                        category="commodity_fundamentals",
+                        requiredness="optional",
+                        status="FETCH_FAILED",
+                        observations=0,
+                        source="CME Group",
+                        source_url=(
+                            "https://www.cmegroup.com/delivery_reports/"
+                            "Gold_Stocks.xls"
+                        ),
+                        frequency="daily",
+                    )],
+                )
                 path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
                 rows = read_csv_rows(path)
                 residual = configured_gold_metal_rows()[2]
@@ -2044,7 +2044,7 @@ class StagedValidationTests(unittest.TestCase):
         }
         for mutation, mutate in mutations.items():
             with self.subTest(mutation=mutation):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
                 status = fixture_row(
                     CATEGORY_FIELDS["source_log"],
                     provider="comex_gold_stocks",
@@ -2074,7 +2074,6 @@ class StagedValidationTests(unittest.TestCase):
                     validate_staged_week(self.root, self.window)
 
     def test_official_provenance_rejects_lookalike_world_bank_and_cftc_hosts(self):
-        config_path = self._exact_gate_config_path()
         for artifact, lookalike, expected_error in (
             (
                 "price",
@@ -2088,7 +2087,7 @@ class StagedValidationTests(unittest.TestCase):
             ),
         ):
             with self.subTest(artifact=artifact):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
                 if artifact == "price":
                     path = self.outputs["macro_assets"] / "commodities.csv"
                     fields = MACRO_V3_FIELDS
@@ -2102,15 +2101,11 @@ class StagedValidationTests(unittest.TestCase):
                 target["source_url"] = lookalike
                 write_csv(path, fields, rows)
 
-                with patch(
-                    "pipeline.internal.common.DEFAULT_CONFIG_PATH",
-                    config_path,
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    expected_error,
                 ):
-                    with self.assertRaisesRegex(
-                        ReleaseValidationError,
-                        expected_error,
-                    ):
-                        validate_staged_week(self.root, self.window)
+                    validate_staged_week(self.root, self.window)
 
     def test_rejects_a_missing_required_file(self):
         missing = self.outputs["equity_indices"] / "02_equity_indices.csv"
@@ -2777,26 +2772,50 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_accepts_not_configured_from_an_optional_context_provider(self):
-        path = self.outputs["weekly_context"] / "source_log.csv"
-        rows = [
-            fixture_row(
-                CATEGORY_FIELDS["source_log"],
-                provider=provider,
+        merge_context_status_rows(
+            self.outputs,
+            [_provider_status(
+                provider="eia_natural_gas",
                 category="commodity_fundamentals",
                 requiredness="optional",
                 status="NOT_CONFIGURED",
-                observations="0",
-                as_of_date="2026-08-09",
-                source_url="https://www.eia.gov/opendata/",
-            )
-            for provider in ("eia_natural_gas", "eia_refined_products")
-        ]
-        merge_context_status_rows(self.outputs, rows)
-        write_csv(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
-            CATEGORY_FIELDS["commodity_fundamentals"],
-            [],
+                observations=0,
+                source="U.S. Energy Information Administration",
+                source_url="https://api.eia.gov/v2/",
+                frequency="weekly",
+            )],
         )
+        fundamentals_path = (
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        )
+        write_csv(
+            fundamentals_path,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [
+                row
+                for row in read_csv_rows(fundamentals_path)
+                if not (
+                    row["source"] == "U.S. Energy Information Administration"
+                    and row["commodity_family"] == "natural_gas"
+                )
+            ],
+        )
+        history_path = (
+            self.outputs["weekly_context"] / "commodity_metric_history.csv"
+        )
+        write_csv(
+            history_path,
+            METRIC_HISTORY_FIELDS,
+            [
+                row
+                for row in read_csv_rows(history_path)
+                if not (
+                    row["source"] == "U.S. Energy Information Administration"
+                    and row["commodity_family"] == "natural_gas"
+                )
+            ],
+        )
+        rewrite_v2_research_facts(self.outputs)
 
         validate_staged_week(self.root, self.window)
 
@@ -2817,20 +2836,45 @@ class StagedValidationTests(unittest.TestCase):
             for provider in ("usda_psd", "usda_esr")
         ]
         merge_context_status_rows(self.outputs, rows)
+        fundamentals_path = (
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        )
+        write_csv(
+            fundamentals_path,
+            CATEGORY_FIELDS["commodity_fundamentals"],
+            [
+                row
+                for row in read_csv_rows(fundamentals_path)
+                if not row["metric_code"].startswith(("usda_psd_", "usda_esr_"))
+            ],
+        )
+        history_path = (
+            self.outputs["weekly_context"] / "commodity_metric_history.csv"
+        )
+        write_csv(
+            history_path,
+            METRIC_HISTORY_FIELDS,
+            [
+                row
+                for row in read_csv_rows(history_path)
+                if not row["metric_code"].startswith(("usda_psd_", "usda_esr_"))
+            ],
+        )
+        rewrite_v2_research_facts(self.outputs)
 
         validate_staged_week(self.root, self.window)
 
     def test_usda_capability_status_is_required_even_when_both_rows_are_absent(self):
         path = self.outputs["weekly_context"] / "source_log.csv"
+        retained = [
+            row
+            for row in read_csv_rows(path)
+            if row["provider"] not in {"usda_psd", "usda_esr"}
+        ]
         write_csv(
             path,
             CATEGORY_FIELDS["source_log"],
-            [fixture_row(
-                CATEGORY_FIELDS["source_log"],
-                provider="fixture",
-                category="market_internals",
-                as_of_date="2026-08-09",
-            )],
+            retained,
         )
 
         with self.assertRaisesRegex(
@@ -2852,7 +2896,12 @@ class StagedValidationTests(unittest.TestCase):
             source="USDA Foreign Agricultural Service",
             source_url="https://api.fas.usda.gov/",
         )
-        write_csv(path, CATEGORY_FIELDS["source_log"], [row])
+        retained = [
+            existing
+            for existing in read_csv_rows(path)
+            if existing["provider"] not in {"usda_psd", "usda_esr"}
+        ]
+        write_csv(path, CATEGORY_FIELDS["source_log"], [*retained, row])
 
         with self.assertRaisesRegex(
             ReleaseValidationError,
@@ -2861,103 +2910,61 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_active_usda_subsections_require_each_configured_commodity_code(self):
-        source_log = self.outputs["weekly_context"] / "source_log.csv"
-        provider_rows = [
-            fixture_row(
-                CATEGORY_FIELDS["source_log"],
-                provider=provider,
-                category="commodity_fundamentals",
-                requiredness="required",
-                status="OK",
-                observations="1",
-                as_of_date="2026-08-09",
-                source="USDA Foreign Agricultural Service",
-                source_url="https://api.fas.usda.gov/",
-            )
-            for provider in ("usda_psd", "usda_esr")
-        ]
-        merge_context_status_rows(self.outputs, provider_rows)
         fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
-        only_corn = fixture_row(
-            CATEGORY_FIELDS["commodity_fundamentals"],
-            as_of_date="2026-08-07",
-            metric_code="usda_psd_corn_world_2026_production",
-            commodity_code="CORN",
-            commodity_family="grains_oilseeds",
-            metric_role="physical_fundamental",
-            measurement_kind="supply",
-            participant_class="",
-            known_as_of="2026-08-07T12:00:00-04:00",
-            reference_period="2026",
-            source="USDA Foreign Agricultural Service",
-            source_url="https://api.fas.usda.gov/api/psd/commodity/0440000/world/year/2026",
-        )
-        esr_corn = usda_fundamental_rows({}, {"CORN": "grains_oilseeds"})[0]
         write_csv(
             fundamentals,
             CATEGORY_FIELDS["commodity_fundamentals"],
-            [only_corn, esr_corn],
-        )
-
-        config = exact_gate_config()
-        config["context"]["usda_psd"] = [
-            {"commodity_code": code, "commodity_family": "grains_oilseeds"}
-            for code in ("CORN", "SOYBEANS")
-        ]
-        config["context"]["usda_esr"] = [
-            {"commodity_code": "CORN", "commodity_family": "grains_oilseeds"}
-        ]
-        config_path = Path(self.temporary.name) / "usda-missing-config.json"
-        config_path.write_text(json.dumps(config), encoding="utf-8")
-
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                "usda_psd.*missing configured commodity_code.*SOYBEANS",
-            ):
-                validate_staged_week(self.root, self.window)
-
-    def test_usda_coverage_uses_the_configured_code_family_mapping(self):
-        config_path = Path(self.temporary.name) / "config.json"
-        config = exact_gate_config()
-        config["context"]["usda_psd"] = [
-            {"commodity_code": "CORN", "commodity_family": "softs"}
-        ]
-        config["context"]["usda_esr"] = [
-            {"commodity_code": "CORN", "commodity_family": "softs"}
-        ]
-        config_path.write_text(json.dumps(config), encoding="utf-8")
-        merge_context_status_rows(
-            self.outputs,
-            usda_source_rows(status="OK", requiredness="required"),
-        )
-        existing = read_csv_rows(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
-        )
-        write_csv(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
-            CATEGORY_FIELDS["commodity_fundamentals"],
             [
-                *existing,
-                *usda_fundamental_rows({"CORN": "softs"}, {"CORN": "softs"}),
+                row
+                for row in read_csv_rows(fundamentals)
+                if not (
+                    row["metric_code"].startswith("usda_psd_")
+                    and row["commodity_code"] == "SOYBEANS"
+                )
             ],
         )
 
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "usda_psd.*missing configured commodity_code.*SOYBEANS",
+        ):
             validate_staged_week(self.root, self.window)
 
-    def test_usda_coverage_rejects_a_wrong_family_for_a_configured_code(self):
-        merge_context_status_rows(
-            self.outputs,
-            usda_source_rows(status="OK", requiredness="required"),
+    def test_usda_coverage_uses_the_configured_code_family_mapping(self):
+        config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+        configured = {
+            provider: {
+                row["commodity_code"]: row["commodity_family"]
+                for row in config["context"][provider]
+            }
+            for provider in ("usda_psd", "usda_esr")
+        }
+        rows = read_csv_rows(
+            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
         )
+        for provider, mapping in configured.items():
+            actual = {
+                row["commodity_code"]: row["commodity_family"]
+                for row in rows
+                if row["metric_code"].startswith(f"{provider}_")
+            }
+            self.assertEqual(actual, mapping)
+
+        validate_staged_week(self.root, self.window)
+
+    def test_usda_coverage_rejects_a_wrong_family_for_a_configured_code(self):
+        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        rows = read_csv_rows(path)
+        target = next(
+            row
+            for row in rows
+            if row["metric_code"].startswith("usda_psd_corn_")
+        )
+        target["commodity_family"] = "softs"
         write_csv(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
+            path,
             CATEGORY_FIELDS["commodity_fundamentals"],
-            usda_fundamental_rows(
-                {"CORN": "softs"},
-                {"CORN": "grains_oilseeds"},
-            ),
+            rows,
         )
 
         with self.assertRaisesRegex(
@@ -2967,129 +2974,39 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_active_usda_rows_require_exact_codes_and_official_fas_provenance(self):
-        source_log = self.outputs["weekly_context"] / "source_log.csv"
-        provider_rows = [
-            fixture_row(
-                CATEGORY_FIELDS["source_log"],
-                provider=provider,
-                category="commodity_fundamentals",
-                requiredness="required",
-                status="OK",
-                observations="1",
-                as_of_date="2026-08-09",
-                source="USDA Foreign Agricultural Service",
-                source_url="https://api.fas.usda.gov/",
-            )
-            for provider in ("usda_psd", "usda_esr")
-        ]
-        merge_context_status_rows(self.outputs, provider_rows)
-        families = {
-            "CORN": "grains_oilseeds",
-            "SOYBEANS": "grains_oilseeds",
-            "WHEAT": "grains_oilseeds",
-            "RICE": "grains_oilseeds",
-            "COTTON": "softs",
-            "SUGAR": "softs",
-            "COFFEE": "softs",
-            "COCOA": "softs",
-            "CATTLE": "livestock",
-            "HOGS": "livestock",
-        }
-        rows = []
-        for index, (commodity_code, family) in enumerate(families.items()):
-            rows.append(fixture_row(
-                CATEGORY_FIELDS["commodity_fundamentals"],
-                as_of_date="2026-08-07",
-                metric_code=f"usda_psd_{commodity_code.lower()}_production",
-                commodity_code=commodity_code,
-                commodity_family=family,
-                metric_role="physical_fundamental",
-                measurement_kind="supply",
-                participant_class="",
-                known_as_of="2026-08-07T12:00:00-04:00",
-                reference_period="2026",
-                source="USDA Foreign Agricultural Service",
-                source_url=(
-                    "https://example.test/not-usda"
-                    if index == 0
-                    else "https://api.fas.usda.gov/api/psd/commodity/data"
-                ),
-            ))
-        for commodity_code in ("CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON"):
-            rows.append(fixture_row(
-                CATEGORY_FIELDS["commodity_fundamentals"],
-                as_of_date="2026-08-07",
-                metric_code=f"usda_esr_{commodity_code.lower()}_net_sales",
-                commodity_code=commodity_code,
-                commodity_family=families[commodity_code],
-                metric_role="physical_fundamental",
-                measurement_kind="trade",
-                participant_class="",
-                known_as_of="2026-08-07T08:30:00-04:00",
-                reference_period="2026-07-30",
-                source="USDA Foreign Agricultural Service",
-                source_url="https://api.fas.usda.gov/api/esr/exports/data",
-            ))
+        path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        rows = read_csv_rows(path)
+        target = next(
+            row
+            for row in rows
+            if row["metric_code"].startswith("usda_psd_corn_")
+        )
+        target["source_url"] = "https://example.test/not-usda"
         write_csv(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv",
+            path,
             CATEGORY_FIELDS["commodity_fundamentals"],
             rows,
         )
 
-        config = exact_gate_config()
-        config["context"]["usda_psd"] = [
-            {"commodity_code": code, "commodity_family": family}
-            for code, family in families.items()
-        ]
-        config["context"]["usda_esr"] = [
-            {"commodity_code": code, "commodity_family": families[code]}
-            for code in ("CORN", "SOYBEANS", "WHEAT", "RICE", "COTTON")
-        ]
-        config_path = Path(self.temporary.name) / "usda-provenance-config.json"
-        config_path.write_text(json.dumps(config), encoding="utf-8")
-
-        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
-            with self.assertRaisesRegex(
-                ReleaseValidationError,
-                "USDA row requires official FAS provenance",
-            ):
-                validate_staged_week(self.root, self.window)
+        with self.assertRaisesRegex(
+            ReleaseValidationError,
+            "USDA row requires official FAS provenance",
+        ):
+            validate_staged_week(self.root, self.window)
 
     def test_active_eia_families_each_require_a_physical_fundamental_row(self):
-        source_log = self.outputs["weekly_context"] / "source_log.csv"
-        provider_rows = [
-            fixture_row(
-                CATEGORY_FIELDS["source_log"],
-                provider=provider,
-                category="commodity_fundamentals",
-                requiredness="required",
-                status="OK",
-                observations="1",
-                as_of_date="2026-08-09",
-                source="U.S. Energy Information Administration",
-                source_url="https://api.eia.gov/v2/",
-            )
-            for provider in ("eia_natural_gas", "eia_refined_products")
-        ]
-        merge_context_status_rows(self.outputs, provider_rows)
         fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
-        natural_row = fixture_row(
-            CATEGORY_FIELDS["commodity_fundamentals"],
-            as_of_date="2026-08-07",
-            commodity_code="NATGAS_HH",
-            commodity_family="natural_gas",
-            metric_role="physical_fundamental",
-            measurement_kind="inventory",
-            participant_class="",
-            known_as_of="",
-            reference_period="2026-08-07",
-            source="U.S. Energy Information Administration",
-            source_url="https://api.eia.gov/v2/natural-gas/stor/wkly/data/",
-        )
         write_csv(
             fundamentals,
             CATEGORY_FIELDS["commodity_fundamentals"],
-            [natural_row],
+            [
+                row
+                for row in read_csv_rows(fundamentals)
+                if not (
+                    row["source"] == "U.S. Energy Information Administration"
+                    and row["commodity_family"] == "refined_products"
+                )
+            ],
         )
 
         with self.assertRaisesRegex(
@@ -3099,19 +3016,6 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_unrelated_same_family_row_cannot_satisfy_active_eia_coverage(self):
-        source_log = self.outputs["weekly_context"] / "source_log.csv"
-        active = fixture_row(
-            CATEGORY_FIELDS["source_log"],
-            provider="eia_natural_gas",
-            category="commodity_fundamentals",
-            requiredness="required",
-            status="OK",
-            observations="1",
-            as_of_date="2026-08-09",
-            source="U.S. Energy Information Administration",
-            source_url="https://api.eia.gov/v2/",
-        )
-        merge_context_status_rows(self.outputs, [active])
         fundamentals = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
         unrelated = fixture_row(
             CATEGORY_FIELDS["commodity_fundamentals"],
@@ -3129,7 +3033,14 @@ class StagedValidationTests(unittest.TestCase):
         write_csv(
             fundamentals,
             CATEGORY_FIELDS["commodity_fundamentals"],
-            [unrelated],
+            [
+                row
+                for row in read_csv_rows(fundamentals)
+                if not (
+                    row["source"] == "U.S. Energy Information Administration"
+                    and row["commodity_family"] == "natural_gas"
+                )
+            ] + [unrelated],
         )
 
         with self.assertRaisesRegex(
@@ -3384,7 +3295,7 @@ class StagedValidationTests(unittest.TestCase):
             ("positioning", r"CFTC contract identity.*088691.*GOLD_COMEX"),
         ):
             with self.subTest(missing=missing):
-                write_exact_gate_fixture(self.outputs)
+                write_complete_v2_release_fixture(self.outputs)
                 if missing == "price":
                     path = self.outputs["macro_assets"] / "commodities.csv"
                     rows = [
@@ -3407,7 +3318,6 @@ class StagedValidationTests(unittest.TestCase):
                     validate_staged_week(self.root, self.window)
 
     def test_insufficient_configured_world_bank_row_does_not_satisfy_core_coverage(self):
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["macro_assets"] / "commodities.csv"
         rows = read_csv_rows(path)
         target = next(row for row in rows if row["series_code"] == "COMEX_GOLD")
@@ -3421,10 +3331,13 @@ class StagedValidationTests(unittest.TestCase):
             validate_staged_week(self.root, self.window)
 
     def test_blank_insufficient_cftc_open_interest_does_not_satisfy_core_coverage(self):
-        write_exact_gate_fixture(self.outputs)
         path = self.outputs["weekly_context"] / "positioning_flows.csv"
         rows = read_csv_rows(path)
-        target = next(row for row in rows if row["commodity_code"] == "GOLD_COMEX")
+        target = next(
+            row
+            for row in rows
+            if row["metric_code"] == "GOLD_COMEX_open_interest"
+        )
         target.update(as_of_date="", value="", qc_flag="INSUFFICIENT_DATA")
         write_csv(path, CATEGORY_FIELDS["positioning_flows"], rows)
 
