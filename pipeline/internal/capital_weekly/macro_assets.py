@@ -759,9 +759,12 @@ def _post(session, url: str, data=b""):
 
 def _parse_chinabond_json(text: str, field: str) -> list[dict]:
     raw = json.loads(text)
-    if not isinstance(raw, list):
-        raise ValueError("ChinaBond response was not a JSON array")
-    return _normalize_frame(pd.DataFrame(raw), "workTime", field)
+    if not isinstance(raw, dict) or str(raw.get("flag")) != "0":
+        raise ValueError("ChinaBond response did not report success")
+    rows = raw.get("heList")
+    if not isinstance(rows, list):
+        raise ValueError("ChinaBond response heList was not a JSON array")
+    return _normalize_frame(pd.DataFrame(rows), "workTime", field)
 
 
 def _parse_hibor_json(text: str, field: str) -> list[dict]:
@@ -1382,8 +1385,9 @@ def _fetch_config_history(
         while start <= today:
             end = min(start + timedelta(days=364), today)
             url = (
-                "https://yield.chinabond.com.cn/cbweb-mn/pgxh/historyQuery?"
-                f"startDate={start.isoformat()}&&endDate={end.isoformat()}&&gjqx=2,5,10,30&&locale=en_US"
+                "https://yield.chinabond.com.cn/cbweb-czb-web/czb/historyQuery?"
+                f"startDate={start.isoformat()}&endDate={end.isoformat()}&"
+                "gjqx=2,5,10,30&locale=en_US&qxmc=1"
             )
             response = _post(session, url)
             history.extend(_parse_chinabond_json(response.text, field))

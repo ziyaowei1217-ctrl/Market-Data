@@ -25,6 +25,7 @@ from pipeline.internal.capital_weekly.macro_assets import (
     _atomic_write_bytes,
     _session,
     _parse_fred_csv,
+    _parse_chinabond_json,
     _parse_sina_fx_day_kline,
     _parse_treasury_csv,
     _parse_yahoo_chart,
@@ -298,6 +299,56 @@ class MacroAssetUniverseTests(unittest.TestCase):
         self.assertEqual(_parse_pboc_omo_announcement(pboc), {"date": date(2026, 7, 10), "value": 1.4})
         self.assertEqual(_parse_rbi_current_rate(rbi_current), {"date": date(2026, 7, 10), "value": 5.5})
         self.assertEqual(_parse_rbi_history(rbi_history), [{"date": date(2026, 7, 9), "value": 5.5}])
+
+    def test_chinabond_accepts_only_successful_official_envelope(self):
+        payload = json.dumps({
+            "flag": "0",
+            "heList": [{
+                "workTime": "2026-08-28",
+                "twoYear": "1.24",
+                "fiveYear": "1.39",
+                "tenYear": "1.68",
+                "thirtyYear": "2.13",
+            }],
+        })
+        self.assertEqual(
+            _parse_chinabond_json(payload, "tenYear"),
+            [{"date": date(2026, 8, 28), "value": 1.68}],
+        )
+        for invalid in (
+            {"flag": "1", "heList": []},
+            {"flag": "0"},
+            {"flag": "0", "heList": {}},
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    _parse_chinabond_json(json.dumps(invalid), "tenYear")
+
+    def test_chinabond_posts_current_history_endpoint_and_parameters(self):
+        response = unittest.mock.Mock(
+            content=b'{"flag":"0","heList":[]}',
+            text='{"flag":"0","heList":[]}',
+        )
+        response.raise_for_status.return_value = None
+        session = unittest.mock.Mock(
+            _macro_attempt_trace=[],
+            _macro_raw_parts=[],
+            post=unittest.mock.Mock(return_value=response),
+        )
+        with patch(
+            "pipeline.internal.capital_weekly.macro_assets._parse_chinabond_json",
+            return_value=[],
+        ):
+            _fetch_config_history(
+                self._config("china_bond", "10Y"),
+                session,
+                as_of_date=date(2026, 8, 30),
+            )
+        url = session.post.call_args.args[0]
+        self.assertIn("/cbweb-czb-web/czb/historyQuery?", url)
+        self.assertIn("gjqx=2,5,10,30", url)
+        self.assertIn("locale=en_US", url)
+        self.assertIn("qxmc=1", url)
 
     def test_pboc_parser_rejects_non_seven_day_operation(self):
         html = '<div>2026年7月10日</div><table><tr><td>期限</td><td>14天</td></tr><tr><td>操作利率</td><td>1.55%</td></tr></table>'
