@@ -754,6 +754,47 @@ class WeeklyContextTests(unittest.TestCase):
         self.assertEqual(tables["source_log"][0]["observations"], 0)
         self.assertIsNone(tables["source_log"][0]["latest_known_as_of"])
 
+    def test_optional_rows_removed_by_point_in_time_filter_keep_phase_code_and_attempts(self):
+        spec = ProviderSpec(
+            name="optional_release_source",
+            category="events",
+            source_tier="public",
+            requiredness="optional",
+            provider_version="1.0.0",
+            schema_version="economic-release-v1",
+            frequency="event",
+            freshness_days=None,
+        )
+
+        tables = run_weekly_context(
+            {
+                "optional_release_source": ContextProvider(
+                    spec,
+                    lambda: ProviderResult(
+                        category="events",
+                        rows=[
+                            {
+                                "record_id": "post-cutoff-revision",
+                                "known_as_of": "2026-08-10T08:30:00-04:00",
+                            }
+                        ],
+                        raw_text="monday artifact",
+                        source="Fixture",
+                        source_url="https://example.test/releases",
+                        attempts=3,
+                    ),
+                )
+            },
+            as_of_date=date(2026, 8, 9),
+        )
+
+        self.assertEqual(tables["events"], [])
+        source_log = tables["source_log"][0]
+        self.assertEqual(source_log["status"], "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(source_log["phase"], "point_in_time")
+        self.assertEqual(source_log["error_code"], "POINT_IN_TIME_UNAVAILABLE")
+        self.assertEqual(source_log["attempts"], 3)
+
     def test_cross_provider_economic_record_duplicate_is_not_published_and_is_audited(self):
         release = build_release_row(
             indicator_code="CPI_INDEX_SA",

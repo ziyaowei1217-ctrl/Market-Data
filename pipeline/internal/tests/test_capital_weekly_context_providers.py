@@ -2177,8 +2177,8 @@ class ContextProviderTests(unittest.TestCase):
 
             with patch.object(
                 providers_module,
-                "_official_text",
-                return_value=(text, 2),
+                "_official_bytes",
+                return_value=(text.encode("utf-8"), 2),
             ):
                 with self.assertRaises(ProviderPhaseError) as raised:
                     provider.fetch()
@@ -2252,6 +2252,44 @@ class ContextProviderTests(unittest.TestCase):
             raised.exception.safe_message,
             "CFTC response missing configured contracts for requested window: 088691",
         )
+
+    def test_disaggregated_invalid_utf8_is_a_parse_failure_with_actual_transport_attempts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            data_dir = Path(temp)
+            write_provider_configs(data_dir)
+            provider = build_default_providers(
+                start=date(2026, 8, 17),
+                end=date(2026, 8, 23),
+                data_dir=data_dir,
+                environ={},
+                session=object(),
+            )["cftc_disaggregated"]
+            response = OfficialHttpResponse(
+                body=b"\xff",
+                url=CFTC_DISAGGREGATED_URL,
+                headers={},
+                trace=OfficialHttpTrace(
+                    2,
+                    1,
+                    [503, 200],
+                    CFTC_DISAGGREGATED_URL,
+                ),
+            )
+
+            with patch.object(
+                providers_module,
+                "official_get",
+                return_value=response,
+            ):
+                with self.assertRaises(ProviderPhaseError) as raised:
+                    provider.fetch()
+
+        self.assertEqual(raised.exception.failure_phase, "parse")
+        self.assertEqual(
+            raised.exception.error_code,
+            "CFTC_DISAGGREGATED_PARSE_FAILED",
+        )
+        self.assertEqual(raised.exception.attempts, 2)
 
     def test_metric_rows_emit_shared_contract(self):
         rows = metric_rows(

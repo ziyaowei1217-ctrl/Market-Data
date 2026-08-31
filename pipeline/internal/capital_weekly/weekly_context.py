@@ -239,9 +239,9 @@ def run_weekly_context(
                             "source_url": safe_result_source_url,
                             "elapsed_ms": int((time.monotonic() - started) * 1000),
                             "notes": notes,
-                            "phase": completed_phase,
+                            "phase": "point_in_time",
                             "attempts": attempts,
-                            "error_code": None,
+                            "error_code": "POINT_IN_TIME_UNAVAILABLE",
                         }
                     )
                     continue

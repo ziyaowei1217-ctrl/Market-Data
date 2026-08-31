@@ -1705,16 +1705,17 @@ def _cftc_disaggregated_provider(
         "$order": "cftc_contract_market_code,report_date_as_yyyy_mm_dd",
         "$limit": 50000,
     }
-    text, transport_attempts = _official_text(
+    content, transport_attempts = _official_bytes(
         session, CFTC_DISAGGREGATED_URL, http.policy, params=params
     )
     try:
+        text = content.decode("utf-8-sig")
         parsed = parse_cftc_disaggregated_csv(text, contracts)
         eligible = filter_known_as_of(
             [row for row in parsed if row["report_date"] <= end],
             end,
         )
-    except ValueError as error:
+    except (UnicodeDecodeError, ValueError) as error:
         raise ProviderPhaseError(
             "CFTC_DISAGGREGATED_PARSE_FAILED",
             "parse",

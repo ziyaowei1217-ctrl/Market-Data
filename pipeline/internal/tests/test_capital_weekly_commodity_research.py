@@ -337,6 +337,52 @@ class BoundedPriceHistoryTests(unittest.TestCase):
                 REGISTRY,
             )
 
+    def test_same_observation_revisions_keep_only_the_latest_eligible_vintage(self):
+        as_of = date(2026, 8, 30)
+        rows = bounded_price_history(
+            {
+                "WTI": [
+                    {
+                        "date": date(2026, 8, 22),
+                        "known_as_of": "2026-08-22T12:00:00Z",
+                        "value": 70.0,
+                    },
+                    {
+                        "date": date(2026, 8, 29),
+                        "known_as_of": "2026-08-29T12:00:00Z",
+                        "value": 75.0,
+                    },
+                    {
+                        "date": date(2026, 8, 29),
+                        "known_as_of": "2026-08-30T00:00:00+08:00",
+                        "value": 80.0,
+                    },
+                ]
+            },
+            [_price_config("WTI", "daily")],
+            as_of,
+            LIMITS,
+            REGISTRY,
+        )
+
+        self.assertEqual(len(rows), 2)
+        latest = rows[-1]
+        self.assertEqual(latest["observation_date"], "2026-08-29")
+        self.assertEqual(latest["known_as_of"], "2026-08-29T16:00:00Z")
+        self.assertEqual(latest["value"], 80.0)
+        self.assertEqual(
+            latest["record_id"],
+            stable_record_id(
+                "commodity_price_history",
+                {
+                    "code": "WTI",
+                    "series": "WTI",
+                    "observation_date": "2026-08-29",
+                    "known_as_of": "2026-08-29T16:00:00Z",
+                },
+            ),
+        )
+
     def test_equivalent_known_as_of_offsets_are_one_semantic_identity(self):
         as_of = date(2026, 8, 30)
         points = [
@@ -501,6 +547,34 @@ class BoundedMetricHistoryTests(unittest.TestCase):
 
         self.assertEqual([row["value"] for row in rows], [10.0])
         self.assertEqual(rows[0]["known_as_of"], "2026-08-30T10:00:00Z")
+
+    def test_same_observation_and_reference_revisions_keep_latest_eligible_vintage(self):
+        as_of = date(2026, 8, 30)
+        rows = bounded_metric_history(
+            [
+                _metric_row(date(2026, 8, 15), value=10.0),
+                _metric_row(
+                    date(2026, 8, 22),
+                    value=20.0,
+                    known_as_of="2026-08-22T12:00:00Z",
+                ),
+                _metric_row(
+                    date(2026, 8, 22),
+                    value=30.0,
+                    known_as_of="2026-08-23T00:00:00+08:00",
+                ),
+            ],
+            as_of,
+            LIMITS,
+            REGISTRY,
+        )
+
+        self.assertEqual(len(rows), 2)
+        latest = rows[-1]
+        self.assertEqual(latest["observation_date"], "2026-08-22")
+        self.assertEqual(latest["reference_period"], "2026-08-22")
+        self.assertEqual(latest["known_as_of"], "2026-08-22T16:00:00Z")
+        self.assertEqual(latest["value"], 30.0)
 
     def test_invalid_source_qc_taxonomy_or_timestamp_fails_closed(self):
         as_of = date(2026, 8, 30)
@@ -866,6 +940,246 @@ class RegisteredResearchFactTests(unittest.TestCase):
         self.assertEqual(
             fact["source_urls"],
             ["https://official.example.test/prices"],
+        )
+
+    def test_price_fact_selectors_collapse_same_date_revisions_before_selection(self):
+        two_point_specs = {
+            "wti_absolute_change": FormulaSpec(
+                formula_id="absolute_change_v1",
+                version="1.0.0",
+                fact_kind="absolute_change",
+                output_unit="USD/BBL",
+                required_inputs=(_price_selector(observation_count=2),),
+            ),
+            "wti_percentage_change": FormulaSpec(
+                formula_id="percentage_change_v1",
+                version="1.0.0",
+                fact_kind="percentage_change",
+                output_unit="percent",
+                required_inputs=(_price_selector(observation_count=2),),
+            ),
+        }
+        two_point_facts = build_research_facts(
+            [
+                _research_price("price-old", "2026-08-22", 70.0),
+                _research_price(
+                    "price-revision-old",
+                    "2026-08-29",
+                    75.0,
+                    known_as_of="2026-08-29T12:00:00Z",
+                ),
+                _research_price(
+                    "price-revision-latest",
+                    "2026-08-29",
+                    80.0,
+                    known_as_of="2026-08-30T00:00:00+08:00",
+                ),
+            ],
+            [],
+            two_point_specs,
+            date(2026, 8, 30),
+        )
+
+        two_point_by_code = {
+            fact["fact_code"]: fact["value"] for fact in two_point_facts
+        }
+        self.assertEqual(two_point_by_code["wti_absolute_change"], 10.0)
+        self.assertAlmostEqual(
+            two_point_by_code["wti_percentage_change"],
+            14.285714285714286,
+        )
+        self.assertEqual(
+            {
+                tuple(fact["input_record_ids"])
+                for fact in two_point_facts
+            },
+            {("price-old", "price-revision-latest")},
+        )
+        self.assertTrue(
+            all(
+                fact["known_as_of"] == "2026-08-29T16:00:00Z"
+                for fact in two_point_facts
+            )
+        )
+
+        year_over_year_specs = {
+            "wti_year_over_year_change": FormulaSpec(
+                formula_id="year_over_year_change_v1",
+                version="1.0.0",
+                fact_kind="year_over_year_change",
+                output_unit="USD/BBL",
+                required_inputs=(
+                    _price_selector(observation_count=2, comparison_years=1),
+                ),
+            )
+        }
+        year_over_year_facts = build_research_facts(
+            [
+                _research_price(
+                    "prior-revision-old",
+                    "2025-08-29",
+                    50.0,
+                    known_as_of="2025-08-29T12:00:00Z",
+                ),
+                _research_price(
+                    "prior-revision-latest",
+                    "2025-08-29",
+                    60.0,
+                    known_as_of="2025-08-30T12:00:00Z",
+                ),
+                _research_price("current", "2026-08-29", 80.0),
+            ],
+            [],
+            year_over_year_specs,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(len(year_over_year_facts), 1)
+        self.assertEqual(year_over_year_facts[0]["value"], 20.0)
+        self.assertEqual(
+            year_over_year_facts[0]["input_record_ids"],
+            ["current", "prior-revision-latest"],
+        )
+
+    def test_metric_fact_selectors_collapse_same_observation_revisions_before_windows(self):
+        specs = {
+            "natgas_storage_percentile": FormulaSpec(
+                formula_id="trailing_percentile_v1",
+                version="1.0.0",
+                fact_kind="trailing_percentile",
+                output_unit="percentile",
+                required_inputs=(
+                    _metric_selector(
+                        trailing_observations=3,
+                        minimum_observations=3,
+                    ),
+                ),
+            ),
+            "natgas_storage_coverage": FormulaSpec(
+                formula_id="coverage_count_v1",
+                version="1.0.0",
+                fact_kind="coverage_count",
+                output_unit="count",
+                required_inputs=(_metric_selector(trailing_observations=3),),
+            ),
+            "natgas_storage_freshness": FormulaSpec(
+                formula_id="freshness_age_days_v1",
+                version="1.0.0",
+                fact_kind="freshness_age_days",
+                output_unit="days",
+                required_inputs=(_metric_selector(observation_count=1),),
+            ),
+            "natgas_storage_seasonal": FormulaSpec(
+                formula_id="seasonal_deviation_v1",
+                version="1.0.0",
+                fact_kind="seasonal_deviation",
+                output_unit="BCF",
+                required_inputs=(
+                    _metric_selector(prior_years=2, minimum_observations=2),
+                ),
+            ),
+        }
+        history = [
+            _research_metric("season-2024", "2024-08-23", 100.0),
+            _research_metric(
+                "season-2025-old",
+                "2025-08-22",
+                500.0,
+                known_as_of="2025-08-22T12:00:00Z",
+            ),
+            _research_metric(
+                "season-2025-latest",
+                "2025-08-22",
+                120.0,
+                known_as_of="2025-08-23T00:00:00+08:00",
+            ),
+            _research_metric(
+                "season-2026-old",
+                "2026-08-21",
+                190.0,
+                known_as_of="2026-08-21T12:00:00Z",
+            ),
+            _research_metric(
+                "season-2026-latest",
+                "2026-08-21",
+                130.0,
+                known_as_of="2026-08-22T00:00:00+08:00",
+            ),
+        ]
+
+        facts = {
+            fact["fact_code"]: fact
+            for fact in build_research_facts([], history, specs, date(2026, 8, 30))
+        }
+
+        self.assertEqual(facts["natgas_storage_percentile"]["value"], 100.0)
+        self.assertEqual(facts["natgas_storage_coverage"]["value"], 3)
+        self.assertEqual(facts["natgas_storage_freshness"]["value"], 9)
+        self.assertEqual(facts["natgas_storage_seasonal"]["value"], 20.0)
+        self.assertEqual(
+            facts["natgas_storage_percentile"]["input_record_ids"],
+            ["season-2024", "season-2025-latest", "season-2026-latest"],
+        )
+        self.assertEqual(
+            facts["natgas_storage_coverage"]["input_record_ids"],
+            ["season-2024", "season-2025-latest", "season-2026-latest"],
+        )
+        self.assertEqual(
+            facts["natgas_storage_freshness"]["input_record_ids"],
+            ["season-2026-latest"],
+        )
+        self.assertEqual(
+            facts["natgas_storage_seasonal"]["input_record_ids"],
+            ["season-2024", "season-2025-latest", "season-2026-latest"],
+        )
+
+    def test_stock_to_use_uses_latest_revision_for_each_exact_metric_identity(self):
+        common = {
+            "commodity_code": "CORN",
+            "commodity_family": "grains_oilseeds",
+            "unit": "1000 MT",
+            "reference_period": "2026/27",
+        }
+        facts = build_research_facts(
+            [],
+            [
+                _research_metric(
+                    "ending-old",
+                    "2026-08-12",
+                    500.0,
+                    metric_code="usda_psd_ending_stocks",
+                    measurement_kind="inventory",
+                    known_as_of="2026-08-12T12:00:00Z",
+                    **common,
+                ),
+                _research_metric(
+                    "ending-latest",
+                    "2026-08-12",
+                    200.0,
+                    metric_code="usda_psd_ending_stocks",
+                    measurement_kind="inventory",
+                    known_as_of="2026-08-13T12:00:00Z",
+                    **common,
+                ),
+                _research_metric(
+                    "use-latest",
+                    "2026-08-12",
+                    1000.0,
+                    metric_code="usda_psd_domestic_use",
+                    measurement_kind="demand",
+                    known_as_of="2026-08-13T12:00:00Z",
+                    **common,
+                ),
+            ],
+            _stock_to_use_specs(),
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(len(facts), 1)
+        self.assertEqual(facts[0]["value"], 0.2)
+        self.assertEqual(
+            facts[0]["input_record_ids"],
+            ["ending-latest", "use-latest"],
         )
 
     def test_trailing_percentile_uses_configured_inclusive_rank(self):

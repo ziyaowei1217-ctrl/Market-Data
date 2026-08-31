@@ -8,7 +8,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from .context.common import (
@@ -310,6 +310,32 @@ def _known_as_of(value: object) -> tuple[datetime | None, str | None]:
     return canonical, canonical.isoformat().replace("+00:00", "Z")
 
 
+def _collapse_point_in_time_revisions(
+    items: Iterable[Any],
+    *,
+    identity: Callable[[Any], tuple[object, ...]],
+    known_at: Callable[[Any], datetime | None],
+) -> list[Any]:
+    """Keep one latest eligible vintage for each observable business identity."""
+    latest_by_identity: dict[tuple[object, ...], Any] = {}
+    for item in items:
+        key = identity(item)
+        prior = latest_by_identity.get(key)
+        if prior is None:
+            latest_by_identity[key] = item
+            continue
+        item_known = known_at(item) or datetime.min.replace(tzinfo=timezone.utc)
+        prior_known = known_at(prior) or datetime.min.replace(tzinfo=timezone.utc)
+        if item_known == prior_known:
+            raise ValueError(
+                "Duplicate point-in-time revision identity: "
+                + ", ".join(str(value) for value in key)
+            )
+        if item_known > prior_known:
+            latest_by_identity[key] = item
+    return list(latest_by_identity.values())
+
+
 def _finite_value(value: object) -> int | float | None:
     if isinstance(value, bool):
         raise ValueError("value must be numeric")
@@ -404,7 +430,34 @@ def _validate_fact_inputs(
             row["unit"] = _required_text(row.get("unit"), "unit")
             row["value"] = value
             normalized[dataset].append(row)
-    return {key: tuple(value) for key, value in normalized.items()}
+    return {
+        "price_history": tuple(
+            _collapse_point_in_time_revisions(
+                normalized["price_history"],
+                identity=lambda row: (
+                    row.get("commodity_code"),
+                    row.get("series_code"),
+                    row["observation_date"],
+                ),
+                known_at=lambda row: row["_known_as_of_datetime"],
+            )
+        ),
+        "metric_history": tuple(
+            _collapse_point_in_time_revisions(
+                normalized["metric_history"],
+                identity=lambda row: (
+                    row.get("commodity_code"),
+                    row.get("metric_code"),
+                    row.get("metric_role"),
+                    row.get("measurement_kind"),
+                    row.get("participant_class"),
+                    row["observation_date"],
+                    row.get("reference_period"),
+                ),
+                known_at=lambda row: row["_known_as_of_datetime"],
+            )
+        ),
+    }
 
 
 def _select_two_observation_price_inputs(
@@ -1187,7 +1240,11 @@ def bounded_price_history(
     selected: list[dict] = []
     for key in sorted(grouped):
         rows = sorted(
-            grouped[key],
+            _collapse_point_in_time_revisions(
+                grouped[key],
+                identity=lambda item: (key[0], key[1], item[0].isoformat()),
+                known_at=lambda item: item[1],
+            ),
             key=lambda item: (
                 item[0],
                 item[1] or datetime.min.replace(tzinfo=timezone.utc),
@@ -1331,7 +1388,19 @@ def bounded_metric_history(
     selected: list[dict] = []
     for group in sorted(grouped, key=lambda item: tuple(value or "" for value in item)):
         history = sorted(
-            grouped[group],
+            _collapse_point_in_time_revisions(
+                grouped[group],
+                identity=lambda item: (
+                    group[0],
+                    group[1],
+                    group[2],
+                    group[3],
+                    group[4],
+                    item[0].isoformat(),
+                    item[2]["reference_period"],
+                ),
+                known_at=lambda item: item[1],
+            ),
             key=lambda item: (
                 item[0],
                 item[1] or datetime.min.replace(tzinfo=timezone.utc),
