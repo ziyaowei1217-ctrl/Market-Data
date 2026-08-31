@@ -1182,8 +1182,13 @@ def _provider_status(
     )
 
 
-def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, list[dict]]:
-    config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
+def write_complete_v2_release_fixture(
+    outputs: dict[str, Path],
+    *,
+    config_path: Path = PRODUCTION_CONFIG_PATH,
+    expected_registry: dict[str, str] | None = None,
+) -> dict[str, list[dict]]:
+    config = json.loads(config_path.read_text(encoding="utf-8"))
     macro_config = [
         row
         for row in config["macro"]
@@ -1194,7 +1199,8 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
         row["commodity_code"]: row["commodity_family"]
         for row in config["commodity_research"]["universe"]
     }
-    if configured_registry != V2_COMMODITY_UNIVERSE:
+    required_registry = expected_registry or V2_COMMODITY_UNIVERSE
+    if configured_registry != required_registry:
         raise AssertionError("production fixture requires the exact 19-code registry")
 
     price_snapshots = []
@@ -1470,7 +1476,7 @@ def write_complete_v2_release_fixture(outputs: dict[str, Path]) -> dict[str, lis
         row["record_id"],
     ))
 
-    formula_specs = load_formula_specs(PRODUCTION_CONFIG_PATH)
+    formula_specs = load_formula_specs(config_path)
     facts = build_research_facts(
         price_history,
         [
@@ -2932,25 +2938,73 @@ class StagedValidationTests(unittest.TestCase):
 
     def test_usda_coverage_uses_the_configured_code_family_mapping(self):
         config = json.loads(PRODUCTION_CONFIG_PATH.read_text(encoding="utf-8"))
-        configured = {
-            provider: {
-                row["commodity_code"]: row["commodity_family"]
-                for row in config["context"][provider]
-            }
-            for provider in ("usda_psd", "usda_esr")
+        for rows in (
+            config["macro"],
+            config["context"]["cftc_contracts"],
+            config["context"]["usda_psd"],
+            config["context"]["usda_esr"],
+            config["commodity_research"]["universe"],
+            config["commodity_research"]["facts"],
+        ):
+            for row in rows:
+                if row.get("commodity_code") == "CORN":
+                    row["commodity_family"] = "softs"
+        config_path = Path(self.temporary.name) / "corn-softs-config.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        alternate_registry = {
+            **V2_COMMODITY_UNIVERSE,
+            "CORN": "softs",
         }
-        rows = read_csv_rows(
-            self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+        write_complete_v2_release_fixture(
+            self.outputs,
+            config_path=config_path,
+            expected_registry=alternate_registry,
         )
-        for provider, mapping in configured.items():
-            actual = {
-                row["commodity_code"]: row["commodity_family"]
-                for row in rows
-                if row["metric_code"].startswith(f"{provider}_")
-            }
-            self.assertEqual(actual, mapping)
+        corn_rows = [
+            row
+            for row in read_csv_rows(
+                self.outputs["weekly_context"] / "commodity_fundamentals.csv"
+            )
+            if row["metric_code"].startswith(("usda_psd_corn_", "usda_esr_corn_"))
+        ]
+        self.assertTrue(corn_rows)
+        self.assertEqual(
+            {row["commodity_family"] for row in corn_rows},
+            {"softs"},
+        )
 
-        validate_staged_week(self.root, self.window)
+        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
+            validate_staged_week(self.root, self.window)
+
+        real_load_config_rows = weekly_release_module.load_config_rows
+
+        def hardcoded_production_family(section: str):
+            rows = real_load_config_rows(section)
+            if section not in {"context.usda_psd", "context.usda_esr"}:
+                return rows
+            return [
+                {
+                    **row,
+                    "commodity_family": (
+                        "grains_oilseeds"
+                        if row.get("commodity_code") == "CORN"
+                        else row.get("commodity_family")
+                    ),
+                }
+                for row in rows
+            ]
+
+        with patch("pipeline.internal.common.DEFAULT_CONFIG_PATH", config_path):
+            with patch.object(
+                weekly_release_module,
+                "load_config_rows",
+                side_effect=hardcoded_production_family,
+            ):
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    r"usda_(?:psd|esr).*CORN.*commodity_family.*grains_oilseeds",
+                ):
+                    validate_staged_week(self.root, self.window)
 
     def test_usda_coverage_rejects_a_wrong_family_for_a_configured_code(self):
         path = self.outputs["weekly_context"] / "commodity_fundamentals.csv"
