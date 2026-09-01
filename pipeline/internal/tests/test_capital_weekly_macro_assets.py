@@ -468,6 +468,27 @@ class MacroAssetUniverseTests(unittest.TestCase):
 
                 self.assertEqual(history[0]["date"], date(2026, 8, 25))
 
+    def test_snapshot_fallback_known_as_of_is_utc_but_source_audit_stays_date(self):
+        config = self._config("fred", "TEST")
+        history = [
+            {"date": date(2025, 12, 31), "value": 3.5},
+            {"date": date(2026, 8, 28), "value": 4.0},
+        ]
+
+        with patch.object(
+            macro_assets_module,
+            "load_macro_asset_universe",
+            return_value=[config],
+        ), patch.object(
+            macro_assets_module,
+            "_fetch_config_history",
+            return_value=(history, b"official raw", config.source_url),
+        ):
+            bundle = fetch_macro_asset_bundle(as_of_date=date(2026, 8, 30))
+
+        self.assertEqual(bundle.detail.loc[0, "known_as_of"], "2026-08-28T00:00:00Z")
+        self.assertEqual(bundle.source_log.loc[0, "known_as_of"], "2026-08-28")
+
     def test_world_bank_workbook_is_discovered_downloaded_once_and_parsed_once(self):
         workbook = Workbook()
         sheet = workbook.active

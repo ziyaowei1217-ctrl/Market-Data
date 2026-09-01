@@ -2004,13 +2004,25 @@ def fetch_macro_asset_bundle(
                 for point in reversed(history)
                 if parse_date(point["date"]) == snapshot.latest_date
             )
-            known_as_of = latest_point.get("known_as_of") or _iso(
-                _known_as_of_date(
-                    config.series_code,
-                    snapshot.latest_date,
-                )
+            fallback_known_as_of_date = _known_as_of_date(
+                config.series_code,
+                snapshot.latest_date,
             )
-            detail["known_as_of"] = known_as_of
+            explicit_known_as_of = latest_point.get("known_as_of")
+            if explicit_known_as_of:
+                detail_known_as_of = explicit_known_as_of
+                audit_known_as_of = (
+                    datetime.fromisoformat(
+                        explicit_known_as_of.replace("Z", "+00:00")
+                    )
+                    .astimezone(timezone.utc)
+                    .date()
+                    .isoformat()
+                )
+            else:
+                audit_known_as_of = _iso(fallback_known_as_of_date)
+                detail_known_as_of = f"{audit_known_as_of}T00:00:00Z"
+            detail["known_as_of"] = detail_known_as_of
             correlation_spec = CORRELATION_SPECS.get(config.series_code)
             detail.update(
                 {
@@ -2036,7 +2048,7 @@ def fetch_macro_asset_bundle(
                 "raw_cache_status": raw_cache_status, "raw_cache_error": raw_cache_error,
                 **_source_audit_metadata(
                     config,
-                    known_as_of,
+                    audit_known_as_of,
                     warnings=raw_cache_error,
                 ),
             })
