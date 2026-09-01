@@ -255,7 +255,7 @@ generalized to companies that did not disclose that KPI.
 
 ## 8. Publication Model
 
-The five business files remain unchanged. Contract 7 adds two tables inside
+The five business files remain unchanged. Contract 7 adds three tables inside
 `context.json.tables`:
 
 - `research_universe_catalog`
