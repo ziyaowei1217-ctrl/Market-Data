@@ -1464,11 +1464,13 @@ def _validate_row(
             )
     family = (row.get("commodity_family") or "").strip()
     commodity_code = (row.get("commodity_code") or "").strip()
+    price_kind = (row.get("price_kind") or "").strip()
     is_macro_commodity = (
         spec.pipeline == "macro_assets"
         and spec.filename == "commodities.csv"
         and (row.get("asset_class") or "").strip() == "commodity"
         and family != "digital_asset"
+        and any((commodity_code, family, price_kind))
     )
     is_context_commodity = (
         spec.pipeline == "weekly_context"

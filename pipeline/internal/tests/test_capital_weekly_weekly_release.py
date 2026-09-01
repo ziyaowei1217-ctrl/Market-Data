@@ -4608,6 +4608,31 @@ class CommodityResearchV2ReleaseTests(unittest.TestCase):
 
         self._validate()
 
+    def test_contract_six_preserves_macro_proxy_without_commodity_semantics(self):
+        macro_path = self.outputs["macro_assets"] / "commodities.csv"
+        macro_rows = read_csv_rows(macro_path)
+        macro_rows.append(fixture_row(
+            MACRO_FIELDS,
+            asset_class="commodity",
+            group="commodities",
+            series_code="COMEX_COPPER",
+            provider="yahoo_chart",
+            source="Yahoo Finance chart API (public vendor proxy)",
+            source_url="https://query1.finance.yahoo.com/v8/finance/chart/HG=F",
+            commodity_code="",
+            commodity_family="",
+            price_kind="",
+            known_as_of="2026-08-08T00:00:00Z",
+            latest_value="1",
+            qc_flag="OK",
+        ))
+        write_csv(macro_path, MACRO_V3_FIELDS, macro_rows)
+
+        try:
+            self._validate()
+        except ReleaseValidationError as error:
+            self.fail(str(error))
+
 
 class FakePipelineRunner:
     PIPELINES = {
