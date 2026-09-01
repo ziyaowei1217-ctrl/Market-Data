@@ -1339,7 +1339,7 @@
       "commodity_family": "refined_products",
       "price_kind": "official_cash",
       "provider_route": "petroleum/pri/spt",
-      "source_description": "Cushing, OK WTI Spot Price FOB"
+      "source_description": "Cushing, OK WTI Spot Price FOB (Dollars per Barrel)"
     },
     {
       "asset_class": "commodity",
@@ -1363,7 +1363,7 @@
       "commodity_family": "refined_products",
       "price_kind": "official_cash",
       "provider_route": "petroleum/pri/spt",
-      "source_description": "Europe Brent Spot Price FOB"
+      "source_description": "Europe Brent Spot Price FOB (Dollars per Barrel)"
     },
     {
       "asset_class": "commodity",
@@ -2311,7 +2311,7 @@
       "commodity_family": "natural_gas",
       "price_kind": "official_cash",
       "provider_route": "natural-gas/pri/fut",
-      "source_description": "Henry Hub Natural Gas Spot Price"
+      "source_description": "Henry Hub Natural Gas Spot Price (Dollars per Million Btu)"
     },
     {
       "asset_class": "commodity",

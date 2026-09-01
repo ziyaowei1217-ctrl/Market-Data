@@ -427,6 +427,47 @@ class MacroAssetUniverseTests(unittest.TestCase):
         )
         self.assertEqual(session.get.call_args.kwargs["params"]["api_key"], "test-key")
 
+    def test_production_eia_price_contract_accepts_current_official_descriptions(self):
+        current_descriptions = {
+            "RWTC": "Cushing, OK WTI Spot Price FOB (Dollars per Barrel)",
+            "RBRTE": "Europe Brent Spot Price FOB (Dollars per Barrel)",
+            "RNGWHHD": (
+                "Henry Hub Natural Gas Spot Price (Dollars per Million Btu)"
+            ),
+        }
+        configs = {
+            config.provider_symbol: config
+            for config in load_macro_asset_universe()
+            if config.series_code in {"WTI", "BRENT", "NATGAS_HH"}
+        }
+
+        for provider_symbol, description in current_descriptions.items():
+            with self.subTest(provider_symbol=provider_symbol):
+                config = configs[provider_symbol]
+                payload = json.dumps({
+                    "response": {
+                        "data": [{
+                            "period": "2026-08-25",
+                            "series": provider_symbol,
+                            "series-description": description,
+                            "units": config.level_unit,
+                            "value": "68.25",
+                        }],
+                    },
+                })
+
+                try:
+                    history = macro_assets_module.parse_eia_price_series(
+                        payload,
+                        provider_symbol,
+                        config.level_unit,
+                        expected_description=config.source_description,
+                    )
+                except ValueError as error:
+                    self.fail(str(error))
+
+                self.assertEqual(history[0]["date"], date(2026, 8, 25))
+
     def test_world_bank_workbook_is_discovered_downloaded_once_and_parsed_once(self):
         workbook = Workbook()
         sheet = workbook.active
