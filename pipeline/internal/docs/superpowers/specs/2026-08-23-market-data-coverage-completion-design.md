@@ -303,4 +303,3 @@ Each wave requires:
 - A source failure cannot replace the last complete week.
 - Historical backfill occurs only when point-in-time evidence exists.
 - All repository and end-to-end verification commands pass for each wave.
-
