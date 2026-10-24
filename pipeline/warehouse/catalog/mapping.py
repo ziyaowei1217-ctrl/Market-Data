@@ -703,8 +703,20 @@ def build() -> None:
         api(iid, fred(code, code, "Q", "%", lag=55), "美联储逾期与核销率（FRED）")
     for iid in ids("77", 1, 7):
         other(iid, "pending", "AAII 历史文件需会员；机构调查需授权")
-    for iid in ids("78", 1, 39):
-        other(iid, "pending", "市场宽度需 500 只成分股日线自建，待做")
+    bnote = "自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）"
+    burl = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    def br(code, title, unit="%"):
+        return series("BREADTH", code, f"S&P 500 breadth: {title}", "D", unit, 1, burl)
+    groups = [("", "S&P 500"), ("Communication Services", "通讯服务"), ("Energy", "能源"), ("Information Technology", "信息技术"),
+              ("Utilities", "公用事业"), ("Financials", "金融"), ("Consumer Staples", "必需消费"), ("Real Estate", "房地产"),
+              ("Industrials", "工业"), ("Consumer Discretionary", "可选消费"), ("Health Care", "医疗保健"), ("Materials", "材料")]
+    for g, (sector, label) in enumerate(groups):
+        for k, n in enumerate((20, 50, 200)):
+            code = f"pct_above_{n}dma" + (f":{sector}" if sector else "")
+            api(f"78-{1 + 3 * g + k:03d}", br(code, f"{label} above {n}DMA"), bnote)
+    api("78-037", br("advancers", "advancers", "家"), bnote)
+    api("78-038", br("decliners", "decliners", "家"), bnote)
+    api("78-039", br("median_drawdown_52w", "median drawdown from 52w high"), bnote)
     for iid in ids("80", 1, 18) + ids("81", 1, 10):
         other(iid, "pending", "期权隐波/成交需 Cboe 授权数据")
 

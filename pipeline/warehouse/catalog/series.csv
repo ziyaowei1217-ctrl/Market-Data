@@ -62,6 +62,45 @@ BLS:WPUFD4,BLS,WPUFD4,PPI final demand NSA,M,,45,https://data.bls.gov/timeseries
 BOC:V39079,BOC,V39079,BoC target overnight rate,D,%,0,https://www.bankofcanada.ca/rates/interest-rates/,,False,cloud
 BOE:IUDBEDR,BOE,IUDBEDR,Bank Rate,D,%,0,https://www.bankofengland.co.uk/boeapps/database/,,False,cloud
 BOE:IUDMNZC,BOE,IUDMNZC,UK 10Y nominal zero-coupon yield (BoE fitted curve),D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
+BREADTH:advancers,BREADTH,advancers,S&P 500 breadth: advancers,D,家,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:decliners,BREADTH,decliners,S&P 500 breadth: decliners,D,家,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:median_drawdown_52w,BREADTH,median_drawdown_52w,S&P 500 breadth: median drawdown from 52w high,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma,BREADTH,pct_above_200dma,S&P 500 breadth: S&P 500 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Communication Services,BREADTH,pct_above_200dma:Communication Services,S&P 500 breadth: 通讯服务 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Consumer Discretionary,BREADTH,pct_above_200dma:Consumer Discretionary,S&P 500 breadth: 可选消费 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Consumer Staples,BREADTH,pct_above_200dma:Consumer Staples,S&P 500 breadth: 必需消费 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Energy,BREADTH,pct_above_200dma:Energy,S&P 500 breadth: 能源 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Financials,BREADTH,pct_above_200dma:Financials,S&P 500 breadth: 金融 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Health Care,BREADTH,pct_above_200dma:Health Care,S&P 500 breadth: 医疗保健 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Industrials,BREADTH,pct_above_200dma:Industrials,S&P 500 breadth: 工业 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Information Technology,BREADTH,pct_above_200dma:Information Technology,S&P 500 breadth: 信息技术 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Materials,BREADTH,pct_above_200dma:Materials,S&P 500 breadth: 材料 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Real Estate,BREADTH,pct_above_200dma:Real Estate,S&P 500 breadth: 房地产 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_200dma:Utilities,BREADTH,pct_above_200dma:Utilities,S&P 500 breadth: 公用事业 above 200DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma,BREADTH,pct_above_20dma,S&P 500 breadth: S&P 500 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Communication Services,BREADTH,pct_above_20dma:Communication Services,S&P 500 breadth: 通讯服务 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Consumer Discretionary,BREADTH,pct_above_20dma:Consumer Discretionary,S&P 500 breadth: 可选消费 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Consumer Staples,BREADTH,pct_above_20dma:Consumer Staples,S&P 500 breadth: 必需消费 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Energy,BREADTH,pct_above_20dma:Energy,S&P 500 breadth: 能源 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Financials,BREADTH,pct_above_20dma:Financials,S&P 500 breadth: 金融 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Health Care,BREADTH,pct_above_20dma:Health Care,S&P 500 breadth: 医疗保健 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Industrials,BREADTH,pct_above_20dma:Industrials,S&P 500 breadth: 工业 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Information Technology,BREADTH,pct_above_20dma:Information Technology,S&P 500 breadth: 信息技术 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Materials,BREADTH,pct_above_20dma:Materials,S&P 500 breadth: 材料 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Real Estate,BREADTH,pct_above_20dma:Real Estate,S&P 500 breadth: 房地产 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_20dma:Utilities,BREADTH,pct_above_20dma:Utilities,S&P 500 breadth: 公用事业 above 20DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma,BREADTH,pct_above_50dma,S&P 500 breadth: S&P 500 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Communication Services,BREADTH,pct_above_50dma:Communication Services,S&P 500 breadth: 通讯服务 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Consumer Discretionary,BREADTH,pct_above_50dma:Consumer Discretionary,S&P 500 breadth: 可选消费 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Consumer Staples,BREADTH,pct_above_50dma:Consumer Staples,S&P 500 breadth: 必需消费 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Energy,BREADTH,pct_above_50dma:Energy,S&P 500 breadth: 能源 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Financials,BREADTH,pct_above_50dma:Financials,S&P 500 breadth: 金融 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Health Care,BREADTH,pct_above_50dma:Health Care,S&P 500 breadth: 医疗保健 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Industrials,BREADTH,pct_above_50dma:Industrials,S&P 500 breadth: 工业 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Information Technology,BREADTH,pct_above_50dma:Information Technology,S&P 500 breadth: 信息技术 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Materials,BREADTH,pct_above_50dma:Materials,S&P 500 breadth: 材料 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Real Estate,BREADTH,pct_above_50dma:Real Estate,S&P 500 breadth: 房地产 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
+BREADTH:pct_above_50dma:Utilities,BREADTH,pct_above_50dma:Utilities,S&P 500 breadth: 公用事业 above 50DMA,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
 CBOE:OVX,CBOE,OVX,Cboe Crude Oil Volatility Index,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
 CBOE:VIX,CBOE,VIX,Cboe VIX,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
 CBOE:VIX9D,CBOE,VIX9D,Cboe VIX9D,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud

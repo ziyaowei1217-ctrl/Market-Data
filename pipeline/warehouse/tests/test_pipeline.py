@@ -253,3 +253,19 @@ class ReportArchiveTests(unittest.TestCase):
         store = SQLiteStore()
         store.init_schema()
         self.assertEqual(store.upsert_report_pages(got.source, got.report_date, got.url, got.pages), 1)
+
+
+class BreadthTests(unittest.TestCase):
+    def test_breadth_metrics(self):
+        import numpy as np
+        from pipeline.warehouse.providers.breadth import compute, constituents
+
+        html = ("<table><tr><th>Symbol</th><th>Security</th><th>GICS Sector</th></tr>"
+                "<tr><td>BRK.B</td><td>Berkshire</td><td>Financials</td></tr></table>")
+        self.assertEqual(constituents(html)["Symbol"].tolist(), ["BRK-B"])
+        idx = pd.bdate_range("2024-10-01", "2026-10-23")
+        rising = pd.DataFrame({f"T{i}": np.linspace(100, 200, len(idx)) for i in range(10)}, index=idx)
+        m = compute(rising, {f"T{i}": "Energy" for i in range(10)}, date(2026, 1, 1))
+        self.assertEqual(m["pct_above_200dma"].iloc[-1], 100.0)
+        self.assertEqual(m["advancers"].iloc[-1], 10)
+        self.assertAlmostEqual(m["median_drawdown_52w"].iloc[-1], 0.0)

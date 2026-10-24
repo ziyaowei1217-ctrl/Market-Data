@@ -160,45 +160,45 @@ indicator_id,method,phase,formula,coverage_note
 07-003,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-004,api,P1,"ret({YAHOO:^SPXEW}, ""W"") - ret({FRED:SP500}, ""W"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
 07-005,api,P1,"ret({YAHOO:^SPXEW}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
-78-001,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-002,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-003,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-004,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-005,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-006,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-007,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-008,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-009,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-010,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-011,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-012,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-013,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-014,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-015,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-016,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-017,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-018,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-019,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-020,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-021,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-022,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-023,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-024,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-025,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-026,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-027,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-028,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-029,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-030,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-031,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-032,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-033,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-034,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-035,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-036,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-037,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-038,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-78-039,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-001,api,P1,{BREADTH:pct_above_20dma},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-002,api,P1,{BREADTH:pct_above_50dma},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-003,api,P1,{BREADTH:pct_above_200dma},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-004,api,P1,{BREADTH:pct_above_20dma:Communication Services},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-005,api,P1,{BREADTH:pct_above_50dma:Communication Services},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-006,api,P1,{BREADTH:pct_above_200dma:Communication Services},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-007,api,P1,{BREADTH:pct_above_20dma:Energy},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-008,api,P1,{BREADTH:pct_above_50dma:Energy},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-009,api,P1,{BREADTH:pct_above_200dma:Energy},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-010,api,P1,{BREADTH:pct_above_20dma:Information Technology},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-011,api,P1,{BREADTH:pct_above_50dma:Information Technology},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-012,api,P1,{BREADTH:pct_above_200dma:Information Technology},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-013,api,P1,{BREADTH:pct_above_20dma:Utilities},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-014,api,P1,{BREADTH:pct_above_50dma:Utilities},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-015,api,P1,{BREADTH:pct_above_200dma:Utilities},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-016,api,P1,{BREADTH:pct_above_20dma:Financials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-017,api,P1,{BREADTH:pct_above_50dma:Financials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-018,api,P1,{BREADTH:pct_above_200dma:Financials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-019,api,P1,{BREADTH:pct_above_20dma:Consumer Staples},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-020,api,P1,{BREADTH:pct_above_50dma:Consumer Staples},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-021,api,P1,{BREADTH:pct_above_200dma:Consumer Staples},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-022,api,P1,{BREADTH:pct_above_20dma:Real Estate},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-023,api,P1,{BREADTH:pct_above_50dma:Real Estate},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-024,api,P1,{BREADTH:pct_above_200dma:Real Estate},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-025,api,P1,{BREADTH:pct_above_20dma:Industrials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-026,api,P1,{BREADTH:pct_above_50dma:Industrials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-027,api,P1,{BREADTH:pct_above_200dma:Industrials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-028,api,P1,{BREADTH:pct_above_20dma:Consumer Discretionary},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-029,api,P1,{BREADTH:pct_above_50dma:Consumer Discretionary},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-030,api,P1,{BREADTH:pct_above_200dma:Consumer Discretionary},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-031,api,P1,{BREADTH:pct_above_20dma:Health Care},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-032,api,P1,{BREADTH:pct_above_50dma:Health Care},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-033,api,P1,{BREADTH:pct_above_200dma:Health Care},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-034,api,P1,{BREADTH:pct_above_20dma:Materials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-035,api,P1,{BREADTH:pct_above_50dma:Materials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-036,api,P1,{BREADTH:pct_above_200dma:Materials},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-037,api,P1,{BREADTH:advancers},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-038,api,P1,{BREADTH:decliners},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
+78-039,api,P1,{BREADTH:median_drawdown_52w},自算：维基百科 S&P 500 当前成分股 + Yahoo 日线（历史含幸存者偏差）
 08-001,api,P1,{FACTSET:eps_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-002,api,P1,{FACTSET:revenue_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-003,api,P1,{FACTSET:net_margin_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
