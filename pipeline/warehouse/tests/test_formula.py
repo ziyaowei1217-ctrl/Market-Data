@@ -203,3 +203,17 @@ class StalenessTests(unittest.TestCase):
         [v] = compute({"x": "{T:F}"}, raw, [pd.Timestamp("2026-10-23")], fast=True, max_age_days={"x": 14})
         self.assertEqual(v.status, "stale")
         self.assertEqual(v.value, 86.9)
+
+
+class ParBondTests(unittest.TestCase):
+    def test_flat_curve_unchanged_scenario_earns_coupon(self):
+        from pipeline.warehouse.engine.formula import PAR_KEYS
+
+        raw = {key: frame(["2026-10-22", "2026-10-23"], [4.0, 4.0]) for key in PAR_KEYS.values()}
+        self.assertEqual(set(parse('parbond("tr", 10, 0)').series), set(PAR_KEYS.values()))
+        tr = evaluate('parbond("tr", 10, 0)', ctx(raw, "2026-10-23"))
+        down = evaluate('parbond("tr", 10, -50)', ctx(raw, "2026-10-23"))
+        dur = evaluate('parbond("duration", 10, 0)', ctx(raw, "2026-10-23"))
+        self.assertAlmostEqual(tr.value, 4.04, places=2)
+        self.assertGreater(down.value, tr.value)
+        self.assertAlmostEqual(dur.value, 8.18, places=2)

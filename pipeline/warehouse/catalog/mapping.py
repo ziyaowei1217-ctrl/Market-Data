@@ -898,8 +898,16 @@ def build() -> None:
         other(iid, "pending", "Eurostat 国际贸易数据集（Comext），待接入")
     for iid in ids("111", 1, 7):
         other(iid, "excluded", "机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除", "excluded")
-    for iid in ids("109", 1, 56):
-        other(iid, "pending", "可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现")
+    curve_url = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates"
+    for label in ["6 Mo", "1 Yr", "2 Yr", "3 Yr", "5 Yr", "7 Yr", "10 Yr", "20 Yr", "30 Yr"]:
+        series("TSYCURVE", label, f"Treasury par yield curve {label}", "D", "%", 1, curve_url,
+               params={"type": "daily_treasury_yield_curve"})
+    pnote = "按清单定义自算：财政部平价收益率曲线合成平价券（半年付息、线性插值），前6个月平行移动后保持，持有1年"
+    for i, tenor in enumerate([1, 2, 3, 5, 7, 10, 20, 30]):
+        for k, shift in enumerate([-50, 0, 50]):
+            api(f"109-{1 + 3 * i + k:03d}", f'parbond("tr", {tenor}, {shift})', pnote)
+        for k, metric in enumerate(["yield", "coupon", "duration", "convexity"]):
+            api(f"109-{25 + 4 * i + k:03d}", f'parbond("{metric}", {tenor}, 0)', pnote)
 
 
 def build_publishers() -> None:

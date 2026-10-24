@@ -623,6 +623,75 @@ def f_before_change(ctx: Context, x: TS) -> Scalar:
     return Scalar(float(values[pos]), frame.index[pos], detail=f"changed after {frame.index[pos].date()}")
 
 
+# --------------------------------------------------------------------------- Treasury par-bond model
+
+PAR_TENORS = {0.5: "6 Mo", 1: "1 Yr", 2: "2 Yr", 3: "3 Yr", 5: "5 Yr", 7: "7 Yr", 10: "10 Yr", 20: "20 Yr", 30: "30 Yr"}
+PAR_KEYS = {t: f"TSYCURVE:{label}" for t, label in PAR_TENORS.items()}
+
+
+def _bond_price(coupon: float, years: float, y: float) -> float:
+    """Price per 100 of a semiannual bond, whole number of half-years."""
+    n = int(round(years * 2))
+    if n <= 0:
+        return 100.0
+    c, r = coupon * 100 / 2, y / 2
+    if abs(r) < 1e-12:
+        return c * n + 100.0
+    return c * (1 - (1 + r) ** -n) / r + 100.0 * (1 + r) ** -n
+
+
+def _curve_at(curve: dict[float, float], years: float) -> float:
+    points = sorted(curve)
+    if years <= points[0]:
+        return curve[points[0]]
+    for lo, hi in zip(points, points[1:]):
+        if lo <= years <= hi:
+            w = (years - lo) / (hi - lo)
+            return curve[lo] * (1 - w) + curve[hi] * w
+    return curve[points[-1]]
+
+
+def par_bond_metrics(curve_pct: dict[float, float], tenor: float, shift_bp: float) -> dict[str, float]:
+    """清单 109 定义：同日起始曲线定价合成平价券；前 6 个月曲线平行移动 shift，随后保持；
+    持有 1 年；第一笔票息按（移动后）6 个月利率再投资。返回 % / 年 / 年²。"""
+    curve = {t: v / 100.0 for t, v in curve_pct.items()}
+    y0 = _curve_at(curve, tenor)
+    coupon = y0  # par bond: coupon = par yield
+    h = 1e-4
+    p0 = _bond_price(coupon, tenor, y0)
+    up, dn = _bond_price(coupon, tenor, y0 + h), _bond_price(coupon, tenor, y0 - h)
+    mod_dur = -(up - dn) / (2 * h) / p0
+    convexity = (up + dn - 2 * p0) / (h * h) / p0
+    shifted = {t: v + shift_bp / 10000.0 for t, v in curve.items()}
+    half_coupon = coupon * 100 / 2
+    r6 = shifted[0.5]
+    reinvested = half_coupon * (1 + r6 / 2)
+    remaining = tenor - 1.0
+    end_price = 100.0 if remaining <= 0 else _bond_price(coupon, remaining, _curve_at(shifted, remaining))
+    total = (end_price + half_coupon + reinvested - p0) / p0 * 100.0
+    return {"tr": total, "yield": y0 * 100.0, "coupon": coupon * 100.0, "duration": mod_dur, "convexity": convexity}
+
+
+def v_parbond(ctx: Context, metric: ast.AST, tenor: ast.AST, shift: ast.AST | None = None) -> Scalar:
+    """parbond("tr"|"yield"|"coupon"|"duration"|"convexity", tenor_years, shift_bp)."""
+    name = ast.literal_eval(metric)
+    t = float(ast.literal_eval(tenor))
+    bp = float(ast.literal_eval(shift)) if shift is not None else 0.0
+    curve: dict[float, float] = {}
+    dates = []
+    for years, key in PAR_KEYS.items():
+        frame = ctx.visible(ctx.base(key))
+        last = _last(frame)
+        if last is None:
+            return Scalar.missing("missing_input", f"{key} missing")
+        curve[years], d = last
+        dates.append(d)
+    if max(dates) - min(dates) > pd.Timedelta(days=3):
+        return Scalar.missing("missing_input", "curve points from different dates")
+    value = par_bond_metrics(curve, t, bp)[name]
+    return Scalar(float(value), max(dates), detail=f"par curve {max(dates).date()}")
+
+
 SERIES_FUNCS: dict[str, Callable[..., Any]] = {
     "level": f_level,
     "pop": f_pop,
@@ -656,7 +725,10 @@ VINTAGE_FUNCS: dict[str, Callable[..., Any]] = {
     "prior": v_prior,
     "rev": v_rev,
     "prev_vintage": v_prev_vintage,
+    "parbond": v_parbond,
 }
+# Functions that read fixed series in addition to the {KEY} references in a formula.
+IMPLICIT_SERIES: dict[str, tuple[str, ...]] = {"parbond": tuple(PAR_KEYS.values())}
 ALL_FUNCS = {"S", *SERIES_FUNCS, *SCALAR_FUNCS, *VINTAGE_FUNCS}
 
 
@@ -700,6 +772,9 @@ def parse(text: str) -> Formula:
              ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.USub, ast.UAdd),
         ):
             raise FormulaError(f"unsupported syntax {type(node).__name__} in {text!r}")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in IMPLICIT_SERIES:
+            keys.extend(IMPLICIT_SERIES[node.func.id])
     formula = Formula(text, tree, tuple(dict.fromkeys(keys)))
     _PARSE_CACHE[text] = formula
     return formula
