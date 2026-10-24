@@ -44,8 +44,9 @@ def preview(body: bytes, url: str) -> list[str]:
         except UnicodeDecodeError:
             continue
     if "<html" in text[:2000].lower() or "<!doctype" in text[:200].lower():
-        text, links = html_text(body)
-        text += "\n\nLINKS:\n" + "\n".join(links[:100])
+        links = anchors(text)
+        text, _ = html_text(body)
+        text += "\n\nLINKS:\n" + "\n".join(f"{h} | {t}" for h, t in links[:300])
     return [text[:MAX_CHARS]]
 
 
@@ -55,6 +56,17 @@ def excel_preview(body: bytes) -> list[str]:
     for name, frame in list(sheets.items())[:12]:
         pages.append(f"[sheet {name}] shape={frame.shape}\n" + frame.head(80).to_csv(index=False)[:MAX_CHARS])
     return pages
+
+
+def anchors(html: str) -> list[tuple[str, str]]:
+    """(href, text) for every <a> in a page."""
+    import re
+
+    out = []
+    for m in re.finditer(r"<a\b[^>]*href=[\"']([^\"'#]+)[\"'][^>]*>(.*?)</a>", html, flags=re.S | re.I):
+        text = re.sub(r"<[^>]+>|\s+", " ", m.group(2)).strip()
+        out.append((m.group(1), text))
+    return out
 
 
 def main() -> int:
@@ -67,8 +79,18 @@ def main() -> int:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        name, url = line.split(None, 1)
+        name, rest = line.split(None, 1)
+        url, _, follow = rest.partition(" FOLLOW ")
+        url = url.strip()
         try:
+            if follow:
+                from urllib.parse import urljoin
+
+                listing = session.get(url, timeout=(15, 60), headers={"User-Agent": BROWSER_UA})
+                hit = next((h for h, t in anchors(listing.text) if follow.strip().strip('"') in t), None)
+                if hit is None:
+                    raise RuntimeError(f"no link containing {follow!r} on {url}")
+                url = urljoin(listing.url, hit)
             r = session.get(url, timeout=(15, 120), headers={"User-Agent": BROWSER_UA, "Accept": "*/*"})
             pages = [f"HTTP {r.status_code} {r.headers.get('Content-Type')} {len(r.content)} bytes\n{r.url}"]
             if r.status_code == 200:

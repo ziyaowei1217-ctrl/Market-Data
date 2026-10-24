@@ -1,28 +1,12 @@
-# name  url   — previews land in report_pages(source='INSPECT:<name>')
-ici_flows        https://www.ici.org/flows_data_2026.xls
-ici_etf          https://www.ici.org/etf_flows_data_2026.xls
-ici_mmf          https://www.ici.org/mm_summary_data_2026.xls
-tic_table5       https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt
-jp_cpi           https://www.stat.go.jp/data/cpi/2025/csv/zmi2025aa.csv
-ism_mfg          https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/pmi/baby202609pmi.pdf
-spg_pmi_list     https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en
-nbs_list         https://www.stats.gov.cn/english/PressRelease/
-ff_calendar      https://nfs.faireconomy.media/ff_calendar_thisweek.json
-nfib             https://www.nfib.com/news/monthly_report/sbet/
-aaii             https://www.aaii.com/sentimentsurvey/sent_results
-sce              https://www.newyorkfed.org/medialibrary/interactives/sce/sce/downloads/data/frbny-sce-data.xlsx
-boe_curves       https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/latest-yield-curve-data.zip
-cme_rates        https://www.cmegroup.com/daily_bulletin/current/Section10_Interest_Rate_Futures_Continued.pdf
-cme_energy       https://www.cmegroup.com/daily_bulletin/current/Section61_Energy_Futures_Products.pdf
-cboe_stats       https://www.cboe.com/us/options/market_statistics/daily/
-jscc_ois         https://www.jpx.co.jp/jscc/en/interest_rate_swap.html
-eurex_settle     https://www.eurex.com/ec-en/clear/eurex-otc-clear/settlement-prices
-snb_bonds        https://data.snb.ch/api/cube/rendoblid/data/csv/en
-bcrp_embig       https://estadisticas.bcrp.gob.pe/estadisticas/series/api/PD38580XD/json/2026-1/2026-10
-bbg_agg          https://professional.content.cirrus.bloomberg.com/professional2023/products/indices/quote/LBUSTRUU:IND
-cbrt_rates       https://tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Main+Menu/Core+Functions/Monetary+Policy/Central+Bank+Interest+Rates/1+Week+Repo
-fomc_calendar    https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-wiki_sp500       https://en.wikipedia.org/wiki/List_of_S%26P_500_companies
-yahoo_zq         https://query2.finance.yahoo.com/v8/finance/chart/ZQZ26.CBT?range=1mo&interval=1d
-yahoo_cl         https://query2.finance.yahoo.com/v8/finance/chart/CLZ27.NYM?range=1mo&interval=1d
-yahoo_sector     https://query1.finance.yahoo.com/v8/finance/chart/%5ESP500-45?range=5y&interval=1d
+# name  url  [FOLLOW "link text"] — previews land in report_pages(source='INSPECT:<name>')
+nbs_cpi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Consumer Price Index in"
+nbs_ppi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Producer Price Indexes in"
+nbs_ip           https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Production Operation in"
+nbs_retail       https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Total Retail Sales of Consumer Goods"
+nbs_gdp          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Preliminary Accounting Results of GDP"
+spg_us           https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOW "S&P Global Flash US PMI"
+spg_list_links   https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en
+ism_services_a   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/nmi/baby202609nmi.pdf
+ism_services_b   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/services/baby202609srv.pdf
+ism_reports      https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/
+aaii_table       https://www.aaii.com/sentimentsurvey/sent_results

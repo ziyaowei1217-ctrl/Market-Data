@@ -1261,18 +1261,18 @@ indicator_id,method,phase,formula,coverage_note
 96-188,api,P1,"snap({JPX:TOPIX}, ""ME"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 96-189,api,P1,"snap({JPX:TOPIX}, ""QE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 96-190,api,P1,"snap({JPX:TOPIX}, ""YE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-99-002,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-003,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-004,report,P1b,,取高盛 Market Monitor Weekly快照
-99-006,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-007,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-008,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-002,api,P1,"snap({SNB:rendoblid:10J0}, ""ME"")",瑞士央行数据门户
+99-003,api,P1,"snap({SNB:rendoblid:10J0}, ""QE"")",瑞士央行数据门户
+99-004,api,P1,"snap({SNB:rendoblid:10J0}, ""YE"")",瑞士央行数据门户
+99-006,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-007,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-008,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-010,api,P1,"snap({MOFJP:30Y}, ""ME"")",
 99-011,api,P1,"snap({MOFJP:30Y}, ""QE"")",
 99-012,api,P1,"snap({MOFJP:30Y}, ""YE"")",
-99-014,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-015,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-016,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-014,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-015,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-016,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-018,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-019,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-020,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
@@ -1483,10 +1483,10 @@ indicator_id,method,phase,formula,coverage_note
 98-060,report,P1b,,取高盛 Market Monitor Weekly快照
 98-061,report,P1b,,取高盛 Market Monitor Weekly快照
 98-062,report,P1b,,取高盛 Market Monitor Weekly快照
-99-001,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
-99-005,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-001,api,P1,{SNB:rendoblid:10J0},瑞士央行数据门户：联邦债券 10 年期收益率
+99-005,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-009,api,P1,{MOFJP:30Y},日本财务省 JGB 常数期限收益率
-99-013,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-013,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-017,api,P1,{FRED:BAMLHE00EHYIOAS} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-021,api,P1,{FRED:DHHNGSP},EIA Henry Hub 现货（FRED 镜像）
 99-025,api,P1,{ECB:EXR/D.CHF.EUR.SP00.A},ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算

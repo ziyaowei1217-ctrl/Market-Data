@@ -879,3 +879,30 @@ class Bis(Provider):
         body = self.get(self.URL.format(code=d.code), {"format": "csv", "startPeriod": start.isoformat()})
         pairs = _sdmx_csv_pairs(body.decode("utf-8-sig", errors="replace"))
         return obs_from_pairs(((_period_to_date(p) or p, v) for p, v in pairs), start)
+
+
+@register
+class Snb(Provider):
+    """Swiss National Bank data portal cube (long CSV: "Date";"D0";"Value").
+    code = "<cube>:<D0 code>", e.g. "rendoblid:10J0" (10-year Confederation bond yield)."""
+
+    name = "SNB"
+    batch = True
+    URL = "https://data.snb.ch/api/cube/{cube}/data/csv/en"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        by_cube: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_cube[d.code.split(":")[0]].append(d)
+        out = []
+        for cube, items in by_cube.items():
+            text = self.get(self.URL.format(cube=cube), {"fromDate": start.isoformat()}).decode("utf-8-sig", errors="replace")
+            values: dict[str, list[tuple[str, str]]] = defaultdict(list)
+            for line in text.splitlines():
+                parts = [p.strip().strip('"') for p in line.split(";")]
+                if len(parts) >= 3 and len(parts[0]) == 10 and parts[0][:4].isdigit():
+                    values[parts[1]].append((parts[0], parts[2]))
+            for d in items:
+                obs = obs_from_pairs(values.get(d.code.split(":")[1], []), start)
+                out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "dimension not found"))
+        return out

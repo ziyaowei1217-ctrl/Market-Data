@@ -430,6 +430,7 @@ SCE:75th Percentile three-year ahead expected inflation rate - 25th Percentile t
 SCE:Median five-year ahead expected inflation rate,SCE,Median five-year ahead expected inflation rate,NY Fed SCE: median five-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median one-year ahead expected inflation rate,SCE,Median one-year ahead expected inflation rate,NY Fed SCE: median one-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median three-year ahead expected inflation rate,SCE,Median three-year ahead expected inflation rate,NY Fed SCE: median three-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SNB:rendoblid:10J0,SNB,rendoblid:10J0,Swiss Confederation 10Y bond yield (SNB),D,%,1,https://data.snb.ch/en/topics/ziredev/cube/rendoblid,,False,cloud
 SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
