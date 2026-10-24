@@ -59,11 +59,15 @@ def series(provider, code, title, freq, unit, lag, url="", params=None, vintages
     key = key or f"{provider}:{code}"
     if key not in SERIES:
         SERIES[key] = Series(key, provider, code, title, freq, unit, lag, url, params or {}, vintages, runner)
+    elif SERIES[key].params != (params or {}) or SERIES[key].frequency != freq:
+        raise ValueError(f"series {key} registered twice with different params/frequency")
     return "{" + key + "}"
 
 
 def api(iid: str, formula: str, note: str = "") -> None:
-    if iid in MAP:
+    """Map an indicator to a formula. A later api() may upgrade an earlier
+    report/pending placeholder, but two api() mappings for one id are an error."""
+    if iid in MAP and MAP[iid]["method"] == "api":
         raise ValueError(f"{iid} mapped twice")
     MAP[iid] = {"method": "api", "phase": "P1", "formula": formula, "coverage_note": note}
 
@@ -898,8 +902,116 @@ def build() -> None:
         other(iid, "pending", "可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现")
 
 
+def build_publishers() -> None:
+    """Original index publishers found for indicators previously routed to reports."""
+    # ---------------------------------------------------------- MSCI end-of-day levels
+    msci_url = "https://www.msci.com/end-of-day-data-search"
+    mnote = "MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）"
+
+    def msci(code, title, variant="NETR", ccy="USD", **params):
+        key_code = f"{code}:{variant}:{ccy}"
+        monthly = params.get("frequency") == "END_OF_MONTH"
+        return series("MSCI", key_code, f"MSCI {title} ({variant}, {ccy})", "M" if monthly else "D", "点", 1, msci_url,
+                      params=params, key=f"MSCI:{key_code}" + (":EOM" if monthly else ""))
+
+    def level_block(x, ids_windows):
+        for iid, w in ids_windows:
+            if w == "level":
+                api(iid, x, mnote)
+            elif w in ("ME", "QE", "YE"):
+                api(iid, f'snap({x}, "{w}")', mnote)
+            elif w == "NORM1Y":
+                api(iid, f'ret({x}, "1Y") + 100', mnote + "；一年前归一100")
+            elif w == "Y2025":
+                api(iid, f"year_ret({x}, 2025)", mnote)
+            else:
+                api(iid, ret(x, w), mnote)
+
+    acwi = msci("892400", "ACWI")
+    world = msci("990100", "World")
+    eafe = msci("990300", "EAFE")
+    em = msci("891800", "EM")
+    china = msci("302400", "China")
+    india_inr = msci("935600", "India", ccy="INR")
+    india_usd = msci("935600", "India")
+    brazil_brl = msci("907600", "Brazil", ccy="BRL")
+    brazil_usd = msci("907600", "Brazil")
+    usa = msci("984000", "USA")
+    europe = msci("990500", "Europe")
+    japan = msci("939200", "Japan")
+    eafe_sc = msci("106232", "EAFE Small Cap")
+    five = ["level", "W", "MTD", "YTD", "1Y"]
+    for base, x in [(1, acwi), (6, world), (11, eafe), (16, em), (31, china), (36, india_inr)]:
+        level_block(x, [(f"02-{base + k:03d}", w) for k, w in enumerate(five)])
+    for iid, x in [("96-099", acwi), ("96-100", world), ("96-101", eafe), ("96-102", em), ("96-089", china), ("96-094", india_inr)]:
+        level_block(x, [(iid, "QTD")])
+    for base, x in [(173, acwi), (176, world), (179, eafe), (182, em), (158, china), (161, india_inr),
+                    (119, eafe_sc), (143, china), (146, brazil_brl), (149, usa), (152, europe), (155, japan)]:
+        level_block(x, [(f"96-{base + k:03d}", w) for k, w in enumerate(["ME", "QE", "YE"])])
+    for base, x in [(21, eafe_sc), (61, china), (66, brazil_brl), (71, usa), (76, europe), (81, japan)]:
+        level_block(x, [(f"96-{base + k:03d}", w) for k, w in enumerate(["level", "W", "MTD", "QTD", "YTD"])])
+    # HSBC cross-asset chart rows (USD net total return)
+    level_block(usa, [("97-002", "NORM1Y"), ("97-003", "Y2025")])
+    level_block(europe, [("97-007", "NORM1Y"), ("97-008", "Y2025")])
+    level_block(japan, [("97-012", "NORM1Y"), ("97-013", "Y2025")])
+    level_block(india_usd, [("97-016", "level"), ("97-017", "NORM1Y"), ("97-018", "Y2025"), ("97-019", "MTD"), ("97-020", "YTD")])
+    level_block(china, [("97-022", "NORM1Y"), ("97-023", "Y2025")])
+    level_block(brazil_usd, [("97-026", "level"), ("97-027", "NORM1Y"), ("97-028", "Y2025"), ("97-029", "MTD"), ("97-030", "YTD")])
+    level_block(world, [("97-032", "NORM1Y"), ("97-033", "Y2025")])
+    level_block(em, [("97-037", "NORM1Y"), ("97-038", "Y2025")])
+    # World GICS sectors (catalog order) and 3x3 style box
+    sector_codes = [("通讯服务", "106804"), ("能源", "106796"), ("信息技术", "106803"), ("公用事业", "106805"),
+                    ("金融", "106802"), ("必需消费", "106800"), ("房地产", "132085"), ("工业", "106798"),
+                    ("可选消费", "106799"), ("医疗保健", "106801"), ("材料", "106797")]
+    for i, (name, code) in enumerate(sector_codes):
+        x = msci(code, f"World {name}")
+        level_block(x, [(f"95-{34 + 2 * i:03d}", "MTD"), (f"95-{35 + 2 * i:03d}", "YTD")])
+    style_codes = ["650143", "650038", "650248", "652660", "652555", "652765", "655131", "106230", "655236"]
+    for i, code in enumerate(style_codes):
+        x = msci(code, f"World style box {code}")
+        level_block(x, [(f"95-{65 + 2 * i:03d}", "MTD"), (f"95-{66 + 2 * i:03d}", "YTD")])
+    # ACWI quarterly long-horizon statistics (month-end history since 2000-12)
+    acwi_m = msci("892400", "ACWI month-end", frequency="END_OF_MONTH", start="2000-12-01")
+    q = f"qe({acwi_m})"
+    roll10 = f"ann({q}, 40)"
+    lnote = "MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起"
+    api("107-007", f"latest({q})", lnote)
+    api("107-008", f"pop({q})", lnote)
+    api("107-009", roll10, lnote)
+    api("107-010", f"hist_mean({roll10})", lnote)
+    api("107-011", f"hist_share({roll10}, 0)", lnote)
+    api("107-012", f"hist_share({roll10}, 10)", lnote)
+
+    # ---------------------------------------------------------- STOXX Europe 50 (guest 3-month files, accumulated)
+    sx5p = series("STOXX", "sx5p", "STOXX Europe 50 (price, EUR)", "D", "点", 1,
+                  "https://www.stoxx.com/index/sx5p/")
+    snote = "STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）"
+    for k, w in enumerate(["level", "W", "MTD", "QTD", "YTD"]):
+        iid = f"96-{16 + k:03d}"
+        api(iid, sx5p if w == "level" else ret(sx5p, w), snote)
+    for k, w in enumerate(["ME", "QE", "YE"]):
+        api(f"96-{116 + k:03d}", f'snap({sx5p}, "{w}")', snote)
+
+    # ---------------------------------------------------------- TOPIX (JPX daily snapshot, accumulated)
+    topix = series("JPX", "TOPIX", "TOPIX (price, JPY)", "D", "点", 0, "https://www.jpx.co.jp/english/markets/indices/topix/")
+    tnote = "日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）"
+    for k, w in enumerate(["level", "W", "MTD", "YTD", "1Y"]):
+        api(f"02-{26 + k:03d}", topix if w == "level" else ret(topix, w), tnote)
+    api("96-104", ret(topix, "QTD"), tnote)
+    for k, w in enumerate(["ME", "QE", "YE"]):
+        api(f"96-{188 + k:03d}", f'snap({topix}, "{w}")', tnote)
+
+    # ---------------------------------------------------------- S&P DJI month-end characteristics
+    spdji = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/"
+    api("06-003", series("SPDJI", "340:marketCap", "S&P 500 total market cap (month-end)", "M", "十亿美元", 5, spdji),
+        "S&P 道琼斯指数公司官网，月末值；美元→十亿美元")
+    api("07-001", series("SPDJI", "340:topNConstituentWeight", "S&P 500 top-10 weight (month-end)", "M", "%", 5, spdji),
+        "S&P 道琼斯指数公司官网，月末值")
+
+
 def write() -> tuple[int, int]:
     build()
+    build_publishers()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

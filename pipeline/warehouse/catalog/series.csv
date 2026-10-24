@@ -253,9 +253,44 @@ FRED:WALCL,FRED,WALCL,Fed total assets,W,百万美元,1,https://fred.stlouisfed.
 FRED:WRESBAL,FRED,WRESBAL,Reserve balances,W,百万美元,1,https://fred.stlouisfed.org/series/WRESBAL,,False,cloud
 FRED:WSHOMCB,FRED,WSHOMCB,Fed MBS holdings,W,百万美元,1,https://fred.stlouisfed.org/series/WSHOMCB,,False,cloud
 FRED:WTREGEN,FRED,WTREGEN,Treasury General Account,W,百万美元,1,https://fred.stlouisfed.org/series/WTREGEN,,False,cloud
+JPX:TOPIX,JPX,TOPIX,"TOPIX (price, JPY)",D,点,0,https://www.jpx.co.jp/english/markets/indices/topix/,,False,cloud
 MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:30Y,MOFJP,30Y,JGB 30Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
+MSCI:106230:NETR:USD,MSCI,106230:NETR:USD,"MSCI World style box 106230 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106232:NETR:USD,MSCI,106232:NETR:USD,"MSCI EAFE Small Cap (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106796:NETR:USD,MSCI,106796:NETR:USD,"MSCI World 能源 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106797:NETR:USD,MSCI,106797:NETR:USD,"MSCI World 材料 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106798:NETR:USD,MSCI,106798:NETR:USD,"MSCI World 工业 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106799:NETR:USD,MSCI,106799:NETR:USD,"MSCI World 可选消费 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106800:NETR:USD,MSCI,106800:NETR:USD,"MSCI World 必需消费 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106801:NETR:USD,MSCI,106801:NETR:USD,"MSCI World 医疗保健 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106802:NETR:USD,MSCI,106802:NETR:USD,"MSCI World 金融 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106803:NETR:USD,MSCI,106803:NETR:USD,"MSCI World 信息技术 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106804:NETR:USD,MSCI,106804:NETR:USD,"MSCI World 通讯服务 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:106805:NETR:USD,MSCI,106805:NETR:USD,"MSCI World 公用事业 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:132085:NETR:USD,MSCI,132085:NETR:USD,"MSCI World 房地产 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:302400:NETR:USD,MSCI,302400:NETR:USD,"MSCI China (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:650038:NETR:USD,MSCI,650038:NETR:USD,"MSCI World style box 650038 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:650143:NETR:USD,MSCI,650143:NETR:USD,"MSCI World style box 650143 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:650248:NETR:USD,MSCI,650248:NETR:USD,"MSCI World style box 650248 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:652555:NETR:USD,MSCI,652555:NETR:USD,"MSCI World style box 652555 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:652660:NETR:USD,MSCI,652660:NETR:USD,"MSCI World style box 652660 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:652765:NETR:USD,MSCI,652765:NETR:USD,"MSCI World style box 652765 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:655131:NETR:USD,MSCI,655131:NETR:USD,"MSCI World style box 655131 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:655236:NETR:USD,MSCI,655236:NETR:USD,"MSCI World style box 655236 (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:891800:NETR:USD,MSCI,891800:NETR:USD,"MSCI EM (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:892400:NETR:USD,MSCI,892400:NETR:USD,"MSCI ACWI (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:892400:NETR:USD:EOM,MSCI,892400:NETR:USD,"MSCI ACWI month-end (NETR, USD)",M,点,1,https://www.msci.com/end-of-day-data-search,"{""frequency"": ""END_OF_MONTH"", ""start"": ""2000-12-01""}",False,cloud
+MSCI:907600:NETR:BRL,MSCI,907600:NETR:BRL,"MSCI Brazil (NETR, BRL)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:907600:NETR:USD,MSCI,907600:NETR:USD,"MSCI Brazil (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:935600:NETR:INR,MSCI,935600:NETR:INR,"MSCI India (NETR, INR)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:935600:NETR:USD,MSCI,935600:NETR:USD,"MSCI India (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:939200:NETR:USD,MSCI,939200:NETR:USD,"MSCI Japan (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:984000:NETR:USD,MSCI,984000:NETR:USD,"MSCI USA (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:990100:NETR:USD,MSCI,990100:NETR:USD,"MSCI World (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:990300:NETR:USD,MSCI,990300:NETR:USD,"MSCI EAFE (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+MSCI:990500:NETR:USD,MSCI,990500:NETR:USD,"MSCI Europe (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
 NYFED:secured/sofr:percentPercentile25,NYFED,secured/sofr:percentPercentile25,SOFR p25,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:secured/sofr:percentPercentile75,NYFED,secured/sofr:percentPercentile75,SOFR p75,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:secured/sofr:percentRate,NYFED,secured/sofr:percentRate,SOFR,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
@@ -268,11 +303,14 @@ ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/infla
 ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
 ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
 ONS:IHYQ,ONS,IHYQ,UK GDP q/q,Q,%,135,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ihyq/qna,"{""period"": ""quarters"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ihyq/qna""}",False,cloud
+SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,cloud
+SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,cloud
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062811,STATCAN,2062811,Canada LFS employment SA,M,千人,8,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:41690973,STATCAN,41690973,Canada CPI all-items NSA,M,指数点,20,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:65201210,STATCAN,65201210,Canada real GDP monthly,M,百万加元,60,https://www150.statcan.gc.ca/,,False,cloud
+STOXX:sx5p,STOXX,sx5p,"STOXX Europe 50 (price, EUR)",D,点,1,https://www.stoxx.com/index/sx5p/,,False,cloud
 TSY:auction:10-Year:bid_to_cover_ratio,TSY,auction:10-Year:bid_to_cover_ratio,10-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
 TSY:auction:10-Year:direct_bidder_accepted,TSY,auction:10-Year:direct_bidder_accepted,10-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
 TSY:auction:10-Year:high_yield,TSY,auction:10-Year:high_yield,10-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud

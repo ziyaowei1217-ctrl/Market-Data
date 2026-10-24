@@ -681,3 +681,146 @@ class Yahoo(Provider):
         if end and datetime.now(timezone.utc).timestamp() < end:
             out.pop(datetime.fromtimestamp(end + offset, tz=timezone.utc).date(), None)
         return [out[k] for k in sorted(out)]
+
+
+# --------------------------------------------------------------------------- index publishers
+
+
+@register
+class Msci(Provider):
+    """MSCI end-of-day index levels (endpoint behind msci.com charts; MSCI terms:
+    internal, non-commercial use). code = "<index code>:<STRD|NETR|GRTR>:<currency>",
+    params.frequency = DAILY (default) or END_OF_MONTH, params.start = YYYY-MM-DD override."""
+
+    name = "MSCI"
+    URL = "https://app2.msci.com/products/service/index/indexmaster/getLevelDataForGraph"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        code, variant, currency = d.code.split(":")
+        begin = date.fromisoformat(d.params["start"]) if d.params.get("start") else start
+        begin = max(begin, date(1997, 1, 1))
+        payload = self.get_json(self.URL, {
+            "currency_symbol": currency, "index_variant": variant,
+            "start_date": begin.strftime("%Y%m%d"), "end_date": _today().strftime("%Y%m%d"),
+            "data_frequency": d.params.get("frequency", "DAILY"), "baseValue": "false", "index_codes": code,
+        })
+        if payload.get("error_code"):
+            raise ProviderError(f"MSCI error {payload.get('error_code')}: {str(payload.get('error_message'))[:120]}")
+        rows = (payload.get("indexes") or {}).get("INDEX_LEVELS") or []
+        time.sleep(0.5)
+        return obs_from_pairs(((datetime.strptime(str(r["calc_date"]), "%Y%m%d"), r.get("level_eod")) for r in rows), begin)
+
+
+@register
+class SpDji(Provider):
+    """S&P Dow Jones Indices data widget JSON. code = "<indexId>:levels" (≈10y daily
+    levels) or "<indexId>:<field>" for month-end characteristics:
+    topNConstituentWeight | marketCap."""
+
+    name = "SPDJI"
+    batch = True
+    URL = "https://www.spglobal.com/spdji/en/util/redesign/index-data/get-performance-data-for-datawidget-redesign.dot"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        by_id: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_id[d.code.split(":")[0]].append(d)
+        out = []
+        for index_id, items in by_id.items():
+            payload = self.get_json(self.URL, {"indexId": index_id, "language_id": 1},
+                                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)", "Referer": "https://www.spglobal.com/spdji/en/"})
+            for d in items:
+                field = d.code.split(":", 1)[1]
+                obs: list[Observation] = []
+                if field == "levels":
+                    for row in (payload.get("indexLevelsHolder") or {}).get("indexLevels") or []:
+                        when = datetime.fromtimestamp(int(row["effectiveDate"]) / 1000, tz=timezone.utc).date()
+                        value = to_float(row.get("indexValue"))
+                        if value is not None and when >= start:
+                            obs.append(Observation(when, value))
+                else:
+                    value, as_of = _spdji_field(payload, field)
+                    if value is not None and as_of is not None:
+                        obs.append(Observation(as_of, value))
+                obs = sorted({o.obs_date: o for o in obs}.values(), key=lambda o: o.obs_date)
+                out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else f"field {field} not found"))
+        return out
+
+
+def _spdji_field(payload: dict, field: str) -> tuple[float | None, date | None]:
+    chars = payload.get("indexCharacteristics") or {}
+    as_of = None
+    for key in ("asOfDate", "asOfDateValue", "effectiveDate"):
+        if chars.get(key):
+            raw = chars[key]
+            try:
+                as_of = (datetime.fromtimestamp(int(raw) / 1000, tz=timezone.utc).date() if str(raw).isdigit()
+                         else pd.Timestamp(raw).date())
+            except (ValueError, TypeError):
+                as_of = None
+            break
+    if field == "marketCap":
+        rows = (payload.get("idsIndexCountryBreakdownHolder") or {}).get("idsIndexCountryBreakdown") or []
+        total = sum(to_float(r.get("marketCap")) or 0.0 for r in rows) if rows else None
+        return (total / 1e9 if total else None), as_of
+    return to_float(chars.get(field)), as_of
+
+
+@register
+class Stoxx(Provider):
+    """STOXX guest history files (rolling 3 months; the warehouse accumulates).
+    code = symbol, e.g. sx5p (STOXX Europe 50 price, EUR)."""
+
+    name = "STOXX"
+    URL = "https://www.stoxx.com/documents/stoxxnet/Documents/Indices/Current/HistoricalData/h_3m{symbol}.txt"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        text = self.get(self.URL.format(symbol=d.code.lower())).decode("utf-8", errors="replace")
+        pairs = []
+        for line in text.splitlines():
+            parts = [p.strip() for p in line.split(";")]
+            if len(parts) >= 3 and parts[0][:2].isdigit():
+                try:
+                    pairs.append((datetime.strptime(parts[0], "%d.%m.%Y"), parts[2]))
+                except ValueError:
+                    continue
+        return obs_from_pairs(pairs, start)
+
+
+@register
+class JpxTopix(Provider):
+    """JPX daily index snapshot (no date field: stamped with the last Tokyo trading
+    day on or before the fetch). code = TOPIX | TOPIX_TR."""
+
+    name = "JPX"
+    batch = True
+    URL = "https://www.jpx.co.jp/market/indices/e_indices_stock_price3.txt"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        payload = json.loads(self.get(self.URL).decode("utf-8-sig", errors="replace"))
+        flat: dict[str, Any] = {}
+
+        def walk(node: Any) -> None:
+            if isinstance(node, dict):
+                name = str(node.get("name") or node.get("indexName") or "")
+                if name and "currentPrice" in node:
+                    flat[name.upper()] = node
+                for key, value in node.items():
+                    if isinstance(value, dict) and "currentPrice" in value:
+                        flat[str(key).upper()] = value
+                    walk(value)
+            elif isinstance(node, list):
+                for item in node:
+                    walk(item)
+
+        walk(payload)
+        tokyo_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
+        stamp = tokyo_today if tokyo_today.weekday() < 5 else tokyo_today - timedelta(days=tokyo_today.weekday() - 4)
+        wanted = {"TOPIX": ("TOPIX",), "TOPIX_TR": ("TOPIX TOTAL RETURN INDEX", "TOPIX TOTAL RETURN", "TOPIXTR")}
+        out = []
+        for d in defs:
+            node = next((flat[k] for k in wanted.get(d.code, (d.code,)) if k in flat), None)
+            value = to_float(node.get("currentPrice")) if node else None
+            obs = [Observation(stamp, value)] if value is not None else []
+            out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else f"{d.code} not in snapshot"))
+        return out

@@ -14,46 +14,46 @@ indicator_id,method,phase,formula,coverage_note
 01-013,api,P1,"ret({FRED:DJIA}, ""MTD"")",价格回报，不含股息
 01-014,api,P1,"ret({FRED:DJIA}, ""YTD"")",价格回报，不含股息
 01-015,api,P1,"ret({FRED:DJIA}, ""1Y"")",价格回报，不含股息
-02-001,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-002,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-003,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-004,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-005,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-006,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-007,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-008,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-009,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-010,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-011,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-012,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-013,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-014,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-015,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-016,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-017,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-018,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-019,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-020,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-001,api,P1,{MSCI:892400:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-002,api,P1,"ret({MSCI:892400:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-003,api,P1,"ret({MSCI:892400:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-004,api,P1,"ret({MSCI:892400:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-005,api,P1,"ret({MSCI:892400:NETR:USD}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-006,api,P1,{MSCI:990100:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-007,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-008,api,P1,"ret({MSCI:990100:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-009,api,P1,"ret({MSCI:990100:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-010,api,P1,"ret({MSCI:990100:NETR:USD}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-011,api,P1,{MSCI:990300:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-012,api,P1,"ret({MSCI:990300:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-013,api,P1,"ret({MSCI:990300:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-014,api,P1,"ret({MSCI:990300:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-015,api,P1,"ret({MSCI:990300:NETR:USD}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-016,api,P1,{MSCI:891800:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-017,api,P1,"ret({MSCI:891800:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-018,api,P1,"ret({MSCI:891800:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-019,api,P1,"ret({MSCI:891800:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-020,api,P1,"ret({MSCI:891800:NETR:USD}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 02-021,api,P1,{YAHOO:^STOXX},Yahoo Finance 免费延迟行情（非官方接口），价格指数
 02-022,api,P1,"ret({YAHOO:^STOXX}, ""W"")",Yahoo Finance 免费行情，价格回报
 02-023,api,P1,"ret({YAHOO:^STOXX}, ""MTD"")",Yahoo Finance 免费行情，价格回报
 02-024,api,P1,"ret({YAHOO:^STOXX}, ""YTD"")",Yahoo Finance 免费行情，价格回报
 02-025,api,P1,"ret({YAHOO:^STOXX}, ""1Y"")",Yahoo Finance 免费行情，价格回报
-02-026,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-027,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-028,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-029,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-030,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-031,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-032,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-033,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-034,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-035,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-036,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-037,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-038,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-039,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
-02-040,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-026,api,P1,{JPX:TOPIX},日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-027,api,P1,"ret({JPX:TOPIX}, ""W"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-028,api,P1,"ret({JPX:TOPIX}, ""MTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-029,api,P1,"ret({JPX:TOPIX}, ""YTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-030,api,P1,"ret({JPX:TOPIX}, ""1Y"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-031,api,P1,{MSCI:302400:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-032,api,P1,"ret({MSCI:302400:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-033,api,P1,"ret({MSCI:302400:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-034,api,P1,"ret({MSCI:302400:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-035,api,P1,"ret({MSCI:302400:NETR:USD}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-036,api,P1,{MSCI:935600:NETR:INR},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-037,api,P1,"ret({MSCI:935600:NETR:INR}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-038,api,P1,"ret({MSCI:935600:NETR:INR}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-039,api,P1,"ret({MSCI:935600:NETR:INR}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+02-040,api,P1,"ret({MSCI:935600:NETR:INR}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 03-001,api,P1,"ret({YAHOO:^SP500-50}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-002,api,P1,"ret({YAHOO:^SP500-50}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-003,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
@@ -130,7 +130,7 @@ indicator_id,method,phase,formula,coverage_note
 05-009,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
 06-001,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-002,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-003,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-003,api,P1,{SPDJI:340:marketCap},S&P 道琼斯指数公司官网，月末值；美元→十亿美元
 06-004,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-005,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-006,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
@@ -155,7 +155,7 @@ indicator_id,method,phase,formula,coverage_note
 06-025,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-026,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-027,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-07-001,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
+07-001,api,P1,{SPDJI:340:topNConstituentWeight},S&P 道琼斯指数公司官网，月末值
 07-002,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-003,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-004,api,P1,"ret({YAHOO:^SPXEW}, ""W"") - ret({FRED:SP500}, ""W"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
@@ -1034,28 +1034,28 @@ indicator_id,method,phase,formula,coverage_note
 95-031,api,P1,"ret({YAHOO:^SP500-25}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 95-032,api,P1,"ret({YAHOO:^SP500-35}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 95-033,api,P1,"ret({YAHOO:^SP500-15}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-034,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-035,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-036,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-037,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-038,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-039,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-040,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-041,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-042,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-043,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-044,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-045,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-046,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-047,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-048,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-049,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-050,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-051,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-052,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-053,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-054,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-055,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-034,api,P1,"ret({MSCI:106804:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-035,api,P1,"ret({MSCI:106804:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-036,api,P1,"ret({MSCI:106796:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-037,api,P1,"ret({MSCI:106796:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-038,api,P1,"ret({MSCI:106803:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-039,api,P1,"ret({MSCI:106803:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-040,api,P1,"ret({MSCI:106805:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-041,api,P1,"ret({MSCI:106805:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-042,api,P1,"ret({MSCI:106802:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-043,api,P1,"ret({MSCI:106802:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-044,api,P1,"ret({MSCI:106800:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-045,api,P1,"ret({MSCI:106800:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-046,api,P1,"ret({MSCI:132085:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-047,api,P1,"ret({MSCI:132085:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-048,api,P1,"ret({MSCI:106798:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-049,api,P1,"ret({MSCI:106798:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-050,api,P1,"ret({MSCI:106799:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-051,api,P1,"ret({MSCI:106799:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-052,api,P1,"ret({MSCI:106801:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-053,api,P1,"ret({MSCI:106801:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-054,api,P1,"ret({MSCI:106797:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-055,api,P1,"ret({MSCI:106797:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-056,api,P1,"ret({YAHOO:^RLV}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 95-057,api,P1,"ret({YAHOO:^RUI}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 95-058,api,P1,"ret({YAHOO:^RLG}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
@@ -1065,24 +1065,24 @@ indicator_id,method,phase,formula,coverage_note
 95-062,api,P1,"ret({YAHOO:^RUJ}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 95-063,api,P1,"ret({YAHOO:^RUT}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 95-064,api,P1,"ret({YAHOO:^RUO}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-065,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-066,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-067,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-068,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-069,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-070,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-071,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-072,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-073,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-074,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-075,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-076,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-077,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-078,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-079,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-080,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-081,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
-95-082,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-065,api,P1,"ret({MSCI:650143:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-066,api,P1,"ret({MSCI:650143:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-067,api,P1,"ret({MSCI:650038:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-068,api,P1,"ret({MSCI:650038:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-069,api,P1,"ret({MSCI:650248:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-070,api,P1,"ret({MSCI:650248:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-071,api,P1,"ret({MSCI:652660:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-072,api,P1,"ret({MSCI:652660:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-073,api,P1,"ret({MSCI:652555:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-074,api,P1,"ret({MSCI:652555:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-075,api,P1,"ret({MSCI:652765:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-076,api,P1,"ret({MSCI:652765:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-077,api,P1,"ret({MSCI:655131:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-078,api,P1,"ret({MSCI:655131:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-079,api,P1,"ret({MSCI:106230:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-080,api,P1,"ret({MSCI:106230:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-081,api,P1,"ret({MSCI:655236:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+95-082,api,P1,"ret({MSCI:655236:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-001,api,P1,{YAHOO:^SP400},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-002,api,P1,"ret({YAHOO:^SP400}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-003,api,P1,"ret({YAHOO:^SP400}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
@@ -1096,16 +1096,16 @@ indicator_id,method,phase,formula,coverage_note
 96-013,api,P1,"ret({YAHOO:^SPXEW}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-014,api,P1,"ret({YAHOO:^SPXEW}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-015,api,P1,"ret({YAHOO:^SPXEW}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
-96-016,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-017,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-018,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-019,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-020,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-021,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-022,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-023,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-024,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-025,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-016,api,P1,{STOXX:sx5p},STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-017,api,P1,"ret({STOXX:sx5p}, ""W"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-018,api,P1,"ret({STOXX:sx5p}, ""MTD"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-019,api,P1,"ret({STOXX:sx5p}, ""QTD"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-020,api,P1,"ret({STOXX:sx5p}, ""YTD"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-021,api,P1,{MSCI:106232:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-022,api,P1,"ret({MSCI:106232:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-023,api,P1,"ret({MSCI:106232:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-024,api,P1,"ret({MSCI:106232:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-025,api,P1,"ret({MSCI:106232:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-026,api,P1,{YAHOO:^FTSE},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-027,api,P1,"ret({YAHOO:^FTSE}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-028,api,P1,"ret({YAHOO:^FTSE}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
@@ -1141,42 +1141,42 @@ indicator_id,method,phase,formula,coverage_note
 96-058,api,P1,"ret({YAHOO:^HSI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-059,api,P1,"ret({YAHOO:^HSI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-060,api,P1,"ret({YAHOO:^HSI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
-96-061,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-062,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-063,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-064,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-065,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-066,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-067,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-068,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-069,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-070,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-071,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-072,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-073,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-074,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-075,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-076,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-077,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-078,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-079,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-080,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-081,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-082,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-083,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-084,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-085,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-089,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-094,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-061,api,P1,{MSCI:302400:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-062,api,P1,"ret({MSCI:302400:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-063,api,P1,"ret({MSCI:302400:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-064,api,P1,"ret({MSCI:302400:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-065,api,P1,"ret({MSCI:302400:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-066,api,P1,{MSCI:907600:NETR:BRL},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-067,api,P1,"ret({MSCI:907600:NETR:BRL}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-068,api,P1,"ret({MSCI:907600:NETR:BRL}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-069,api,P1,"ret({MSCI:907600:NETR:BRL}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-070,api,P1,"ret({MSCI:907600:NETR:BRL}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-071,api,P1,{MSCI:984000:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-072,api,P1,"ret({MSCI:984000:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-073,api,P1,"ret({MSCI:984000:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-074,api,P1,"ret({MSCI:984000:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-075,api,P1,"ret({MSCI:984000:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-076,api,P1,{MSCI:990500:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-077,api,P1,"ret({MSCI:990500:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-078,api,P1,"ret({MSCI:990500:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-079,api,P1,"ret({MSCI:990500:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-080,api,P1,"ret({MSCI:990500:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-081,api,P1,{MSCI:939200:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-082,api,P1,"ret({MSCI:939200:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-083,api,P1,"ret({MSCI:939200:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-084,api,P1,"ret({MSCI:939200:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-085,api,P1,"ret({MSCI:939200:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-089,api,P1,"ret({MSCI:302400:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-094,api,P1,"ret({MSCI:935600:NETR:INR}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-096,api,P1,"ret({FRED:SP500}, ""QTD"")",
 96-097,api,P1,"ret({FRED:NASDAQCOM}, ""QTD"")",
 96-098,api,P1,"ret({FRED:DJIA}, ""QTD"")",
-96-099,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-100,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-101,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
-96-102,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-099,api,P1,"ret({MSCI:892400:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-100,api,P1,"ret({MSCI:990100:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-101,api,P1,"ret({MSCI:990300:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-102,api,P1,"ret({MSCI:891800:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-103,api,P1,"ret({YAHOO:^STOXX}, ""QTD"")",Yahoo 免费行情
-96-104,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-104,api,P1,"ret({JPX:TOPIX}, ""QTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 96-107,api,P1,"snap({YAHOO:^SP400}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-108,api,P1,"snap({YAHOO:^SP400}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-109,api,P1,"snap({YAHOO:^SP400}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
@@ -1186,12 +1186,12 @@ indicator_id,method,phase,formula,coverage_note
 96-113,api,P1,"snap({YAHOO:^SPXEW}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-114,api,P1,"snap({YAHOO:^SPXEW}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-115,api,P1,"snap({YAHOO:^SPXEW}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
-96-116,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-117,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-118,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-119,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-120,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-121,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-116,api,P1,"snap({STOXX:sx5p}, ""ME"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-117,api,P1,"snap({STOXX:sx5p}, ""QE"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-118,api,P1,"snap({STOXX:sx5p}, ""YE"")",STOXX 官网（访客仅提供近 3 个月，本库逐周累积；更早的年初基点待补）
+96-119,api,P1,"snap({MSCI:106232:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-120,api,P1,"snap({MSCI:106232:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-121,api,P1,"snap({MSCI:106232:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-122,api,P1,"snap({YAHOO:^FTSE}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-123,api,P1,"snap({YAHOO:^FTSE}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-124,api,P1,"snap({YAHOO:^FTSE}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
@@ -1213,27 +1213,27 @@ indicator_id,method,phase,formula,coverage_note
 96-140,api,P1,"snap({YAHOO:^HSI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-141,api,P1,"snap({YAHOO:^HSI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-142,api,P1,"snap({YAHOO:^HSI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
-96-143,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-144,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-145,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-146,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-147,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-148,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-149,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-150,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-151,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-152,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-153,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-154,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-155,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-156,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-157,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-158,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-159,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-160,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-161,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-162,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-163,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-143,api,P1,"snap({MSCI:302400:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-144,api,P1,"snap({MSCI:302400:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-145,api,P1,"snap({MSCI:302400:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-146,api,P1,"snap({MSCI:907600:NETR:BRL}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-147,api,P1,"snap({MSCI:907600:NETR:BRL}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-148,api,P1,"snap({MSCI:907600:NETR:BRL}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-149,api,P1,"snap({MSCI:984000:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-150,api,P1,"snap({MSCI:984000:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-151,api,P1,"snap({MSCI:984000:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-152,api,P1,"snap({MSCI:990500:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-153,api,P1,"snap({MSCI:990500:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-154,api,P1,"snap({MSCI:990500:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-155,api,P1,"snap({MSCI:939200:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-156,api,P1,"snap({MSCI:939200:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-157,api,P1,"snap({MSCI:939200:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-158,api,P1,"snap({MSCI:302400:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-159,api,P1,"snap({MSCI:302400:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-160,api,P1,"snap({MSCI:302400:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-161,api,P1,"snap({MSCI:935600:NETR:INR}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-162,api,P1,"snap({MSCI:935600:NETR:INR}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-163,api,P1,"snap({MSCI:935600:NETR:INR}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-164,api,P1,"snap({FRED:SP500}, ""ME"")",
 96-165,api,P1,"snap({FRED:SP500}, ""QE"")",
 96-166,api,P1,"snap({FRED:SP500}, ""YE"")",
@@ -1243,24 +1243,24 @@ indicator_id,method,phase,formula,coverage_note
 96-170,api,P1,"snap({FRED:DJIA}, ""ME"")",
 96-171,api,P1,"snap({FRED:DJIA}, ""QE"")",
 96-172,api,P1,"snap({FRED:DJIA}, ""YE"")",
-96-173,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-174,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-175,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-176,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-177,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-178,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-179,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-180,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-181,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-182,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-183,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-184,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-173,api,P1,"snap({MSCI:892400:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-174,api,P1,"snap({MSCI:892400:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-175,api,P1,"snap({MSCI:892400:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-176,api,P1,"snap({MSCI:990100:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-177,api,P1,"snap({MSCI:990100:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-178,api,P1,"snap({MSCI:990100:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-179,api,P1,"snap({MSCI:990300:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-180,api,P1,"snap({MSCI:990300:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-181,api,P1,"snap({MSCI:990300:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-182,api,P1,"snap({MSCI:891800:NETR:USD}, ""ME"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-183,api,P1,"snap({MSCI:891800:NETR:USD}, ""QE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+96-184,api,P1,"snap({MSCI:891800:NETR:USD}, ""YE"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-185,api,P1,"snap({YAHOO:^STOXX}, ""ME"")",Yahoo 免费行情
 96-186,api,P1,"snap({YAHOO:^STOXX}, ""QE"")",Yahoo 免费行情
 96-187,api,P1,"snap({YAHOO:^STOXX}, ""YE"")",Yahoo 免费行情
-96-188,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-189,report,P1b,,期末快照：从高盛周报快照历史序列生成
-96-190,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-188,api,P1,"snap({JPX:TOPIX}, ""ME"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+96-189,api,P1,"snap({JPX:TOPIX}, ""QE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+96-190,api,P1,"snap({JPX:TOPIX}, ""YE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 99-002,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
 99-003,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
 99-004,report,P1b,,取高盛 Market Monitor Weekly快照
@@ -1345,28 +1345,28 @@ indicator_id,method,phase,formula,coverage_note
 99-113,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
 99-114,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
 99-115,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
-97-002,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-003,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-007,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-008,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-012,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-013,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-016,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-017,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-018,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-019,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-020,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-022,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-023,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-026,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-027,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-028,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-029,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-030,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-032,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-033,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-037,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-038,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-002,api,P1,"ret({MSCI:984000:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-003,api,P1,"year_ret({MSCI:984000:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-007,api,P1,"ret({MSCI:990500:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-008,api,P1,"year_ret({MSCI:990500:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-012,api,P1,"ret({MSCI:939200:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-013,api,P1,"year_ret({MSCI:939200:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-016,api,P1,{MSCI:935600:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-017,api,P1,"ret({MSCI:935600:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-018,api,P1,"year_ret({MSCI:935600:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-019,api,P1,"ret({MSCI:935600:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-020,api,P1,"ret({MSCI:935600:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-022,api,P1,"ret({MSCI:302400:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-023,api,P1,"year_ret({MSCI:302400:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-026,api,P1,{MSCI:907600:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-027,api,P1,"ret({MSCI:907600:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-028,api,P1,"year_ret({MSCI:907600:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-029,api,P1,"ret({MSCI:907600:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-030,api,P1,"ret({MSCI:907600:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-032,api,P1,"ret({MSCI:990100:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-033,api,P1,"year_ret({MSCI:990100:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
+97-037,api,P1,"ret({MSCI:891800:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
+97-038,api,P1,"year_ret({MSCI:891800:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 97-041,report,P1b,,取汇丰 Investment Weekly（英国）快照
 97-042,report,P1b,,取汇丰 Investment Weekly（英国）快照
 97-043,report,P1b,,取汇丰 Investment Weekly（英国）快照
@@ -1825,12 +1825,12 @@ indicator_id,method,phase,formula,coverage_note
 107-004,pending,P2,,Preqin/MSCI 需授权
 107-005,pending,P2,,Preqin/MSCI 需授权
 107-006,pending,P2,,Preqin/MSCI 需授权
-107-007,pending,P2,,Preqin/MSCI 需授权
-107-008,pending,P2,,Preqin/MSCI 需授权
-107-009,pending,P2,,Preqin/MSCI 需授权
-107-010,pending,P2,,Preqin/MSCI 需授权
-107-011,pending,P2,,Preqin/MSCI 需授权
-107-012,pending,P2,,Preqin/MSCI 需授权
+107-007,api,P1,latest(qe({MSCI:892400:NETR:USD:EOM})),MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
+107-008,api,P1,pop(qe({MSCI:892400:NETR:USD:EOM})),MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
+107-009,api,P1,"ann(qe({MSCI:892400:NETR:USD:EOM}), 40)",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
+107-010,api,P1,"hist_mean(ann(qe({MSCI:892400:NETR:USD:EOM}), 40))",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
+107-011,api,P1,"hist_share(ann(qe({MSCI:892400:NETR:USD:EOM}), 40), 0)",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
+107-012,api,P1,"hist_share(ann(qe({MSCI:892400:NETR:USD:EOM}), 40), 10)",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
 107-013,pending,P2,,Preqin/MSCI 需授权
 108-001,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
 108-002,api,P1,{EUROSTAT:nama_10_gdp:ES},Eurostat 年度数据

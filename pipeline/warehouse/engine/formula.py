@@ -331,6 +331,18 @@ def f_ytd_sum(ctx: Context, x: TS) -> TS:
     return f_fytd(ctx, x, 1)
 
 
+def f_qe(ctx: Context, x: TS) -> TS:
+    """Quarter-end sampling: last observation in each calendar quarter."""
+    frame = _require_ts(x, "qe").frame
+    if frame.empty:
+        return x
+    quarters = frame.index.to_period("Q")
+    last = frame.groupby(quarters).tail(1)
+    # Drop the running quarter: only completed quarter ends count.
+    complete = last[last.index.to_period("Q").end_time.normalize() <= last.index.max().normalize()]
+    return TS(complete)
+
+
 # --------------------------------------------------------------------------- window functions
 
 
@@ -425,6 +437,23 @@ def f_drawdown(ctx: Context, x: TS) -> Scalar:
         return Scalar.missing("missing_input")
     peak = float(frame["value"].max())
     return Scalar((last[0] / peak - 1.0) * 100.0, last[1], detail=f"peak over history since {frame.index[0].date()}")
+
+
+def f_hist_mean(ctx: Context, x: TS) -> Scalar:
+    """Mean of all visible observations (e.g. historical mean of rolling returns)."""
+    frame = _scalar_input(ctx, x, "hist_mean")
+    if frame.empty:
+        return Scalar.missing("missing_input")
+    return Scalar(float(frame["value"].mean()), frame.index[-1], detail=f"{len(frame)} obs since {frame.index[0].date()}")
+
+
+def f_hist_share(ctx: Context, x: TS, threshold: float = 0.0) -> Scalar:
+    """Percent of visible observations strictly above threshold."""
+    frame = _scalar_input(ctx, x, "hist_share")
+    if frame.empty:
+        return Scalar.missing("missing_input")
+    share = float((frame["value"] > float(threshold)).mean() * 100.0)
+    return Scalar(share, frame.index[-1], detail=f"{len(frame)} windows since {frame.index[0].date()}")
 
 
 def f_maxdd(ctx: Context, x: TS, window: str = "YTD") -> Scalar:
@@ -605,6 +634,7 @@ SERIES_FUNCS: dict[str, Callable[..., Any]] = {
     "yoy": f_yoy,
     "fytd": f_fytd,
     "ytd_sum": f_ytd_sum,
+    "qe": f_qe,
 }
 SCALAR_FUNCS: dict[str, Callable[..., Any]] = {
     "latest": f_latest,
@@ -618,6 +648,8 @@ SCALAR_FUNCS: dict[str, Callable[..., Any]] = {
     "at_year": f_at_year,
     "year_ret": f_year_ret,
     "before_change": f_before_change,
+    "hist_mean": f_hist_mean,
+    "hist_share": f_hist_share,
 }
 VINTAGE_FUNCS: dict[str, Callable[..., Any]] = {
     "first": v_first,
