@@ -37,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--start", type=date.fromisoformat)
     d = sub.add_parser("derive")
     d.add_argument("--backfill-from", type=date.fromisoformat)
+    sub.add_parser("archive-reports")
     args = parser.parse_args(argv)
 
     if args.command == "probe":
@@ -59,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
             _print_summary(fetch(store, defs, start=args.start or OBS_START, runner=args.runner))
         elif args.command == "derive":
             derive(store, backfill_from=args.backfill_from)
+        elif args.command == "archive-reports":
+            from .providers.reports import archive_all
+
+            print(f"report pages stored: {archive_all(store)}")
         elif args.command == "weekly":
             sync_catalog(store)
             defs = series_defs(args.provider, args.series)

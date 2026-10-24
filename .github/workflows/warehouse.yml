@@ -71,3 +71,7 @@ jobs:
           if [ -n "${PROVIDER:-}" ] && [ "$COMMAND" != "derive" ]; then args+=(--provider "$PROVIDER"); fi
           if [ "$COMMAND" = "derive" ] && [ -n "${BACKFILL_FROM:-}" ]; then args+=(--backfill-from "$BACKFILL_FROM"); fi
           python -m pipeline.warehouse "$COMMAND" "${args[@]}"
+      - name: Archive weekly reports
+        if: ${{ always() && (github.event.inputs.command || 'weekly') == 'weekly' }}
+        continue-on-error: true
+        run: python -m pipeline.warehouse archive-reports

@@ -81,6 +81,19 @@ create table if not exists public.fetch_log (
   logged_at   timestamptz not null default now()
 );
 
+-- Private archive of weekly institution reports (copyrighted text: no anon policy).
+create table if not exists public.report_pages (
+  source      text not null,
+  report_date date not null,
+  page        integer not null,
+  url         text,
+  text        text,
+  fetched_at  timestamptz not null default now(),
+  primary key (source, report_date, page)
+);
+alter table public.report_pages enable row level security;
+revoke all on public.report_pages from anon, authenticated;
+
 create index if not exists observations_series_date on public.observations (series_key, obs_date desc);
 create index if not exists weekly_values_cutoff on public.weekly_values (week_cutoff);
 create index if not exists fetch_log_run on public.fetch_log (run_id);

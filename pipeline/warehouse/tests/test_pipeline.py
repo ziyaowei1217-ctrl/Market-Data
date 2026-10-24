@@ -226,3 +226,30 @@ class MappingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReportArchiveTests(unittest.TestCase):
+    def test_html_text_keeps_table_cells_and_pdf_links(self):
+        from pipeline.warehouse.providers.reports import html_text
+
+        text, links = html_text(b"<html><script>x=1</script><table><tr><td>S&amp;P 500</td><td>1.2</td></tr></table>"
+                                b"<a href='/files/report.pdf'>pdf</a></html>")
+        self.assertIn("S&P 500 | 1.2", text)
+        self.assertEqual(links, ["/files/report.pdf"])
+
+    def test_report_date(self):
+        from pipeline.warehouse.providers.reports import find_report_date
+
+        self.assertEqual(find_report_date("U.S. | October 19, 2026 ..."), date(2026, 10, 19))
+        self.assertEqual(find_report_date("Investment Weekly 16 October 2026"), date(2026, 10, 16))
+
+    def test_download_tries_dated_candidates(self):
+        from pipeline.warehouse.providers import reports
+
+        body = b"<html>" + b"<p>Investment Weekly 16 October 2026</p>" * 40 + b"</html>"
+        session = FakeSession({"investment-weekly-16-october-2026": body})
+        got = reports.download(reports.SOURCES[3], session, today=date(2026, 10, 18), log=lambda *_: None)
+        self.assertEqual(got.report_date, date(2026, 10, 16))
+        store = SQLiteStore()
+        store.init_schema()
+        self.assertEqual(store.upsert_report_pages(got.source, got.report_date, got.url, got.pages), 1)
