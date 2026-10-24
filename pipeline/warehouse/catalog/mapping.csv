@@ -119,7 +119,7 @@ indicator_id,method,phase,formula,coverage_note
 04-019,api,P1,"ret({YAHOO:^RLG}, ""W"") - ret({YAHOO:^RLV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 04-020,api,P1,"ret({YAHOO:^RMCCG}, ""W"") - ret({YAHOO:^RMCCV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
 04-021,api,P1,"ret({YAHOO:^RUO}, ""W"") - ret({YAHOO:^RUJ}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-05-001,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-001,api,P1,{FACTSET:forward_pe},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 05-002,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
 05-003,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
 05-004,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
@@ -199,9 +199,9 @@ indicator_id,method,phase,formula,coverage_note
 78-037,pending,P2,,市场宽度需 500 只成分股日线自建，待做
 78-038,pending,P2,,市场宽度需 500 只成分股日线自建，待做
 78-039,pending,P2,,市场宽度需 500 只成分股日线自建，待做
-08-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-001,api,P1,{FACTSET:eps_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+08-002,api,P1,{FACTSET:revenue_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+08-003,api,P1,{FACTSET:net_margin_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 08-005,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 08-006,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
@@ -235,16 +235,16 @@ indicator_id,method,phase,formula,coverage_note
 08-034,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 08-035,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 08-036,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-037,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-038,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-039,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-040,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-005,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-09-006,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-037,api,P1,{FACTSET:pct_reported},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+08-038,api,P1,{FACTSET:cy_eps_growth_0},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+08-039,api,P1,{FACTSET:cy_eps_growth_1},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+08-040,api,P1,{FACTSET:cy_eps_growth_2},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+09-001,api,P1,{FACTSET:pct_eps_beat},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+09-002,api,P1,{FACTSET:pct_revenue_beat},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+09-003,api,P1,{FACTSET:eps_surprise_aggregate},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+09-004,api,P1,{FACTSET:revenue_surprise_aggregate},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
+09-005,api,P1,{FACTSET:guidance_positive_next_q},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存；下一季度指引口径
+09-006,api,P1,{FACTSET:guidance_negative_next_q},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存；下一季度指引口径
 10-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 10-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
 10-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
@@ -961,8 +961,8 @@ indicator_id,method,phase,formula,coverage_note
 88-002,manual,P2,,民调/政策事件：人工维护
 88-003,manual,P2,,民调/政策事件：人工维护
 88-004,manual,P2,,民调/政策事件：人工维护
-90-001,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
-90-002,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-001,api,P1,100 / {FACTSET:forward_pe},1 / FactSet 远期 P/E
+90-002,api,P1,100 / {FACTSET:forward_pe} - {FRED:DGS10},1 / FactSet 远期 P/E 减美国 10 年国债收益率
 90-003,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
 90-004,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
 90-005,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算

@@ -1087,6 +1087,28 @@ def build_batch2() -> None:
         "BEA 官方表 2.8.8 月度贡献（服务）")
 
 
+def build_factset() -> None:
+    url = "https://insight.factset.com/topic/earnings"
+    note = "FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存"
+    def fs(metric, title, unit="%"):
+        return series("FACTSET", metric, f"FactSet Earnings Insight: {title}", "W", unit, 0, url)
+    pe = fs("forward_pe", "S&P 500 forward 12M P/E", "倍")
+    api("05-001", pe, note)
+    for iid, metric, title in [
+        ("08-001", "eps_growth_blended", "blended EPS growth y/y"), ("08-002", "revenue_growth_blended", "blended revenue growth y/y"),
+        ("08-003", "net_margin_blended", "blended net profit margin"), ("08-037", "pct_reported", "% of companies reported"),
+        ("08-038", "cy_eps_growth_0", "current CY EPS growth"), ("08-039", "cy_eps_growth_1", "next CY EPS growth"),
+        ("08-040", "cy_eps_growth_2", "second CY EPS growth"), ("09-001", "pct_eps_beat", "% beating EPS"),
+        ("09-002", "pct_revenue_beat", "% beating revenue"), ("09-003", "eps_surprise_aggregate", "aggregate EPS surprise"),
+        ("09-004", "revenue_surprise_aggregate", "aggregate revenue surprise"),
+    ]:
+        api(iid, fs(metric, title), note)
+    api("09-005", fs("guidance_positive_next_q", "positive EPS guidance (next quarter)", "家"), note + "；下一季度指引口径")
+    api("09-006", fs("guidance_negative_next_q", "negative EPS guidance (next quarter)", "家"), note + "；下一季度指引口径")
+    api("90-001", f"100 / {pe}", "1 / FactSet 远期 P/E")
+    api("90-002", f"100 / {pe} - {{FRED:DGS10}}", "1 / FactSet 远期 P/E 减美国 10 年国债收益率")
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1095,6 +1117,7 @@ def write() -> tuple[int, int]:
     build()
     build_publishers()
     build_batch2()
+    build_factset()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

@@ -70,6 +70,14 @@ def main(argv: list[str] | None = None) -> int:
             defs = series_defs(args.provider, args.series)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
+            if store.get_meta("factset_backfill") != "done" and not args.provider:
+                print("one-time FactSet Earnings Insight backfill")
+                os.environ["FACTSET_BACKFILL"] = "1"
+                more = fetch(store, series_defs("FACTSET"), start=WEEKLY_START, runner=args.runner)
+                os.environ.pop("FACTSET_BACKFILL", None)
+                for name, extra in more.items():
+                    summaries.setdefault(name, extra).initial.extend(extra.initial)
+                store.set_meta("factset_backfill", "done")
             if store.weekly_count() == 0 or store.get_meta("engine_version") != ENGINE_VERSION:
                 print(f"backfilling all weekly values from {WEEKLY_START} (engine {ENGINE_VERSION})")
                 derive(store, backfill_from=WEEKLY_START)

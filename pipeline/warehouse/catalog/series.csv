@@ -149,6 +149,20 @@ EUROSTAT:namq_10_gdp:qoq,EUROSTAT,namq_10_gdp:qoq,Euro area real GDP q/q,Q,%,120
 EUROSTAT:namq_10_gdp:yoy,EUROSTAT,namq_10_gdp:yoy,Euro area real GDP y/y,Q,%,120,https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/,"{""dataset"": ""namq_10_gdp"", ""geo"": ""EA"", ""na_item"": ""B1GQ"", ""s_adj"": ""SCA"", ""sinceTimePeriod"": ""2019-Q1"", ""unit"": ""CLV_PCH_SM""}",False,cloud
 EUROSTAT:prc_hicp_minr:EA:TOTAL,EUROSTAT,prc_hicp_minr:EA:TOTAL,Euro area HICP annual rate (ECOICOP 2),M,%,47,https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/,"{""coicop18"": ""TOTAL"", ""dataset"": ""prc_hicp_minr"", ""geo"": ""EA"", ""sinceTimePeriod"": ""2019-01"", ""unit"": ""RCH_A""}",False,cloud
 EUROSTAT:prc_hicp_minr:EA:TOT_X_NRG_FOOD,EUROSTAT,prc_hicp_minr:EA:TOT_X_NRG_FOOD,"Euro area HICP ex energy, food, alcohol, tobacco annual rate",M,%,47,https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/,"{""coicop18"": ""TOT_X_NRG_FOOD"", ""dataset"": ""prc_hicp_minr"", ""geo"": ""EA"", ""sinceTimePeriod"": ""2019-01"", ""unit"": ""RCH_A""}",False,cloud
+FACTSET:cy_eps_growth_0,FACTSET,cy_eps_growth_0,FactSet Earnings Insight: current CY EPS growth,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:cy_eps_growth_1,FACTSET,cy_eps_growth_1,FactSet Earnings Insight: next CY EPS growth,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:cy_eps_growth_2,FACTSET,cy_eps_growth_2,FactSet Earnings Insight: second CY EPS growth,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:eps_growth_blended,FACTSET,eps_growth_blended,FactSet Earnings Insight: blended EPS growth y/y,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:eps_surprise_aggregate,FACTSET,eps_surprise_aggregate,FactSet Earnings Insight: aggregate EPS surprise,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:forward_pe,FACTSET,forward_pe,FactSet Earnings Insight: S&P 500 forward 12M P/E,W,倍,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:guidance_negative_next_q,FACTSET,guidance_negative_next_q,FactSet Earnings Insight: negative EPS guidance (next quarter),W,家,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:guidance_positive_next_q,FACTSET,guidance_positive_next_q,FactSet Earnings Insight: positive EPS guidance (next quarter),W,家,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:net_margin_blended,FACTSET,net_margin_blended,FactSet Earnings Insight: blended net profit margin,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:pct_eps_beat,FACTSET,pct_eps_beat,FactSet Earnings Insight: % beating EPS,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:pct_reported,FACTSET,pct_reported,FactSet Earnings Insight: % of companies reported,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:pct_revenue_beat,FACTSET,pct_revenue_beat,FactSet Earnings Insight: % beating revenue,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:revenue_growth_blended,FACTSET,revenue_growth_blended,FactSet Earnings Insight: blended revenue growth y/y,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FACTSET:revenue_surprise_aggregate,FACTSET,revenue_surprise_aggregate,FactSet Earnings Insight: aggregate revenue surprise,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
 FRED:A007RY2Q224SBEA,FRED,A007RY2Q224SBEA,A007RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A007RY2Q224SBEA,,False,cloud
 FRED:A014RY2Q224SBEA,FRED,A014RY2Q224SBEA,A014RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A014RY2Q224SBEA,,False,cloud
 FRED:A019RY2Q224SBEA,FRED,A019RY2Q224SBEA,A019RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A019RY2Q224SBEA,,False,cloud
