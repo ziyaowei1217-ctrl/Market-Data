@@ -347,8 +347,8 @@ ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/infla
 ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
 ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
 ONS:IHYQ,ONS,IHYQ,UK GDP q/q,Q,%,135,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ihyq/qna,"{""period"": ""quarters"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ihyq/qna""}",False,cloud
-SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,cloud
-SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,cloud
+SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
+SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062811,STATCAN,2062811,Canada LFS employment SA,M,千人,8,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150.statcan.gc.ca/,,False,cloud

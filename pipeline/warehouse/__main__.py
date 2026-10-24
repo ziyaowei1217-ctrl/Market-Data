@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
             n_ind, n_ser, changed = sync_catalog(store)
             print(f"indicators: {n_ind}; series: {n_ser}; formulas changed: {len(changed)}")
         elif args.command == "fetch":
-            defs = series_defs(args.provider, args.series)
+            defs = series_defs(args.provider, args.series, runner=args.runner)
             _print_summary(fetch(store, defs, start=args.start or OBS_START, runner=args.runner))
         elif args.command == "derive":
             derive(store, backfill_from=args.backfill_from)
@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"report pages stored: {archive_all(store)}")
         elif args.command == "weekly":
             _, _, changed = sync_catalog(store)
-            defs = series_defs(args.provider, args.series)
+            defs = series_defs(args.provider, args.series, runner=args.runner)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
             if store.get_meta("factset_backfill") != "done" and not args.provider:

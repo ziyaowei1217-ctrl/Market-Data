@@ -1011,10 +1011,10 @@ def build_publishers() -> None:
 
     # ---------------------------------------------------------- S&P DJI month-end characteristics
     spdji = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/"
-    api("06-003", series("SPDJI", "340:marketCap", "S&P 500 total market cap (month-end)", "M", "十亿美元", 5, spdji),
-        "S&P 道琼斯指数公司官网，月末值；美元→十亿美元")
-    api("07-001", series("SPDJI", "340:topNConstituentWeight", "S&P 500 top-10 weight (month-end)", "M", "%", 5, spdji),
-        "S&P 道琼斯指数公司官网，月末值")
+    api("06-003", series("SPDJI", "340:marketCap", "S&P 500 total market cap (month-end)", "M", "十亿美元", 5, spdji, runner="local"),
+        "S&P 道琼斯指数公司官网，月末值；美元→十亿美元（该站屏蔽数据中心 IP，由本地电脑抓取）")
+    api("07-001", series("SPDJI", "340:topNConstituentWeight", "S&P 500 top-10 weight (month-end)", "M", "%", 5, spdji, runner="local"),
+        "S&P 道琼斯指数公司官网，月末值（由本地电脑抓取）")
 
 
 def build_batch2() -> None:

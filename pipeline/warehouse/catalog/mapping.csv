@@ -130,7 +130,7 @@ indicator_id,method,phase,formula,coverage_note
 05-009,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
 06-001,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-002,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-003,api,P1,{SPDJI:340:marketCap},S&P 道琼斯指数公司官网，月末值；美元→十亿美元
+06-003,api,P1,{SPDJI:340:marketCap},S&P 道琼斯指数公司官网，月末值；美元→十亿美元（该站屏蔽数据中心 IP，由本地电脑抓取）
 06-004,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-005,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-006,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
@@ -155,7 +155,7 @@ indicator_id,method,phase,formula,coverage_note
 06-025,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-026,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
 06-027,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-07-001,api,P1,{SPDJI:340:topNConstituentWeight},S&P 道琼斯指数公司官网，月末值
+07-001,api,P1,{SPDJI:340:topNConstituentWeight},S&P 道琼斯指数公司官网，月末值（由本地电脑抓取）
 07-002,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-003,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-004,api,P1,"ret({YAHOO:^SPXEW}, ""W"") - ret({FRED:SP500}, ""W"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
