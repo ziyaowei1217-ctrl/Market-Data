@@ -143,7 +143,7 @@ def build() -> None:
     # ---------------------------------------------------------- 03 S&P 500 行业 (Yahoo S&P sector indices)
     sp500 = fred("SP500", "S&P 500", "D", "点")
     sectors = [
-        ("通讯服务", "^SP500-50"), ("能源", "^SP500-10"), ("信息技术", "^SP500-45"), ("公用事业", "^SP500-55"),
+        ("通讯服务", "^SP500-50"), ("能源", "^GSPE"), ("信息技术", "^SP500-45"), ("公用事业", "^SP500-55"),
         ("金融", "^SP500-40"), ("必需消费", "^SP500-30"), ("房地产", "^SP500-60"), ("工业", "^SP500-20"),
         ("可选消费", "^SP500-25"), ("医疗保健", "^SP500-35"), ("材料", "^SP500-15"),
     ]
@@ -192,7 +192,7 @@ def build() -> None:
         api(f"12-{2 + 2 * k:03d}", chg_bp(x), "本周末减上周末，%→bp")
     for k, code in enumerate(["T10Y2Y", "T10Y3M"]):
         x = fred(code, code, "D", "%")
-        api(f"13-{1 + 2 * k:03d}", x)
+        api(f"13-{1 + 2 * k:03d}", f"{x} * 100", "FRED 原值为 %，×100→bp")
         api(f"13-{2 + 2 * k:03d}", chg_bp(x))
     for k, code in enumerate(["DFII5", "T5YIE", "DFII10", "T10YIE"]):
         x = fred(code, code, "D", "%")
@@ -381,7 +381,7 @@ def build() -> None:
     core = fred("PCEPILFE", "Core PCE price index", "M", "指数点", lag=60)
     goods = fred("DGDSRG3M086SBEA", "PCE goods price index", "M", "指数点", lag=60)
     serv = fred("DSERRG3M086SBEA", "PCE services price index", "M", "指数点", lag=60)
-    housing = fred("DHUTRG3M086SBEA", "PCE housing and utilities price index", "M", "指数点", lag=60)
+    housing = fred("DHSGRG3M086SBEA", "PCE housing price index", "M", "指数点", lag=60)
     supercore = fred("IA001260M", "PCE services ex energy and housing price index", "M", "指数点", lag=60)
     pce_note = "BEA 个人收入与支出（FRED 镜像）"
     api("30-001", pce, pce_note)
@@ -392,7 +392,7 @@ def build() -> None:
     api("30-006", f"pop({core})", pce_note)
     api("30-007", f"pop({goods})", pce_note)
     api("30-009", f"pop({serv})", pce_note)
-    api("30-011", f"pop({housing})", pce_note + "；BEA 口径为住房与公用事业")
+    api("30-011", f"pop({housing})", pce_note)
     api("30-013", f"pop({supercore})", pce_note)
     for iid in ["30-008", "30-010", "30-012", "30-014"]:
         other(iid, "pending", "PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入")
@@ -465,10 +465,13 @@ def build() -> None:
     api("39-004", f"pop({permit})")
 
     # ---------------------------------------------------------- 40-43 海外宏观
-    hicp = ecb("ICP/M.U2.N.000000.4.ANR", "Euro area HICP annual rate", "M", "%", lag=47)
-    hicp_core = ecb("ICP/M.U2.N.XEF000.4.ANR", "Euro area HICP ex energy, food, alcohol, tobacco annual rate", "M", "%", lag=47)
-    api("40-001", hicp, "ECB 数据门户 HICP（Eurostat 源）")
-    api("40-002", hicp_core, "ECB 数据门户 HICP（Eurostat 源）")
+    hicp_url = "https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/"
+    hicp = series("EUROSTAT", "prc_hicp_minr:EA:TOTAL", "Euro area HICP annual rate (ECOICOP 2)", "M", "%", 47, hicp_url,
+                  params={"dataset": "prc_hicp_minr", "geo": "EA", "unit": "RCH_A", "coicop18": "TOTAL", "sinceTimePeriod": "2019-01"})
+    hicp_core = series("EUROSTAT", "prc_hicp_minr:EA:TOT_X_NRG_FOOD", "Euro area HICP ex energy, food, alcohol, tobacco annual rate", "M", "%", 47, hicp_url,
+                       params={"dataset": "prc_hicp_minr", "geo": "EA", "unit": "RCH_A", "coicop18": "TOT_X_NRG_FOOD", "sinceTimePeriod": "2019-01"})
+    api("40-001", hicp, "Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）")
+    api("40-002", hicp_core, "Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）")
     ea_q = series("EUROSTAT", "namq_10_gdp:qoq", "Euro area real GDP q/q", "Q", "%", 120,
                   "https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/",
                   params={"dataset": "namq_10_gdp", "geo": "EA", "unit": "CLV_PCH_PRE", "s_adj": "SCA", "na_item": "B1GQ", "sinceTimePeriod": "2019-Q1"})
@@ -631,7 +634,8 @@ def build() -> None:
     interest = series("TSY", "mts9:net_interest", "MTS net interest outlays", "M", "百万美元", 12,
                       "https://fiscaldata.treasury.gov/datasets/monthly-treasury-statement/",
                       params={"endpoint": "v1/accounting/mts/mts_table_9", "filter": "classification_desc:eq:Net Interest",
-                              "date_field": "record_date", "value_field": "current_month_rcpt_outly_amt", "scale": 1e-6})
+                              "date_field": "record_date", "value_field": "current_month_rcpt_outly_amt", "scale": 1e-6,
+                              "align": "month_start"})
     mts_note = "财政部 MTS（FRED 镜像）；赤字记为正数"
     api("68-001", rcpt, mts_note)
     api("68-002", outl, mts_note)
@@ -788,7 +792,7 @@ def build() -> None:
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"99-{59 + k:03d}", f'snap({dgs2}, "{w}")')
         api(f"99-{62 + k:03d}", f'snap({dgs10}, "{w}")')
-        api(f"99-{65 + k:03d}", f'snap({t10y2y}, "{w}")')
+        api(f"99-{65 + k:03d}", f'snap({t10y2y}, "{w}") * 100', "%→bp")
         api(f"99-{74 + k:03d}", f'snap({jgb10}, "{w}")', "日本财务省")
     for iid in ids("99", 68, 73) + ids("99", 77, 85) + ids("99", 92, 94):
         other(iid, "report", "欧洲国债/EMBI 期末快照：从周报快照历史生成", "P1b")

@@ -58,10 +58,10 @@ indicator_id,method,phase,formula,coverage_note
 03-002,api,P1,"ret({YAHOO:^SP500-50}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-003,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-004,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-005,api,P1,"ret({YAHOO:^SP500-10}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-006,api,P1,"ret({YAHOO:^SP500-10}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-007,api,P1,"ret({YAHOO:^SP500-10}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-008,api,P1,"ret({YAHOO:^SP500-10}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-005,api,P1,"ret({YAHOO:^GSPE}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-006,api,P1,"ret({YAHOO:^GSPE}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-007,api,P1,"ret({YAHOO:^GSPE}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-008,api,P1,"ret({YAHOO:^GSPE}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-009,api,P1,"ret({YAHOO:^SP500-45}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-010,api,P1,"ret({YAHOO:^SP500-45}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 03-011,api,P1,"ret({YAHOO:^SP500-45}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
@@ -259,9 +259,9 @@ indicator_id,method,phase,formula,coverage_note
 12-008,api,P1,"chg({FRED:DGS10}, ""W"") * 100",本周末减上周末，%→bp
 12-009,api,P1,{FRED:DGS30},财政部常数期限收益率（FRED 镜像）
 12-010,api,P1,"chg({FRED:DGS30}, ""W"") * 100",本周末减上周末，%→bp
-13-001,api,P1,{FRED:T10Y2Y},
+13-001,api,P1,{FRED:T10Y2Y} * 100,FRED 原值为 %，×100→bp
 13-002,api,P1,"chg({FRED:T10Y2Y}, ""W"") * 100",
-13-003,api,P1,{FRED:T10Y3M},
+13-003,api,P1,{FRED:T10Y3M} * 100,FRED 原值为 %，×100→bp
 13-004,api,P1,"chg({FRED:T10Y3M}, ""W"") * 100",
 14-001,api,P1,{FRED:DFII5},
 14-002,api,P1,"chg({FRED:DFII5}, ""W"") * 100",
@@ -397,7 +397,7 @@ indicator_id,method,phase,formula,coverage_note
 30-008,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
 30-009,api,P1,pop({FRED:DSERRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
 30-010,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
-30-011,api,P1,pop({FRED:DHUTRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）；BEA 口径为住房与公用事业
+30-011,api,P1,pop({FRED:DHSGRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
 30-012,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
 30-013,api,P1,pop({FRED:IA001260M}),BEA 个人收入与支出（FRED 镜像）
 30-014,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
@@ -495,8 +495,8 @@ indicator_id,method,phase,formula,coverage_note
 35-042,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
 35-043,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
 35-044,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-40-001,api,P1,{ECB:ICP/M.U2.N.000000.4.ANR},ECB 数据门户 HICP（Eurostat 源）
-40-002,api,P1,{ECB:ICP/M.U2.N.XEF000.4.ANR},ECB 数据门户 HICP（Eurostat 源）
+40-001,api,P1,{EUROSTAT:prc_hicp_minr:EA:TOTAL},Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）
+40-002,api,P1,{EUROSTAT:prc_hicp_minr:EA:TOT_X_NRG_FOOD},Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）
 40-003,api,P1,{EUROSTAT:namq_10_gdp:qoq},Eurostat 季度国民账户
 40-004,api,P1,{EUROSTAT:namq_10_gdp:yoy},Eurostat 季度国民账户
 41-001,api,P1,{ONS:D7G7},ONS 时间序列
@@ -1024,7 +1024,7 @@ indicator_id,method,phase,formula,coverage_note
 95-021,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-022,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-023,api,P1,"ret({YAHOO:^SP500-50}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-024,api,P1,"ret({YAHOO:^SP500-10}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-024,api,P1,"ret({YAHOO:^GSPE}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 95-025,api,P1,"ret({YAHOO:^SP500-45}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 95-026,api,P1,"ret({YAHOO:^SP500-55}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
 95-027,api,P1,"ret({YAHOO:^SP500-40}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
@@ -1294,9 +1294,9 @@ indicator_id,method,phase,formula,coverage_note
 99-062,api,P1,"snap({FRED:DGS10}, ""ME"")",
 99-063,api,P1,"snap({FRED:DGS10}, ""QE"")",
 99-064,api,P1,"snap({FRED:DGS10}, ""YE"")",
-99-065,api,P1,"snap({FRED:T10Y2Y}, ""ME"")",
-99-066,api,P1,"snap({FRED:T10Y2Y}, ""QE"")",
-99-067,api,P1,"snap({FRED:T10Y2Y}, ""YE"")",
+99-065,api,P1,"snap({FRED:T10Y2Y}, ""ME"") * 100",%→bp
+99-066,api,P1,"snap({FRED:T10Y2Y}, ""QE"") * 100",%→bp
+99-067,api,P1,"snap({FRED:T10Y2Y}, ""YE"") * 100",%→bp
 99-068,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
 99-069,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
 99-070,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成

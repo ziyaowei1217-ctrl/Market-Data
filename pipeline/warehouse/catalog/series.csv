@@ -88,8 +88,6 @@ ECB:EXR/D.CNY.EUR.SP00.A,ECB,EXR/D.CNY.EUR.SP00.A,CNY per EUR (ECB reference),D,
 ECB:EXR/D.GBP.EUR.SP00.A,ECB,EXR/D.GBP.EUR.SP00.A,GBP per EUR (ECB reference),D,英镑/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
 ECB:EXR/D.JPY.EUR.SP00.A,ECB,EXR/D.JPY.EUR.SP00.A,JPY per EUR (ECB reference),D,日元/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
 ECB:EXR/D.USD.EUR.SP00.A,ECB,EXR/D.USD.EUR.SP00.A,USD per EUR (ECB reference),D,美元/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
-ECB:ICP/M.U2.N.000000.4.ANR,ECB,ICP/M.U2.N.000000.4.ANR,Euro area HICP annual rate,M,%,47,https://data.ecb.europa.eu/data/datasets/ICP,,False,cloud
-ECB:ICP/M.U2.N.XEF000.4.ANR,ECB,ICP/M.U2.N.XEF000.4.ANR,"Euro area HICP ex energy, food, alcohol, tobacco annual rate",M,%,47,https://data.ecb.europa.eu/data/datasets/ICP,,False,cloud
 EIA:PET.EER_EPD2DXL0_PF4_RGC_DPG.D,EIA,PET.EER_EPD2DXL0_PF4_RGC_DPG.D,Gulf Coast ULSD spot,D,美元/加仑,7,https://www.eia.gov/opendata/,,False,cloud
 EIA:PET.EER_EPMRU_PF4_RGC_DPG.D,EIA,PET.EER_EPMRU_PF4_RGC_DPG.D,Gulf Coast conventional gasoline spot,D,美元/加仑,7,https://www.eia.gov/opendata/,,False,cloud
 EIA:PET.RCLC1.D,EIA,PET.RCLC1.D,NYMEX WTI futures contract 1,D,美元/桶,7,https://www.eia.gov/opendata/,,False,cloud
@@ -140,6 +138,8 @@ EUROSTAT:nama_10_gdp:PL,EUROSTAT,nama_10_gdp:PL,PL nominal GDP,A,百万欧元,12
 EUROSTAT:nama_10_gdp:SK,EUROSTAT,nama_10_gdp:SK,SK nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""SK"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
 EUROSTAT:namq_10_gdp:qoq,EUROSTAT,namq_10_gdp:qoq,Euro area real GDP q/q,Q,%,120,https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/,"{""dataset"": ""namq_10_gdp"", ""geo"": ""EA"", ""na_item"": ""B1GQ"", ""s_adj"": ""SCA"", ""sinceTimePeriod"": ""2019-Q1"", ""unit"": ""CLV_PCH_PRE""}",False,cloud
 EUROSTAT:namq_10_gdp:yoy,EUROSTAT,namq_10_gdp:yoy,Euro area real GDP y/y,Q,%,120,https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/,"{""dataset"": ""namq_10_gdp"", ""geo"": ""EA"", ""na_item"": ""B1GQ"", ""s_adj"": ""SCA"", ""sinceTimePeriod"": ""2019-Q1"", ""unit"": ""CLV_PCH_SM""}",False,cloud
+EUROSTAT:prc_hicp_minr:EA:TOTAL,EUROSTAT,prc_hicp_minr:EA:TOTAL,Euro area HICP annual rate (ECOICOP 2),M,%,47,https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/,"{""coicop18"": ""TOTAL"", ""dataset"": ""prc_hicp_minr"", ""geo"": ""EA"", ""sinceTimePeriod"": ""2019-01"", ""unit"": ""RCH_A""}",False,cloud
+EUROSTAT:prc_hicp_minr:EA:TOT_X_NRG_FOOD,EUROSTAT,prc_hicp_minr:EA:TOT_X_NRG_FOOD,"Euro area HICP ex energy, food, alcohol, tobacco annual rate",M,%,47,https://ec.europa.eu/eurostat/databrowser/view/prc_hicp_minr/,"{""coicop18"": ""TOT_X_NRG_FOOD"", ""dataset"": ""prc_hicp_minr"", ""geo"": ""EA"", ""sinceTimePeriod"": ""2019-01"", ""unit"": ""RCH_A""}",False,cloud
 FRED:A007RY2Q224SBEA,FRED,A007RY2Q224SBEA,A007RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A007RY2Q224SBEA,,False,cloud
 FRED:A014RY2Q224SBEA,FRED,A014RY2Q224SBEA,A014RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A014RY2Q224SBEA,,False,cloud
 FRED:A019RY2Q224SBEA,FRED,A019RY2Q224SBEA,A019RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A019RY2Q224SBEA,,False,cloud
@@ -181,7 +181,7 @@ FRED:DGS30,FRED,DGS30,US Treasury 30Y CMT yield,D,%,1,https://fred.stlouisfed.or
 FRED:DGS3MO,FRED,DGS3MO,US Treasury 3M CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS3MO,,False,cloud
 FRED:DGS5,FRED,DGS5,US Treasury 5Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS5,,False,cloud
 FRED:DHHNGSP,FRED,DHHNGSP,Henry Hub natural gas spot,D,美元/MMBtu,7,https://fred.stlouisfed.org/series/DHHNGSP,,False,cloud
-FRED:DHUTRG3M086SBEA,FRED,DHUTRG3M086SBEA,PCE housing and utilities price index,M,指数点,60,https://fred.stlouisfed.org/series/DHUTRG3M086SBEA,,False,cloud
+FRED:DHSGRG3M086SBEA,FRED,DHSGRG3M086SBEA,PCE housing price index,M,指数点,60,https://fred.stlouisfed.org/series/DHSGRG3M086SBEA,,False,cloud
 FRED:DJIA,FRED,DJIA,Dow Jones Industrial Average,D,点,1,https://fred.stlouisfed.org/series/DJIA,,False,cloud
 FRED:DPCERY2Q224SBEA,FRED,DPCERY2Q224SBEA,DPCERY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/DPCERY2Q224SBEA,,False,cloud
 FRED:DPSACBW027SBOG,FRED,DPSACBW027SBOG,"Deposits, all commercial banks",W,十亿美元,9,https://fred.stlouisfed.org/series/DPSACBW027SBOG,,False,cloud
@@ -297,13 +297,14 @@ TSY:auction:5-Year:high_yield,TSY,auction:5-Year:high_yield,5-Year auction high 
 TSY:auction:5-Year:indirect_bidder_accepted,TSY,auction:5-Year:indirect_bidder_accepted,5-Year auction indirect accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""indirect_bidder_accepted""}",False,cloud
 TSY:auction:5-Year:offering_amt,TSY,auction:5-Year:offering_amt,5-Year auction offering amount,E,百万美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1e-06, ""value_field"": ""offering_amt""}",False,cloud
 TSY:auction:5-Year:primary_dealer_accepted,TSY,auction:5-Year:primary_dealer_accepted,5-Year auction primary dealer accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""primary_dealer_accepted""}",False,cloud
-TSY:mts9:net_interest,TSY,mts9:net_interest,MTS net interest outlays,M,百万美元,12,https://fiscaldata.treasury.gov/datasets/monthly-treasury-statement/,"{""date_field"": ""record_date"", ""endpoint"": ""v1/accounting/mts/mts_table_9"", ""filter"": ""classification_desc:eq:Net Interest"", ""scale"": 1e-06, ""value_field"": ""current_month_rcpt_outly_amt""}",False,cloud
+TSY:mts9:net_interest,TSY,mts9:net_interest,MTS net interest outlays,M,百万美元,12,https://fiscaldata.treasury.gov/datasets/monthly-treasury-statement/,"{""align"": ""month_start"", ""date_field"": ""record_date"", ""endpoint"": ""v1/accounting/mts/mts_table_9"", ""filter"": ""classification_desc:eq:Net Interest"", ""scale"": 1e-06, ""value_field"": ""current_month_rcpt_outly_amt""}",False,cloud
 YAHOO:BTC-USD,YAHOO,BTC-USD,Bitcoin USD,D,点,1,https://finance.yahoo.com/quote/BTC-USD,,False,cloud
 YAHOO:DX-Y.NYB,YAHOO,DX-Y.NYB,ICE US Dollar Index,D,点,1,https://finance.yahoo.com/quote/DX-Y.NYB,,False,cloud
 YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quote/FTSEMIB.MI,,False,cloud
 YAHOO:^FCHI,YAHOO,^FCHI,CAC 40,D,点,1,https://finance.yahoo.com/quote/^FCHI,,False,cloud
 YAHOO:^FTSE,YAHOO,^FTSE,FTSE 100,D,点,1,https://finance.yahoo.com/quote/^FTSE,,False,cloud
 YAHOO:^GDAXI,YAHOO,^GDAXI,DAX (performance index),D,点,1,https://finance.yahoo.com/quote/^GDAXI,,False,cloud
+YAHOO:^GSPE,YAHOO,^GSPE,S&P 500 能源行业指数,D,点,1,https://finance.yahoo.com/quote/^GSPE,,False,cloud
 YAHOO:^HSI,YAHOO,^HSI,Hang Seng,D,点,1,https://finance.yahoo.com/quote/^HSI,,False,cloud
 YAHOO:^MOVE,YAHOO,^MOVE,ICE BofA MOVE Index,D,点,1,https://finance.yahoo.com/quote/^MOVE,,False,cloud
 YAHOO:^NSEI,YAHOO,^NSEI,Nifty 50,D,点,1,https://finance.yahoo.com/quote/^NSEI,,False,cloud
@@ -317,7 +318,6 @@ YAHOO:^RUJ,YAHOO,^RUJ,Russell 2000 Value,D,点,1,https://finance.yahoo.com/quote
 YAHOO:^RUO,YAHOO,^RUO,Russell 2000 Growth,D,点,1,https://finance.yahoo.com/quote/^RUO,,False,cloud
 YAHOO:^RUT,YAHOO,^RUT,Russell 2000,D,点,1,https://finance.yahoo.com/quote/^RUT,,False,cloud
 YAHOO:^SP400,YAHOO,^SP400,S&P MidCap 400,D,点,1,https://finance.yahoo.com/quote/^SP400,,False,cloud
-YAHOO:^SP500-10,YAHOO,^SP500-10,S&P 500 能源行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-10,,False,cloud
 YAHOO:^SP500-15,YAHOO,^SP500-15,S&P 500 材料行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-15,,False,cloud
 YAHOO:^SP500-20,YAHOO,^SP500-20,S&P 500 工业行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-20,,False,cloud
 YAHOO:^SP500-25,YAHOO,^SP500-25,S&P 500 可选消费行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-25,,False,cloud

@@ -31,6 +31,10 @@ class FetchSummary:
     error: int = 0
     not_configured: int = 0
     rows: int = 0
+    initial: list[str] = None  # series loaded for the first time in this run
+
+    def __post_init__(self):
+        self.initial = []
 
 
 def series_defs(only_provider: str | None = None, only_keys: Sequence[str] | None = None, runner: str | None = None) -> list[SeriesDef]:
@@ -50,7 +54,10 @@ def series_defs(only_provider: str | None = None, only_keys: Sequence[str] | Non
     return defs
 
 
-def sync_catalog(store: Store) -> tuple[int, int]:
+def sync_catalog(store: Store) -> tuple[int, int, set[str]]:
+    """Upsert catalog and registry. Returns counts and the indicator ids whose
+    formula is new or changed (their history must be recomputed)."""
+    previous = store.indicator_formulas()
     mapping = load_mapping()
     rows = []
     for r in load_catalog():
@@ -65,7 +72,9 @@ def sync_catalog(store: Store) -> tuple[int, int]:
         for d in series_defs()
     ]
     n_ser = store.upsert_series(series_rows)
-    return n_ind, n_ser
+    store.prune_series([r["series_key"] for r in series_rows])
+    changed = {r["indicator_id"] for r in rows if r["formula"] and previous.get(r["indicator_id"]) != r["formula"]}
+    return n_ind, n_ser, changed
 
 
 def fetch(
@@ -104,6 +113,8 @@ def fetch(
                 written = store.write_observations(
                     d.key, result.observations, release_lag_days=d.release_lag_days, fetch_day=fetch_day
                 )
+                if store.last_write_initial and written:
+                    summary.initial.append(d.key)
             setattr(summary, result.status, getattr(summary, result.status) + 1)
             summary.rows += written
             last = result.observations[-1].obs_date.isoformat() if result.observations else "-"
@@ -119,16 +130,27 @@ def formulas_for(method: str = "api") -> dict[str, str]:
     return {iid: m["formula"] for iid, m in load_mapping().items() if m["method"] == method and m["formula"]}
 
 
+def indicators_using(series_keys: Iterable[str]) -> set[str]:
+    keys = set(series_keys)
+    return {iid for iid, text in formulas_for("api").items() if keys & set(_series_in(text))}
+
+
 def derive(
     store: Store,
     *,
     cutoffs: Sequence[pd.Timestamp] | None = None,
     backfill_from: date | None = None,
+    only: Iterable[str] | None = None,
     log=print,
 ) -> int:
     """Compute weekly values. Default: the latest completed week with all data stored so far.
     ``backfill_from``: every Friday since that date, from the latest stored versions (fast mode)."""
     formulas = formulas_for("api")
+    if only is not None:
+        only = set(only)
+        formulas = {k: v for k, v in formulas.items() if k in only}
+    if not formulas:
+        return 0
     keys = sorted({k for text in formulas.values() for k in _series_in(text)})
     raw = store.load_observations(keys)
     if backfill_from is not None:

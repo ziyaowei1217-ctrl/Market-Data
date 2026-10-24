@@ -99,6 +99,11 @@ class TreasuryFiscal(Provider):
             if any(v is None for v in parts):
                 continue
             grouped[date.fromisoformat(row[date_field][:10])].append(sum(parts) * scale)  # type: ignore[arg-type]
+        if p.get("align") == "month_start":
+            aligned: dict[date, list[float]] = defaultdict(list)
+            for k, v in grouped.items():
+                aligned[k.replace(day=1)].extend(v)
+            grouped = aligned
         agg = p.get("agg", "last")
         return [
             Observation(k, (sum(v) if agg == "sum" else v[-1]))
@@ -520,12 +525,17 @@ class MofJapan(Provider):
     def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
         frames = []
         for url in self.URLS:
-            body = self.get(url)
-            frame = pd.read_csv(io.BytesIO(body), skiprows=1)
+            text = self.get(url).decode("cp932", errors="replace")
+            lines = text.splitlines()
+            header = next((i for i, line in enumerate(lines) if line.split(",")[0].strip() in ("Date", "基準日")), None)
+            if header is None:
+                raise ProviderError(f"MOF CSV layout changed: no Date header in {url}")
+            frame = pd.read_csv(io.StringIO("\n".join(lines[header:])))
             frame.columns = [str(c).strip() for c in frame.columns]
+            frame = frame.rename(columns={frame.columns[0]: "Date"})
             frames.append(frame)
         frame = pd.concat(frames, ignore_index=True)
-        dates = pd.to_datetime(frame["Date"], format="mixed", errors="coerce")
+        dates = pd.to_datetime(frame["Date"].map(_jp_date), errors="coerce")
         out = []
         for d in defs:
             if d.code not in frame.columns:
@@ -535,6 +545,21 @@ class MofJapan(Provider):
             dedup = sorted({o.obs_date: o for o in obs}.values(), key=lambda o: o.obs_date)
             out.append(FetchResult(d.key, dedup, "ok" if dedup else "empty"))
         return out
+
+
+_JP_ERAS = {"M": 1867, "T": 1911, "S": 1925, "H": 1988, "R": 2018}
+
+
+def _jp_date(text: Any) -> str | None:
+    """'2026/10/23', '2026-10-23' or Japanese era 'R8.10.23' -> ISO date."""
+    s = str(text).strip()
+    if s and s[0] in _JP_ERAS and "." in s:
+        try:
+            y, m, d = s[1:].split(".")
+            return f"{_JP_ERAS[s[0]] + int(y):04d}-{int(m):02d}-{int(d):02d}"
+        except ValueError:
+            return None
+    return s.replace("/", "-") if s else None
 
 
 # --------------------------------------------------------------------------- market data (free)
@@ -566,13 +591,29 @@ class Yahoo(Provider):
     def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
         period1 = int(datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc).timestamp())
         period2 = int(datetime.now(timezone.utc).timestamp()) + 86400
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"}
         payload = self.get_json(
             self.URL.format(ticker=d.code),
             {"period1": period1, "period2": period2, "interval": "1d", "events": "history", "includeAdjustedClose": "false"},
-            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"},
+            headers=headers,
         )
         time.sleep(1.0)
         result = (payload.get("chart", {}).get("result") or [None])[0]
+        if result and len(result.get("timestamp") or []) < 10:
+            # Some index tickers only return history for range= queries.
+            for host in ("query1", "query2"):
+                try:
+                    retry = self.get_json(
+                        self.URL.format(ticker=d.code).replace("query2", host),
+                        {"range": "10y", "interval": "1d"}, headers=headers,
+                    )
+                except ProviderError:
+                    continue
+                time.sleep(1.0)
+                candidate = (retry.get("chart", {}).get("result") or [None])[0]
+                if candidate and len(candidate.get("timestamp") or []) > len(result.get("timestamp") or []):
+                    result = candidate
+                    break
         if not result:
             raise ProviderError(f"Yahoo: {payload.get('chart', {}).get('error')}")
         meta = result.get("meta", {})

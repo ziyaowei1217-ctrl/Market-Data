@@ -19,7 +19,7 @@ import sys
 from datetime import date, timedelta
 
 from .db.store import open_store
-from .runner import OBS_START, WEEKLY_START, derive, fetch, series_defs, sync_catalog
+from .runner import OBS_START, WEEKLY_START, derive, fetch, indicators_using, series_defs, sync_catalog
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -53,8 +53,8 @@ def main(argv: list[str] | None = None) -> int:
             store.init_schema()
             print("schema ready")
         elif args.command == "sync-catalog":
-            n_ind, n_ser = sync_catalog(store)
-            print(f"indicators: {n_ind}; series: {n_ser}")
+            n_ind, n_ser, changed = sync_catalog(store)
+            print(f"indicators: {n_ind}; series: {n_ser}; formulas changed: {len(changed)}")
         elif args.command == "fetch":
             defs = series_defs(args.provider, args.series)
             _print_summary(fetch(store, defs, start=args.start or OBS_START, runner=args.runner))
@@ -65,13 +65,19 @@ def main(argv: list[str] | None = None) -> int:
 
             print(f"report pages stored: {archive_all(store)}")
         elif args.command == "weekly":
-            sync_catalog(store)
+            _, _, changed = sync_catalog(store)
             defs = series_defs(args.provider, args.series)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
             if store.weekly_count() == 0:
                 print(f"no weekly values yet: backfilling from {WEEKLY_START}")
                 derive(store, backfill_from=WEEKLY_START)
+            else:
+                fresh = [k for s in summaries.values() for k in s.initial]
+                redo = changed | indicators_using(fresh)
+                if redo:
+                    print(f"recomputing history for {len(redo)} indicators (new/changed formula or first data)")
+                    derive(store, backfill_from=WEEKLY_START, only=redo)
             derive(store)
     finally:
         store.close()

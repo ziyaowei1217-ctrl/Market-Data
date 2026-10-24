@@ -95,13 +95,18 @@ class Store:
     def log(self, run_id: str, runner: str, provider: str, series_key: str | None, status: str, rows: int, message: str) -> None: ...
     def weekly_count(self) -> int: ...
     def upsert_report_pages(self, source: str, report_date: date, url: str, pages: Sequence[str]) -> int: ...
+    def indicator_formulas(self) -> dict[str, str]: ...
+    def prune_series(self, keep: Sequence[str]) -> int: ...
     def close(self) -> None: ...
+
+    last_write_initial: bool = False
 
     def write_observations(
         self, series_key: str, observations: Sequence[Observation], *, release_lag_days: int, fetch_day: date | None = None
     ) -> int:
         fetch_day = fetch_day or datetime.now(timezone.utc).date()
         existing, has_rows = self.latest_values(series_key)
+        self.last_write_initial = not has_rows
         rows = plan_new_rows(
             existing, has_rows, observations, fetch_day=fetch_day, release_lag_days=release_lag_days
         )
@@ -246,6 +251,19 @@ class SQLiteStore(Store):
     def weekly_count(self):
         return int(self.conn.execute("select count(*) from weekly_values").fetchone()[0])
 
+    def indicator_formulas(self):
+        return {r[0]: r[1] or "" for r in self.conn.execute("select indicator_id, formula from indicators")}
+
+    def prune_series(self, keep):
+        keep = list(keep)
+        q = f"select series_key from series where series_key not in ({','.join('?' * len(keep))})"
+        stale = [r[0] for r in self.conn.execute(q, keep)]
+        for key in stale:
+            self.conn.execute("delete from observations where series_key=?", (key,))
+            self.conn.execute("delete from series where series_key=?", (key,))
+        self.conn.commit()
+        return len(stale)
+
     def upsert_report_pages(self, source, report_date, url, pages):
         now = datetime.now(timezone.utc).isoformat()
         self.conn.executemany(
@@ -387,6 +405,18 @@ class PostgresStore(Store):
         with self.conn.cursor() as cur:
             cur.execute("select count(*) from public.weekly_values")
             return int(cur.fetchone()[0])
+
+    def indicator_formulas(self):
+        with self.conn.cursor() as cur:
+            cur.execute("select indicator_id, coalesce(formula, '') from public.indicators")
+            return dict(cur.fetchall())
+
+    def prune_series(self, keep):
+        with self.conn.cursor() as cur:
+            cur.execute("delete from public.series where not (series_key = any(%s))", (list(keep),))
+            n = cur.rowcount
+        self.conn.commit()
+        return n
 
     def upsert_report_pages(self, source, report_date, url, pages):
         with self.conn.cursor() as cur:
