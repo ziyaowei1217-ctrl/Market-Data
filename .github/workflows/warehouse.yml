@@ -1,0 +1,73 @@
+name: warehouse
+
+# Weekly fetch of free/official sources into the Supabase warehouse.
+# Secrets (Settings → Secrets and variables → Actions):
+#   WAREHOUSE_DB_URL  Supabase session-pooler connection string (required)
+#   FRED_API_KEY      enables ALFRED release vintages (recommended)
+#   BLS_API_KEY       BLS API v2 (recommended; v1 is limited to 25 requests/day)
+#   EIA_API_KEY       EIA petroleum data (required for EIA series)
+
+on:
+  schedule:
+    - cron: "17 13 * * 6"   # Saturday 13:17 UTC, after Friday's close is published
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "weekly | fetch | derive | probe"
+        default: weekly
+      provider:
+        description: "Only this provider (FRED, YAHOO, CFTC ...); empty = all"
+        default: ""
+      backfill_from:
+        description: "derive only: recompute weekly values since YYYY-MM-DD"
+        default: ""
+  push:
+    branches: [warehouse]
+    paths:
+      - "pipeline/warehouse/**"
+      - ".github/workflows/warehouse.yml"
+
+concurrency:
+  group: warehouse
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      WAREHOUSE_DB_URL: ${{ secrets.WAREHOUSE_DB_URL }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+      EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+      BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/warehouse/requirements.txt
+      - run: pip install -r pipeline/warehouse/requirements.txt
+      - name: Unit tests
+        run: python -m unittest discover -s pipeline/warehouse/tests -t .
+      - name: Check secrets
+        run: |
+          if [ -z "$WAREHOUSE_DB_URL" ]; then
+            echo "::error::WAREHOUSE_DB_URL secret is not set"; exit 1
+          fi
+      - name: Run warehouse
+        env:
+          COMMAND: ${{ github.event.inputs.command || 'weekly' }}
+          PROVIDER: ${{ github.event.inputs.provider }}
+          BACKFILL_FROM: ${{ github.event.inputs.backfill_from }}
+        run: |
+          set -euo pipefail
+          python -m pipeline.warehouse init-db
+          args=()
+          if [ -n "${PROVIDER:-}" ] && [ "$COMMAND" != "derive" ]; then args+=(--provider "$PROVIDER"); fi
+          if [ "$COMMAND" = "derive" ] && [ -n "${BACKFILL_FROM:-}" ]; then args+=(--backfill-from "$BACKFILL_FROM"); fi
+          python -m pipeline.warehouse "$COMMAND" "${args[@]}"

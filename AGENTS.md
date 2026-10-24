@@ -24,6 +24,16 @@
   tree, but it must validate manifests and hashes and must never invoke a
   pipeline runner.
 
+## Warehouse subsystem (`pipeline/warehouse/`)
+
+- The warehouse is a separate subsystem that keeps versioned history in Supabase
+  Postgres; it never reads or writes `output/` and does not change the five pipelines.
+- Its catalog comes from the 数据采集清单 workbook (`catalog/indicators.csv`) and
+  `catalog/mapping.py`; regenerate the CSVs instead of editing them by hand.
+- Missing data stays NULL with an explicit `status`; never fill with zero.
+- Tests: `python3 -m unittest discover -s pipeline/warehouse/tests -t .` (no network).
+- See `pipeline/warehouse/README.md` for tables, formulas and operations.
+
 ## Development workflow
 
 - Follow TDD for behavior changes and show the expected RED before implementation.

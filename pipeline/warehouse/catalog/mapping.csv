@@ -1,0 +1,1960 @@
+indicator_id,method,phase,formula,coverage_note
+01-001,api,P1,{FRED:SP500},FRED 价格指数（S&P 授权，FRED 免费历史约 10 年）
+01-002,api,P1,"ret({FRED:SP500}, ""W"")",价格回报，不含股息
+01-003,api,P1,"ret({FRED:SP500}, ""MTD"")",价格回报，不含股息
+01-004,api,P1,"ret({FRED:SP500}, ""YTD"")",价格回报，不含股息
+01-005,api,P1,"ret({FRED:SP500}, ""1Y"")",价格回报，不含股息
+01-006,api,P1,{FRED:NASDAQCOM},FRED 价格指数（S&P 授权，FRED 免费历史约 10 年）
+01-007,api,P1,"ret({FRED:NASDAQCOM}, ""W"")",价格回报，不含股息
+01-008,api,P1,"ret({FRED:NASDAQCOM}, ""MTD"")",价格回报，不含股息
+01-009,api,P1,"ret({FRED:NASDAQCOM}, ""YTD"")",价格回报，不含股息
+01-010,api,P1,"ret({FRED:NASDAQCOM}, ""1Y"")",价格回报，不含股息
+01-011,api,P1,{FRED:DJIA},FRED 价格指数（S&P 授权，FRED 免费历史约 10 年）
+01-012,api,P1,"ret({FRED:DJIA}, ""W"")",价格回报，不含股息
+01-013,api,P1,"ret({FRED:DJIA}, ""MTD"")",价格回报，不含股息
+01-014,api,P1,"ret({FRED:DJIA}, ""YTD"")",价格回报，不含股息
+01-015,api,P1,"ret({FRED:DJIA}, ""1Y"")",价格回报，不含股息
+02-001,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-002,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-003,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-004,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-005,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-006,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-007,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-008,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-009,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-010,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-011,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-012,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-013,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-014,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-015,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-016,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-017,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-018,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-019,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-020,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-021,api,P1,{YAHOO:^STOXX},Yahoo Finance 免费延迟行情（非官方接口），价格指数
+02-022,api,P1,"ret({YAHOO:^STOXX}, ""W"")",Yahoo Finance 免费行情，价格回报
+02-023,api,P1,"ret({YAHOO:^STOXX}, ""MTD"")",Yahoo Finance 免费行情，价格回报
+02-024,api,P1,"ret({YAHOO:^STOXX}, ""YTD"")",Yahoo Finance 免费行情，价格回报
+02-025,api,P1,"ret({YAHOO:^STOXX}, ""1Y"")",Yahoo Finance 免费行情，价格回报
+02-026,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-027,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-028,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-029,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-030,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-031,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-032,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-033,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-034,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-035,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-036,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-037,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-038,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-039,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+02-040,report,P1b,,MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照
+03-001,api,P1,"ret({YAHOO:^SP500-50}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-002,api,P1,"ret({YAHOO:^SP500-50}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-003,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-004,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-005,api,P1,"ret({YAHOO:^SP500-10}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-006,api,P1,"ret({YAHOO:^SP500-10}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-007,api,P1,"ret({YAHOO:^SP500-10}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-008,api,P1,"ret({YAHOO:^SP500-10}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-009,api,P1,"ret({YAHOO:^SP500-45}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-010,api,P1,"ret({YAHOO:^SP500-45}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-011,api,P1,"ret({YAHOO:^SP500-45}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-012,api,P1,"ret({YAHOO:^SP500-45}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-013,api,P1,"ret({YAHOO:^SP500-55}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-014,api,P1,"ret({YAHOO:^SP500-55}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-015,api,P1,"ret({YAHOO:^SP500-55}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-016,api,P1,"ret({YAHOO:^SP500-55}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-017,api,P1,"ret({YAHOO:^SP500-40}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-018,api,P1,"ret({YAHOO:^SP500-40}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-019,api,P1,"ret({YAHOO:^SP500-40}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-020,api,P1,"ret({YAHOO:^SP500-40}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-021,api,P1,"ret({YAHOO:^SP500-30}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-022,api,P1,"ret({YAHOO:^SP500-30}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-023,api,P1,"ret({YAHOO:^SP500-30}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-024,api,P1,"ret({YAHOO:^SP500-30}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-025,api,P1,"ret({YAHOO:^SP500-60}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-026,api,P1,"ret({YAHOO:^SP500-60}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-027,api,P1,"ret({YAHOO:^SP500-60}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-028,api,P1,"ret({YAHOO:^SP500-60}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-029,api,P1,"ret({YAHOO:^SP500-20}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-030,api,P1,"ret({YAHOO:^SP500-20}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-031,api,P1,"ret({YAHOO:^SP500-20}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-032,api,P1,"ret({YAHOO:^SP500-20}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-033,api,P1,"ret({YAHOO:^SP500-25}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-034,api,P1,"ret({YAHOO:^SP500-25}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-035,api,P1,"ret({YAHOO:^SP500-25}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-036,api,P1,"ret({YAHOO:^SP500-25}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-037,api,P1,"ret({YAHOO:^SP500-35}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-038,api,P1,"ret({YAHOO:^SP500-35}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-039,api,P1,"ret({YAHOO:^SP500-35}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-040,api,P1,"ret({YAHOO:^SP500-35}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-041,api,P1,"ret({YAHOO:^SP500-15}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-042,api,P1,"ret({YAHOO:^SP500-15}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-043,api,P1,"ret({YAHOO:^SP500-15}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+03-044,api,P1,"ret({YAHOO:^SP500-15}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+04-001,api,P1,"ret({YAHOO:^RLV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-002,api,P1,"ret({YAHOO:^RLV}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-003,api,P1,"ret({YAHOO:^RUI}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-004,api,P1,"ret({YAHOO:^RUI}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-005,api,P1,"ret({YAHOO:^RLG}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-006,api,P1,"ret({YAHOO:^RLG}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-007,api,P1,"ret({YAHOO:^RMCCV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-008,api,P1,"ret({YAHOO:^RMCCV}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-009,api,P1,"ret({YAHOO:^RMCC}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-010,api,P1,"ret({YAHOO:^RMCC}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-011,api,P1,"ret({YAHOO:^RMCCG}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-012,api,P1,"ret({YAHOO:^RMCCG}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-013,api,P1,"ret({YAHOO:^RUJ}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-014,api,P1,"ret({YAHOO:^RUJ}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-015,api,P1,"ret({YAHOO:^RUT}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-016,api,P1,"ret({YAHOO:^RUT}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-017,api,P1,"ret({YAHOO:^RUO}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-018,api,P1,"ret({YAHOO:^RUO}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-019,api,P1,"ret({YAHOO:^RLG}, ""W"") - ret({YAHOO:^RLV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-020,api,P1,"ret({YAHOO:^RMCCG}, ""W"") - ret({YAHOO:^RMCCV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+04-021,api,P1,"ret({YAHOO:^RUO}, ""W"") - ret({YAHOO:^RUJ}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+05-001,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-002,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-003,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-004,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-005,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-006,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-007,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-008,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+05-009,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
+06-001,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-002,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-003,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-004,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-005,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-006,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-007,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-008,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-009,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-010,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-011,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-012,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-013,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-014,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-015,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-016,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-017,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-018,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-019,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-020,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-021,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-022,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-023,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-024,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-025,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-026,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-027,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+07-001,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
+07-002,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
+07-003,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
+07-004,api,P1,"ret({YAHOO:^SPXEW}, ""W"") - ret({FRED:SP500}, ""W"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
+07-005,api,P1,"ret({YAHOO:^SPXEW}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",等权与市值加权价格指数（Yahoo/FRED），价格回报差
+78-001,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-002,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-003,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-004,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-005,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-006,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-007,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-008,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-009,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-010,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-011,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-012,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-013,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-014,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-015,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-016,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-017,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-018,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-019,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-020,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-021,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-022,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-023,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-024,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-025,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-026,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-027,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-028,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-029,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-030,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-031,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-032,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-033,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-034,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-035,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-036,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-037,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-038,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+78-039,pending,P2,,市场宽度需 500 只成分股日线自建，待做
+08-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-005,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-006,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-007,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-008,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-009,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-010,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-011,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-012,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-013,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-014,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-015,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-016,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-017,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-018,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-019,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-020,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-021,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-022,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-023,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-024,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-025,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-026,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-027,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-028,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-029,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-030,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-031,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-032,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-033,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-034,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-035,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-036,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-037,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-038,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-039,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-040,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-005,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+09-006,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+10-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+10-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+10-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+10-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+12-001,api,P1,{FRED:DGS3MO},财政部常数期限收益率（FRED 镜像）
+12-002,api,P1,"chg({FRED:DGS3MO}, ""W"") * 100",本周末减上周末，%→bp
+12-003,api,P1,{FRED:DGS2},财政部常数期限收益率（FRED 镜像）
+12-004,api,P1,"chg({FRED:DGS2}, ""W"") * 100",本周末减上周末，%→bp
+12-005,api,P1,{FRED:DGS5},财政部常数期限收益率（FRED 镜像）
+12-006,api,P1,"chg({FRED:DGS5}, ""W"") * 100",本周末减上周末，%→bp
+12-007,api,P1,{FRED:DGS10},财政部常数期限收益率（FRED 镜像）
+12-008,api,P1,"chg({FRED:DGS10}, ""W"") * 100",本周末减上周末，%→bp
+12-009,api,P1,{FRED:DGS30},财政部常数期限收益率（FRED 镜像）
+12-010,api,P1,"chg({FRED:DGS30}, ""W"") * 100",本周末减上周末，%→bp
+13-001,api,P1,{FRED:T10Y2Y},
+13-002,api,P1,"chg({FRED:T10Y2Y}, ""W"") * 100",
+13-003,api,P1,{FRED:T10Y3M},
+13-004,api,P1,"chg({FRED:T10Y3M}, ""W"") * 100",
+14-001,api,P1,{FRED:DFII5},
+14-002,api,P1,"chg({FRED:DFII5}, ""W"") * 100",
+14-003,api,P1,{FRED:T5YIE},
+14-004,api,P1,"chg({FRED:T5YIE}, ""W"") * 100",
+14-005,api,P1,{FRED:DFII10},
+14-006,api,P1,"chg({FRED:DFII10}, ""W"") * 100",
+14-007,api,P1,{FRED:T10YIE},
+14-008,api,P1,"chg({FRED:T10YIE}, ""W"") * 100",
+15-001,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-002,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-003,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-004,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-005,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-006,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-007,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-008,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-009,api,P1,{MOFJP:2Y},日本财务省 JGB 常数期限收益率
+15-010,api,P1,{MOFJP:10Y},日本财务省 JGB 常数期限收益率
+15-011,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-012,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+16-001,api,P1,{FRED:BAMLC0A0CM} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；%×100→bp
+16-002,api,P1,"chg({FRED:BAMLC0A0CM}, ""W"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+16-003,api,P1,"pctile({FRED:BAMLC0A0CM}, ""3Y"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；周度采样 3 年分位
+17-001,api,P1,{FRED:BAMLH0A0HYM2} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；%×100→bp
+17-002,api,P1,"chg({FRED:BAMLH0A0HYM2}, ""W"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+17-003,api,P1,"pctile({FRED:BAMLH0A0HYM2}, ""3Y"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；周度采样 3 年分位
+18-001,report,P1b,,JPM EMBI 需授权；取周报快照
+18-002,report,P1b,,JPM EMBI 需授权；取周报快照
+18-003,report,P1b,,JPM EMBI 需授权；取周报快照
+19-001,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-002,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-003,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-004,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-005,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
+19-006,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
+19-007,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-008,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-009,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
+19-010,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
+19-011,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-012,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-013,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-014,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-015,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-016,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+20-001,api,P1,{FRED:DFEDTARL},
+20-002,api,P1,{FRED:DFEDTARU},
+20-003,api,P1,{FRED:ECBDFR},
+20-004,api,P1,{BOE:IUDBEDR},英格兰银行统计数据库 IADB
+20-005,manual,P1,,BoJ 政策利率：按决议公告人工维护（catalog/manual）
+21-001,api,P1,{NYFED:secured/sofr:percentRate},纽约联储参考利率 API
+21-002,api,P1,{NYFED:secured/sofr:volumeInBillions},
+21-003,api,P1,{NYFED:secured/sofr:percentPercentile25},
+21-004,api,P1,{NYFED:secured/sofr:percentPercentile75},
+21-005,api,P1,{NYFED:unsecured/effr:percentRate},
+21-006,api,P1,{NYFED:unsecured/effr:volumeInBillions},
+21-007,api,P1,{NYFED:unsecured/effr:percentPercentile25},
+21-008,api,P1,{NYFED:unsecured/effr:percentPercentile75},
+21-009,api,P1,({NYFED:secured/sofr:percentRate} - {FRED:IORB}) * 100,同一参考日
+21-010,api,P1,({NYFED:unsecured/effr:percentRate} - {FRED:IORB}) * 100,同一参考日
+21-011,api,P1,{FRED:IORB},
+22-001,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-002,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-003,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-004,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-005,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-006,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-007,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-008,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-009,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+22-010,pending,P2,,FedWatch 概率需 CME 授权；可由联邦基金期货自算，待做
+112-301,api,P1,{FRED:DFII30},
+112-302,api,P1,{FRED:DGS30} - {FRED:DFII30},同日名义减实际收益率
+23-001,api,P1,{ECB:EXR/D.USD.EUR.SP00.A},ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-002,api,P1,"ret({ECB:EXR/D.USD.EUR.SP00.A}, ""W"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-003,api,P1,({ECB:EXR/D.JPY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}),ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-004,api,P1,"ret(({ECB:EXR/D.JPY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""W"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-005,api,P1,({ECB:EXR/D.USD.EUR.SP00.A} / {ECB:EXR/D.GBP.EUR.SP00.A}),ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-006,api,P1,"ret(({ECB:EXR/D.USD.EUR.SP00.A} / {ECB:EXR/D.GBP.EUR.SP00.A}), ""W"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-007,api,P1,({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}),ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+23-008,api,P1,"ret(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""W"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+24-001,api,P1,{YAHOO:DX-Y.NYB},ICE DXY 免费延迟行情（Yahoo），完整授权历史需 ICE
+24-002,api,P1,"ret({YAHOO:DX-Y.NYB}, ""W"")",Yahoo 免费行情
+24-003,api,P1,{FRED:DTWEXBGS},美联储 H.10 广义美元指数（FRED）
+24-004,api,P1,"ret({FRED:DTWEXBGS}, ""W"")",
+25-001,api,P1,{FRED:DCOILWTICO},EIA 现货价格（FRED 镜像），发布滞后约一周
+25-002,api,P1,"ret({FRED:DCOILWTICO}, ""W"")",
+25-003,api,P1,{FRED:DCOILBRENTEU},EIA 现货价格（FRED 镜像），发布滞后约一周
+25-004,api,P1,"ret({FRED:DCOILBRENTEU}, ""W"")",
+25-005,api,P1,{FRED:DCOILBRENTEU} - {FRED:DCOILWTICO},同日现货价差
+26-001,api,P1,{EIA:PET.WCESTUS1.W} / 1000,EIA 周度石油状况报告；千桶→百万桶
+26-002,api,P1,{EIA:PET.WGTSTUS1.W} / 1000,EIA 周度石油状况报告；千桶→百万桶
+26-003,api,P1,{EIA:PET.WDISTUS1.W} / 1000,EIA 周度石油状况报告；千桶→百万桶
+26-004,api,P1,diff({EIA:PET.WCESTUS1.W}) / 1000,本周减上周；千桶→百万桶
+26-005,api,P1,diff({EIA:PET.WGTSTUS1.W}) / 1000,本周减上周；千桶→百万桶
+26-006,api,P1,diff({EIA:PET.WDISTUS1.W}) / 1000,本周减上周；千桶→百万桶
+26-007,api,P1,{EIA:PET.WCRFPUS2.W},EIA 周度石油状况报告
+26-008,api,P1,{EIA:PET.WCRIMUS2.W},EIA 周度石油状况报告
+26-009,api,P1,{EIA:PET.WCREXUS2.W},EIA 周度石油状况报告
+26-010,api,P1,{EIA:PET.WGFUPUS2.W},EIA 周度石油状况报告
+26-011,api,P1,{EIA:PET.WDIUPUS2.W},EIA 周度石油状况报告
+26-012,api,P1,{EIA:PET.WPULEUS3.W},EIA 周度石油状况报告
+27-001,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+27-002,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+27-003,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+28-001,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+28-002,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+28-003,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+29-001,api,P1,{BLS:CUSR0000SA0},BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-002,api,P1,yoy({BLS:CUUR0000SA0}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-003,api,P1,pop({BLS:CUSR0000SA0}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-004,api,P1,{BLS:CUSR0000SA0L1E},BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-005,api,P1,yoy({BLS:CUUR0000SA0L1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-006,api,P1,pop({BLS:CUSR0000SA0L1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-007,api,P1,pop({BLS:CUSR0000SAF1}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-008,api,P1,yoy({BLS:CUUR0000SAF1}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-009,api,P1,pop({BLS:CUSR0000SA0E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-010,api,P1,yoy({BLS:CUUR0000SA0E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-011,api,P1,pop({BLS:CUSR0000SAH1}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-012,api,P1,yoy({BLS:CUUR0000SAH1}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-013,api,P1,pop({BLS:CUSR0000SACL1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-014,api,P1,yoy({BLS:CUUR0000SACL1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
+29-015,pending,P2,,非住房核心服务需 BLS 分项与相对权重自建，待做
+29-016,pending,P2,,非住房核心服务需 BLS 分项与相对权重自建，待做
+30-001,api,P1,{FRED:PCEPI},BEA 个人收入与支出（FRED 镜像）
+30-002,api,P1,yoy({FRED:PCEPI}),BEA 个人收入与支出（FRED 镜像）
+30-003,api,P1,pop({FRED:PCEPI}),BEA 个人收入与支出（FRED 镜像）
+30-004,api,P1,{FRED:PCEPILFE},BEA 个人收入与支出（FRED 镜像）
+30-005,api,P1,yoy({FRED:PCEPILFE}),BEA 个人收入与支出（FRED 镜像）
+30-006,api,P1,pop({FRED:PCEPILFE}),BEA 个人收入与支出（FRED 镜像）
+30-007,api,P1,pop({FRED:DGDSRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
+30-008,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-009,api,P1,pop({FRED:DSERRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
+30-010,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-011,api,P1,pop({FRED:DHUTRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）；BEA 口径为住房与公用事业
+30-012,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-013,api,P1,pop({FRED:IA001260M}),BEA 个人收入与支出（FRED 镜像）
+30-014,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+31-001,api,P1,{FRED:A191RL1Q225SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+31-002,api,P1,{FRED:DPCERY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+31-003,api,P1,{FRED:A007RY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+31-004,api,P1,{FRED:A014RY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+31-005,api,P1,{FRED:A822RY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+31-006,api,P1,{FRED:A019RY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
+32-001,api,P1,diff({FRED:PAYEMS}),BLS 就业形势（FRED/ALFRED）；修订值需 ALFRED 发布版本（配置 FRED_API_KEY）
+32-002,api,P1,"rev(diff({FRED:PAYEMS}), 1)",BLS 就业形势（FRED/ALFRED）；修订值需 ALFRED 发布版本（配置 FRED_API_KEY）
+32-003,api,P1,"rev(diff({FRED:PAYEMS}), 2)",BLS 就业形势（FRED/ALFRED）；修订值需 ALFRED 发布版本（配置 FRED_API_KEY）
+32-004,api,P1,{FRED:UNRATE},
+32-005,api,P1,{FRED:CIVPART},
+32-006,api,P1,{FRED:EMRATIO},
+32-007,api,P1,yoy({FRED:CES0500000003}),
+32-008,api,P1,pop({FRED:CES0500000003}),
+32-009,api,P1,{FRED:AWHAETP},
+32-010,api,P1,{BLS:CES0500000021},BLS CES 扩散指数（1个月）
+33-001,api,P1,{FRED:ICSA},
+33-002,api,P1,{FRED:CCSA},
+33-003,api,P1,{FRED:IC4WSA},
+33-004,api,P1,{FRED:CC4WSA},
+34-001,api,P1,{FRED:JTSJOL},
+34-002,api,P1,{FRED:JTSJOR},
+34-003,api,P1,{FRED:JTSQUR},
+36-001,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-002,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-003,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-004,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-005,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-006,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-007,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-008,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-009,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-010,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-011,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-012,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+37-001,api,P1,{FRED:RSAFS},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+37-002,api,P1,{FRED:RSFSXMV},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+37-003,api,P1,({FRED:RSXFS} - {FRED:RSMVPD} - {FRED:RSGASS} - {FRED:RSBMGESD}),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+37-004,api,P1,pop({FRED:RSAFS}),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+37-005,api,P1,pop({FRED:RSFSXMV}),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+37-006,api,P1,pop(({FRED:RSXFS} - {FRED:RSMVPD} - {FRED:RSGASS} - {FRED:RSBMGESD})),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
+38-001,api,P1,{FRED:INDPRO},
+38-002,api,P1,{FRED:IPMAN},
+38-003,api,P1,pop({FRED:INDPRO}),
+38-004,api,P1,pop({FRED:IPMAN}),
+38-005,api,P1,{FRED:TCU},
+39-001,api,P1,{FRED:HOUST},
+39-002,api,P1,{FRED:PERMIT},
+39-003,api,P1,pop({FRED:HOUST}),
+39-004,api,P1,pop({FRED:PERMIT}),
+35-001,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-002,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-003,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-004,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-005,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-006,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-007,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-008,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-009,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-010,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-011,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-012,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-013,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-014,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-015,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-016,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-017,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-018,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-019,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-020,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-021,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-022,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-023,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-024,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-025,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-026,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-027,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-028,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-029,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-030,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-031,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-032,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-033,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-034,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-035,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-036,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-037,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-038,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-039,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-040,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-041,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-042,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-043,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-044,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+40-001,api,P1,{ECB:ICP/M.U2.N.000000.4.ANR},ECB 数据门户 HICP（Eurostat 源）
+40-002,api,P1,{ECB:ICP/M.U2.N.XEF000.4.ANR},ECB 数据门户 HICP（Eurostat 源）
+40-003,api,P1,{EUROSTAT:namq_10_gdp:qoq},Eurostat 季度国民账户
+40-004,api,P1,{EUROSTAT:namq_10_gdp:yoy},Eurostat 季度国民账户
+41-001,api,P1,{ONS:D7G7},ONS 时间序列
+41-002,api,P1,{ONS:DKO8},ONS 时间序列
+41-003,api,P1,pop({ONS:ECY2}),ONS 月度 GDP 指数计算环比
+41-004,api,P1,{ONS:IHYQ},ONS 时间序列
+42-001,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
+42-002,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
+42-003,api,P1,pop({FRED:JPNRGDPEXP}),日本实际 GDP（FRED 镜像）季环比
+42-004,api,P1,"ann({FRED:JPNRGDPEXP}, 1)",季环比折年
+43-001,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-002,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-003,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-004,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-005,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-006,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+44-001,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-002,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-003,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-004,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-005,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-006,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-007,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-008,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-009,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-010,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-011,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-012,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-013,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-014,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-015,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-016,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-017,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-018,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-001,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-002,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-003,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-004,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-005,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-006,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-007,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+45-008,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+47-001,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-002,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-003,api,P1,({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-004,api,P1,({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short}) / {CFTC:gpe5-46if:13874A:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-005,api,P1,diff(({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short})),CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-006,api,P1,"pctile(({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-007,api,P1,{CFTC:gpe5-46if:13874A:lev_money_positions_long},CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-008,api,P1,{CFTC:gpe5-46if:13874A:lev_money_positions_short},CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-009,api,P1,({CFTC:gpe5-46if:13874A:lev_money_positions_long} - {CFTC:gpe5-46if:13874A:lev_money_positions_short}),CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-010,api,P1,({CFTC:gpe5-46if:13874A:lev_money_positions_long} - {CFTC:gpe5-46if:13874A:lev_money_positions_short}) / {CFTC:gpe5-46if:13874A:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-011,api,P1,diff(({CFTC:gpe5-46if:13874A:lev_money_positions_long} - {CFTC:gpe5-46if:13874A:lev_money_positions_short})),CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-012,api,P1,"pctile(({CFTC:gpe5-46if:13874A:lev_money_positions_long} - {CFTC:gpe5-46if:13874A:lev_money_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 13874A，周二持仓
+47-013,api,P1,{CFTC:gpe5-46if:043602:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-014,api,P1,{CFTC:gpe5-46if:043602:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-015,api,P1,({CFTC:gpe5-46if:043602:asset_mgr_positions_long} - {CFTC:gpe5-46if:043602:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-016,api,P1,({CFTC:gpe5-46if:043602:asset_mgr_positions_long} - {CFTC:gpe5-46if:043602:asset_mgr_positions_short}) / {CFTC:gpe5-46if:043602:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-017,api,P1,diff(({CFTC:gpe5-46if:043602:asset_mgr_positions_long} - {CFTC:gpe5-46if:043602:asset_mgr_positions_short})),CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-018,api,P1,"pctile(({CFTC:gpe5-46if:043602:asset_mgr_positions_long} - {CFTC:gpe5-46if:043602:asset_mgr_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-019,api,P1,{CFTC:gpe5-46if:043602:lev_money_positions_long},CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-020,api,P1,{CFTC:gpe5-46if:043602:lev_money_positions_short},CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-021,api,P1,({CFTC:gpe5-46if:043602:lev_money_positions_long} - {CFTC:gpe5-46if:043602:lev_money_positions_short}),CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-022,api,P1,({CFTC:gpe5-46if:043602:lev_money_positions_long} - {CFTC:gpe5-46if:043602:lev_money_positions_short}) / {CFTC:gpe5-46if:043602:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-023,api,P1,diff(({CFTC:gpe5-46if:043602:lev_money_positions_long} - {CFTC:gpe5-46if:043602:lev_money_positions_short})),CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-024,api,P1,"pctile(({CFTC:gpe5-46if:043602:lev_money_positions_long} - {CFTC:gpe5-46if:043602:lev_money_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 043602，周二持仓
+47-025,api,P1,{CFTC:gpe5-46if:099741:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-026,api,P1,{CFTC:gpe5-46if:099741:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-027,api,P1,({CFTC:gpe5-46if:099741:asset_mgr_positions_long} - {CFTC:gpe5-46if:099741:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-028,api,P1,({CFTC:gpe5-46if:099741:asset_mgr_positions_long} - {CFTC:gpe5-46if:099741:asset_mgr_positions_short}) / {CFTC:gpe5-46if:099741:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-029,api,P1,diff(({CFTC:gpe5-46if:099741:asset_mgr_positions_long} - {CFTC:gpe5-46if:099741:asset_mgr_positions_short})),CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-030,api,P1,"pctile(({CFTC:gpe5-46if:099741:asset_mgr_positions_long} - {CFTC:gpe5-46if:099741:asset_mgr_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-031,api,P1,{CFTC:gpe5-46if:099741:lev_money_positions_long},CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-032,api,P1,{CFTC:gpe5-46if:099741:lev_money_positions_short},CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-033,api,P1,({CFTC:gpe5-46if:099741:lev_money_positions_long} - {CFTC:gpe5-46if:099741:lev_money_positions_short}),CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-034,api,P1,({CFTC:gpe5-46if:099741:lev_money_positions_long} - {CFTC:gpe5-46if:099741:lev_money_positions_short}) / {CFTC:gpe5-46if:099741:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-035,api,P1,diff(({CFTC:gpe5-46if:099741:lev_money_positions_long} - {CFTC:gpe5-46if:099741:lev_money_positions_short})),CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-036,api,P1,"pctile(({CFTC:gpe5-46if:099741:lev_money_positions_long} - {CFTC:gpe5-46if:099741:lev_money_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 099741，周二持仓
+47-037,api,P1,{CFTC:gpe5-46if:097741:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-038,api,P1,{CFTC:gpe5-46if:097741:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-039,api,P1,({CFTC:gpe5-46if:097741:asset_mgr_positions_long} - {CFTC:gpe5-46if:097741:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-040,api,P1,({CFTC:gpe5-46if:097741:asset_mgr_positions_long} - {CFTC:gpe5-46if:097741:asset_mgr_positions_short}) / {CFTC:gpe5-46if:097741:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-041,api,P1,diff(({CFTC:gpe5-46if:097741:asset_mgr_positions_long} - {CFTC:gpe5-46if:097741:asset_mgr_positions_short})),CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-042,api,P1,"pctile(({CFTC:gpe5-46if:097741:asset_mgr_positions_long} - {CFTC:gpe5-46if:097741:asset_mgr_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-043,api,P1,{CFTC:gpe5-46if:097741:lev_money_positions_long},CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-044,api,P1,{CFTC:gpe5-46if:097741:lev_money_positions_short},CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-045,api,P1,({CFTC:gpe5-46if:097741:lev_money_positions_long} - {CFTC:gpe5-46if:097741:lev_money_positions_short}),CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-046,api,P1,({CFTC:gpe5-46if:097741:lev_money_positions_long} - {CFTC:gpe5-46if:097741:lev_money_positions_short}) / {CFTC:gpe5-46if:097741:open_interest_all} * 100,CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-047,api,P1,diff(({CFTC:gpe5-46if:097741:lev_money_positions_long} - {CFTC:gpe5-46if:097741:lev_money_positions_short})),CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-048,api,P1,"pctile(({CFTC:gpe5-46if:097741:lev_money_positions_long} - {CFTC:gpe5-46if:097741:lev_money_positions_short}), ""3Y"")",CFTC TFF 期货单独口径，合约 097741，周二持仓
+47-049,api,P1,{CFTC:72hh-3qpy:067651:m_money_positions_long_all},CFTC Disaggregated 期货单独口径，合约 067651
+47-050,api,P1,{CFTC:72hh-3qpy:067651:m_money_positions_short_all},CFTC Disaggregated 期货单独口径，合约 067651
+47-051,api,P1,({CFTC:72hh-3qpy:067651:m_money_positions_long_all} - {CFTC:72hh-3qpy:067651:m_money_positions_short_all}),CFTC Disaggregated 期货单独口径，合约 067651
+47-052,api,P1,{CFTC:72hh-3qpy:088691:m_money_positions_long_all},CFTC Disaggregated 期货单独口径，合约 088691
+47-053,api,P1,{CFTC:72hh-3qpy:088691:m_money_positions_short_all},CFTC Disaggregated 期货单独口径，合约 088691
+47-054,api,P1,({CFTC:72hh-3qpy:088691:m_money_positions_long_all} - {CFTC:72hh-3qpy:088691:m_money_positions_short_all}),CFTC Disaggregated 期货单独口径，合约 088691
+47-055,api,P1,{CFTC:gpe5-46if:13874A:open_interest_all},CFTC TFF，合约 13874A
+47-056,api,P1,{CFTC:gpe5-46if:043602:open_interest_all},CFTC TFF，合约 043602
+47-057,api,P1,{CFTC:gpe5-46if:099741:open_interest_all},CFTC TFF，合约 099741
+47-058,api,P1,{CFTC:gpe5-46if:097741:open_interest_all},CFTC TFF，合约 097741
+47-059,api,P1,{CFTC:72hh-3qpy:067651:open_interest_all},CFTC Disaggregated 期货单独口径，合约 067651
+47-060,api,P1,{CFTC:72hh-3qpy:088691:open_interest_all},CFTC Disaggregated 期货单独口径，合约 088691
+77-001,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-002,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-003,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-004,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-005,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-006,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-007,pending,P2,,AAII 历史文件需会员；机构调查需授权
+48-001,api,P1,{CBOE:VIX},Cboe 官方日收盘历史 CSV
+48-002,api,P1,"chg({CBOE:VIX}, ""W"")",本周末减上周末，指数点
+48-003,api,P1,{CBOE:VIX9D},Cboe 官方日收盘历史 CSV
+48-004,api,P1,"chg({CBOE:VIX9D}, ""W"")",本周末减上周末，指数点
+48-005,api,P1,{CBOE:VVIX},Cboe 官方日收盘历史 CSV
+48-006,api,P1,"chg({CBOE:VVIX}, ""W"")",本周末减上周末，指数点
+48-007,api,P1,{CBOE:VIX9D} - {CBOE:VIX},同日差值
+49-001,api,P1,{YAHOO:^MOVE},MOVE 免费延迟行情（Yahoo），完整授权历史需 ICE
+49-002,api,P1,"chg({YAHOO:^MOVE}, ""W"")",Yahoo 免费行情
+50-001,pending,P2,,需美国国债总回报指数（授权），待定替代口径
+50-002,pending,P2,,需美国国债总回报指数（授权），待定替代口径
+51-001,api,P1,"vol({FRED:SP500}, ""52W"")",周五采样周收益标准差×√52（价格指数）
+51-002,api,P1,drawdown({FRED:SP500}),相对本库已存历史最高点（FRED 历史约 10 年）
+51-003,api,P1,"maxdd({FRED:SP500}, ""YTD"")",年内最大回撤（日频路径）
+51-004,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-005,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-006,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-007,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-008,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-009,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-010,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-011,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-012,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-013,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-014,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+52-001,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-003,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-004,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-005,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-006,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-007,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-008,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-009,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-010,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-011,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-012,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-013,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-014,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-015,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-016,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-017,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-018,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-019,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-020,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+53-001,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-002,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-003,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-004,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-005,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-006,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-007,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+53-008,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
+54-001,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-002,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-003,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-004,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-005,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-006,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-007,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-008,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-009,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-010,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-001,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-002,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-003,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-004,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-005,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-006,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-007,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-008,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-009,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+55-010,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+56-001,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-002,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-003,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-004,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-005,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-006,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-007,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+56-008,pending,P2,,需宏观发布日历与日内行情；日内数据需授权
+57-001,api,P1,{FRED:GDPNOW},亚特兰大联储 GDPNow（FRED/ALFRED）
+57-002,api,P1,prev_vintage({FRED:GDPNOW}),上一次模型更新值（需 FRED_API_KEY 取版本）
+57-003,api,P1,{FRED:GDPNOW} - prev_vintage({FRED:GDPNOW}),本次减上次（需 FRED_API_KEY 取版本）
+58-001,api,P1,{FRED:DSPIC96},BEA 个人收入与支出（FRED 镜像）
+58-002,api,P1,{FRED:PCEC96},BEA 个人收入与支出（FRED 镜像）
+58-003,api,P1,{FRED:DGDSRX1},BEA 个人收入与支出（FRED 镜像）
+58-004,api,P1,{FRED:PCESC96},BEA 个人收入与支出（FRED 镜像）
+58-005,api,P1,pop({FRED:DSPIC96}),BEA 个人收入与支出（FRED 镜像）
+58-006,api,P1,pop({FRED:PCEC96}),BEA 个人收入与支出（FRED 镜像）
+58-007,api,P1,{FRED:PSAVERT},BEA 个人收入与支出（FRED 镜像）
+59-001,api,P1,{FRED:COE} / {FRED:GDI} * 100,BEA 劳动报酬（received 口径）/GDI
+59-002,api,P1,{FRED:PRS85006173},BLS 劳动收入份额指数（2017=100）
+60-001,api,P1,"ann({BLS:CUSR0000SA0L1E}, 3)",季调核心 CPI 指数 3 个月年化
+60-002,api,P1,"ann({BLS:CUSR0000SA0L1E}, 6)",季调核心 CPI 指数 6 个月年化
+60-003,api,P1,"ann({FRED:PCEPILFE}, 3)",季调核心 PCE 指数 3 个月年化
+60-004,api,P1,"ann({FRED:PCEPILFE}, 6)",季调核心 PCE 指数 6 个月年化
+61-001,api,P1,{FRED:MEDCPIM158SFRBCLE},克利夫兰联储（FRED 镜像）
+61-002,api,P1,{FRED:MEDCPIM094SFRBCLE},克利夫兰联储（FRED 镜像）
+61-003,api,P1,{FRED:TRMMEANCPIM158SFRBCLE},克利夫兰联储（FRED 镜像）
+61-004,api,P1,{FRED:TRMMEANCPIM094SFRBCLE},克利夫兰联储（FRED 镜像）
+61-005,pending,P2,,需 BLS 分项与权重自建，待做
+62-001,api,P1,{BLS:CIU2020000000000A},BLS ECI；季环比为未折年 3 个月变化
+62-002,api,P1,{BLS:CIS2020000000000Q},BLS ECI；季环比为未折年 3 个月变化
+62-003,api,P1,{BLS:CIU2030000000000A},BLS ECI；季环比为未折年 3 个月变化
+62-004,api,P1,{BLS:CIS2030000000000Q},BLS ECI；季环比为未折年 3 个月变化
+62-005,api,P1,yoy({FRED:OPHNFB}),BLS 生产率指数计算同比
+62-006,api,P1,"ann({FRED:OPHNFB}, 1)",季环比折年（BLS 口径）
+62-007,api,P1,yoy({FRED:ULCNFB}),BLS 单位劳动成本指数计算同比
+62-008,api,P1,"ann({FRED:ULCNFB}, 1)",季环比折年（BLS 口径）
+63-001,pending,P2,,BoE DMP 月度 Excel，待写解析
+63-002,pending,P2,,BoE DMP 月度 Excel，待写解析
+63-003,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-004,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-005,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-006,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-007,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-008,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+64-001,pending,P2,,OIS 曲线需授权
+64-002,pending,P2,,OIS 曲线需授权
+64-003,pending,P2,,OIS 曲线需授权
+64-004,pending,P2,,OIS 曲线需授权
+64-005,pending,P2,,OIS 曲线需授权
+64-006,pending,P2,,OIS 曲线需授权
+64-007,pending,P2,,OIS 曲线需授权
+64-008,pending,P2,,OIS 曲线需授权
+64-009,pending,P2,,OIS 曲线需授权
+64-010,pending,P2,,OIS 曲线需授权
+64-011,pending,P2,,OIS 曲线需授权
+64-012,pending,P2,,OIS 曲线需授权
+64-013,pending,P2,,OIS 曲线需授权
+64-014,pending,P2,,OIS 曲线需授权
+64-015,pending,P2,,OIS 曲线需授权
+64-016,pending,P2,,OIS 曲线需授权
+64-017,pending,P2,,OIS 曲线需授权
+64-018,pending,P2,,OIS 曲线需授权
+64-019,pending,P2,,OIS 曲线需授权
+65-001,api,P1,"at_year({FRED:FEDTARMD}, 0)",FOMC 经济预测摘要中位数（FRED）
+65-002,pending,P2,,市场隐含路径需 OIS/期货，待做
+65-003,pending,P2,,市场隐含路径需 OIS/期货，待做
+65-004,api,P1,"at_year({FRED:FEDTARMD}, 1)",FOMC 经济预测摘要中位数（FRED）
+65-005,pending,P2,,市场隐含路径需 OIS/期货，待做
+65-006,pending,P2,,市场隐含路径需 OIS/期货，待做
+65-007,api,P1,"at_year({FRED:FEDTARMD}, 2)",FOMC 经济预测摘要中位数（FRED）
+65-008,pending,P2,,市场隐含路径需 OIS/期货，待做
+65-009,pending,P2,,市场隐含路径需 OIS/期货，待做
+66-001,api,P1,{ACM:ACMTP01},纽约联储 ACM 模型
+66-002,api,P1,{ACM:ACMRNY01},纽约联储 ACM 模型
+66-003,api,P1,{ACM:ACMY01},纽约联储 ACM 模型
+66-004,api,P1,{ACM:ACMTP02},纽约联储 ACM 模型
+66-005,api,P1,{ACM:ACMRNY02},纽约联储 ACM 模型
+66-006,api,P1,{ACM:ACMY02},纽约联储 ACM 模型
+66-007,api,P1,{ACM:ACMTP03},纽约联储 ACM 模型
+66-008,api,P1,{ACM:ACMRNY03},纽约联储 ACM 模型
+66-009,api,P1,{ACM:ACMY03},纽约联储 ACM 模型
+66-010,api,P1,{ACM:ACMTP04},纽约联储 ACM 模型
+66-011,api,P1,{ACM:ACMRNY04},纽约联储 ACM 模型
+66-012,api,P1,{ACM:ACMY04},纽约联储 ACM 模型
+66-013,api,P1,{ACM:ACMTP05},纽约联储 ACM 模型
+66-014,api,P1,{ACM:ACMRNY05},纽约联储 ACM 模型
+66-015,api,P1,{ACM:ACMY05},纽约联储 ACM 模型
+66-016,api,P1,{ACM:ACMTP06},纽约联储 ACM 模型
+66-017,api,P1,{ACM:ACMRNY06},纽约联储 ACM 模型
+66-018,api,P1,{ACM:ACMY06},纽约联储 ACM 模型
+66-019,api,P1,{ACM:ACMTP07},纽约联储 ACM 模型
+66-020,api,P1,{ACM:ACMRNY07},纽约联储 ACM 模型
+66-021,api,P1,{ACM:ACMY07},纽约联储 ACM 模型
+66-022,api,P1,{ACM:ACMTP08},纽约联储 ACM 模型
+66-023,api,P1,{ACM:ACMRNY08},纽约联储 ACM 模型
+66-024,api,P1,{ACM:ACMY08},纽约联储 ACM 模型
+66-025,api,P1,{ACM:ACMTP09},纽约联储 ACM 模型
+66-026,api,P1,{ACM:ACMRNY09},纽约联储 ACM 模型
+66-027,api,P1,{ACM:ACMY09},纽约联储 ACM 模型
+66-028,api,P1,{ACM:ACMTP10},纽约联储 ACM 模型
+66-029,api,P1,{ACM:ACMRNY10},纽约联储 ACM 模型
+66-030,api,P1,{ACM:ACMY10},纽约联储 ACM 模型
+67-004,api,P1,"chg({ACM:ACMRNY05}, ""W"") * 100",ACM 预期短率周变动
+67-005,api,P1,"chg({ACM:ACMTP05}, ""W"") * 100",ACM 期限溢价周变动
+67-006,api,P1,"(chg({ACM:ACMY05}, ""W"") - chg({FRED:DGS5}, ""W"")) * 100",拟合收益率变动减实测收益率变动
+67-010,api,P1,"chg({ACM:ACMRNY10}, ""W"") * 100",ACM 预期短率周变动
+67-011,api,P1,"chg({ACM:ACMTP10}, ""W"") * 100",ACM 期限溢价周变动
+67-012,api,P1,"(chg({ACM:ACMY10}, ""W"") - chg({FRED:DGS10}, ""W"")) * 100",拟合收益率变动减实测收益率变动
+68-001,api,P1,{FRED:MTSR133FMS},财政部 MTS（FRED 镜像）；赤字记为正数
+68-002,api,P1,{FRED:MTSO133FMS},财政部 MTS（FRED 镜像）；赤字记为正数
+68-003,api,P1,-1 * {FRED:MTSDS133FMS},财政部 MTS（FRED 镜像）；赤字记为正数
+68-004,api,P1,{TSY:mts9:net_interest},财政部 MTS 表 9 净利息（Fiscal Data API）
+68-005,api,P1,fytd({FRED:MTSR133FMS}),财年（10月起）累计
+68-006,api,P1,fytd({FRED:MTSO133FMS}),财年（10月起）累计
+68-007,api,P1,-1 * fytd({FRED:MTSDS133FMS}),财年累计，赤字记为正数
+68-008,api,P1,fytd({TSY:mts9:net_interest}),财年累计
+68-009,api,P1,fytd({TSY:mts9:net_interest}) / fytd({FRED:MTSR133FMS}) * 100,财年累计净利息/财年累计收入
+68-010,api,P1,{FRED:FYGFGDQ188S},
+69-001,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-002,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-003,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-004,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-005,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-006,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-007,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-008,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-009,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-010,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-011,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-012,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-013,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-014,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-015,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-016,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-017,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+70-001,api,P1,{TSY:auction:2-Year:offering_amt},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-002,api,P1,{TSY:auction:2-Year:high_yield},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-003,api,P1,{TSY:auction:2-Year:bid_to_cover_ratio},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-004,api,P1,{TSY:auction:2-Year:direct_bidder_accepted} / ({TSY:auction:2-Year:direct_bidder_accepted} + {TSY:auction:2-Year:indirect_bidder_accepted} + {TSY:auction:2-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-005,api,P1,{TSY:auction:2-Year:indirect_bidder_accepted} / ({TSY:auction:2-Year:direct_bidder_accepted} + {TSY:auction:2-Year:indirect_bidder_accepted} + {TSY:auction:2-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-006,api,P1,{TSY:auction:2-Year:primary_dealer_accepted} / ({TSY:auction:2-Year:direct_bidder_accepted} + {TSY:auction:2-Year:indirect_bidder_accepted} + {TSY:auction:2-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-007,pending,P2,,尾差需拍卖前 when-issued 收益率（授权行情）
+70-008,api,P1,{TSY:auction:5-Year:offering_amt},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-009,api,P1,{TSY:auction:5-Year:high_yield},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-010,api,P1,{TSY:auction:5-Year:bid_to_cover_ratio},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-011,api,P1,{TSY:auction:5-Year:direct_bidder_accepted} / ({TSY:auction:5-Year:direct_bidder_accepted} + {TSY:auction:5-Year:indirect_bidder_accepted} + {TSY:auction:5-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-012,api,P1,{TSY:auction:5-Year:indirect_bidder_accepted} / ({TSY:auction:5-Year:direct_bidder_accepted} + {TSY:auction:5-Year:indirect_bidder_accepted} + {TSY:auction:5-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-013,api,P1,{TSY:auction:5-Year:primary_dealer_accepted} / ({TSY:auction:5-Year:direct_bidder_accepted} + {TSY:auction:5-Year:indirect_bidder_accepted} + {TSY:auction:5-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-014,pending,P2,,尾差需拍卖前 when-issued 收益率（授权行情）
+70-015,api,P1,{TSY:auction:10-Year:offering_amt},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-016,api,P1,{TSY:auction:10-Year:high_yield},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-017,api,P1,{TSY:auction:10-Year:bid_to_cover_ratio},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-018,api,P1,{TSY:auction:10-Year:direct_bidder_accepted} / ({TSY:auction:10-Year:direct_bidder_accepted} + {TSY:auction:10-Year:indirect_bidder_accepted} + {TSY:auction:10-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-019,api,P1,{TSY:auction:10-Year:indirect_bidder_accepted} / ({TSY:auction:10-Year:direct_bidder_accepted} + {TSY:auction:10-Year:indirect_bidder_accepted} + {TSY:auction:10-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-020,api,P1,{TSY:auction:10-Year:primary_dealer_accepted} / ({TSY:auction:10-Year:direct_bidder_accepted} + {TSY:auction:10-Year:indirect_bidder_accepted} + {TSY:auction:10-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-021,pending,P2,,尾差需拍卖前 when-issued 收益率（授权行情）
+70-022,api,P1,{TSY:auction:30-Year:offering_amt},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-023,api,P1,{TSY:auction:30-Year:high_yield},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-024,api,P1,{TSY:auction:30-Year:bid_to_cover_ratio},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-025,api,P1,{TSY:auction:30-Year:direct_bidder_accepted} / ({TSY:auction:30-Year:direct_bidder_accepted} + {TSY:auction:30-Year:indirect_bidder_accepted} + {TSY:auction:30-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-026,api,P1,{TSY:auction:30-Year:indirect_bidder_accepted} / ({TSY:auction:30-Year:direct_bidder_accepted} + {TSY:auction:30-Year:indirect_bidder_accepted} + {TSY:auction:30-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-027,api,P1,{TSY:auction:30-Year:primary_dealer_accepted} / ({TSY:auction:30-Year:direct_bidder_accepted} + {TSY:auction:30-Year:indirect_bidder_accepted} + {TSY:auction:30-Year:primary_dealer_accepted}) * 100,财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
+70-028,pending,P2,,尾差需拍卖前 when-issued 收益率（授权行情）
+71-001,manual,P1,,财政截止日期：按 Congress.gov / 财政部公告人工维护
+71-002,manual,P1,,财政截止日期：按 Congress.gov / 财政部公告人工维护
+71-003,manual,P1,,财政截止日期：按 Congress.gov / 财政部公告人工维护
+71-004,manual,P1,,财政截止日期：按 Congress.gov / 财政部公告人工维护
+72-001,api,P1,{FRED:WALCL} / 1000,美联储 H.4.1（FRED），周三值；百万→十亿美元
+72-002,api,P1,{FRED:TREAST} / 1000,美联储 H.4.1（FRED），周三值；百万→十亿美元
+72-003,api,P1,{FRED:WSHOMCB} / 1000,美联储 H.4.1（FRED），周三值；百万→十亿美元
+72-004,api,P1,{FRED:WRESBAL} / 1000,美联储 H.4.1（FRED），周三值；百万→十亿美元
+72-005,api,P1,{FRED:WTREGEN} / 1000,美联储 H.4.1（FRED），周三值；百万→十亿美元
+72-006,api,P1,{FRED:RRPONTSYD},纽约联储 ON RRP 日值（FRED）
+73-001,api,P1,{FRED:BAMLC0A4CBBB} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+73-002,api,P1,{FRED:BAMLH0A1HYBB} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+73-003,api,P1,{FRED:BAMLH0A2HYB} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+73-004,api,P1,{FRED:BAMLH0A3HYC} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+73-005,pending,P2,,行业 OAS 需 ICE 授权
+73-006,pending,P2,,行业 OAS 需 ICE 授权
+73-007,pending,P2,,行业 OAS 需 ICE 授权
+74-001,pending,P2,,公司债发行/到期需授权数据
+74-004,pending,P2,,公司债发行/到期需授权数据
+74-007,pending,P2,,公司债发行/到期需授权数据
+74-010,pending,P2,,公司债发行/到期需授权数据
+75-001,api,P1,{FRED:DRTSCILM},美联储 SLOOS（FRED）
+75-002,api,P1,{FRED:DRSDCILM},美联储 SLOOS（FRED）
+75-003,api,P1,{FRED:DRTSCIS},美联储 SLOOS（FRED）
+75-004,api,P1,{FRED:DRSDCIS},美联储 SLOOS（FRED）
+75-005,api,P1,{FRED:DRTSCLCC},美联储 SLOOS（FRED）
+75-006,api,P1,{FRED:DEMCC},美联储 SLOOS（FRED）
+75-007,api,P1,{FRED:STDSAUTO},美联储 SLOOS（FRED）
+75-008,api,P1,{FRED:DEMAUTO},美联储 SLOOS（FRED）
+75-009,api,P1,{FRED:TOTCI},美联储 H.8 周度季调
+75-010,api,P1,{FRED:CLSACBW027SBOG},美联储 H.8 周度季调
+75-011,api,P1,{FRED:DPSACBW027SBOG},美联储 H.8 周度季调
+76-001,pending,P2,,违约率/评级迁移需评级机构授权
+76-002,pending,P2,,违约率/评级迁移需评级机构授权
+76-003,pending,P2,,违约率/评级迁移需评级机构授权
+76-004,api,P1,{FRED:DRBLACBS},美联储逾期与核销率（FRED）
+76-005,api,P1,{FRED:CORBLACBS},美联储逾期与核销率（FRED）
+76-006,api,P1,{FRED:DRCCLACBS},美联储逾期与核销率（FRED）
+76-007,api,P1,{FRED:CORCCACBS},美联储逾期与核销率（FRED）
+76-008,api,P1,{FRED:DRSFRMACBS},美联储逾期与核销率（FRED）
+76-009,api,P1,{FRED:CORSFRMACBS},美联储逾期与核销率（FRED）
+80-001,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-002,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-003,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-004,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-005,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-006,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-007,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-008,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-009,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-010,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-011,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-012,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-013,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-014,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-015,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-016,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-017,pending,P2,,期权隐波/成交需 Cboe 授权数据
+80-018,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-001,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-002,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-003,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-004,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-005,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-006,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-007,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-008,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-009,pending,P2,,期权隐波/成交需 Cboe 授权数据
+81-010,pending,P2,,期权隐波/成交需 Cboe 授权数据
+82-001,api,P1,{EIA:PET.RCLC1.D},EIA 公布的 NYMEX 第 n 近月合约结算价
+82-002,api,P1,{EIA:PET.RCLC2.D},EIA 公布的 NYMEX 第 n 近月合约结算价
+82-003,api,P1,{EIA:PET.RCLC3.D},EIA 公布的 NYMEX 第 n 近月合约结算价
+82-004,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-005,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-006,api,P1,{EIA:PET.RCLC1.D} - {EIA:PET.RCLC2.D},同日近月价差
+82-007,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-008,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-009,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-010,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-011,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-012,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-013,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-014,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-015,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-016,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+83-001,api,P1,{EIA:PET.EER_EPMRU_PF4_RGC_DPG.D} * 42 - {FRED:DCOILWTICO},美元/加仑×42 减 WTI 现货（地域不一致，非炼油利润）
+83-002,api,P1,{EIA:PET.EER_EPD2DXL0_PF4_RGC_DPG.D} * 42 - {FRED:DCOILWTICO},美元/加仑×42 减 WTI 现货（地域不一致，非炼油利润）
+84-001,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-002,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-003,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-004,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-005,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-006,manual,P2,,事件型能源供应数据：按官方公告人工维护
+85-001,api,P1,{CBOE:OVX},Cboe 官方日收盘历史 CSV
+85-002,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-003,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-004,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-005,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-006,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-007,pending,P2,,原油期权隐波需 CME/ICE 授权
+86-001,manual,P2,,民调/政策事件：人工维护
+86-002,manual,P2,,民调/政策事件：人工维护
+86-003,manual,P2,,民调/政策事件：人工维护
+86-004,manual,P2,,民调/政策事件：人工维护
+86-005,manual,P2,,民调/政策事件：人工维护
+86-006,manual,P2,,民调/政策事件：人工维护
+86-007,manual,P2,,民调/政策事件：人工维护
+86-008,manual,P2,,民调/政策事件：人工维护
+86-009,manual,P2,,民调/政策事件：人工维护
+86-010,manual,P2,,民调/政策事件：人工维护
+86-011,manual,P2,,民调/政策事件：人工维护
+86-012,manual,P2,,民调/政策事件：人工维护
+86-013,manual,P2,,民调/政策事件：人工维护
+86-014,manual,P2,,民调/政策事件：人工维护
+88-001,manual,P2,,民调/政策事件：人工维护
+88-002,manual,P2,,民调/政策事件：人工维护
+88-003,manual,P2,,民调/政策事件：人工维护
+88-004,manual,P2,,民调/政策事件：人工维护
+90-001,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-002,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-003,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-004,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-005,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-006,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+91-001,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-002,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-003,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-004,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-005,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-006,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-007,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-008,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-009,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-010,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-011,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-012,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-013,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-014,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-015,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-016,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-017,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-018,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-019,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+91-020,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
+94-001,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-002,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-003,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-004,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-005,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-006,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-007,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-008,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-009,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-010,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-011,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-012,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-013,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-014,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+95-001,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-002,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-003,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-004,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-005,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-006,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-007,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-008,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-009,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-010,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-011,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-012,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-013,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-014,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-015,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-016,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-017,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-018,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-019,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-020,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-021,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-022,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
+95-023,api,P1,"ret({YAHOO:^SP500-50}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-024,api,P1,"ret({YAHOO:^SP500-10}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-025,api,P1,"ret({YAHOO:^SP500-45}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-026,api,P1,"ret({YAHOO:^SP500-55}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-027,api,P1,"ret({YAHOO:^SP500-40}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-028,api,P1,"ret({YAHOO:^SP500-30}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-029,api,P1,"ret({YAHOO:^SP500-60}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-030,api,P1,"ret({YAHOO:^SP500-20}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-031,api,P1,"ret({YAHOO:^SP500-25}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-032,api,P1,"ret({YAHOO:^SP500-35}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-033,api,P1,"ret({YAHOO:^SP500-15}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-034,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-035,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-036,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-037,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-038,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-039,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-040,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-041,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-042,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-043,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-044,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-045,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-046,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-047,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-048,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-049,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-050,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-051,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-052,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-053,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-054,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-055,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-056,api,P1,"ret({YAHOO:^RLV}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-057,api,P1,"ret({YAHOO:^RUI}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-058,api,P1,"ret({YAHOO:^RLG}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-059,api,P1,"ret({YAHOO:^RMCCV}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-060,api,P1,"ret({YAHOO:^RMCC}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-061,api,P1,"ret({YAHOO:^RMCCG}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-062,api,P1,"ret({YAHOO:^RUJ}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-063,api,P1,"ret({YAHOO:^RUT}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-064,api,P1,"ret({YAHOO:^RUO}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-065,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-066,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-067,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-068,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-069,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-070,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-071,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-072,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-073,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-074,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-075,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-076,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-077,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-078,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-079,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-080,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-081,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+95-082,report,P1b,,MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照
+96-001,api,P1,{YAHOO:^SP400},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-002,api,P1,"ret({YAHOO:^SP400}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-003,api,P1,"ret({YAHOO:^SP400}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-004,api,P1,"ret({YAHOO:^SP400}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-005,api,P1,"ret({YAHOO:^SP400}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-006,api,P1,{YAHOO:^RUT},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-008,api,P1,"ret({YAHOO:^RUT}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-009,api,P1,"ret({YAHOO:^RUT}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-011,api,P1,{YAHOO:^SPXEW},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-012,api,P1,"ret({YAHOO:^SPXEW}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-013,api,P1,"ret({YAHOO:^SPXEW}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-014,api,P1,"ret({YAHOO:^SPXEW}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-015,api,P1,"ret({YAHOO:^SPXEW}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-016,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-017,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-018,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-019,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-020,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-021,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-022,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-023,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-024,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-025,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-026,api,P1,{YAHOO:^FTSE},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-027,api,P1,"ret({YAHOO:^FTSE}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-028,api,P1,"ret({YAHOO:^FTSE}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-029,api,P1,"ret({YAHOO:^FTSE}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-030,api,P1,"ret({YAHOO:^FTSE}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-031,api,P1,{YAHOO:FTSEMIB.MI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-032,api,P1,"ret({YAHOO:FTSEMIB.MI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-033,api,P1,"ret({YAHOO:FTSEMIB.MI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-034,api,P1,"ret({YAHOO:FTSEMIB.MI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-035,api,P1,"ret({YAHOO:FTSEMIB.MI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-036,api,P1,{YAHOO:^FCHI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-037,api,P1,"ret({YAHOO:^FCHI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-038,api,P1,"ret({YAHOO:^FCHI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-039,api,P1,"ret({YAHOO:^FCHI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-040,api,P1,"ret({YAHOO:^FCHI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-041,api,P1,{YAHOO:^GDAXI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-042,api,P1,"ret({YAHOO:^GDAXI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-043,api,P1,"ret({YAHOO:^GDAXI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-044,api,P1,"ret({YAHOO:^GDAXI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-045,api,P1,"ret({YAHOO:^GDAXI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-046,api,P1,{YAHOO:^SSMI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-047,api,P1,"ret({YAHOO:^SSMI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-048,api,P1,"ret({YAHOO:^SSMI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-049,api,P1,"ret({YAHOO:^SSMI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-050,api,P1,"ret({YAHOO:^SSMI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-051,api,P1,{YAHOO:^NSEI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-052,api,P1,"ret({YAHOO:^NSEI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-053,api,P1,"ret({YAHOO:^NSEI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-054,api,P1,"ret({YAHOO:^NSEI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-055,api,P1,"ret({YAHOO:^NSEI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-056,api,P1,{YAHOO:^HSI},Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-057,api,P1,"ret({YAHOO:^HSI}, ""W"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-058,api,P1,"ret({YAHOO:^HSI}, ""MTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-059,api,P1,"ret({YAHOO:^HSI}, ""QTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-060,api,P1,"ret({YAHOO:^HSI}, ""YTD"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-061,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-062,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-063,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-064,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-065,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-066,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-067,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-068,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-069,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-070,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-071,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-072,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-073,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-074,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-075,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-076,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-077,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-078,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-079,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-080,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-081,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-082,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-083,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-084,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-085,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-089,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-094,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-096,api,P1,"ret({FRED:SP500}, ""QTD"")",
+96-097,api,P1,"ret({FRED:NASDAQCOM}, ""QTD"")",
+96-098,api,P1,"ret({FRED:DJIA}, ""QTD"")",
+96-099,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-100,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-101,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-102,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-103,api,P1,"ret({YAHOO:^STOXX}, ""QTD"")",Yahoo 免费行情
+96-104,report,P1b,,MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照
+96-107,api,P1,"snap({YAHOO:^SP400}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-108,api,P1,"snap({YAHOO:^SP400}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-109,api,P1,"snap({YAHOO:^SP400}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-110,api,P1,"snap({YAHOO:^RUT}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-111,api,P1,"snap({YAHOO:^RUT}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-112,api,P1,"snap({YAHOO:^RUT}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-113,api,P1,"snap({YAHOO:^SPXEW}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-114,api,P1,"snap({YAHOO:^SPXEW}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-115,api,P1,"snap({YAHOO:^SPXEW}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-116,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-117,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-118,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-119,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-120,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-121,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-122,api,P1,"snap({YAHOO:^FTSE}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-123,api,P1,"snap({YAHOO:^FTSE}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-124,api,P1,"snap({YAHOO:^FTSE}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-125,api,P1,"snap({YAHOO:FTSEMIB.MI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-126,api,P1,"snap({YAHOO:FTSEMIB.MI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-127,api,P1,"snap({YAHOO:FTSEMIB.MI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-128,api,P1,"snap({YAHOO:^FCHI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-129,api,P1,"snap({YAHOO:^FCHI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-130,api,P1,"snap({YAHOO:^FCHI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-131,api,P1,"snap({YAHOO:^GDAXI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-132,api,P1,"snap({YAHOO:^GDAXI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-133,api,P1,"snap({YAHOO:^GDAXI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-134,api,P1,"snap({YAHOO:^SSMI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-135,api,P1,"snap({YAHOO:^SSMI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-136,api,P1,"snap({YAHOO:^SSMI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-137,api,P1,"snap({YAHOO:^NSEI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-138,api,P1,"snap({YAHOO:^NSEI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-139,api,P1,"snap({YAHOO:^NSEI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-140,api,P1,"snap({YAHOO:^HSI}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-141,api,P1,"snap({YAHOO:^HSI}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-142,api,P1,"snap({YAHOO:^HSI}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
+96-143,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-144,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-145,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-146,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-147,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-148,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-149,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-150,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-151,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-152,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-153,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-154,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-155,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-156,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-157,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-158,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-159,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-160,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-161,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-162,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-163,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-164,api,P1,"snap({FRED:SP500}, ""ME"")",
+96-165,api,P1,"snap({FRED:SP500}, ""QE"")",
+96-166,api,P1,"snap({FRED:SP500}, ""YE"")",
+96-167,api,P1,"snap({FRED:NASDAQCOM}, ""ME"")",
+96-168,api,P1,"snap({FRED:NASDAQCOM}, ""QE"")",
+96-169,api,P1,"snap({FRED:NASDAQCOM}, ""YE"")",
+96-170,api,P1,"snap({FRED:DJIA}, ""ME"")",
+96-171,api,P1,"snap({FRED:DJIA}, ""QE"")",
+96-172,api,P1,"snap({FRED:DJIA}, ""YE"")",
+96-173,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-174,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-175,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-176,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-177,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-178,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-179,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-180,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-181,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-182,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-183,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-184,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-185,api,P1,"snap({YAHOO:^STOXX}, ""ME"")",Yahoo 免费行情
+96-186,api,P1,"snap({YAHOO:^STOXX}, ""QE"")",Yahoo 免费行情
+96-187,api,P1,"snap({YAHOO:^STOXX}, ""YE"")",Yahoo 免费行情
+96-188,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-189,report,P1b,,期末快照：从高盛周报快照历史序列生成
+96-190,report,P1b,,期末快照：从高盛周报快照历史序列生成
+99-002,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-003,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-004,report,P1b,,取高盛 Market Monitor Weekly快照
+99-006,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-007,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-008,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-010,api,P1,"snap({MOFJP:30Y}, ""ME"")",
+99-011,api,P1,"snap({MOFJP:30Y}, ""QE"")",
+99-012,api,P1,"snap({MOFJP:30Y}, ""YE"")",
+99-014,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-015,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-016,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-018,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-019,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-020,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-022,api,P1,"snap({FRED:DHHNGSP}, ""ME"")",
+99-023,api,P1,"snap({FRED:DHHNGSP}, ""QE"")",
+99-024,api,P1,"snap({FRED:DHHNGSP}, ""YE"")",
+99-026,api,P1,"snap({ECB:EXR/D.CHF.EUR.SP00.A}, ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-027,api,P1,"snap({ECB:EXR/D.CHF.EUR.SP00.A}, ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-028,api,P1,"snap({ECB:EXR/D.CHF.EUR.SP00.A}, ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-053,api,P1,"snap({NYFED:unsecured/effr:percentRate}, ""ME"")",
+99-054,api,P1,"snap({NYFED:unsecured/effr:percentRate}, ""QE"")",
+99-055,api,P1,"snap({NYFED:unsecured/effr:percentRate}, ""YE"")",
+99-056,api,P1,"snap({FRED:ECBDFR}, ""ME"")",
+99-057,api,P1,"snap({FRED:ECBDFR}, ""QE"")",
+99-058,api,P1,"snap({FRED:ECBDFR}, ""YE"")",
+99-059,api,P1,"snap({FRED:DGS2}, ""ME"")",
+99-060,api,P1,"snap({FRED:DGS2}, ""QE"")",
+99-061,api,P1,"snap({FRED:DGS2}, ""YE"")",
+99-062,api,P1,"snap({FRED:DGS10}, ""ME"")",
+99-063,api,P1,"snap({FRED:DGS10}, ""QE"")",
+99-064,api,P1,"snap({FRED:DGS10}, ""YE"")",
+99-065,api,P1,"snap({FRED:T10Y2Y}, ""ME"")",
+99-066,api,P1,"snap({FRED:T10Y2Y}, ""QE"")",
+99-067,api,P1,"snap({FRED:T10Y2Y}, ""YE"")",
+99-068,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-069,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-070,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-071,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-072,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-073,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-074,api,P1,"snap({MOFJP:10Y}, ""ME"")",日本财务省
+99-075,api,P1,"snap({MOFJP:10Y}, ""QE"")",日本财务省
+99-076,api,P1,"snap({MOFJP:10Y}, ""YE"")",日本财务省
+99-077,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-078,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-079,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-080,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-081,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-082,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-083,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-084,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-085,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-086,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-087,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-088,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-089,api,P1,"snap({FRED:BAMLC0A0CM}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-090,api,P1,"snap({FRED:BAMLC0A0CM}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-091,api,P1,"snap({FRED:BAMLC0A0CM}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-092,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-093,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-094,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-095,api,P1,"snap({FRED:DCOILWTICO}, ""ME"")",
+99-096,api,P1,"snap({FRED:DCOILWTICO}, ""QE"")",
+99-097,api,P1,"snap({FRED:DCOILWTICO}, ""YE"")",
+99-098,api,P1,"snap({FRED:DCOILBRENTEU}, ""ME"")",
+99-099,api,P1,"snap({FRED:DCOILBRENTEU}, ""QE"")",
+99-100,api,P1,"snap({FRED:DCOILBRENTEU}, ""YE"")",
+99-101,report,P1b,,LBMA 黄金需授权；取周报快照
+99-102,report,P1b,,LBMA 黄金需授权；取周报快照
+99-103,report,P1b,,LBMA 黄金需授权；取周报快照
+99-104,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-105,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-106,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-107,api,P1,"snap(({ECB:EXR/D.USD.EUR.SP00.A} / {ECB:EXR/D.GBP.EUR.SP00.A}), ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-108,api,P1,"snap(({ECB:EXR/D.USD.EUR.SP00.A} / {ECB:EXR/D.GBP.EUR.SP00.A}), ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-109,api,P1,"snap(({ECB:EXR/D.USD.EUR.SP00.A} / {ECB:EXR/D.GBP.EUR.SP00.A}), ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-110,api,P1,"snap(({ECB:EXR/D.JPY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-111,api,P1,"snap(({ECB:EXR/D.JPY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-112,api,P1,"snap(({ECB:EXR/D.JPY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-113,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-114,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-115,api,P1,"snap(({ECB:EXR/D.CNY.EUR.SP00.A} / {ECB:EXR/D.USD.EUR.SP00.A}), ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+97-002,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-003,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-007,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-008,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-012,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-013,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-016,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-017,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-018,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-019,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-020,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-022,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-023,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-026,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-027,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-028,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-029,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-030,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-032,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-033,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-037,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-038,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-041,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-042,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-043,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-044,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-045,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-046,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-047,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-048,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-049,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-050,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-051,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-052,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-053,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-054,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-055,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-056,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-057,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-058,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-059,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-060,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-066,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-067,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-068,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-069,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-070,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-071,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-072,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-073,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-074,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-075,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-076,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-077,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-078,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-079,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-080,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-081,api,P1,{YAHOO:BTC-USD},Yahoo 免费行情，USD 价格
+97-082,api,P1,"ret({YAHOO:BTC-USD}, ""1Y"") + 100",当日水平÷一年前水平×100
+97-083,api,P1,"year_ret({YAHOO:BTC-USD}, 2025)",2025 年末÷2024 年末−1
+97-084,api,P1,"ret({YAHOO:BTC-USD}, ""MTD"")",
+97-085,api,P1,"ret({YAHOO:BTC-USD}, ""YTD"")",
+97-087,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-088,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-089,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-090,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-092,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-093,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-094,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-095,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-097,api,P1,"ret({FRED:DCOILWTICO}, ""1Y"") + 100",EIA WTI 现货（FRED）
+97-098,api,P1,"year_ret({FRED:DCOILWTICO}, 2025)",EIA WTI 现货（FRED）
+97-099,api,P1,"ret({FRED:DCOILWTICO}, ""MTD"")",EIA WTI 现货（FRED）
+97-100,api,P1,"ret({FRED:DCOILWTICO}, ""YTD"")",EIA WTI 现货（FRED）
+97-102,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-103,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-104,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-105,report,P1b,,取汇丰 Investment Weekly（英国）快照
+98-001,report,P1b,,取高盛 Market Monitor Weekly快照
+98-002,report,P1b,,取高盛 Market Monitor Weekly快照
+98-003,report,P1b,,取高盛 Market Monitor Weekly快照
+98-004,report,P1b,,取高盛 Market Monitor Weekly快照
+98-005,report,P1b,,取高盛 Market Monitor Weekly快照
+98-006,report,P1b,,取高盛 Market Monitor Weekly快照
+98-007,report,P1b,,取高盛 Market Monitor Weekly快照
+98-008,report,P1b,,取高盛 Market Monitor Weekly快照
+98-009,report,P1b,,取高盛 Market Monitor Weekly快照
+98-010,report,P1b,,取高盛 Market Monitor Weekly快照
+98-011,report,P1b,,取高盛 Market Monitor Weekly快照
+98-012,report,P1b,,取高盛 Market Monitor Weekly快照
+98-013,report,P1b,,取高盛 Market Monitor Weekly快照
+98-014,report,P1b,,取高盛 Market Monitor Weekly快照
+98-015,report,P1b,,取高盛 Market Monitor Weekly快照
+98-016,report,P1b,,取高盛 Market Monitor Weekly快照
+98-017,report,P1b,,取高盛 Market Monitor Weekly快照
+98-018,report,P1b,,取高盛 Market Monitor Weekly快照
+98-019,report,P1b,,取高盛 Market Monitor Weekly快照
+98-020,report,P1b,,取高盛 Market Monitor Weekly快照
+98-021,report,P1b,,取高盛 Market Monitor Weekly快照
+98-022,report,P1b,,取高盛 Market Monitor Weekly快照
+98-023,report,P1b,,取高盛 Market Monitor Weekly快照
+98-024,report,P1b,,取高盛 Market Monitor Weekly快照
+98-025,report,P1b,,取高盛 Market Monitor Weekly快照
+98-026,report,P1b,,取高盛 Market Monitor Weekly快照
+98-027,report,P1b,,取高盛 Market Monitor Weekly快照
+98-028,report,P1b,,取高盛 Market Monitor Weekly快照
+98-029,report,P1b,,取高盛 Market Monitor Weekly快照
+98-031,report,P1b,,取高盛 Market Monitor Weekly快照
+98-033,report,P1b,,取高盛 Market Monitor Weekly快照
+98-034,report,P1b,,取高盛 Market Monitor Weekly快照
+98-035,report,P1b,,取高盛 Market Monitor Weekly快照
+98-036,report,P1b,,取高盛 Market Monitor Weekly快照
+98-037,report,P1b,,取高盛 Market Monitor Weekly快照
+98-038,report,P1b,,取高盛 Market Monitor Weekly快照
+98-039,report,P1b,,取高盛 Market Monitor Weekly快照
+98-040,report,P1b,,取高盛 Market Monitor Weekly快照
+98-041,report,P1b,,取高盛 Market Monitor Weekly快照
+98-042,report,P1b,,取高盛 Market Monitor Weekly快照
+98-043,report,P1b,,取高盛 Market Monitor Weekly快照
+98-044,report,P1b,,取高盛 Market Monitor Weekly快照
+98-045,report,P1b,,取高盛 Market Monitor Weekly快照
+98-046,report,P1b,,取高盛 Market Monitor Weekly快照
+98-047,report,P1b,,取高盛 Market Monitor Weekly快照
+98-048,report,P1b,,取高盛 Market Monitor Weekly快照
+98-049,report,P1b,,取高盛 Market Monitor Weekly快照
+98-050,report,P1b,,取高盛 Market Monitor Weekly快照
+98-051,report,P1b,,取高盛 Market Monitor Weekly快照
+98-052,report,P1b,,取高盛 Market Monitor Weekly快照
+98-053,report,P1b,,取高盛 Market Monitor Weekly快照
+98-054,report,P1b,,取高盛 Market Monitor Weekly快照
+98-055,report,P1b,,取高盛 Market Monitor Weekly快照
+98-056,report,P1b,,取高盛 Market Monitor Weekly快照
+98-057,report,P1b,,取高盛 Market Monitor Weekly快照
+98-058,report,P1b,,取高盛 Market Monitor Weekly快照
+98-059,report,P1b,,取高盛 Market Monitor Weekly快照
+98-060,report,P1b,,取高盛 Market Monitor Weekly快照
+98-061,report,P1b,,取高盛 Market Monitor Weekly快照
+98-062,report,P1b,,取高盛 Market Monitor Weekly快照
+99-001,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-005,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-009,api,P1,{MOFJP:30Y},日本财务省 JGB 常数期限收益率
+99-013,report,P1b,,瑞士/中国国债与欧元 IG 利差：取高盛周报快照（中债可本地补抓）
+99-017,api,P1,{FRED:BAMLHE00EHYIOAS} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
+99-021,api,P1,{FRED:DHHNGSP},EIA Henry Hub 现货（FRED 镜像）
+99-025,api,P1,{ECB:EXR/D.CHF.EUR.SP00.A},ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
+99-029,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-031,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-033,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-035,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-037,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-038,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-039,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-040,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-041,api,P1,"ret({YAHOO:BTC-USD}, ""W"")",Yahoo 免费行情，USD 价格回报
+99-043,api,P1,"ret({YAHOO:BTC-USD}, ""QTD"")",Yahoo 免费行情，USD 价格回报
+99-045,api,P1,"ret({CBOE:VIX}, ""W"")",VIX 指数百分比变化，不是可投资回报
+99-046,api,P1,"ret({CBOE:VIX}, ""MTD"")",VIX 指数百分比变化，不是可投资回报
+99-047,api,P1,"ret({CBOE:VIX}, ""QTD"")",VIX 指数百分比变化，不是可投资回报
+99-048,api,P1,"ret({CBOE:VIX}, ""YTD"")",VIX 指数百分比变化，不是可投资回报
+99-051,api,P1,"ret({YAHOO:DX-Y.NYB}, ""QTD"")",Yahoo 免费行情
+100-001,report,P1b,,取高盛 Market Monitor Weekly快照
+100-003,report,P1b,,取高盛 Market Monitor Weekly快照
+100-004,report,P1b,,取高盛 Market Monitor Weekly快照
+100-005,report,P1b,,取高盛 Market Monitor Weekly快照
+100-006,report,P1b,,取高盛 Market Monitor Weekly快照
+100-007,report,P1b,,取高盛 Market Monitor Weekly快照
+100-009,report,P1b,,取高盛 Market Monitor Weekly快照
+100-010,report,P1b,,取高盛 Market Monitor Weekly快照
+100-011,report,P1b,,取高盛 Market Monitor Weekly快照
+100-012,report,P1b,,取高盛 Market Monitor Weekly快照
+100-013,report,P1b,,取高盛 Market Monitor Weekly快照
+100-015,report,P1b,,取高盛 Market Monitor Weekly快照
+100-016,report,P1b,,取高盛 Market Monitor Weekly快照
+100-017,report,P1b,,取高盛 Market Monitor Weekly快照
+100-018,report,P1b,,取高盛 Market Monitor Weekly快照
+100-019,report,P1b,,取高盛 Market Monitor Weekly快照
+100-021,report,P1b,,取高盛 Market Monitor Weekly快照
+100-022,report,P1b,,取高盛 Market Monitor Weekly快照
+100-023,report,P1b,,取高盛 Market Monitor Weekly快照
+100-024,report,P1b,,取高盛 Market Monitor Weekly快照
+100-025,report,P1b,,取高盛 Market Monitor Weekly快照
+100-027,report,P1b,,取高盛 Market Monitor Weekly快照
+100-028,report,P1b,,取高盛 Market Monitor Weekly快照
+100-029,report,P1b,,取高盛 Market Monitor Weekly快照
+100-030,report,P1b,,取高盛 Market Monitor Weekly快照
+100-031,report,P1b,,取高盛 Market Monitor Weekly快照
+100-033,report,P1b,,取高盛 Market Monitor Weekly快照
+100-034,report,P1b,,取高盛 Market Monitor Weekly快照
+100-035,report,P1b,,取高盛 Market Monitor Weekly快照
+100-036,report,P1b,,取高盛 Market Monitor Weekly快照
+101-001,pending,P2,,NFIB 无公开接口，月报 PDF 待解析
+101-002,api,P1,{BLS:WPSFD4},BLS PPI；环比季调、同比未季调
+101-003,api,P1,pop({BLS:WPSFD4}),BLS PPI；环比季调、同比未季调
+101-004,api,P1,yoy({BLS:WPUFD4}),BLS PPI；环比季调、同比未季调
+101-005,api,P1,pop({BLS:WPSFD49104}),BLS PPI；环比季调、同比未季调
+101-006,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-007,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-008,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-009,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-010,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-012,api,P1,"(msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100",三个月对前三个月
+101-013,pending,P2,,厚生劳动省每月勤劳统计 Excel，待写解析
+101-014,pending,P2,,BoE DMP 月度 Excel，待写解析
+101-015,api,P1,"ma(diff({FRED:PAYEMS}), 12)",非农新增 12 个月移动平均
+101-016,pending,P2,,MoSPI 接口待接入
+101-017,api,P1,{BCB:13522},巴西央行 SGS 13522（IBGE IPCA 12 个月累计）
+101-018,api,P1,yoy({STATCAN:41690973}),加拿大统计局 WDS 向量
+101-019,api,P1,pop({STATCAN:65201210}),加拿大统计局 WDS 向量
+101-020,api,P1,diff({STATCAN:2062811}),加拿大统计局 WDS 向量
+101-021,api,P1,{STATCAN:2062815},加拿大统计局 WDS 向量
+101-022,api,P1,pop({STATCAN:1446859483}),加拿大统计局 WDS 向量
+101-023,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+101-024,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+101-025,api,P1,{BCB:432},巴西央行 SGS 432
+101-026,api,P1,{BOC:V39079},加拿大央行 Valet API
+102-001,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-002,api,P1,prior(pop({BLS:WPSFD4})),本次发布所列前值（本库逐次留存版本）
+102-003,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-004,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-005,api,P1,prior(yoy({BLS:WPUFD4})),本次发布所列前值（本库逐次留存版本）
+102-006,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-007,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-008,api,P1,prior(pop({BLS:WPSFD49104})),本次发布所列前值（本库逐次留存版本）
+102-009,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-010,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-011,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-012,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-013,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-014,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-015,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-016,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-017,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-018,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-019,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-020,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-021,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-022,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-023,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-024,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-025,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-026,api,P1,prior(pop({ONS:ECY2})),本次发布所列前值（本库逐次留存版本）
+102-027,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-028,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-029,api,P1,"prior((msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100)",本次发布所列前值（本库逐次留存版本）
+102-030,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-031,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-032,pending,P2,,厚生劳动省每月勤劳统计 Excel，待写解析
+102-033,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-034,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-035,pending,P2,,MoSPI 接口待接入
+102-036,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-037,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-038,api,P1,prior({BCB:13522}),本次发布所列前值（本库逐次留存版本）
+102-039,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-040,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-041,api,P1,prior(yoy({STATCAN:41690973})),本次发布所列前值（本库逐次留存版本）
+102-042,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-043,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-044,api,P1,prior(pop({STATCAN:65201210})),本次发布所列前值（本库逐次留存版本）
+102-045,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-046,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-047,api,P1,prior(diff({STATCAN:2062811})),本次发布所列前值（本库逐次留存版本）
+102-048,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-049,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-050,api,P1,prior({STATCAN:2062815}),本次发布所列前值（本库逐次留存版本）
+102-051,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-052,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-053,api,P1,prior(pop({STATCAN:1446859483})),本次发布所列前值（本库逐次留存版本）
+102-054,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-055,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-056,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+102-057,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-058,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-059,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+102-060,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-061,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-062,api,P1,before_change({BCB:432}),上一次调整前的目标利率
+102-063,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-064,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-065,api,P1,before_change({BOC:V39079}),上一次调整前的目标利率
+102-066,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-067,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-068,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+102-069,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-070,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-071,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+102-072,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-074,api,P1,prior(pop({FRED:RSAFS})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
+102-077,api,P1,prior({ONS:D7G7}),本次发布所列前值（本库逐次留存版本）
+102-079,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-080,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
+102-081,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-082,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-083,api,P1,prior(pop({FRED:INDPRO})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
+102-084,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-085,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-086,api,P1,before_change({FRED:DFEDTARU}),上一次调整前的目标上限
+102-087,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-088,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-089,api,P1,before_change({BOE:IUDBEDR}),上一次调整前的 Bank Rate
+102-090,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-091,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-092,manual,P1,,BoJ 政策利率前值：随人工维护表
+102-093,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-094,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-095,api,P1,before_change({FRED:ECBDFR}),上一次调整前的存款便利利率
+102-096,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+103-001,excluded,excluded,,按需求排除机构预测
+103-002,excluded,excluded,,按需求排除机构预测
+103-003,excluded,excluded,,按需求排除机构预测
+103-004,excluded,excluded,,按需求排除机构预测
+103-005,excluded,excluded,,按需求排除机构预测
+103-006,excluded,excluded,,按需求排除机构预测
+103-007,excluded,excluded,,按需求排除机构预测
+103-008,excluded,excluded,,按需求排除机构预测
+103-009,excluded,excluded,,按需求排除机构预测
+103-010,excluded,excluded,,按需求排除机构预测
+103-011,excluded,excluded,,按需求排除机构预测
+103-012,excluded,excluded,,按需求排除机构预测
+103-013,excluded,excluded,,按需求排除机构预测
+103-014,excluded,excluded,,按需求排除机构预测
+103-015,excluded,excluded,,按需求排除机构预测
+103-016,excluded,excluded,,按需求排除机构预测
+103-017,excluded,excluded,,按需求排除机构预测
+103-018,excluded,excluded,,按需求排除机构预测
+103-019,excluded,excluded,,按需求排除机构预测
+103-020,excluded,excluded,,按需求排除机构预测
+103-021,excluded,excluded,,按需求排除机构预测
+103-022,excluded,excluded,,按需求排除机构预测
+103-023,excluded,excluded,,按需求排除机构预测
+103-025,excluded,excluded,,按需求排除机构预测
+103-026,excluded,excluded,,按需求排除机构预测
+103-028,excluded,excluded,,按需求排除机构预测
+103-029,excluded,excluded,,按需求排除机构预测
+103-031,excluded,excluded,,按需求排除机构预测
+103-032,excluded,excluded,,按需求排除机构预测
+103-034,excluded,excluded,,按需求排除机构预测
+103-035,excluded,excluded,,按需求排除机构预测
+103-037,excluded,excluded,,按需求排除机构预测
+103-038,excluded,excluded,,按需求排除机构预测
+103-040,excluded,excluded,,按需求排除机构预测
+103-041,excluded,excluded,,按需求排除机构预测
+103-043,excluded,excluded,,按需求排除机构预测
+103-046,excluded,excluded,,按需求排除机构预测
+103-049,excluded,excluded,,按需求排除机构预测
+103-052,excluded,excluded,,按需求排除机构预测
+103-055,excluded,excluded,,按需求排除机构预测
+103-056,excluded,excluded,,按需求排除机构预测
+103-067,excluded,excluded,,按需求排除机构预测
+103-068,excluded,excluded,,按需求排除机构预测
+103-076,excluded,excluded,,按需求排除机构预测
+103-130,excluded,excluded,,按需求排除机构预测
+103-139,excluded,excluded,,按需求排除机构预测
+103-140,excluded,excluded,,按需求排除机构预测
+103-148,excluded,excluded,,按需求排除机构预测
+103-149,excluded,excluded,,按需求排除机构预测
+103-151,excluded,excluded,,按需求排除机构预测
+103-152,excluded,excluded,,按需求排除机构预测
+103-154,excluded,excluded,,按需求排除机构预测
+103-155,excluded,excluded,,按需求排除机构预测
+103-160,excluded,excluded,,按需求排除机构预测
+103-166,excluded,excluded,,按需求排除机构预测
+111-008,excluded,excluded,,按需求排除机构预测
+111-009,excluded,excluded,,按需求排除机构预测
+104-001,excluded,excluded,,按需求排除机构预测
+104-003,excluded,excluded,,按需求排除机构预测
+104-005,excluded,excluded,,按需求排除机构预测
+104-007,excluded,excluded,,按需求排除机构预测
+104-009,excluded,excluded,,按需求排除机构预测
+104-011,excluded,excluded,,按需求排除机构预测
+104-013,excluded,excluded,,按需求排除机构预测
+104-015,excluded,excluded,,按需求排除机构预测
+104-017,excluded,excluded,,按需求排除机构预测
+104-019,excluded,excluded,,按需求排除机构预测
+104-021,excluded,excluded,,按需求排除机构预测
+104-023,excluded,excluded,,按需求排除机构预测
+104-025,excluded,excluded,,按需求排除机构预测
+104-026,excluded,excluded,,按需求排除机构预测
+104-027,excluded,excluded,,按需求排除机构预测
+104-028,excluded,excluded,,按需求排除机构预测
+104-029,excluded,excluded,,按需求排除机构预测
+104-030,excluded,excluded,,按需求排除机构预测
+104-031,excluded,excluded,,按需求排除机构预测
+104-032,excluded,excluded,,按需求排除机构预测
+104-033,excluded,excluded,,按需求排除机构预测
+104-034,excluded,excluded,,按需求排除机构预测
+104-035,excluded,excluded,,按需求排除机构预测
+104-036,excluded,excluded,,按需求排除机构预测
+104-037,excluded,excluded,,按需求排除机构预测
+104-038,excluded,excluded,,按需求排除机构预测
+104-039,excluded,excluded,,按需求排除机构预测
+104-040,excluded,excluded,,按需求排除机构预测
+104-043,excluded,excluded,,按需求排除机构预测
+104-044,excluded,excluded,,按需求排除机构预测
+104-045,excluded,excluded,,按需求排除机构预测
+104-046,excluded,excluded,,按需求排除机构预测
+104-047,excluded,excluded,,按需求排除机构预测
+104-048,excluded,excluded,,按需求排除机构预测
+104-049,excluded,excluded,,按需求排除机构预测
+104-050,excluded,excluded,,按需求排除机构预测
+104-051,excluded,excluded,,按需求排除机构预测
+104-052,excluded,excluded,,按需求排除机构预测
+104-055,excluded,excluded,,按需求排除机构预测
+104-056,excluded,excluded,,按需求排除机构预测
+104-057,excluded,excluded,,按需求排除机构预测
+104-058,excluded,excluded,,按需求排除机构预测
+104-061,excluded,excluded,,按需求排除机构预测
+104-062,excluded,excluded,,按需求排除机构预测
+104-063,excluded,excluded,,按需求排除机构预测
+104-064,excluded,excluded,,按需求排除机构预测
+104-067,excluded,excluded,,按需求排除机构预测
+104-068,excluded,excluded,,按需求排除机构预测
+104-071,excluded,excluded,,按需求排除机构预测
+104-072,excluded,excluded,,按需求排除机构预测
+104-073,excluded,excluded,,按需求排除机构预测
+104-074,excluded,excluded,,按需求排除机构预测
+104-075,excluded,excluded,,按需求排除机构预测
+104-076,excluded,excluded,,按需求排除机构预测
+104-077,excluded,excluded,,按需求排除机构预测
+104-078,excluded,excluded,,按需求排除机构预测
+104-079,excluded,excluded,,按需求排除机构预测
+104-080,excluded,excluded,,按需求排除机构预测
+104-081,excluded,excluded,,按需求排除机构预测
+104-082,excluded,excluded,,按需求排除机构预测
+104-083,excluded,excluded,,按需求排除机构预测
+104-084,excluded,excluded,,按需求排除机构预测
+104-085,excluded,excluded,,按需求排除机构预测
+104-086,excluded,excluded,,按需求排除机构预测
+104-089,excluded,excluded,,按需求排除机构预测
+104-090,excluded,excluded,,按需求排除机构预测
+104-091,excluded,excluded,,按需求排除机构预测
+104-092,excluded,excluded,,按需求排除机构预测
+104-093,excluded,excluded,,按需求排除机构预测
+104-094,excluded,excluded,,按需求排除机构预测
+105-001,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-002,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-003,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-004,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-005,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-006,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-007,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-008,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-009,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-010,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-011,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-012,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-013,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-014,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-015,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-016,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-017,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-018,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-019,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-020,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+106-001,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-002,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-003,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-004,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-005,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-006,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-007,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-008,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-009,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-010,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-011,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-012,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-013,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-014,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-015,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-016,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-017,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-018,pending,P2,,TIC 文本表，待写解析
+106-020,pending,P2,,TIC 文本表，待写解析
+106-023,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+107-001,pending,P2,,Preqin/MSCI 需授权
+107-002,pending,P2,,Preqin/MSCI 需授权
+107-003,pending,P2,,Preqin/MSCI 需授权
+107-004,pending,P2,,Preqin/MSCI 需授权
+107-005,pending,P2,,Preqin/MSCI 需授权
+107-006,pending,P2,,Preqin/MSCI 需授权
+107-007,pending,P2,,Preqin/MSCI 需授权
+107-008,pending,P2,,Preqin/MSCI 需授权
+107-009,pending,P2,,Preqin/MSCI 需授权
+107-010,pending,P2,,Preqin/MSCI 需授权
+107-011,pending,P2,,Preqin/MSCI 需授权
+107-012,pending,P2,,Preqin/MSCI 需授权
+107-013,pending,P2,,Preqin/MSCI 需授权
+108-001,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-002,api,P1,{EUROSTAT:nama_10_gdp:ES},Eurostat 年度数据
+108-003,api,P1,{EUROSTAT:demo_pjan:ES},Eurostat 年度数据
+108-004,api,P1,{EUROSTAT:nama_10_gdp:ES} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-005,api,P1,{EUROSTAT:demo_pjan:ES} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-006,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:ES},Eurostat 年度数据
+108-007,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:ES},Eurostat 年度数据
+108-008,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-009,api,P1,{EUROSTAT:nama_10_gdp:EE},Eurostat 年度数据
+108-010,api,P1,{EUROSTAT:demo_pjan:EE},Eurostat 年度数据
+108-011,api,P1,{EUROSTAT:nama_10_gdp:EE} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-012,api,P1,{EUROSTAT:demo_pjan:EE} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-013,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:EE},Eurostat 年度数据
+108-014,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:EE},Eurostat 年度数据
+108-015,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-016,api,P1,{EUROSTAT:nama_10_gdp:FR},Eurostat 年度数据
+108-017,api,P1,{EUROSTAT:demo_pjan:FR},Eurostat 年度数据
+108-018,api,P1,{EUROSTAT:nama_10_gdp:FR} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-019,api,P1,{EUROSTAT:demo_pjan:FR} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-020,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:FR},Eurostat 年度数据
+108-021,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:FR},Eurostat 年度数据
+108-022,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-023,api,P1,{EUROSTAT:nama_10_gdp:FI},Eurostat 年度数据
+108-024,api,P1,{EUROSTAT:demo_pjan:FI},Eurostat 年度数据
+108-025,api,P1,{EUROSTAT:nama_10_gdp:FI} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-026,api,P1,{EUROSTAT:demo_pjan:FI} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-027,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:FI},Eurostat 年度数据
+108-028,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:FI},Eurostat 年度数据
+108-029,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-030,api,P1,{EUROSTAT:nama_10_gdp:EL},Eurostat 年度数据
+108-031,api,P1,{EUROSTAT:demo_pjan:EL},Eurostat 年度数据
+108-032,api,P1,{EUROSTAT:nama_10_gdp:EL} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-033,api,P1,{EUROSTAT:demo_pjan:EL} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-034,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:EL},Eurostat 年度数据
+108-035,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:EL},Eurostat 年度数据
+108-036,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-037,api,P1,{EUROSTAT:nama_10_gdp:SK},Eurostat 年度数据
+108-038,api,P1,{EUROSTAT:demo_pjan:SK},Eurostat 年度数据
+108-039,api,P1,{EUROSTAT:nama_10_gdp:SK} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-040,api,P1,{EUROSTAT:demo_pjan:SK} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-041,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:SK},Eurostat 年度数据
+108-042,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:SK},Eurostat 年度数据
+108-043,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-044,api,P1,{EUROSTAT:nama_10_gdp:PL},Eurostat 年度数据
+108-045,api,P1,{EUROSTAT:demo_pjan:PL},Eurostat 年度数据
+108-046,api,P1,{EUROSTAT:nama_10_gdp:PL} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-047,api,P1,{EUROSTAT:demo_pjan:PL} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-048,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:PL},Eurostat 年度数据
+108-049,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:PL},Eurostat 年度数据
+108-050,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-051,api,P1,{EUROSTAT:nama_10_gdp:IT},Eurostat 年度数据
+108-052,api,P1,{EUROSTAT:demo_pjan:IT},Eurostat 年度数据
+108-053,api,P1,{EUROSTAT:nama_10_gdp:IT} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-054,api,P1,{EUROSTAT:demo_pjan:IT} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
+108-055,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:IT},Eurostat 年度数据
+108-056,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:IT},Eurostat 年度数据
+109-001,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-002,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-003,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-004,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-005,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-006,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-007,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-008,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-009,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-010,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-011,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-012,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-013,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-014,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-015,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-016,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-017,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-018,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-019,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-020,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-021,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-022,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-023,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-024,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-025,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-026,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-027,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-028,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-029,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-030,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-031,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-032,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-033,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-034,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-035,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-036,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-037,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-038,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-039,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-040,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-041,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-042,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-043,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-044,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-045,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-046,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-047,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-048,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-049,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-050,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-051,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-052,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-053,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-054,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-055,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+109-056,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
+110-001,pending,P2,,NAR 数据需授权
+110-002,manual,P1,,BoJ 加息生效日：人工维护
+110-003,api,P1,yoy({FRED:GDP}),BEA GDP（FRED 镜像），季环比折年率及贡献
+110-004,report,P1b,,需希腊/法国/意大利 10 年国债收益率，取周报快照后派生
+110-005,report,P1b,,需希腊/法国/意大利 10 年国债收益率，取周报快照后派生
+110-006,pending,P2,,Eurostat 国际贸易数据集（Comext），待接入
+110-007,pending,P2,,Eurostat 国际贸易数据集（Comext），待接入
+111-001,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-002,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-003,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-004,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-005,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-006,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除
+111-007,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除

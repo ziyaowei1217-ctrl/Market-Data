@@ -1,0 +1,594 @@
+"""Official / free data providers.
+
+Each provider turns a list of ``SeriesDef`` into observations. Series codes are
+documented next to each class; ``catalog/series.csv`` holds the concrete list.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import time
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Sequence
+
+import numpy as np
+import pandas as pd
+
+from ..db.store import Observation
+from .base import FetchResult, Provider, ProviderError, SeriesDef, obs_from_pairs, register, to_float
+
+
+def _today() -> date:
+    return datetime.now(timezone.utc).date()
+
+
+# --------------------------------------------------------------------------- FRED / ALFRED
+
+
+@register
+class Fred(Provider):
+    """code = FRED series id. With FRED_API_KEY uses the API (and ALFRED vintages
+    when the series is flagged ``vintages``); without a key falls back to the
+    public fredgraph CSV (latest values only)."""
+
+    name = "FRED"
+    API = "https://api.stlouisfed.org/fred/series/observations"
+    CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        key = self.env.get("FRED_API_KEY")
+        if not key:
+            frame = self.get_csv(self.CSV, {"id": d.code, "cosd": start.isoformat()})
+            date_col, value_col = frame.columns[0], frame.columns[1]
+            return obs_from_pairs(zip(frame[date_col], frame[value_col]), start)
+        params = {
+            "series_id": d.code, "api_key": key, "file_type": "json",
+            "observation_start": start.isoformat(), "limit": 100000,
+        }
+        if d.vintages:
+            params.update({"realtime_start": "1776-07-04", "realtime_end": "9999-12-31"})
+        payload = self.get_json(self.API, params)
+        time.sleep(0.5)  # FRED allows 120 requests/minute
+        out = []
+        for row in payload.get("observations", []):
+            value = to_float(row.get("value"))
+            if value is None:
+                continue
+            realtime = date.fromisoformat(row["realtime_start"]) if d.vintages else None
+            out.append(Observation(date.fromisoformat(row["date"]), value, realtime))
+        return out
+
+
+# --------------------------------------------------------------------------- U.S. Treasury
+
+
+@register
+class TreasuryFiscal(Provider):
+    """Fiscal Data API. code = free label; params:
+    endpoint, filter, date_field, value_field, [scale], [agg=sum|last]."""
+
+    name = "TSY"
+    BASE = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        p = d.params
+        date_field = p.get("date_field", "record_date")
+        filters = [f"{date_field}:gte:{start.isoformat()}"]
+        if p.get("filter"):
+            filters.append(p["filter"])
+        fields = sorted({date_field, *str(p["value_field"]).split("+")})
+        rows: list[dict] = []
+        page = 1
+        while True:
+            payload = self.get_json(
+                self.BASE + p["endpoint"],
+                {"filter": ",".join(filters), "fields": ",".join(fields), "sort": date_field,
+                 "page[size]": 10000, "page[number]": page, "format": "json"},
+            )
+            rows.extend(payload.get("data", []))
+            total_pages = int(payload.get("meta", {}).get("total-pages", 1) or 1)
+            if page >= total_pages:
+                break
+            page += 1
+        scale = float(p.get("scale", 1.0))
+        grouped: dict[date, list[float]] = defaultdict(list)
+        for row in rows:
+            parts = [to_float(row.get(f)) for f in str(p["value_field"]).split("+")]
+            if any(v is None for v in parts):
+                continue
+            grouped[date.fromisoformat(row[date_field][:10])].append(sum(parts) * scale)  # type: ignore[arg-type]
+        agg = p.get("agg", "last")
+        return [
+            Observation(k, (sum(v) if agg == "sum" else v[-1]))
+            for k, v in sorted(grouped.items())
+        ]
+
+
+@register
+class TreasuryCurve(Provider):
+    """home.treasury.gov daily curves. code = column label, e.g. "10 Yr";
+    params.type = daily_treasury_yield_curve | daily_treasury_real_yield_curve."""
+
+    name = "TSYCURVE"
+    batch = True
+    URL = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/{year}/all"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        by_type: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_type[d.params.get("type", "daily_treasury_yield_curve")].append(d)
+        results = []
+        for curve_type, items in by_type.items():
+            frames = []
+            for year in range(start.year, _today().year + 1):
+                body = self.get(
+                    self.URL.format(year=year),
+                    {"type": curve_type, "field_tdr_date_value": year, "page": "", "_format": "csv"},
+                )
+                if body.strip():
+                    frames.append(pd.read_csv(io.BytesIO(body)))
+            frame = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            for d in items:
+                if frame.empty or d.code not in frame.columns:
+                    results.append(FetchResult(d.key, [], "error", f"column {d.code!r} not in curve file"))
+                    continue
+                obs = obs_from_pairs(zip(pd.to_datetime(frame["Date"]), frame[d.code]), start)
+                results.append(FetchResult(d.key, obs, "ok" if obs else "empty"))
+        return results
+
+
+# --------------------------------------------------------------------------- New York Fed
+
+
+@register
+class NyFedRates(Provider):
+    """markets.newyorkfed.org reference rates. code = "<path>:<field>", e.g.
+    "secured/sofr:percentRate", "unsecured/effr:volumeInBillions"."""
+
+    name = "NYFED"
+    batch = True
+    URL = "https://markets.newyorkfed.org/api/rates/{path}/search.json"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        by_path: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_path[d.code.split(":")[0]].append(d)
+        results = []
+        for path, items in by_path.items():
+            payload = self.get_json(
+                self.URL.format(path=path), {"startDate": start.isoformat(), "endDate": _today().isoformat()}
+            )
+            rows = payload.get("refRates", [])
+            for d in items:
+                field = d.code.split(":")[1]
+                obs = obs_from_pairs(((r["effectiveDate"], r.get(field)) for r in rows), start)
+                results.append(FetchResult(d.key, sorted(obs, key=lambda o: o.obs_date), "ok" if obs else "empty"))
+        return results
+
+
+@register
+class NyFedAcm(Provider):
+    """ACM term premia workbook. code = column (ACMTP10, ACMRNY05, ACMY02 ...)."""
+
+    name = "ACM"
+    batch = True
+    URL = "https://www.newyorkfed.org/medialibrary/media/research/data_indicators/ACMTermPremium.xls"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        body = self.get(self.URL)
+        frame = None
+        for sheet in pd.read_excel(io.BytesIO(body), sheet_name=None).values():
+            cols = [str(c).strip().upper() for c in sheet.columns]
+            if "DATE" in cols and any(c.startswith("ACMTP") for c in cols):
+                sheet.columns = cols
+                frame = sheet
+                break
+        if frame is None:
+            raise ProviderError("ACM workbook layout changed: no sheet with DATE and ACMTP columns")
+        dates = pd.to_datetime(frame["DATE"], format="mixed", dayfirst=True)
+        results = []
+        for d in defs:
+            col = d.code.upper()
+            if col not in frame.columns:
+                results.append(FetchResult(d.key, [], "error", f"{col} missing from ACM workbook"))
+                continue
+            obs = obs_from_pairs(zip(dates, frame[col]), start)
+            results.append(FetchResult(d.key, obs, "ok" if obs else "empty"))
+        return results
+
+
+# --------------------------------------------------------------------------- CFTC
+
+
+@register
+class Cftc(Provider):
+    """CFTC public reporting (Socrata). code = "<dataset>:<contract code>:<field>".
+    Datasets: gpe5-46if (TFF futures only), 72hh-3qpy (Disaggregated futures only)."""
+
+    name = "CFTC"
+    batch = True
+    URL = "https://publicreporting.cftc.gov/resource/{dataset}.json"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        groups: dict[tuple[str, str], list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            dataset, contract, _ = d.code.split(":")
+            groups[(dataset, contract)].append(d)
+        results = []
+        for (dataset, contract), items in groups.items():
+            rows = self.get_json(
+                self.URL.format(dataset=dataset),
+                {
+                    "$where": f"cftc_contract_market_code='{contract}' AND report_date_as_yyyy_mm_dd >= '{start.isoformat()}T00:00:00'",
+                    "$order": "report_date_as_yyyy_mm_dd",
+                    "$limit": 50000,
+                },
+            )
+            for d in items:
+                field = d.code.split(":")[2]
+                obs = obs_from_pairs(((r["report_date_as_yyyy_mm_dd"][:10], r.get(field)) for r in rows), start)
+                status = "ok" if obs else ("error" if rows and field not in rows[0] else "empty")
+                results.append(FetchResult(d.key, obs, status, "" if obs else f"field {field} not found"))
+        return results
+
+
+# --------------------------------------------------------------------------- BLS
+
+
+@register
+class Bls(Provider):
+    """BLS Public Data API v2 (BLS_API_KEY recommended; v1 without key is limited
+    to 25 requests/day). code = BLS series id."""
+
+    name = "BLS"
+    batch = True
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        key = self.env.get("BLS_API_KEY")
+        url = "https://api.bls.gov/publicAPI/v2/timeseries/data/" if key else "https://api.bls.gov/publicAPI/v1/timeseries/data/"
+        chunk = 50 if key else 25
+        span = 20 if key else 10
+        results: dict[str, list[Observation]] = defaultdict(list)
+        messages: dict[str, str] = {}
+        codes = [d.code for d in defs]
+        end_year = _today().year
+        for i in range(0, len(codes), chunk):
+            for y0 in range(start.year, end_year + 1, span):
+                body = {"seriesid": codes[i:i + chunk], "startyear": str(y0), "endyear": str(min(y0 + span - 1, end_year))}
+                if key:
+                    body["registrationkey"] = key
+                payload = _post_json(self, url, body)
+                if payload.get("status") != "REQUEST_SUCCEEDED":
+                    raise ProviderError(f"BLS: {payload.get('status')} {payload.get('message')}")
+                for series in payload.get("Results", {}).get("series", []):
+                    for row in series.get("data", []):
+                        period = row.get("period", "")
+                        obs_date = _bls_period(row.get("year"), period)
+                        value = to_float(row.get("value"))
+                        if obs_date and value is not None and obs_date >= start:
+                            results[series["seriesID"]].append(Observation(obs_date, value))
+                for msg in payload.get("message", []) or []:
+                    for code in codes[i:i + chunk]:
+                        if code in msg:
+                            messages[code] = msg
+        out = []
+        for d in defs:
+            obs = sorted({o.obs_date: o for o in results.get(d.code, [])}.values(), key=lambda o: o.obs_date)
+            out.append(FetchResult(d.key, obs, "ok" if obs else "error", messages.get(d.code, "" if obs else "no data")))
+        return out
+
+
+def _bls_period(year: Any, period: str) -> date | None:
+    if not year or not period:
+        return None
+    y = int(year)
+    if period.startswith("M") and period != "M13":
+        return date(y, int(period[1:]), 1)
+    if period.startswith("Q") and period != "Q05":
+        return date(y, 3 * (int(period[1:]) - 1) + 1, 1)
+    if period == "A01":
+        return date(y, 1, 1)
+    return None
+
+
+def _post_json(provider: Provider, url: str, body: dict, attempts: int = 4) -> Any:
+    delay = 2.0
+    for attempt in range(1, attempts + 1):
+        try:
+            response = provider.session.post(url, json=body, timeout=(15, 120))
+            if response.status_code in (429, 500, 502, 503, 504) and attempt < attempts:
+                time.sleep(delay)
+                delay *= 2.5
+                continue
+            response.raise_for_status()
+            return response.json()
+        except (ValueError, OSError) as error:
+            if attempt >= attempts:
+                raise ProviderError(f"POST failed: {type(error).__name__}") from None
+            time.sleep(delay)
+            delay *= 2.5
+    raise ProviderError("POST failed")
+
+
+# --------------------------------------------------------------------------- EIA
+
+
+@register
+class Eia(Provider):
+    """EIA Open Data v2 via the legacy series-id route. code = e.g. PET.WCESTUS1.W."""
+
+    name = "EIA"
+    env_keys = ("EIA_API_KEY",)
+    URL = "https://api.eia.gov/v2/seriesid/{code}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        payload = self.get_json(
+            self.URL.format(code=d.code), {"api_key": self.env["EIA_API_KEY"], "start": start.isoformat(), "length": 5000}
+        )
+        rows = payload.get("response", {}).get("data", [])
+        out = []
+        for row in rows:
+            period = str(row.get("period"))
+            obs_date = _period_to_date(period)
+            value = to_float(row.get("value"))
+            if obs_date and value is not None and obs_date >= start:
+                out.append(Observation(obs_date, value))
+        return sorted(out, key=lambda o: o.obs_date)
+
+
+def _period_to_date(period: str) -> date | None:
+    """2026-10-17 | 2026-09 | 2026-Q3 | 2026Q3 | 2026-M09 | 2026M09 | 2026."""
+    p = period.strip().replace(" ", "")
+    try:
+        if len(p) == 10:
+            return date.fromisoformat(p)
+        if len(p) == 7 and p[4] == "-" and p[5:].isdigit():
+            return date(int(p[:4]), int(p[5:]), 1)
+        if "Q" in p:
+            y, q = p.replace("-", "").split("Q")
+            return date(int(y), 3 * (int(q) - 1) + 1, 1)
+        if "M" in p:
+            y, m = p.replace("-", "").split("M")
+            return date(int(y), int(m), 1)
+        if len(p) == 4 and p.isdigit():
+            return date(int(p), 1, 1)
+    except ValueError:
+        return None
+    return None
+
+
+# --------------------------------------------------------------------------- ECB / Eurostat
+
+
+@register
+class Ecb(Provider):
+    """ECB Data Portal. code = "<flow>/<key>", e.g. "EXR/D.USD.EUR.SP00.A"."""
+
+    name = "ECB"
+    URL = "https://data-api.ecb.europa.eu/service/data/{code}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        frame = self.get_csv(self.URL.format(code=d.code), {"startPeriod": start.isoformat(), "format": "csvdata"})
+        return [o for o in (
+            Observation(dt, v) for dt, v in (
+                (_period_to_date(str(p)), to_float(x)) for p, x in zip(frame["TIME_PERIOD"], frame["OBS_VALUE"])
+            ) if dt and v is not None
+        ) if o.obs_date >= start]
+
+
+@register
+class Eurostat(Provider):
+    """Eurostat dissemination API (JSON-stat). code = dataset; params = dimension filters."""
+
+    name = "EUROSTAT"
+    URL = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/{dataset}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        dataset = d.params.get("dataset", d.code)
+        params = {"format": "JSON", "lang": "EN", **{k: v for k, v in d.params.items() if k != "dataset"}}
+        payload = self.get_json(self.URL.format(dataset=dataset), params)
+        dims = payload["id"]
+        sizes = payload["size"]
+        for dim, size in zip(dims, sizes):
+            if dim != "time" and size != 1:
+                raise ProviderError(f"Eurostat filter leaves {size} values for dimension {dim}")
+        time_index = payload["dimension"]["time"]["category"]["index"]
+        values = payload.get("value", {})
+        out = []
+        for period, pos in time_index.items():
+            v = values.get(str(pos))
+            obs_date = _period_to_date(period)
+            if v is not None and obs_date and obs_date >= start:
+                out.append(Observation(obs_date, float(v)))
+        return sorted(out, key=lambda o: o.obs_date)
+
+
+# --------------------------------------------------------------------------- national sources
+
+
+@register
+class Ons(Provider):
+    """UK ONS time series. code = CDID; params.uri = timeseries uri; params.period = months|quarters|years."""
+
+    name = "ONS"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        payload = self.get_json("https://www.ons.gov.uk" + d.params["uri"] + "/data")
+        period = d.params.get("period", "months")
+        out = []
+        for row in payload.get(period, []):
+            obs_date = _ons_date(row.get("date", ""), period)
+            value = to_float(row.get("value"))
+            if obs_date and value is not None and obs_date >= start:
+                out.append(Observation(obs_date, value))
+        return out
+
+
+def _ons_date(text: str, period: str) -> date | None:
+    try:
+        if period == "months":
+            return datetime.strptime(text.title(), "%Y %b").date()
+        if period == "quarters":
+            y, q = text.split(" Q")
+            return date(int(y), 3 * (int(q) - 1) + 1, 1)
+        return date(int(text), 1, 1)
+    except (ValueError, TypeError):
+        return None
+
+
+@register
+class StatCan(Provider):
+    """Statistics Canada WDS. code = vector id (digits, without the leading v)."""
+
+    name = "STATCAN"
+    batch = True
+    URL = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        months = (_today().year - start.year + 1) * 12
+        payload = _post_json(self, self.URL, [{"vectorId": int(d.code), "latestN": months} for d in defs])
+        by_vector = {}
+        for item in payload:
+            obj = item.get("object") or {}
+            by_vector[str(obj.get("vectorId"))] = obj.get("vectorDataPoint", [])
+        out = []
+        for d in defs:
+            points = by_vector.get(d.code, [])
+            obs = obs_from_pairs(((p["refPer"], p.get("value")) for p in points), start)
+            out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "vector not returned"))
+        return out
+
+
+@register
+class Bcb(Provider):
+    """Banco Central do Brasil SGS. code = series number (432 Selic target, 13522 IPCA 12m)."""
+
+    name = "BCB"
+    URL = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{code}/dados"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        rows = self.get_json(
+            self.URL.format(code=d.code),
+            {"formato": "json", "dataInicial": start.strftime("%d/%m/%Y"), "dataFinal": _today().strftime("%d/%m/%Y")},
+        )
+        return obs_from_pairs(((datetime.strptime(r["data"], "%d/%m/%Y"), r["valor"]) for r in rows), start)
+
+
+@register
+class BankOfCanada(Provider):
+    """Bank of Canada Valet. code = series name (V39079 target overnight rate)."""
+
+    name = "BOC"
+    URL = "https://www.bankofcanada.ca/valet/observations/{code}/json"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        payload = self.get_json(self.URL.format(code=d.code), {"start_date": start.isoformat()})
+        return obs_from_pairs(((r["d"], (r.get(d.code) or {}).get("v")) for r in payload.get("observations", [])), start)
+
+
+@register
+class BankOfEngland(Provider):
+    """Bank of England IADB. code = series code (IUDBEDR Bank Rate)."""
+
+    name = "BOE"
+    URL = "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        body = self.get(
+            self.URL,
+            {"csv.x": "yes", "Datefrom": start.strftime("%d/%b/%Y"), "Dateto": "now", "SeriesCodes": d.code,
+             "CSVF": "TN", "UsingCodes": "Y", "VPD": "Y", "VFD": "N"},
+            headers={"User-Agent": "Mozilla/5.0 (compatible; CapitalWeekly-Warehouse/1.0)"},
+        )
+        frame = pd.read_csv(io.BytesIO(body))
+        return obs_from_pairs(zip(pd.to_datetime(frame.iloc[:, 0], format="%d %b %Y"), frame.iloc[:, 1]), start)
+
+
+@register
+class MofJapan(Provider):
+    """Japan MOF JGB yields (daily). code = column label, e.g. "10Y"."""
+
+    name = "MOFJP"
+    batch = True
+    URLS = (
+        "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+        "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/jgbcme.csv",
+    )
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        frames = []
+        for url in self.URLS:
+            body = self.get(url)
+            frame = pd.read_csv(io.BytesIO(body), skiprows=1)
+            frame.columns = [str(c).strip() for c in frame.columns]
+            frames.append(frame)
+        frame = pd.concat(frames, ignore_index=True)
+        dates = pd.to_datetime(frame["Date"], format="mixed", errors="coerce")
+        out = []
+        for d in defs:
+            if d.code not in frame.columns:
+                out.append(FetchResult(d.key, [], "error", f"column {d.code} missing"))
+                continue
+            obs = obs_from_pairs(((dt, v) for dt, v in zip(dates, frame[d.code]) if pd.notna(dt)), start)
+            dedup = sorted({o.obs_date: o for o in obs}.values(), key=lambda o: o.obs_date)
+            out.append(FetchResult(d.key, dedup, "ok" if dedup else "empty"))
+        return out
+
+
+# --------------------------------------------------------------------------- market data (free)
+
+
+@register
+class Cboe(Provider):
+    """Cboe daily index history CSV. code = index symbol (VIX, VIX9D, VVIX, OVX ...)."""
+
+    name = "CBOE"
+    URL = "https://cdn.cboe.com/api/global/us_indices/daily_prices/{code}_History.csv"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        frame = self.get_csv(self.URL.format(code=d.code))
+        frame.columns = [str(c).strip().upper() for c in frame.columns]
+        value_col = "CLOSE" if "CLOSE" in frame.columns else frame.columns[-1]
+        return obs_from_pairs(zip(pd.to_datetime(frame["DATE"], format="mixed"), frame[value_col]), start)
+
+
+@register
+class Yahoo(Provider):
+    """Yahoo Finance chart API (free, delayed, unofficial). code = ticker.
+    Used only for index levels that have no free official feed; every value
+    is labelled with this source in the catalog."""
+
+    name = "YAHOO"
+    URL = "https://query2.finance.yahoo.com/v8/finance/chart/{ticker}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        period1 = int(datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        period2 = int(datetime.now(timezone.utc).timestamp()) + 86400
+        payload = self.get_json(
+            self.URL.format(ticker=d.code),
+            {"period1": period1, "period2": period2, "interval": "1d", "events": "history", "includeAdjustedClose": "false"},
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"},
+        )
+        time.sleep(1.0)
+        result = (payload.get("chart", {}).get("result") or [None])[0]
+        if not result:
+            raise ProviderError(f"Yahoo: {payload.get('chart', {}).get('error')}")
+        meta = result.get("meta", {})
+        offset = int(meta.get("gmtoffset", 0))
+        stamps = result.get("timestamp") or []
+        closes = (result.get("indicators", {}).get("quote") or [{}])[0].get("close") or []
+        out = {}
+        for ts, close in zip(stamps, closes):
+            if close is None:
+                continue
+            local = datetime.fromtimestamp(ts + offset, tz=timezone.utc).date()
+            if local >= start:
+                out[local] = Observation(local, float(close))
+        # Drop today's intraday bar if the market has not closed.
+        regular = meta.get("currentTradingPeriod", {}).get("regular", {})
+        end = regular.get("end")
+        if end and datetime.now(timezone.utc).timestamp() < end:
+            out.pop(datetime.fromtimestamp(end + offset, tz=timezone.utc).date(), None)
+        return [out[k] for k in sorted(out)]

@@ -1,0 +1,333 @@
+key,provider,code,title,frequency,unit,release_lag_days,source_url,params,vintages,runner
+ACM:ACMRNY01,ACM,ACMRNY01,ACM 1y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY02,ACM,ACMRNY02,ACM 2y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY03,ACM,ACMRNY03,ACM 3y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY04,ACM,ACMRNY04,ACM 4y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY05,ACM,ACMRNY05,ACM 5y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY06,ACM,ACMRNY06,ACM 6y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY07,ACM,ACMRNY07,ACM 7y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY08,ACM,ACMRNY08,ACM 8y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY09,ACM,ACMRNY09,ACM 9y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY10,ACM,ACMRNY10,ACM 10y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP01,ACM,ACMTP01,ACM 1y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP02,ACM,ACMTP02,ACM 2y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP03,ACM,ACMTP03,ACM 3y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP04,ACM,ACMTP04,ACM 4y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP05,ACM,ACMTP05,ACM 5y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP06,ACM,ACMTP06,ACM 6y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP07,ACM,ACMTP07,ACM 7y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP08,ACM,ACMTP08,ACM 8y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP09,ACM,ACMTP09,ACM 9y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP10,ACM,ACMTP10,ACM 10y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY01,ACM,ACMY01,ACM 1y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY02,ACM,ACMY02,ACM 2y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY03,ACM,ACMY03,ACM 3y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY04,ACM,ACMY04,ACM 4y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY05,ACM,ACMY05,ACM 5y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY06,ACM,ACMY06,ACM 6y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY07,ACM,ACMY07,ACM 7y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY08,ACM,ACMY08,ACM 8y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY09,ACM,ACMY09,ACM 9y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY10,ACM,ACMY10,ACM 10y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+BCB:13522,BCB,13522,IPCA 12-month accumulated,M,%,12,https://www3.bcb.gov.br/sgspub/,,False,cloud
+BCB:432,BCB,432,Selic target,D,%,0,https://www3.bcb.gov.br/sgspub/,,False,cloud
+BLS:CES0500000021,BLS,CES0500000021,"Diffusion index, 1-month, total private",M,,37,https://data.bls.gov/timeseries/CES0500000021,,False,cloud
+BLS:CIS2020000000000Q,BLS,CIS2020000000000Q,ECI wages private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2020000000000Q,,False,cloud
+BLS:CIS2030000000000Q,BLS,CIS2030000000000Q,ECI benefits private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2030000000000Q,,False,cloud
+BLS:CIU2020000000000A,BLS,CIU2020000000000A,ECI wages private 12m % (NSA),Q,,30,https://data.bls.gov/timeseries/CIU2020000000000A,,False,cloud
+BLS:CIU2030000000000A,BLS,CIU2030000000000A,ECI benefits private 12m % (NSA),Q,,30,https://data.bls.gov/timeseries/CIU2030000000000A,,False,cloud
+BLS:CUSR0000SA0,BLS,CUSR0000SA0,CPI 总体 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SA0,,False,cloud
+BLS:CUSR0000SA0E,BLS,CUSR0000SA0E,CPI 能源 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SA0E,,False,cloud
+BLS:CUSR0000SA0L1E,BLS,CUSR0000SA0L1E,CPI 核心 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SA0L1E,,False,cloud
+BLS:CUSR0000SACL1E,BLS,CUSR0000SACL1E,CPI 核心商品 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SACL1E,,False,cloud
+BLS:CUSR0000SAF1,BLS,CUSR0000SAF1,CPI 食品 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SAF1,,False,cloud
+BLS:CUSR0000SAH1,BLS,CUSR0000SAH1,CPI 住房 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SAH1,,False,cloud
+BLS:CUUR0000SA0,BLS,CUUR0000SA0,CPI 总体 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0,,False,cloud
+BLS:CUUR0000SA0E,BLS,CUUR0000SA0E,CPI 能源 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0E,,False,cloud
+BLS:CUUR0000SA0L1E,BLS,CUUR0000SA0L1E,CPI 核心 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0L1E,,False,cloud
+BLS:CUUR0000SACL1E,BLS,CUUR0000SACL1E,CPI 核心商品 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SACL1E,,False,cloud
+BLS:CUUR0000SAF1,BLS,CUUR0000SAF1,CPI 食品 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SAF1,,False,cloud
+BLS:CUUR0000SAH1,BLS,CUUR0000SAH1,CPI 住房 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SAH1,,False,cloud
+BLS:WPSFD4,BLS,WPSFD4,PPI final demand SA,M,,45,https://data.bls.gov/timeseries/WPSFD4,,False,cloud
+BLS:WPSFD49104,BLS,WPSFD49104,PPI final demand less foods & energy SA,M,,45,https://data.bls.gov/timeseries/WPSFD49104,,False,cloud
+BLS:WPUFD4,BLS,WPUFD4,PPI final demand NSA,M,,45,https://data.bls.gov/timeseries/WPUFD4,,False,cloud
+BOC:V39079,BOC,V39079,BoC target overnight rate,D,%,0,https://www.bankofcanada.ca/rates/interest-rates/,,False,cloud
+BOE:IUDBEDR,BOE,IUDBEDR,Bank Rate,D,%,0,https://www.bankofengland.co.uk/boeapps/database/,,False,cloud
+CBOE:OVX,CBOE,OVX,Cboe Crude Oil Volatility Index,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
+CBOE:VIX,CBOE,VIX,Cboe VIX,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
+CBOE:VIX9D,CBOE,VIX9D,Cboe VIX9D,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
+CBOE:VVIX,CBOE,VVIX,Cboe VVIX,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
+CFTC:72hh-3qpy:067651:m_money_positions_long_all,CFTC,72hh-3qpy:067651:m_money_positions_long_all,WTI crude managed money long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:72hh-3qpy:067651:m_money_positions_short_all,CFTC,72hh-3qpy:067651:m_money_positions_short_all,WTI crude managed money short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:72hh-3qpy:067651:open_interest_all,CFTC,72hh-3qpy:067651:open_interest_all,WTI crude open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:72hh-3qpy:088691:m_money_positions_long_all,CFTC,72hh-3qpy:088691:m_money_positions_long_all,COMEX gold managed money long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:72hh-3qpy:088691:m_money_positions_short_all,CFTC,72hh-3qpy:088691:m_money_positions_short_all,COMEX gold managed money short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:72hh-3qpy:088691:open_interest_all,CFTC,72hh-3qpy:088691:open_interest_all,COMEX gold open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:043602:asset_mgr_positions_long,CFTC,gpe5-46if:043602:asset_mgr_positions_long,UST 10Y note Asset Manager long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:043602:asset_mgr_positions_short,CFTC,gpe5-46if:043602:asset_mgr_positions_short,UST 10Y note Asset Manager short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:043602:lev_money_positions_long,CFTC,gpe5-46if:043602:lev_money_positions_long,UST 10Y note Leveraged Funds long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:043602:lev_money_positions_short,CFTC,gpe5-46if:043602:lev_money_positions_short,UST 10Y note Leveraged Funds short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:043602:open_interest_all,CFTC,gpe5-46if:043602:open_interest_all,UST 10Y note open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:097741:asset_mgr_positions_long,CFTC,gpe5-46if:097741:asset_mgr_positions_long,Japanese yen Asset Manager long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:097741:asset_mgr_positions_short,CFTC,gpe5-46if:097741:asset_mgr_positions_short,Japanese yen Asset Manager short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:097741:lev_money_positions_long,CFTC,gpe5-46if:097741:lev_money_positions_long,Japanese yen Leveraged Funds long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:097741:lev_money_positions_short,CFTC,gpe5-46if:097741:lev_money_positions_short,Japanese yen Leveraged Funds short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:097741:open_interest_all,CFTC,gpe5-46if:097741:open_interest_all,Japanese yen open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:099741:asset_mgr_positions_long,CFTC,gpe5-46if:099741:asset_mgr_positions_long,Euro FX Asset Manager long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:099741:asset_mgr_positions_short,CFTC,gpe5-46if:099741:asset_mgr_positions_short,Euro FX Asset Manager short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:099741:lev_money_positions_long,CFTC,gpe5-46if:099741:lev_money_positions_long,Euro FX Leveraged Funds long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:099741:lev_money_positions_short,CFTC,gpe5-46if:099741:lev_money_positions_short,Euro FX Leveraged Funds short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:099741:open_interest_all,CFTC,gpe5-46if:099741:open_interest_all,Euro FX open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:13874A:asset_mgr_positions_long,CFTC,gpe5-46if:13874A:asset_mgr_positions_long,E-mini S&P 500 Asset Manager long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:13874A:asset_mgr_positions_short,CFTC,gpe5-46if:13874A:asset_mgr_positions_short,E-mini S&P 500 Asset Manager short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:13874A:lev_money_positions_long,CFTC,gpe5-46if:13874A:lev_money_positions_long,E-mini S&P 500 Leveraged Funds long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:13874A:lev_money_positions_short,CFTC,gpe5-46if:13874A:lev_money_positions_short,E-mini S&P 500 Leveraged Funds short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+CFTC:gpe5-46if:13874A:open_interest_all,CFTC,gpe5-46if:13874A:open_interest_all,E-mini S&P 500 open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+ECB:EXR/D.CHF.EUR.SP00.A,ECB,EXR/D.CHF.EUR.SP00.A,CHF per EUR (ECB reference),D,瑞郎/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
+ECB:EXR/D.CNY.EUR.SP00.A,ECB,EXR/D.CNY.EUR.SP00.A,CNY per EUR (ECB reference),D,人民币/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
+ECB:EXR/D.GBP.EUR.SP00.A,ECB,EXR/D.GBP.EUR.SP00.A,GBP per EUR (ECB reference),D,英镑/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
+ECB:EXR/D.JPY.EUR.SP00.A,ECB,EXR/D.JPY.EUR.SP00.A,JPY per EUR (ECB reference),D,日元/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
+ECB:EXR/D.USD.EUR.SP00.A,ECB,EXR/D.USD.EUR.SP00.A,USD per EUR (ECB reference),D,美元/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
+ECB:ICP/M.U2.N.000000.4.ANR,ECB,ICP/M.U2.N.000000.4.ANR,Euro area HICP annual rate,M,%,47,https://data.ecb.europa.eu/data/datasets/ICP,,False,cloud
+ECB:ICP/M.U2.N.XEF000.4.ANR,ECB,ICP/M.U2.N.XEF000.4.ANR,"Euro area HICP ex energy, food, alcohol, tobacco annual rate",M,%,47,https://data.ecb.europa.eu/data/datasets/ICP,,False,cloud
+EIA:PET.EER_EPD2DXL0_PF4_RGC_DPG.D,EIA,PET.EER_EPD2DXL0_PF4_RGC_DPG.D,Gulf Coast ULSD spot,D,美元/加仑,7,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.EER_EPMRU_PF4_RGC_DPG.D,EIA,PET.EER_EPMRU_PF4_RGC_DPG.D,Gulf Coast conventional gasoline spot,D,美元/加仑,7,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.RCLC1.D,EIA,PET.RCLC1.D,NYMEX WTI futures contract 1,D,美元/桶,7,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.RCLC2.D,EIA,PET.RCLC2.D,NYMEX WTI futures contract 2,D,美元/桶,7,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.RCLC3.D,EIA,PET.RCLC3.D,NYMEX WTI futures contract 3,D,美元/桶,7,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WCESTUS1.W,EIA,PET.WCESTUS1.W,Commercial crude stocks ex SPR,W,千桶,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WCREXUS2.W,EIA,PET.WCREXUS2.W,Crude oil exports,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WCRFPUS2.W,EIA,PET.WCRFPUS2.W,Crude oil field production,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WCRIMUS2.W,EIA,PET.WCRIMUS2.W,Crude oil imports,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WDISTUS1.W,EIA,PET.WDISTUS1.W,Distillate fuel oil stocks,W,千桶,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WDIUPUS2.W,EIA,PET.WDIUPUS2.W,Distillate product supplied,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WGFUPUS2.W,EIA,PET.WGFUPUS2.W,Gasoline product supplied,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WGTSTUS1.W,EIA,PET.WGTSTUS1.W,Total motor gasoline stocks,W,千桶,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:PET.WPULEUS3.W,EIA,PET.WPULEUS3.W,Refinery utilization,W,%,5,https://www.eia.gov/opendata/,,False,cloud
+EUROSTAT:demo_pjan:EE,EUROSTAT,demo_pjan:EE,EE population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""EE"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:EL,EUROSTAT,demo_pjan:EL,EL population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""EL"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:ES,EUROSTAT,demo_pjan:ES,ES population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""ES"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:EU27_2020,EUROSTAT,demo_pjan:EU27_2020,EU27 population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""EU27_2020"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:FI,EUROSTAT,demo_pjan:FI,FI population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""FI"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:FR,EUROSTAT,demo_pjan:FR,FR population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""FR"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:IT,EUROSTAT,demo_pjan:IT,IT population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""IT"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:PL,EUROSTAT,demo_pjan:PL,PL population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""PL"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:demo_pjan:SK,EUROSTAT,demo_pjan:SK,SK population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""SK"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:EE,EUROSTAT,gov_10dd_edpt1:B9:EE,EE government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""EE"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:EL,EUROSTAT,gov_10dd_edpt1:B9:EL,EL government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""EL"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:ES,EUROSTAT,gov_10dd_edpt1:B9:ES,ES government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""ES"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:FI,EUROSTAT,gov_10dd_edpt1:B9:FI,FI government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""FI"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:FR,EUROSTAT,gov_10dd_edpt1:B9:FR,FR government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""FR"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:IT,EUROSTAT,gov_10dd_edpt1:B9:IT,IT government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""IT"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:PL,EUROSTAT,gov_10dd_edpt1:B9:PL,PL government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""PL"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:B9:SK,EUROSTAT,gov_10dd_edpt1:B9:SK,SK government balance % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""SK"", ""na_item"": ""B9"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:EE,EUROSTAT,gov_10dd_edpt1:GD:EE,EE government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""EE"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:EL,EUROSTAT,gov_10dd_edpt1:GD:EL,EL government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""EL"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:ES,EUROSTAT,gov_10dd_edpt1:GD:ES,ES government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""ES"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:FI,EUROSTAT,gov_10dd_edpt1:GD:FI,FI government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""FI"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:FR,EUROSTAT,gov_10dd_edpt1:GD:FR,FR government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""FR"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:IT,EUROSTAT,gov_10dd_edpt1:GD:IT,IT government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""IT"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:PL,EUROSTAT,gov_10dd_edpt1:GD:PL,PL government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""PL"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:gov_10dd_edpt1:GD:SK,EUROSTAT,gov_10dd_edpt1:GD:SK,SK government debt % GDP,A,%,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""gov_10dd_edpt1"", ""geo"": ""SK"", ""na_item"": ""GD"", ""sector"": ""S13"", ""sinceTimePeriod"": ""2015"", ""unit"": ""PC_GDP""}",False,cloud
+EUROSTAT:nama_10_gdp:EE,EUROSTAT,nama_10_gdp:EE,EE nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""EE"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:EL,EUROSTAT,nama_10_gdp:EL,EL nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""EL"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:ES,EUROSTAT,nama_10_gdp:ES,ES nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""ES"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:EU27_2020,EUROSTAT,nama_10_gdp:EU27_2020,EU27 nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""EU27_2020"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:FI,EUROSTAT,nama_10_gdp:FI,FI nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""FI"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:FR,EUROSTAT,nama_10_gdp:FR,FR nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""FR"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:IT,EUROSTAT,nama_10_gdp:IT,IT nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""IT"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:PL,EUROSTAT,nama_10_gdp:PL,PL nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""PL"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:nama_10_gdp:SK,EUROSTAT,nama_10_gdp:SK,SK nominal GDP,A,百万欧元,120,https://ec.europa.eu/eurostat/databrowser/,"{""dataset"": ""nama_10_gdp"", ""geo"": ""SK"", ""na_item"": ""B1GQ"", ""sinceTimePeriod"": ""2015"", ""unit"": ""CP_MEUR""}",False,cloud
+EUROSTAT:namq_10_gdp:qoq,EUROSTAT,namq_10_gdp:qoq,Euro area real GDP q/q,Q,%,120,https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/,"{""dataset"": ""namq_10_gdp"", ""geo"": ""EA"", ""na_item"": ""B1GQ"", ""s_adj"": ""SCA"", ""sinceTimePeriod"": ""2019-Q1"", ""unit"": ""CLV_PCH_PRE""}",False,cloud
+EUROSTAT:namq_10_gdp:yoy,EUROSTAT,namq_10_gdp:yoy,Euro area real GDP y/y,Q,%,120,https://ec.europa.eu/eurostat/databrowser/view/namq_10_gdp/,"{""dataset"": ""namq_10_gdp"", ""geo"": ""EA"", ""na_item"": ""B1GQ"", ""s_adj"": ""SCA"", ""sinceTimePeriod"": ""2019-Q1"", ""unit"": ""CLV_PCH_SM""}",False,cloud
+FRED:A007RY2Q224SBEA,FRED,A007RY2Q224SBEA,A007RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A007RY2Q224SBEA,,False,cloud
+FRED:A014RY2Q224SBEA,FRED,A014RY2Q224SBEA,A014RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A014RY2Q224SBEA,,False,cloud
+FRED:A019RY2Q224SBEA,FRED,A019RY2Q224SBEA,A019RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A019RY2Q224SBEA,,False,cloud
+FRED:A191RL1Q225SBEA,FRED,A191RL1Q225SBEA,Real GDP % change SAAR,Q,%,120,https://fred.stlouisfed.org/series/A191RL1Q225SBEA,,False,cloud
+FRED:A822RY2Q224SBEA,FRED,A822RY2Q224SBEA,A822RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A822RY2Q224SBEA,,False,cloud
+FRED:AWHAETP,FRED,AWHAETP,"Average weekly hours, private",M,小时,37,https://fred.stlouisfed.org/series/AWHAETP,,False,cloud
+FRED:BAMLC0A0CM,FRED,BAMLC0A0CM,BAMLC0A0CM,D,%,1,https://fred.stlouisfed.org/series/BAMLC0A0CM,,False,cloud
+FRED:BAMLC0A4CBBB,FRED,BAMLC0A4CBBB,BAMLC0A4CBBB,D,%,1,https://fred.stlouisfed.org/series/BAMLC0A4CBBB,,False,cloud
+FRED:BAMLCC0A0CMTRIV,FRED,BAMLCC0A0CMTRIV,ICE BofA US Corporate Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLCC0A0CMTRIV,,False,cloud
+FRED:BAMLH0A0HYM2,FRED,BAMLH0A0HYM2,BAMLH0A0HYM2,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A0HYM2,,False,cloud
+FRED:BAMLH0A1HYBB,FRED,BAMLH0A1HYBB,BAMLH0A1HYBB,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A1HYBB,,False,cloud
+FRED:BAMLH0A2HYB,FRED,BAMLH0A2HYB,BAMLH0A2HYB,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A2HYB,,False,cloud
+FRED:BAMLH0A3HYC,FRED,BAMLH0A3HYC,BAMLH0A3HYC,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A3HYC,,False,cloud
+FRED:BAMLHE00EHYIOAS,FRED,BAMLHE00EHYIOAS,ICE BofA Euro HY OAS,D,%,1,https://fred.stlouisfed.org/series/BAMLHE00EHYIOAS,,False,cloud
+FRED:BAMLHYH0A0HYM2TRIV,FRED,BAMLHYH0A0HYM2TRIV,ICE BofA US High Yield Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLHYH0A0HYM2TRIV,,False,cloud
+FRED:CC4WSA,FRED,CC4WSA,Continued claims 4wk avg,W,人,12,https://fred.stlouisfed.org/series/CC4WSA,,False,cloud
+FRED:CCSA,FRED,CCSA,Continued claims,W,人,12,https://fred.stlouisfed.org/series/CCSA,,False,cloud
+FRED:CES0500000003,FRED,CES0500000003,"Average hourly earnings, private",M,美元,37,https://fred.stlouisfed.org/series/CES0500000003,,False,cloud
+FRED:CIVPART,FRED,CIVPART,Labor force participation,M,%,37,https://fred.stlouisfed.org/series/CIVPART,,False,cloud
+FRED:CLSACBW027SBOG,FRED,CLSACBW027SBOG,"Consumer loans, all commercial banks",W,十亿美元,9,https://fred.stlouisfed.org/series/CLSACBW027SBOG,,False,cloud
+FRED:COE,FRED,COE,"Compensation of employees, received",Q,十亿美元,120,https://fred.stlouisfed.org/series/COE,,False,cloud
+FRED:CORBLACBS,FRED,CORBLACBS,CORBLACBS,Q,%,55,https://fred.stlouisfed.org/series/CORBLACBS,,False,cloud
+FRED:CORCCACBS,FRED,CORCCACBS,CORCCACBS,Q,%,55,https://fred.stlouisfed.org/series/CORCCACBS,,False,cloud
+FRED:CORSFRMACBS,FRED,CORSFRMACBS,CORSFRMACBS,Q,%,55,https://fred.stlouisfed.org/series/CORSFRMACBS,,False,cloud
+FRED:DCOILBRENTEU,FRED,DCOILBRENTEU,Brent spot (EIA),D,美元/桶,7,https://fred.stlouisfed.org/series/DCOILBRENTEU,,False,cloud
+FRED:DCOILWTICO,FRED,DCOILWTICO,WTI spot (EIA),D,美元/桶,7,https://fred.stlouisfed.org/series/DCOILWTICO,,False,cloud
+FRED:DEMAUTO,FRED,DEMAUTO,DEMAUTO,Q,%,40,https://fred.stlouisfed.org/series/DEMAUTO,,False,cloud
+FRED:DEMCC,FRED,DEMCC,DEMCC,Q,%,40,https://fred.stlouisfed.org/series/DEMCC,,False,cloud
+FRED:DFEDTARL,FRED,DFEDTARL,Fed funds target range lower,D,%,0,https://fred.stlouisfed.org/series/DFEDTARL,,False,cloud
+FRED:DFEDTARU,FRED,DFEDTARU,Fed funds target range upper,D,%,0,https://fred.stlouisfed.org/series/DFEDTARU,,False,cloud
+FRED:DFII10,FRED,DFII10,DFII10,D,%,1,https://fred.stlouisfed.org/series/DFII10,,False,cloud
+FRED:DFII30,FRED,DFII30,US 30Y TIPS real yield,D,%,1,https://fred.stlouisfed.org/series/DFII30,,False,cloud
+FRED:DFII5,FRED,DFII5,DFII5,D,%,1,https://fred.stlouisfed.org/series/DFII5,,False,cloud
+FRED:DGDSRG3M086SBEA,FRED,DGDSRG3M086SBEA,PCE goods price index,M,指数点,60,https://fred.stlouisfed.org/series/DGDSRG3M086SBEA,,False,cloud
+FRED:DGDSRX1,FRED,DGDSRX1,Real PCE goods,M,十亿2017链式美元,60,https://fred.stlouisfed.org/series/DGDSRX1,,False,cloud
+FRED:DGS10,FRED,DGS10,US Treasury 10Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS10,,False,cloud
+FRED:DGS2,FRED,DGS2,US Treasury 2Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS2,,False,cloud
+FRED:DGS30,FRED,DGS30,US Treasury 30Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS30,,False,cloud
+FRED:DGS3MO,FRED,DGS3MO,US Treasury 3M CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS3MO,,False,cloud
+FRED:DGS5,FRED,DGS5,US Treasury 5Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS5,,False,cloud
+FRED:DHHNGSP,FRED,DHHNGSP,Henry Hub natural gas spot,D,美元/MMBtu,7,https://fred.stlouisfed.org/series/DHHNGSP,,False,cloud
+FRED:DHUTRG3M086SBEA,FRED,DHUTRG3M086SBEA,PCE housing and utilities price index,M,指数点,60,https://fred.stlouisfed.org/series/DHUTRG3M086SBEA,,False,cloud
+FRED:DJIA,FRED,DJIA,Dow Jones Industrial Average,D,点,1,https://fred.stlouisfed.org/series/DJIA,,False,cloud
+FRED:DPCERY2Q224SBEA,FRED,DPCERY2Q224SBEA,DPCERY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/DPCERY2Q224SBEA,,False,cloud
+FRED:DPSACBW027SBOG,FRED,DPSACBW027SBOG,"Deposits, all commercial banks",W,十亿美元,9,https://fred.stlouisfed.org/series/DPSACBW027SBOG,,False,cloud
+FRED:DRBLACBS,FRED,DRBLACBS,DRBLACBS,Q,%,55,https://fred.stlouisfed.org/series/DRBLACBS,,False,cloud
+FRED:DRCCLACBS,FRED,DRCCLACBS,DRCCLACBS,Q,%,55,https://fred.stlouisfed.org/series/DRCCLACBS,,False,cloud
+FRED:DRSDCILM,FRED,DRSDCILM,DRSDCILM,Q,%,40,https://fred.stlouisfed.org/series/DRSDCILM,,False,cloud
+FRED:DRSDCIS,FRED,DRSDCIS,DRSDCIS,Q,%,40,https://fred.stlouisfed.org/series/DRSDCIS,,False,cloud
+FRED:DRSFRMACBS,FRED,DRSFRMACBS,DRSFRMACBS,Q,%,55,https://fred.stlouisfed.org/series/DRSFRMACBS,,False,cloud
+FRED:DRTSCILM,FRED,DRTSCILM,DRTSCILM,Q,%,40,https://fred.stlouisfed.org/series/DRTSCILM,,False,cloud
+FRED:DRTSCIS,FRED,DRTSCIS,DRTSCIS,Q,%,40,https://fred.stlouisfed.org/series/DRTSCIS,,False,cloud
+FRED:DRTSCLCC,FRED,DRTSCLCC,DRTSCLCC,Q,%,40,https://fred.stlouisfed.org/series/DRTSCLCC,,False,cloud
+FRED:DSERRG3M086SBEA,FRED,DSERRG3M086SBEA,PCE services price index,M,指数点,60,https://fred.stlouisfed.org/series/DSERRG3M086SBEA,,False,cloud
+FRED:DSPIC96,FRED,DSPIC96,Real disposable personal income,M,十亿2017链式美元,60,https://fred.stlouisfed.org/series/DSPIC96,,False,cloud
+FRED:DTWEXBGS,FRED,DTWEXBGS,Nominal broad USD index,D,指数点,1,https://fred.stlouisfed.org/series/DTWEXBGS,,False,cloud
+FRED:ECBDFR,FRED,ECBDFR,ECB deposit facility rate,D,%,0,https://fred.stlouisfed.org/series/ECBDFR,,False,cloud
+FRED:EMRATIO,FRED,EMRATIO,Employment-population ratio,M,%,37,https://fred.stlouisfed.org/series/EMRATIO,,False,cloud
+FRED:FEDTARMD,FRED,FEDTARMD,FOMC SEP fed funds median,A,%,0,https://fred.stlouisfed.org/series/FEDTARMD,,False,cloud
+FRED:FYGFGDQ188S,FRED,FYGFGDQ188S,Federal debt held by public % GDP,Q,%,90,https://fred.stlouisfed.org/series/FYGFGDQ188S,,False,cloud
+FRED:GDI,FRED,GDI,Gross domestic income,Q,十亿美元,150,https://fred.stlouisfed.org/series/GDI,,False,cloud
+FRED:GDP,FRED,GDP,Nominal GDP,Q,十亿美元,120,https://fred.stlouisfed.org/series/GDP,,False,cloud
+FRED:GDPNOW,FRED,GDPNOW,Atlanta Fed GDPNow,Q,%,0,https://fred.stlouisfed.org/series/GDPNOW,,True,cloud
+FRED:HOUST,FRED,HOUST,Housing starts,M,千套/年,48,https://fred.stlouisfed.org/series/HOUST,,False,cloud
+FRED:IA001260M,FRED,IA001260M,PCE services ex energy and housing price index,M,指数点,60,https://fred.stlouisfed.org/series/IA001260M,,False,cloud
+FRED:IC4WSA,FRED,IC4WSA,Initial claims 4wk avg,W,人,5,https://fred.stlouisfed.org/series/IC4WSA,,False,cloud
+FRED:ICSA,FRED,ICSA,Initial claims,W,人,5,https://fred.stlouisfed.org/series/ICSA,,False,cloud
+FRED:INDPRO,FRED,INDPRO,Industrial production,M,指数点,46,https://fred.stlouisfed.org/series/INDPRO,,True,cloud
+FRED:IORB,FRED,IORB,Interest rate on reserve balances,D,%,0,https://fred.stlouisfed.org/series/IORB,,False,cloud
+FRED:IPMAN,FRED,IPMAN,Manufacturing production,M,指数点,46,https://fred.stlouisfed.org/series/IPMAN,,False,cloud
+FRED:JPNRGDPEXP,FRED,JPNRGDPEXP,Japan real GDP,Q,十亿日元,60,https://fred.stlouisfed.org/series/JPNRGDPEXP,,False,cloud
+FRED:JTSJOL,FRED,JTSJOL,JOLTS job openings,M,千人,67,https://fred.stlouisfed.org/series/JTSJOL,,False,cloud
+FRED:JTSJOR,FRED,JTSJOR,JOLTS job openings rate,M,%,67,https://fred.stlouisfed.org/series/JTSJOR,,False,cloud
+FRED:JTSQUR,FRED,JTSQUR,JOLTS quits rate,M,%,67,https://fred.stlouisfed.org/series/JTSQUR,,False,cloud
+FRED:MEDCPIM094SFRBCLE,FRED,MEDCPIM094SFRBCLE,Median CPI m/m annualized,M,%,45,https://fred.stlouisfed.org/series/MEDCPIM094SFRBCLE,,False,cloud
+FRED:MEDCPIM158SFRBCLE,FRED,MEDCPIM158SFRBCLE,Median CPI y/y,M,%,45,https://fred.stlouisfed.org/series/MEDCPIM158SFRBCLE,,False,cloud
+FRED:MTSDS133FMS,FRED,MTSDS133FMS,MTS surplus/deficit,M,百万美元,12,https://fred.stlouisfed.org/series/MTSDS133FMS,,False,cloud
+FRED:MTSO133FMS,FRED,MTSO133FMS,MTS outlays,M,百万美元,12,https://fred.stlouisfed.org/series/MTSO133FMS,,False,cloud
+FRED:MTSR133FMS,FRED,MTSR133FMS,MTS receipts,M,百万美元,12,https://fred.stlouisfed.org/series/MTSR133FMS,,False,cloud
+FRED:NASDAQCOM,FRED,NASDAQCOM,Nasdaq Composite,D,点,1,https://fred.stlouisfed.org/series/NASDAQCOM,,False,cloud
+FRED:OPHNFB,FRED,OPHNFB,Nonfarm business output per hour,Q,指数,40,https://fred.stlouisfed.org/series/OPHNFB,,False,cloud
+FRED:PAYEMS,FRED,PAYEMS,Nonfarm payrolls,M,千人,37,https://fred.stlouisfed.org/series/PAYEMS,,True,cloud
+FRED:PCEC96,FRED,PCEC96,Real PCE,M,十亿2017链式美元,60,https://fred.stlouisfed.org/series/PCEC96,,False,cloud
+FRED:PCEPI,FRED,PCEPI,PCE price index,M,指数点,60,https://fred.stlouisfed.org/series/PCEPI,,False,cloud
+FRED:PCEPILFE,FRED,PCEPILFE,Core PCE price index,M,指数点,60,https://fred.stlouisfed.org/series/PCEPILFE,,False,cloud
+FRED:PCESC96,FRED,PCESC96,Real PCE services,M,十亿2017链式美元,60,https://fred.stlouisfed.org/series/PCESC96,,False,cloud
+FRED:PERMIT,FRED,PERMIT,Building permits,M,千套/年,48,https://fred.stlouisfed.org/series/PERMIT,,False,cloud
+FRED:PRS85006173,FRED,PRS85006173,Nonfarm business labor share,Q,指数(2017=100),40,https://fred.stlouisfed.org/series/PRS85006173,,False,cloud
+FRED:PSAVERT,FRED,PSAVERT,Personal saving rate,M,%,60,https://fred.stlouisfed.org/series/PSAVERT,,False,cloud
+FRED:RRPONTSYD,FRED,RRPONTSYD,ON RRP,D,十亿美元,1,https://fred.stlouisfed.org/series/RRPONTSYD,,False,cloud
+FRED:RSAFS,FRED,RSAFS,Advance retail sales and food services,M,百万美元,45,https://fred.stlouisfed.org/series/RSAFS,,True,cloud
+FRED:RSBMGESD,FRED,RSBMGESD,Building materials dealers,M,百万美元,45,https://fred.stlouisfed.org/series/RSBMGESD,,False,cloud
+FRED:RSFSXMV,FRED,RSFSXMV,Retail sales ex motor vehicles,M,百万美元,45,https://fred.stlouisfed.org/series/RSFSXMV,,False,cloud
+FRED:RSGASS,FRED,RSGASS,Gasoline stations,M,百万美元,45,https://fred.stlouisfed.org/series/RSGASS,,False,cloud
+FRED:RSMVPD,FRED,RSMVPD,Motor vehicle & parts dealers,M,百万美元,45,https://fred.stlouisfed.org/series/RSMVPD,,False,cloud
+FRED:RSXFS,FRED,RSXFS,Retail trade,M,百万美元,45,https://fred.stlouisfed.org/series/RSXFS,,False,cloud
+FRED:SP500,FRED,SP500,S&P 500,D,点,1,https://fred.stlouisfed.org/series/SP500,,False,cloud
+FRED:STDSAUTO,FRED,STDSAUTO,STDSAUTO,Q,%,40,https://fred.stlouisfed.org/series/STDSAUTO,,False,cloud
+FRED:T10Y2Y,FRED,T10Y2Y,T10Y2Y,D,%,1,https://fred.stlouisfed.org/series/T10Y2Y,,False,cloud
+FRED:T10Y3M,FRED,T10Y3M,T10Y3M,D,%,1,https://fred.stlouisfed.org/series/T10Y3M,,False,cloud
+FRED:T10YIE,FRED,T10YIE,T10YIE,D,%,1,https://fred.stlouisfed.org/series/T10YIE,,False,cloud
+FRED:T5YIE,FRED,T5YIE,T5YIE,D,%,1,https://fred.stlouisfed.org/series/T5YIE,,False,cloud
+FRED:TCU,FRED,TCU,Capacity utilization,M,%,46,https://fred.stlouisfed.org/series/TCU,,False,cloud
+FRED:TOTCI,FRED,TOTCI,"C&I loans, all commercial banks",W,十亿美元,9,https://fred.stlouisfed.org/series/TOTCI,,False,cloud
+FRED:TREAST,FRED,TREAST,Fed Treasury holdings,W,百万美元,1,https://fred.stlouisfed.org/series/TREAST,,False,cloud
+FRED:TRMMEANCPIM094SFRBCLE,FRED,TRMMEANCPIM094SFRBCLE,Trimmed-mean CPI m/m annualized,M,%,45,https://fred.stlouisfed.org/series/TRMMEANCPIM094SFRBCLE,,False,cloud
+FRED:TRMMEANCPIM158SFRBCLE,FRED,TRMMEANCPIM158SFRBCLE,Trimmed-mean CPI y/y,M,%,45,https://fred.stlouisfed.org/series/TRMMEANCPIM158SFRBCLE,,False,cloud
+FRED:ULCNFB,FRED,ULCNFB,Nonfarm business unit labor costs,Q,指数,40,https://fred.stlouisfed.org/series/ULCNFB,,False,cloud
+FRED:UNRATE,FRED,UNRATE,Unemployment rate,M,%,37,https://fred.stlouisfed.org/series/UNRATE,,False,cloud
+FRED:WALCL,FRED,WALCL,Fed total assets,W,百万美元,1,https://fred.stlouisfed.org/series/WALCL,,False,cloud
+FRED:WRESBAL,FRED,WRESBAL,Reserve balances,W,百万美元,1,https://fred.stlouisfed.org/series/WRESBAL,,False,cloud
+FRED:WSHOMCB,FRED,WSHOMCB,Fed MBS holdings,W,百万美元,1,https://fred.stlouisfed.org/series/WSHOMCB,,False,cloud
+FRED:WTREGEN,FRED,WTREGEN,Treasury General Account,W,百万美元,1,https://fred.stlouisfed.org/series/WTREGEN,,False,cloud
+MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
+MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
+MOFJP:30Y,MOFJP,30Y,JGB 30Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
+NYFED:secured/sofr:percentPercentile25,NYFED,secured/sofr:percentPercentile25,SOFR p25,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:secured/sofr:percentPercentile75,NYFED,secured/sofr:percentPercentile75,SOFR p75,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:secured/sofr:percentRate,NYFED,secured/sofr:percentRate,SOFR,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:secured/sofr:volumeInBillions,NYFED,secured/sofr:volumeInBillions,SOFR volume,D,十亿美元,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:unsecured/effr:percentPercentile25,NYFED,unsecured/effr:percentPercentile25,EFFR p25,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:unsecured/effr:percentPercentile75,NYFED,unsecured/effr:percentPercentile75,EFFR p75,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:unsecured/effr:percentRate,NYFED,unsecured/effr:percentRate,EFFR,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+NYFED:unsecured/effr:volumeInBillions,NYFED,unsecured/effr:volumeInBillions,EFFR volume,D,十亿美元,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/d7g7/mm23""}",False,cloud
+ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
+ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
+ONS:IHYQ,ONS,IHYQ,UK GDP q/q,Q,%,135,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ihyq/qna,"{""period"": ""quarters"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ihyq/qna""}",False,cloud
+STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
+STATCAN:2062811,STATCAN,2062811,Canada LFS employment SA,M,千人,8,https://www150.statcan.gc.ca/,,False,cloud
+STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150.statcan.gc.ca/,,False,cloud
+STATCAN:41690973,STATCAN,41690973,Canada CPI all-items NSA,M,指数点,20,https://www150.statcan.gc.ca/,,False,cloud
+STATCAN:65201210,STATCAN,65201210,Canada real GDP monthly,M,百万加元,60,https://www150.statcan.gc.ca/,,False,cloud
+TSY:auction:10-Year:bid_to_cover_ratio,TSY,auction:10-Year:bid_to_cover_ratio,10-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
+TSY:auction:10-Year:direct_bidder_accepted,TSY,auction:10-Year:direct_bidder_accepted,10-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
+TSY:auction:10-Year:high_yield,TSY,auction:10-Year:high_yield,10-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud
+TSY:auction:10-Year:indirect_bidder_accepted,TSY,auction:10-Year:indirect_bidder_accepted,10-Year auction indirect accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""indirect_bidder_accepted""}",False,cloud
+TSY:auction:10-Year:offering_amt,TSY,auction:10-Year:offering_amt,10-Year auction offering amount,E,百万美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1e-06, ""value_field"": ""offering_amt""}",False,cloud
+TSY:auction:10-Year:primary_dealer_accepted,TSY,auction:10-Year:primary_dealer_accepted,10-Year auction primary dealer accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""primary_dealer_accepted""}",False,cloud
+TSY:auction:2-Year:bid_to_cover_ratio,TSY,auction:2-Year:bid_to_cover_ratio,2-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
+TSY:auction:2-Year:direct_bidder_accepted,TSY,auction:2-Year:direct_bidder_accepted,2-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
+TSY:auction:2-Year:high_yield,TSY,auction:2-Year:high_yield,2-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud
+TSY:auction:2-Year:indirect_bidder_accepted,TSY,auction:2-Year:indirect_bidder_accepted,2-Year auction indirect accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""indirect_bidder_accepted""}",False,cloud
+TSY:auction:2-Year:offering_amt,TSY,auction:2-Year:offering_amt,2-Year auction offering amount,E,百万美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1e-06, ""value_field"": ""offering_amt""}",False,cloud
+TSY:auction:2-Year:primary_dealer_accepted,TSY,auction:2-Year:primary_dealer_accepted,2-Year auction primary dealer accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:2-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""primary_dealer_accepted""}",False,cloud
+TSY:auction:30-Year:bid_to_cover_ratio,TSY,auction:30-Year:bid_to_cover_ratio,30-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
+TSY:auction:30-Year:direct_bidder_accepted,TSY,auction:30-Year:direct_bidder_accepted,30-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
+TSY:auction:30-Year:high_yield,TSY,auction:30-Year:high_yield,30-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud
+TSY:auction:30-Year:indirect_bidder_accepted,TSY,auction:30-Year:indirect_bidder_accepted,30-Year auction indirect accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""indirect_bidder_accepted""}",False,cloud
+TSY:auction:30-Year:offering_amt,TSY,auction:30-Year:offering_amt,30-Year auction offering amount,E,百万美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1e-06, ""value_field"": ""offering_amt""}",False,cloud
+TSY:auction:30-Year:primary_dealer_accepted,TSY,auction:30-Year:primary_dealer_accepted,30-Year auction primary dealer accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:30-Year,security_type:eq:Bond,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""primary_dealer_accepted""}",False,cloud
+TSY:auction:5-Year:bid_to_cover_ratio,TSY,auction:5-Year:bid_to_cover_ratio,5-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
+TSY:auction:5-Year:direct_bidder_accepted,TSY,auction:5-Year:direct_bidder_accepted,5-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
+TSY:auction:5-Year:high_yield,TSY,auction:5-Year:high_yield,5-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud
+TSY:auction:5-Year:indirect_bidder_accepted,TSY,auction:5-Year:indirect_bidder_accepted,5-Year auction indirect accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""indirect_bidder_accepted""}",False,cloud
+TSY:auction:5-Year:offering_amt,TSY,auction:5-Year:offering_amt,5-Year auction offering amount,E,百万美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1e-06, ""value_field"": ""offering_amt""}",False,cloud
+TSY:auction:5-Year:primary_dealer_accepted,TSY,auction:5-Year:primary_dealer_accepted,5-Year auction primary dealer accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:5-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""primary_dealer_accepted""}",False,cloud
+TSY:mts9:net_interest,TSY,mts9:net_interest,MTS net interest outlays,M,百万美元,12,https://fiscaldata.treasury.gov/datasets/monthly-treasury-statement/,"{""date_field"": ""record_date"", ""endpoint"": ""v1/accounting/mts/mts_table_9"", ""filter"": ""classification_desc:eq:Net Interest"", ""scale"": 1e-06, ""value_field"": ""current_month_rcpt_outly_amt""}",False,cloud
+YAHOO:BTC-USD,YAHOO,BTC-USD,Bitcoin USD,D,点,1,https://finance.yahoo.com/quote/BTC-USD,,False,cloud
+YAHOO:DX-Y.NYB,YAHOO,DX-Y.NYB,ICE US Dollar Index,D,点,1,https://finance.yahoo.com/quote/DX-Y.NYB,,False,cloud
+YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quote/FTSEMIB.MI,,False,cloud
+YAHOO:^FCHI,YAHOO,^FCHI,CAC 40,D,点,1,https://finance.yahoo.com/quote/^FCHI,,False,cloud
+YAHOO:^FTSE,YAHOO,^FTSE,FTSE 100,D,点,1,https://finance.yahoo.com/quote/^FTSE,,False,cloud
+YAHOO:^GDAXI,YAHOO,^GDAXI,DAX (performance index),D,点,1,https://finance.yahoo.com/quote/^GDAXI,,False,cloud
+YAHOO:^HSI,YAHOO,^HSI,Hang Seng,D,点,1,https://finance.yahoo.com/quote/^HSI,,False,cloud
+YAHOO:^MOVE,YAHOO,^MOVE,ICE BofA MOVE Index,D,点,1,https://finance.yahoo.com/quote/^MOVE,,False,cloud
+YAHOO:^NSEI,YAHOO,^NSEI,Nifty 50,D,点,1,https://finance.yahoo.com/quote/^NSEI,,False,cloud
+YAHOO:^RLG,YAHOO,^RLG,Russell 1000 Growth,D,点,1,https://finance.yahoo.com/quote/^RLG,,False,cloud
+YAHOO:^RLV,YAHOO,^RLV,Russell 1000 Value,D,点,1,https://finance.yahoo.com/quote/^RLV,,False,cloud
+YAHOO:^RMCC,YAHOO,^RMCC,Russell Midcap,D,点,1,https://finance.yahoo.com/quote/^RMCC,,False,cloud
+YAHOO:^RMCCG,YAHOO,^RMCCG,Russell Midcap Growth,D,点,1,https://finance.yahoo.com/quote/^RMCCG,,False,cloud
+YAHOO:^RMCCV,YAHOO,^RMCCV,Russell Midcap Value,D,点,1,https://finance.yahoo.com/quote/^RMCCV,,False,cloud
+YAHOO:^RUI,YAHOO,^RUI,Russell 1000,D,点,1,https://finance.yahoo.com/quote/^RUI,,False,cloud
+YAHOO:^RUJ,YAHOO,^RUJ,Russell 2000 Value,D,点,1,https://finance.yahoo.com/quote/^RUJ,,False,cloud
+YAHOO:^RUO,YAHOO,^RUO,Russell 2000 Growth,D,点,1,https://finance.yahoo.com/quote/^RUO,,False,cloud
+YAHOO:^RUT,YAHOO,^RUT,Russell 2000,D,点,1,https://finance.yahoo.com/quote/^RUT,,False,cloud
+YAHOO:^SP400,YAHOO,^SP400,S&P MidCap 400,D,点,1,https://finance.yahoo.com/quote/^SP400,,False,cloud
+YAHOO:^SP500-10,YAHOO,^SP500-10,S&P 500 能源行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-10,,False,cloud
+YAHOO:^SP500-15,YAHOO,^SP500-15,S&P 500 材料行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-15,,False,cloud
+YAHOO:^SP500-20,YAHOO,^SP500-20,S&P 500 工业行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-20,,False,cloud
+YAHOO:^SP500-25,YAHOO,^SP500-25,S&P 500 可选消费行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-25,,False,cloud
+YAHOO:^SP500-30,YAHOO,^SP500-30,S&P 500 必需消费行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-30,,False,cloud
+YAHOO:^SP500-35,YAHOO,^SP500-35,S&P 500 医疗保健行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-35,,False,cloud
+YAHOO:^SP500-40,YAHOO,^SP500-40,S&P 500 金融行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-40,,False,cloud
+YAHOO:^SP500-45,YAHOO,^SP500-45,S&P 500 信息技术行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-45,,False,cloud
+YAHOO:^SP500-50,YAHOO,^SP500-50,S&P 500 通讯服务行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-50,,False,cloud
+YAHOO:^SP500-55,YAHOO,^SP500-55,S&P 500 公用事业行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-55,,False,cloud
+YAHOO:^SP500-60,YAHOO,^SP500-60,S&P 500 房地产行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-60,,False,cloud
+YAHOO:^SPXEW,YAHOO,^SPXEW,S&P 500 Equal Weight,D,点,1,https://finance.yahoo.com/quote/^SPXEW,,False,cloud
+YAHOO:^SSMI,YAHOO,^SSMI,Swiss Market Index,D,点,1,https://finance.yahoo.com/quote/^SSMI,,False,cloud
+YAHOO:^STOXX,YAHOO,^STOXX,STOXX Europe 600,D,点,1,https://finance.yahoo.com/quote/^STOXX,,False,cloud
