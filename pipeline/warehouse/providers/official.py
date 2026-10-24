@@ -354,7 +354,10 @@ class Bea(Provider):
                 code = d.code.split(":")[2]
                 obs = []
                 for r in rows:
-                    if r.get("SeriesCode") != code:
+                    if code.startswith("line="):
+                        if str(r.get("LineNumber")) != code[5:]:
+                            continue
+                    elif r.get("SeriesCode") != code:
                         continue
                     obs_date = _period_to_date(str(r.get("TimePeriod", "")))
                     value = to_float(r.get("DataValue"))
@@ -824,3 +827,55 @@ class JpxTopix(Provider):
             obs = [Observation(stamp, value)] if value is not None else []
             out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else f"{d.code} not in snapshot"))
         return out
+
+
+
+# --------------------------------------------------------------------------- central banks (SDMX)
+
+
+def _sdmx_csv_pairs(text: str) -> list[tuple[str, str]]:
+    """Extract (period, value) from SDMX-CSV or simple 'date;value' text."""
+    import csv as _csv
+
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return []
+    delimiter = ";" if lines[0].count(";") > lines[0].count(",") else ","
+    rows = list(_csv.reader(lines, delimiter=delimiter))
+    header = [h.strip().upper() for h in rows[0]]
+    if "TIME_PERIOD" in header and "OBS_VALUE" in header:
+        t, v = header.index("TIME_PERIOD"), header.index("OBS_VALUE")
+        return [(r[t], r[v]) for r in rows[1:] if len(r) > max(t, v)]
+    out = []
+    for r in rows:
+        if len(r) >= 2 and len(r[0]) >= 7 and r[0][:4].isdigit() and r[0][4] in "-/":
+            out.append((r[0], r[1]))
+    return out
+
+
+@register
+class Bundesbank(Provider):
+    """Deutsche Bundesbank time-series API. code = "<flow>/<key>",
+    e.g. "BBSSY/D.REN.EUR.A630.000000WT1010.A" (current 10Y Bund yield)."""
+
+    name = "BBK"
+    URL = "https://api.statistiken.bundesbank.de/rest/data/{code}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        body = self.get(self.URL.format(code=d.code), {"format": "csv", "startPeriod": start.isoformat()},
+                        headers={"Accept": "text/csv, application/vnd.sdmx.data+csv, */*"})
+        pairs = _sdmx_csv_pairs(body.decode("utf-8-sig", errors="replace"))
+        return obs_from_pairs(((_period_to_date(p) or p, v) for p, v in pairs), start)
+
+
+@register
+class Bis(Provider):
+    """BIS statistics API. code = "<dataflow>/<key>", e.g. "WS_CBPOL/D.JP" (policy rate)."""
+
+    name = "BIS"
+    URL = "https://stats.bis.org/api/v1/data/{code}/all"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        body = self.get(self.URL.format(code=d.code), {"format": "csv", "startPeriod": start.isoformat()})
+        pairs = _sdmx_csv_pairs(body.decode("utf-8-sig", errors="replace"))
+        return obs_from_pairs(((_period_to_date(p) or p, v) for p, v in pairs), start)

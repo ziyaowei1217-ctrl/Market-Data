@@ -271,14 +271,14 @@ indicator_id,method,phase,formula,coverage_note
 14-006,api,P1,"chg({FRED:DFII10}, ""W"") * 100",
 14-007,api,P1,{FRED:T10YIE},
 14-008,api,P1,"chg({FRED:T10YIE}, ""W"") * 100",
-15-001,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-002,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-001,api,P1,{BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A},德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+15-002,api,P1,{BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A},德国央行：当期基准券日收益率（非常数期限，随新券滚动）
 15-003,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-004,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-005,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-006,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-007,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-008,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-008,api,P1,{BOE:IUDMNZC},英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 15-009,api,P1,{MOFJP:2Y},日本财务省 JGB 常数期限收益率
 15-010,api,P1,{MOFJP:10Y},日本财务省 JGB 常数期限收益率
 15-011,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
@@ -298,11 +298,11 @@ indicator_id,method,phase,formula,coverage_note
 19-004,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-005,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-006,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
-19-007,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-007,api,P1,{FRED:BAMLC0A0CMSYTW},ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 19-008,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-009,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-010,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
-19-011,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-011,api,P1,{FRED:BAMLH0A0HYM2SYTW},ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 19-012,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-013,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-014,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
@@ -312,7 +312,7 @@ indicator_id,method,phase,formula,coverage_note
 20-002,api,P1,{FRED:DFEDTARU},
 20-003,api,P1,{FRED:ECBDFR},
 20-004,api,P1,{BOE:IUDBEDR},英格兰银行统计数据库 IADB
-20-005,manual,P1,,BoJ 政策利率：按决议公告人工维护（catalog/manual）
+20-005,api,P1,{BIS:WS_CBPOL/D.JP},国际清算银行央行政策利率库（各央行官方利率汇总，滞后约 3 个工作日）
 21-001,api,P1,{NYFED:secured/sofr:percentRate},纽约联储参考利率 API
 21-002,api,P1,{NYFED:secured/sofr:volumeInBillions},
 21-003,api,P1,{NYFED:secured/sofr:percentPercentile25},
@@ -394,9 +394,9 @@ indicator_id,method,phase,formula,coverage_note
 30-005,api,P1,yoy({FRED:PCEPILFE}),BEA 个人收入与支出（FRED 镜像）
 30-006,api,P1,pop({FRED:PCEPILFE}),BEA 个人收入与支出（FRED 镜像）
 30-007,api,P1,pop({FRED:DGDSRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
-30-008,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-008,api,P1,{BEA:NIPA:T20808:line=2},BEA 官方表 2.8.8 月度贡献（商品）
 30-009,api,P1,pop({FRED:DSERRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
-30-010,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-010,api,P1,{BEA:NIPA:T20808:line=13},BEA 官方表 2.8.8 月度贡献（服务）
 30-011,api,P1,pop({BEA:NIUnderlyingDetail:U20404:DHSGRG}),BEA 个人收入与支出（FRED 镜像）
 30-012,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
 30-013,api,P1,pop({FRED:IA001260M}),BEA 个人收入与支出（FRED 镜像）
@@ -620,16 +620,16 @@ indicator_id,method,phase,formula,coverage_note
 51-001,api,P1,"vol({FRED:SP500}, ""52W"")",周五采样周收益标准差×√52（价格指数）
 51-002,api,P1,drawdown({FRED:SP500}),相对本库已存历史最高点（FRED 历史约 10 年）
 51-003,api,P1,"maxdd({FRED:SP500}, ""YTD"")",年内最大回撤（日频路径）
-51-004,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-005,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-006,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-004,api,P1,"vol({MSCI:990100:NETR:USD}, ""52W"")",MSCI World 净总回报（官网日收盘）；周五采样周收益标准差×√52
+51-005,api,P1,drawdown({MSCI:990100:NETR:USD}),MSCI World 净总回报（官网日收盘）；相对本库已存历史高点（2020-10 起）
+51-006,api,P1,"maxdd({MSCI:990100:NETR:USD}, ""YTD"")",MSCI World 净总回报（官网日收盘）
 51-007,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-008,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-009,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-010,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-011,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-012,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-013,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-013,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"") - ret({FRED:SP500}, ""W"")",MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）
 51-014,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 52-001,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
 52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
@@ -1297,18 +1297,18 @@ indicator_id,method,phase,formula,coverage_note
 99-065,api,P1,"snap({FRED:T10Y2Y}, ""ME"") * 100",%→bp
 99-066,api,P1,"snap({FRED:T10Y2Y}, ""QE"") * 100",%→bp
 99-067,api,P1,"snap({FRED:T10Y2Y}, ""YE"") * 100",%→bp
-99-068,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-069,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-070,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-071,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-072,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-073,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-068,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A}, ""ME"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+99-069,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A}, ""QE"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+99-070,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A}, ""YE"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+99-071,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A}, ""ME"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+99-072,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A}, ""QE"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
+99-073,api,P1,"snap({BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A}, ""YE"")",德国央行：当期基准券日收益率（非常数期限，随新券滚动）
 99-074,api,P1,"snap({MOFJP:10Y}, ""ME"")",日本财务省
 99-075,api,P1,"snap({MOFJP:10Y}, ""QE"")",日本财务省
 99-076,api,P1,"snap({MOFJP:10Y}, ""YE"")",日本财务省
-99-077,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-078,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-079,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-077,api,P1,"snap({BOE:IUDMNZC}, ""ME"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
+99-078,api,P1,"snap({BOE:IUDMNZC}, ""QE"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
+99-079,api,P1,"snap({BOE:IUDMNZC}, ""YE"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 99-080,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
 99-081,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
 99-082,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
@@ -1556,8 +1556,8 @@ indicator_id,method,phase,formula,coverage_note
 101-020,api,P1,diff({STATCAN:2062811}),加拿大统计局 WDS 向量
 101-021,api,P1,{STATCAN:2062815},加拿大统计局 WDS 向量
 101-022,api,P1,pop({STATCAN:1446859483}),加拿大统计局 WDS 向量
-101-023,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
-101-024,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+101-023,api,P1,{BIS:WS_CBPOL/D.CL},国际清算银行央行政策利率库（各央行官方利率汇总，滞后约 3 个工作日）
+101-024,api,P1,{BIS:WS_CBPOL/D.TR},国际清算银行央行政策利率库（各央行官方利率汇总，滞后约 3 个工作日）
 101-025,api,P1,{BCB:432},巴西央行 SGS 432
 101-026,api,P1,{BOC:V39079},加拿大央行 Valet API
 102-001,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
@@ -1615,10 +1615,10 @@ indicator_id,method,phase,formula,coverage_note
 102-053,api,P1,prior(pop({STATCAN:1446859483})),本次发布所列前值（本库逐次留存版本）
 102-054,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-055,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-056,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+102-056,api,P1,before_change({BIS:WS_CBPOL/D.CL}),上一次调整前的政策利率（BIS）
 102-057,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-058,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-059,manual,P1,,智利/土耳其央行接口需注册凭证；按决议人工维护
+102-059,api,P1,before_change({BIS:WS_CBPOL/D.TR}),上一次调整前的政策利率（BIS）
 102-060,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-061,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-062,api,P1,before_change({BCB:432}),上一次调整前的目标利率
@@ -1647,7 +1647,7 @@ indicator_id,method,phase,formula,coverage_note
 102-089,api,P1,before_change({BOE:IUDBEDR}),上一次调整前的 Bank Rate
 102-090,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-091,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-092,manual,P1,,BoJ 政策利率前值：随人工维护表
+102-092,api,P1,before_change({BIS:WS_CBPOL/D.JP}),上一次调整前的政策利率（BIS）
 102-093,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-094,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-095,api,P1,before_change({FRED:ECBDFR}),上一次调整前的存款便利利率
@@ -1797,28 +1797,28 @@ indicator_id,method,phase,formula,coverage_note
 105-016,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
 105-017,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
 105-018,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-019,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-020,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-106-001,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-002,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-003,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-004,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-005,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-006,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-007,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-008,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-009,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-010,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-011,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-012,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-013,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-014,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-015,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-016,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
-106-017,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+105-019,api,P1,{FRED:IEAIDI},BEA 国际交易账户直接投资负债流入（FRED）
+105-020,api,P1,"msum({FRED:IEAIDI}, 4)",过去四季合计
+106-001,api,P1,{FRED:BOGZ1LM153061105Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-002,api,P1,{FRED:BOGZ1LM153061105Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-003,api,P1,({FRED:BOGZ1LM763061100Q} + {FRED:BOGZ1LM753061103Q} + {FRED:BOGZ1LM743061103Q} + {FRED:BOGZ1LM473061105Q}) / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-004,api,P1,({FRED:BOGZ1LM763061100Q} + {FRED:BOGZ1LM753061103Q} + {FRED:BOGZ1LM743061103Q} + {FRED:BOGZ1LM473061105Q}) / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-005,api,P1,{FRED:BOGZ1LM653061105Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-006,api,P1,{FRED:BOGZ1LM653061105Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-007,api,P1,{FRED:BOGZ1FL633061105Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-008,api,P1,{FRED:BOGZ1FL633061105Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-009,api,P1,{FRED:BOGZ1LM563061103Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-010,api,P1,{FRED:BOGZ1LM563061103Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-011,api,P1,{FRED:BOGZ1LM573061105Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-012,api,P1,{FRED:BOGZ1LM573061105Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-013,api,P1,{FRED:BOGZ1LM223061143Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-014,api,P1,{FRED:BOGZ1LM223061143Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-015,api,P1,({FRED:BOGZ1LM513061105Q} + {FRED:BOGZ1LM543061105Q}) / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
+106-016,api,P1,({FRED:BOGZ1LM513061105Q} + {FRED:BOGZ1LM543061105Q}) / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
+106-017,api,P1,{FRED:BOGZ1LM713061103Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
 106-018,pending,P2,,TIC 文本表，待写解析
 106-020,pending,P2,,TIC 文本表，待写解析
-106-023,pending,P2,,Fed Z.1 数据下载程序 CSV，待接入
+106-023,api,P1,({FRED:BOGZ1FL893061105Q} - {FRED:BOGZ1LM713061103Q} - {FRED:BOGZ1LM263061105Q} - {FRED:BOGZ1LM213061103Q} - {FRED:BOGZ1LM343061105Q} - {FRED:BOGZ1LM403061105Q}) / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；残差法
 107-001,pending,P2,,Preqin/MSCI 需授权
 107-002,pending,P2,,Preqin/MSCI 需授权
 107-003,pending,P2,,Preqin/MSCI 需授权
@@ -1944,7 +1944,7 @@ indicator_id,method,phase,formula,coverage_note
 109-054,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
 109-055,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
 109-056,pending,P2,,可用财政部免费平价收益率曲线自算（合成平价券情景回报），模型待实现
-110-001,pending,P2,,NAR 数据需授权
+110-001,api,P1,{FRED:EXHOSLUSM495S} / 10000,NAR 成屋销售（FRED 仅保留约 13 个月，本库逐月累积）；套→万套
 110-002,manual,P1,,BoJ 加息生效日：人工维护
 110-003,api,P1,yoy({FRED:GDP}),BEA GDP（FRED 镜像），季环比折年率及贡献
 110-004,report,P1b,,需希腊/法国/意大利 10 年国债收益率，取周报快照后派生

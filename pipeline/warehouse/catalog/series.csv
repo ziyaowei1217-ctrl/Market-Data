@@ -29,9 +29,16 @@ ACM:ACMY07,ACM,ACMY07,ACM 7y fitted yield,D,%,35,https://www.newyorkfed.org/rese
 ACM:ACMY08,ACM,ACMY08,ACM 8y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 ACM:ACMY09,ACM,ACMY09,ACM 9y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 ACM:ACMY10,ACM,ACMY10,ACM 10y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A,BBK,BBSSY/D.REN.EUR.A610.000000WT0202.A,Bund current 2Y (Schatz) yield,D,%,0,https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields,,False,cloud
+BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A,BBK,BBSSY/D.REN.EUR.A630.000000WT1010.A,Bund current 10Y yield,D,%,0,https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields,,False,cloud
 BCB:13522,BCB,13522,IPCA 12-month accumulated,M,%,12,https://www3.bcb.gov.br/sgspub/,,False,cloud
 BCB:432,BCB,432,Selic target,D,%,0,https://www3.bcb.gov.br/sgspub/,,False,cloud
+BEA:NIPA:T20808:line=13,BEA,NIPA:T20808:line=13,Contribution of services to PCE price change (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
+BEA:NIPA:T20808:line=2,BEA,NIPA:T20808:line=2,Contribution of goods to PCE price change (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
 BEA:NIUnderlyingDetail:U20404:DHSGRG,BEA,NIUnderlyingDetail:U20404:DHSGRG,PCE housing price index (monthly),M,指数点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=underlying,,False,cloud
+BIS:WS_CBPOL/D.CL,BIS,WS_CBPOL/D.CL,Banco Central de Chile policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
+BIS:WS_CBPOL/D.JP,BIS,WS_CBPOL/D.JP,Bank of Japan policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
+BIS:WS_CBPOL/D.TR,BIS,WS_CBPOL/D.TR,CBRT one-week repo policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
 BLS:CES0500000021,BLS,CES0500000021,"Diffusion index, 1-month, total private",M,,37,https://data.bls.gov/timeseries/CES0500000021,,False,cloud
 BLS:CIS2020000000000Q,BLS,CIS2020000000000Q,ECI wages private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2020000000000Q,,False,cloud
 BLS:CIS2030000000000Q,BLS,CIS2030000000000Q,ECI benefits private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2030000000000Q,,False,cloud
@@ -54,6 +61,7 @@ BLS:WPSFD49104,BLS,WPSFD49104,PPI final demand less foods & energy SA,M,,45,http
 BLS:WPUFD4,BLS,WPUFD4,PPI final demand NSA,M,,45,https://data.bls.gov/timeseries/WPUFD4,,False,cloud
 BOC:V39079,BOC,V39079,BoC target overnight rate,D,%,0,https://www.bankofcanada.ca/rates/interest-rates/,,False,cloud
 BOE:IUDBEDR,BOE,IUDBEDR,Bank Rate,D,%,0,https://www.bankofengland.co.uk/boeapps/database/,,False,cloud
+BOE:IUDMNZC,BOE,IUDMNZC,UK 10Y nominal zero-coupon yield (BoE fitted curve),D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
 CBOE:OVX,CBOE,OVX,Cboe Crude Oil Volatility Index,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
 CBOE:VIX,CBOE,VIX,Cboe VIX,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
 CBOE:VIX9D,CBOE,VIX9D,Cboe VIX9D,D,指数点,1,https://www.cboe.com/tradable-products/vix/vix-historical-data,,False,cloud
@@ -148,14 +156,34 @@ FRED:A191RL1Q225SBEA,FRED,A191RL1Q225SBEA,Real GDP % change SAAR,Q,%,120,https:/
 FRED:A822RY2Q224SBEA,FRED,A822RY2Q224SBEA,A822RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A822RY2Q224SBEA,,False,cloud
 FRED:AWHAETP,FRED,AWHAETP,"Average weekly hours, private",M,小时,37,https://fred.stlouisfed.org/series/AWHAETP,,False,cloud
 FRED:BAMLC0A0CM,FRED,BAMLC0A0CM,BAMLC0A0CM,D,%,1,https://fred.stlouisfed.org/series/BAMLC0A0CM,,False,cloud
+FRED:BAMLC0A0CMSYTW,FRED,BAMLC0A0CMSYTW,ICE BofA US Corporate yield to worst,D,%,1,https://fred.stlouisfed.org/series/BAMLC0A0CMSYTW,,False,cloud
 FRED:BAMLC0A4CBBB,FRED,BAMLC0A4CBBB,BAMLC0A4CBBB,D,%,1,https://fred.stlouisfed.org/series/BAMLC0A4CBBB,,False,cloud
 FRED:BAMLCC0A0CMTRIV,FRED,BAMLCC0A0CMTRIV,ICE BofA US Corporate Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLCC0A0CMTRIV,,False,cloud
 FRED:BAMLH0A0HYM2,FRED,BAMLH0A0HYM2,BAMLH0A0HYM2,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A0HYM2,,False,cloud
+FRED:BAMLH0A0HYM2SYTW,FRED,BAMLH0A0HYM2SYTW,ICE BofA US High Yield yield to worst,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A0HYM2SYTW,,False,cloud
 FRED:BAMLH0A1HYBB,FRED,BAMLH0A1HYBB,BAMLH0A1HYBB,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A1HYBB,,False,cloud
 FRED:BAMLH0A2HYB,FRED,BAMLH0A2HYB,BAMLH0A2HYB,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A2HYB,,False,cloud
 FRED:BAMLH0A3HYC,FRED,BAMLH0A3HYC,BAMLH0A3HYC,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A3HYC,,False,cloud
 FRED:BAMLHE00EHYIOAS,FRED,BAMLHE00EHYIOAS,ICE BofA Euro HY OAS,D,%,1,https://fred.stlouisfed.org/series/BAMLHE00EHYIOAS,,False,cloud
 FRED:BAMLHYH0A0HYM2TRIV,FRED,BAMLHYH0A0HYM2TRIV,ICE BofA US High Yield Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLHYH0A0HYM2TRIV,,False,cloud
+FRED:BOGZ1FL633061105Q,FRED,BOGZ1FL633061105Q,Z.1 FL633061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL633061105Q,,False,cloud
+FRED:BOGZ1FL893061105Q,FRED,BOGZ1FL893061105Q,Z.1 FL893061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL893061105Q,,False,cloud
+FRED:BOGZ1LM153061105Q,FRED,BOGZ1LM153061105Q,Z.1 LM153061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM153061105Q,,False,cloud
+FRED:BOGZ1LM213061103Q,FRED,BOGZ1LM213061103Q,Z.1 LM213061103,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM213061103Q,,False,cloud
+FRED:BOGZ1LM223061143Q,FRED,BOGZ1LM223061143Q,Z.1 LM223061143,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM223061143Q,,False,cloud
+FRED:BOGZ1LM263061105Q,FRED,BOGZ1LM263061105Q,Z.1 LM263061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM263061105Q,,False,cloud
+FRED:BOGZ1LM343061105Q,FRED,BOGZ1LM343061105Q,Z.1 LM343061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM343061105Q,,False,cloud
+FRED:BOGZ1LM403061105Q,FRED,BOGZ1LM403061105Q,Z.1 LM403061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM403061105Q,,False,cloud
+FRED:BOGZ1LM473061105Q,FRED,BOGZ1LM473061105Q,Z.1 LM473061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM473061105Q,,False,cloud
+FRED:BOGZ1LM513061105Q,FRED,BOGZ1LM513061105Q,Z.1 LM513061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM513061105Q,,False,cloud
+FRED:BOGZ1LM543061105Q,FRED,BOGZ1LM543061105Q,Z.1 LM543061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM543061105Q,,False,cloud
+FRED:BOGZ1LM563061103Q,FRED,BOGZ1LM563061103Q,Z.1 LM563061103,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM563061103Q,,False,cloud
+FRED:BOGZ1LM573061105Q,FRED,BOGZ1LM573061105Q,Z.1 LM573061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM573061105Q,,False,cloud
+FRED:BOGZ1LM653061105Q,FRED,BOGZ1LM653061105Q,Z.1 LM653061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM653061105Q,,False,cloud
+FRED:BOGZ1LM713061103Q,FRED,BOGZ1LM713061103Q,Z.1 LM713061103,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM713061103Q,,False,cloud
+FRED:BOGZ1LM743061103Q,FRED,BOGZ1LM743061103Q,Z.1 LM743061103,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM743061103Q,,False,cloud
+FRED:BOGZ1LM753061103Q,FRED,BOGZ1LM753061103Q,Z.1 LM753061103,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM753061103Q,,False,cloud
+FRED:BOGZ1LM763061100Q,FRED,BOGZ1LM763061100Q,Z.1 LM763061100,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM763061100Q,,False,cloud
 FRED:CC4WSA,FRED,CC4WSA,Continued claims 4wk avg,W,人,12,https://fred.stlouisfed.org/series/CC4WSA,,False,cloud
 FRED:CCSA,FRED,CCSA,Continued claims,W,人,12,https://fred.stlouisfed.org/series/CCSA,,False,cloud
 FRED:CES0500000003,FRED,CES0500000003,"Average hourly earnings, private",M,美元,37,https://fred.stlouisfed.org/series/CES0500000003,,False,cloud
@@ -198,6 +226,7 @@ FRED:DSPIC96,FRED,DSPIC96,Real disposable personal income,M,十亿2017链式美�
 FRED:DTWEXBGS,FRED,DTWEXBGS,Nominal broad USD index,D,指数点,1,https://fred.stlouisfed.org/series/DTWEXBGS,,False,cloud
 FRED:ECBDFR,FRED,ECBDFR,ECB deposit facility rate,D,%,0,https://fred.stlouisfed.org/series/ECBDFR,,False,cloud
 FRED:EMRATIO,FRED,EMRATIO,Employment-population ratio,M,%,37,https://fred.stlouisfed.org/series/EMRATIO,,False,cloud
+FRED:EXHOSLUSM495S,FRED,EXHOSLUSM495S,Existing home sales SAAR (NAR),M,套,25,https://fred.stlouisfed.org/series/EXHOSLUSM495S,,False,cloud
 FRED:FEDTARMD,FRED,FEDTARMD,FOMC SEP fed funds median,A,%,0,https://fred.stlouisfed.org/series/FEDTARMD,,False,cloud
 FRED:FYGFGDQ188S,FRED,FYGFGDQ188S,Federal debt held by public % GDP,Q,%,180,https://fred.stlouisfed.org/series/FYGFGDQ188S,,False,cloud
 FRED:GDI,FRED,GDI,Gross domestic income,Q,十亿美元,150,https://fred.stlouisfed.org/series/GDI,,False,cloud
@@ -207,6 +236,7 @@ FRED:HOUST,FRED,HOUST,Housing starts,M,千套/年,48,https://fred.stlouisfed.org
 FRED:IA001260M,FRED,IA001260M,PCE services ex energy and housing price index,M,指数点,60,https://fred.stlouisfed.org/series/IA001260M,,False,cloud
 FRED:IC4WSA,FRED,IC4WSA,Initial claims 4wk avg,W,人,5,https://fred.stlouisfed.org/series/IC4WSA,,False,cloud
 FRED:ICSA,FRED,ICSA,Initial claims,W,人,5,https://fred.stlouisfed.org/series/ICSA,,False,cloud
+FRED:IEAIDI,FRED,IEAIDI,Direct investment liabilities incurred (BEA ITA),Q,百万美元,90,https://fred.stlouisfed.org/series/IEAIDI,,False,cloud
 FRED:INDPRO,FRED,INDPRO,Industrial production,M,指数点,46,https://fred.stlouisfed.org/series/INDPRO,,True,cloud
 FRED:IORB,FRED,IORB,Interest rate on reserve balances,D,%,0,https://fred.stlouisfed.org/series/IORB,,False,cloud
 FRED:IPMAN,FRED,IPMAN,Manufacturing production,M,指数点,46,https://fred.stlouisfed.org/series/IPMAN,,False,cloud

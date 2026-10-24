@@ -1009,9 +1009,92 @@ def build_publishers() -> None:
         "S&P 道琼斯指数公司官网，月末值")
 
 
+def build_batch2() -> None:
+    """Verified official sources from the second research round."""
+    # ---------------------------------------------------------- German / UK yields
+    bbk = "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields"
+    de2 = series("BBK", "BBSSY/D.REN.EUR.A610.000000WT0202.A", "Bund current 2Y (Schatz) yield", "D", "%", 0, bbk)
+    de10 = series("BBK", "BBSSY/D.REN.EUR.A630.000000WT1010.A", "Bund current 10Y yield", "D", "%", 0, bbk)
+    bnote = "德国央行：当期基准券日收益率（非常数期限，随新券滚动）"
+    api("15-001", de2, bnote)
+    api("15-002", de10, bnote)
+    for k, w in enumerate(["ME", "QE", "YE"]):
+        api(f"99-{68 + k:03d}", f'snap({de2}, "{w}")', bnote)
+        api(f"99-{71 + k:03d}", f'snap({de10}, "{w}")', bnote)
+    uk10 = series("BOE", "IUDMNZC", "UK 10Y nominal zero-coupon yield (BoE fitted curve)", "D", "%", 1,
+                  "https://www.bankofengland.co.uk/statistics/yield-curves")
+    unote = "英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）"
+    api("15-008", uk10, unote)
+    for k, w in enumerate(["ME", "QE", "YE"]):
+        api(f"99-{77 + k:03d}", f'snap({uk10}, "{w}")', unote)
+
+    # ---------------------------------------------------------- policy rates via BIS
+    bis = "https://data.bis.org/topics/CBPOL"
+    def cbpol(cc, title):
+        return series("BIS", f"WS_CBPOL/D.{cc}", f"{title} policy rate (BIS)", "D", "%", 3, bis)
+    jp, cl, tr = cbpol("JP", "Bank of Japan"), cbpol("CL", "Banco Central de Chile"), cbpol("TR", "CBRT one-week repo")
+    pnote = "国际清算银行央行政策利率库（各央行官方利率汇总，滞后约 3 个工作日）"
+    for level_id, prior_id, x in [("20-005", "102-092", jp), ("101-023", "102-056", cl), ("101-024", "102-059", tr)]:
+        api(level_id, x, pnote)
+        api(prior_id, f"before_change({x})", "上一次调整前的政策利率（BIS）")
+
+    # ---------------------------------------------------------- FRED additions
+    api("19-007", fred("BAMLC0A0CMSYTW", "ICE BofA US Corporate yield to worst", "D", "%"), ice_note_text())
+    api("19-011", fred("BAMLH0A0HYM2SYTW", "ICE BofA US High Yield yield to worst", "D", "%"), ice_note_text())
+    api("110-001", f"{fred('EXHOSLUSM495S', 'Existing home sales SAAR (NAR)', 'M', '套', lag=25)} / 10000",
+        "NAR 成屋销售（FRED 仅保留约 13 个月，本库逐月累积）；套→万套")
+    fdi = fred("IEAIDI", "Direct investment liabilities incurred (BEA ITA)", "Q", "百万美元", lag=90)
+    api("105-019", fdi, "BEA 国际交易账户直接投资负债流入（FRED）")
+    api("105-020", f"msum({fdi}, 4)", "过去四季合计")
+
+    # ---------------------------------------------------------- Fed Z.1 holders of Treasuries (FRED mirror)
+    def z1(code):
+        return fred(f"BOGZ1{code}Q", f"Z.1 {code}", "Q", "百万美元", lag=75)
+    total = z1("FL893061105")
+    holders = {
+        "106-001": [z1("LM153061105")],
+        "106-003": [z1("LM763061100"), z1("LM753061103"), z1("LM743061103"), z1("LM473061105")],
+        "106-005": [z1("LM653061105")],
+        "106-007": [z1("FL633061105")],
+        "106-009": [z1("LM563061103")],
+        "106-011": [z1("LM573061105")],
+        "106-013": [z1("LM223061143")],
+        "106-015": [z1("LM513061105"), z1("LM543061105")],
+    }
+    znote = "美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105"
+    for level_id, parts in holders.items():
+        num = "(" + " + ".join(parts) + ")" if len(parts) > 1 else parts[0]
+        share_id = f"106-{int(level_id.split('-')[1]) + 1:03d}"
+        api(level_id, f"{num} / 1000", znote + "；百万→十亿美元")
+        api(share_id, f"{num} / {total} * 100", znote)
+    api("106-017", f"{z1('LM713061103')} / {total} * 100", znote)
+    residual = " - ".join([total, z1("LM713061103"), z1("LM263061105"), z1("LM213061103"), z1("LM343061105"), z1("LM403061105")])
+    api("106-023", f"({residual}) / {total} * 100", znote + "；残差法")
+
+    # ---------------------------------------------------------- MSCI World risk statistics
+    world = "{MSCI:990100:NETR:USD}"
+    mnote = "MSCI World 净总回报（官网日收盘）"
+    api("51-004", f'vol({world}, "52W")', mnote + "；周五采样周收益标准差×√52")
+    api("51-005", f"drawdown({world})", mnote + "；相对本库已存历史高点（2020-10 起）")
+    api("51-006", f'maxdd({world}, "YTD")', mnote)
+    api("51-013", f'ret({world}, "W") - ret({{FRED:SP500}}, "W")', "MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）")
+
+    # ---------------------------------------------------------- BEA official PCE price contributions
+    bea_url = "https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey"
+    api("30-008", series("BEA", "NIPA:T20808:line=2", "Contribution of goods to PCE price change (T2.8.8)", "M", "百分点", 60, bea_url),
+        "BEA 官方表 2.8.8 月度贡献（商品）")
+    api("30-010", series("BEA", "NIPA:T20808:line=13", "Contribution of services to PCE price change (T2.8.8)", "M", "百分点", 60, bea_url),
+        "BEA 官方表 2.8.8 月度贡献（服务）")
+
+
+def ice_note_text() -> str:
+    return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
+
+
 def write() -> tuple[int, int]:
     build()
     build_publishers()
+    build_batch2()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))
