@@ -19,6 +19,12 @@ from .engine.weekly import compute, last_completed_friday, week_cutoffs
 from .providers import official  # noqa: F401  (registers providers)
 from .providers.base import REGISTRY, FetchResult, SeriesDef
 
+# A value older than this (by the fastest-moving input's frequency) is reported as
+# status "stale" instead of "ok": e.g. a daily series that stopped updating.
+MAX_AGE_DAYS = {"D": 14, "W": 28, "M": 95, "Q": 200, "A": 760, "E": 120}
+
+INTENTIONALLY_DATED = ("snap(", "at_year(", "year_ret(", "before_change(", "prior(", "rev(", "first(", "prev_vintage(")
+
 OBS_START = date(2020, 10, 1)      # 5 years of weekly history plus a one-year look-back
 WEEKLY_START = date(2021, 10, 1)
 
@@ -153,12 +159,21 @@ def derive(
         return 0
     keys = sorted({k for text in formulas.values() for k in _series_in(text)})
     raw = store.load_observations(keys)
+    defs = {d.key: d for d in series_defs()}
+    max_age = {}
+    for iid, text in formulas.items():
+        if any(fn in text for fn in INTENTIONALLY_DATED):
+            continue  # snapshots / prior values carry an older obs_date by design
+        ages = [MAX_AGE_DAYS.get(defs[k].frequency, 95) + defs[k].release_lag_days for k in _series_in(text) if k in defs]
+        if ages:
+            max_age[iid] = max(ages)
     if backfill_from is not None:
         cuts = week_cutoffs(backfill_from, last_completed_friday().date())
-        values = compute(formulas, raw, cuts, fast=True)
+        values = compute(formulas, raw, cuts, fast=True, max_age_days=max_age)
     else:
         cuts = list(cutoffs) if cutoffs else [last_completed_friday()]
-        values = compute(formulas, raw, cuts, known_now=pd.Timestamp(datetime.now(timezone.utc).date()) + pd.Timedelta(days=1))
+        values = compute(formulas, raw, cuts, known_now=pd.Timestamp(datetime.now(timezone.utc).date()) + pd.Timedelta(days=1),
+                         max_age_days=max_age)
     n = store.upsert_weekly(values)
     ok = sum(1 for v in values if v.status == "ok")
     log(f"weekly values: {n} rows for {len(cuts)} week(s); ok={ok}")

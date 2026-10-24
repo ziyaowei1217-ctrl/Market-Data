@@ -614,7 +614,7 @@ def build() -> None:
     # ---------------------------------------------------------- 66-67 ACM
     acm_url = "https://www.newyorkfed.org/research/data_indicators/term-premia-tabs"
     def acm(col, title):
-        return series("ACM", col, title, "D", "%", 1, acm_url)
+        return series("ACM", col, title, "D", "%", 35, acm_url)  # workbook is refreshed with a lag of weeks
     for n in range(1, 11):
         base = 1 + 3 * (n - 1)
         api(f"66-{base:03d}", acm(f"ACMTP{n:02d}", f"ACM {n}y term premium"), "纽约联储 ACM 模型")

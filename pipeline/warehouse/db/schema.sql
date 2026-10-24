@@ -81,6 +81,13 @@ create table if not exists public.fetch_log (
   logged_at   timestamptz not null default now()
 );
 
+create table if not exists public.warehouse_meta (
+  key   text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+alter table public.warehouse_meta enable row level security;
+
 -- Private archive of weekly institution reports (copyrighted text: no anon policy).
 create table if not exists public.report_pages (
   source      text not null,

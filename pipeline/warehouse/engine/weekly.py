@@ -14,6 +14,9 @@ from .formula import Context, FormulaError, RawSeries, evaluate, parse
 # Friday cut-off counts as known (mirrors the existing pipeline's "最近一个已结束周日").
 KNOWLEDGE_GRACE = pd.Timedelta(days=2)
 
+# Bump when calculation rules change; the weekly job then recomputes all history.
+ENGINE_VERSION = "2026-10-24.2"
+
 
 @dataclass(frozen=True)
 class WeeklyValue:
@@ -47,6 +50,7 @@ def compute(
     *,
     known_now: pd.Timestamp | None = None,
     fast: bool = False,
+    max_age_days: Mapping[str, int] | None = None,
 ) -> list[WeeklyValue]:
     """Evaluate every formula at every cut-off.
 
@@ -69,6 +73,11 @@ def compute(
         ctx = Context(raw_series, cutoff, known, fast=fast, shared_cache=shared)
         for indicator_id, formula in parsed.items():
             scalar = evaluate(formula, ctx)
+            limit = (max_age_days or {}).get(indicator_id)
+            if (scalar.status == "ok" and limit is not None and scalar.obs_date is not None
+                    and (cutoff - scalar.obs_date).days > limit):
+                scalar.status = "stale"
+                scalar.detail = f"latest observation {scalar.obs_date.date()} older than {limit} days; {scalar.detail}"
             results.append(
                 WeeklyValue(
                     indicator_id,

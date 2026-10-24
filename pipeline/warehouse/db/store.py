@@ -97,6 +97,8 @@ class Store:
     def upsert_report_pages(self, source: str, report_date: date, url: str, pages: Sequence[str]) -> int: ...
     def indicator_formulas(self) -> dict[str, str]: ...
     def prune_series(self, keep: Sequence[str]) -> int: ...
+    def get_meta(self, key: str) -> str | None: ...
+    def set_meta(self, key: str, value: str) -> None: ...
     def close(self) -> None: ...
 
     last_write_initial: bool = False
@@ -150,6 +152,7 @@ create table if not exists weekly_values (
 create table if not exists fetch_log (
   id integer primary key autoincrement, run_id text, runner text, provider text, series_key text,
   status text, rows_written integer, message text, logged_at text);
+create table if not exists warehouse_meta (key text primary key, value text, updated_at text);
 create table if not exists report_pages (
   source text, report_date text, page integer, url text, text text, fetched_at text,
   primary key (source, report_date, page));
@@ -253,6 +256,14 @@ class SQLiteStore(Store):
 
     def indicator_formulas(self):
         return {r[0]: r[1] or "" for r in self.conn.execute("select indicator_id, formula from indicators")}
+
+    def get_meta(self, key):
+        row = self.conn.execute("select value from warehouse_meta where key=?", (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key, value):
+        self.conn.execute("insert or replace into warehouse_meta values (?,?,?)", (key, value, datetime.now(timezone.utc).isoformat()))
+        self.conn.commit()
 
     def prune_series(self, keep):
         keep = list(keep)
@@ -410,6 +421,18 @@ class PostgresStore(Store):
         with self.conn.cursor() as cur:
             cur.execute("select indicator_id, coalesce(formula, '') from public.indicators")
             return dict(cur.fetchall())
+
+    def get_meta(self, key):
+        with self.conn.cursor() as cur:
+            cur.execute("select value from public.warehouse_meta where key=%s", (key,))
+            row = cur.fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key, value):
+        with self.conn.cursor() as cur:
+            cur.execute("""insert into public.warehouse_meta (key, value) values (%s,%s)
+                           on conflict (key) do update set value=excluded.value, updated_at=now()""", (key, value))
+        self.conn.commit()
 
     def prune_series(self, keep):
         with self.conn.cursor() as cur:

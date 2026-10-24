@@ -19,6 +19,7 @@ import sys
 from datetime import date, timedelta
 
 from .db.store import open_store
+from .engine.weekly import ENGINE_VERSION
 from .runner import OBS_START, WEEKLY_START, derive, fetch, indicators_using, series_defs, sync_catalog
 
 
@@ -69,9 +70,10 @@ def main(argv: list[str] | None = None) -> int:
             defs = series_defs(args.provider, args.series)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
-            if store.weekly_count() == 0:
-                print(f"no weekly values yet: backfilling from {WEEKLY_START}")
+            if store.weekly_count() == 0 or store.get_meta("engine_version") != ENGINE_VERSION:
+                print(f"backfilling all weekly values from {WEEKLY_START} (engine {ENGINE_VERSION})")
                 derive(store, backfill_from=WEEKLY_START)
+                store.set_meta("engine_version", ENGINE_VERSION)
             else:
                 fresh = [k for s in summaries.values() for k in s.initial]
                 redo = changed | indicators_using(fresh)

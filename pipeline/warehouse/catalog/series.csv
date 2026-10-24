@@ -1,34 +1,34 @@
 key,provider,code,title,frequency,unit,release_lag_days,source_url,params,vintages,runner
-ACM:ACMRNY01,ACM,ACMRNY01,ACM 1y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY02,ACM,ACMRNY02,ACM 2y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY03,ACM,ACMRNY03,ACM 3y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY04,ACM,ACMRNY04,ACM 4y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY05,ACM,ACMRNY05,ACM 5y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY06,ACM,ACMRNY06,ACM 6y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY07,ACM,ACMRNY07,ACM 7y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY08,ACM,ACMRNY08,ACM 8y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY09,ACM,ACMRNY09,ACM 9y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMRNY10,ACM,ACMRNY10,ACM 10y expected avg short rate,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP01,ACM,ACMTP01,ACM 1y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP02,ACM,ACMTP02,ACM 2y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP03,ACM,ACMTP03,ACM 3y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP04,ACM,ACMTP04,ACM 4y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP05,ACM,ACMTP05,ACM 5y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP06,ACM,ACMTP06,ACM 6y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP07,ACM,ACMTP07,ACM 7y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP08,ACM,ACMTP08,ACM 8y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP09,ACM,ACMTP09,ACM 9y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMTP10,ACM,ACMTP10,ACM 10y term premium,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY01,ACM,ACMY01,ACM 1y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY02,ACM,ACMY02,ACM 2y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY03,ACM,ACMY03,ACM 3y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY04,ACM,ACMY04,ACM 4y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY05,ACM,ACMY05,ACM 5y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY06,ACM,ACMY06,ACM 6y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY07,ACM,ACMY07,ACM 7y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY08,ACM,ACMY08,ACM 8y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY09,ACM,ACMY09,ACM 9y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
-ACM:ACMY10,ACM,ACMY10,ACM 10y fitted yield,D,%,1,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY01,ACM,ACMRNY01,ACM 1y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY02,ACM,ACMRNY02,ACM 2y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY03,ACM,ACMRNY03,ACM 3y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY04,ACM,ACMRNY04,ACM 4y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY05,ACM,ACMRNY05,ACM 5y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY06,ACM,ACMRNY06,ACM 6y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY07,ACM,ACMRNY07,ACM 7y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY08,ACM,ACMRNY08,ACM 8y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY09,ACM,ACMRNY09,ACM 9y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMRNY10,ACM,ACMRNY10,ACM 10y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP01,ACM,ACMTP01,ACM 1y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP02,ACM,ACMTP02,ACM 2y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP03,ACM,ACMTP03,ACM 3y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP04,ACM,ACMTP04,ACM 4y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP05,ACM,ACMTP05,ACM 5y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP06,ACM,ACMTP06,ACM 6y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP07,ACM,ACMTP07,ACM 7y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP08,ACM,ACMTP08,ACM 8y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP09,ACM,ACMTP09,ACM 9y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMTP10,ACM,ACMTP10,ACM 10y term premium,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY01,ACM,ACMY01,ACM 1y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY02,ACM,ACMY02,ACM 2y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY03,ACM,ACMY03,ACM 3y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY04,ACM,ACMY04,ACM 4y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY05,ACM,ACMY05,ACM 5y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY06,ACM,ACMY06,ACM 6y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY07,ACM,ACMY07,ACM 7y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY08,ACM,ACMY08,ACM 8y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY09,ACM,ACMY09,ACM 9y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
+ACM:ACMY10,ACM,ACMY10,ACM 10y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 BCB:13522,BCB,13522,IPCA 12-month accumulated,M,%,12,https://www3.bcb.gov.br/sgspub/,,False,cloud
 BCB:432,BCB,432,Selic target,D,%,0,https://www3.bcb.gov.br/sgspub/,,False,cloud
 BLS:CES0500000021,BLS,CES0500000021,"Diffusion index, 1-month, total private",M,,37,https://data.bls.gov/timeseries/CES0500000021,,False,cloud

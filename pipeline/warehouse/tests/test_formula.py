@@ -195,3 +195,11 @@ class WeeklyComputeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StalenessTests(unittest.TestCase):
+    def test_old_observation_is_flagged_stale(self):
+        raw = {"T:F": frame(["2024-04-05"], [86.9])}
+        [v] = compute({"x": "{T:F}"}, raw, [pd.Timestamp("2026-10-23")], fast=True, max_age_days={"x": 14})
+        self.assertEqual(v.status, "stale")
+        self.assertEqual(v.value, 86.9)
