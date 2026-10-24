@@ -13,7 +13,7 @@ from typing import Sequence
 
 from ..db.store import Observation
 from .base import FetchResult, Provider, SeriesDef, register
-from .reports import BROWSER_UA, find_report_date, pdf_pages
+from .reports import BROWSER_UA, find_report_date
 
 URL = ("https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/"
        "Earnings%20Insight/EarningsInsight_{d:%m%d%y}{suffix}.pdf")
@@ -60,11 +60,17 @@ class FactSet(Provider):
     batch = True
 
     def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        """Normal runs: the last 6 issues. Backfill (env FACTSET_BACKFILL=YYYY-MM-DD):
+        up to 70 issues walking back from that date, so a long history is
+        collected over several runs instead of one very long job."""
         today = datetime.now(timezone.utc).date()
-        weeks = 6 if not self.env.get("FACTSET_BACKFILL") else max(1, (today - start).days // 7 + 1)
+        anchor, weeks = today, 6
+        if self.env.get("FACTSET_BACKFILL"):
+            anchor = date.fromisoformat(self.env["FACTSET_BACKFILL"])
+            weeks = min(70, max(0, (anchor - start).days // 7 + 1))
         issues: dict[date, dict[str, float]] = {}
         for k in range(weeks):
-            friday = today - timedelta(days=(today.weekday() - 4) % 7 + 7 * k)
+            friday = anchor - timedelta(days=(anchor.weekday() - 4) % 7 + 7 * k)
             for d in (friday, friday - timedelta(days=1), friday + timedelta(days=1), friday - timedelta(days=2)):
                 text = self._issue_text(d)
                 if text:
@@ -84,5 +90,14 @@ class FactSet(Provider):
             except Exception:  # noqa: BLE001
                 continue
             if r.status_code == 200 and r.content[:5] == b"%PDF-":
-                return "\n".join(pdf_pages(r.content)[:16])
+                return _fast_text(r.content)
         return None
+
+
+def _fast_text(body: bytes, max_pages: int = 16) -> str:
+    import io
+
+    import pdfplumber
+
+    with pdfplumber.open(io.BytesIO(body)) as pdf:
+        return "\n".join((page.extract_text() or "") for page in pdf.pages[:max_pages])

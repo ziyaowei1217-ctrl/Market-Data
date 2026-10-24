@@ -98,6 +98,7 @@ class Store:
     def indicator_formulas(self) -> dict[str, str]: ...
     def prune_series(self, keep: Sequence[str]) -> int: ...
     def get_meta(self, key: str) -> str | None: ...
+    def earliest_obs(self, series_key: str) -> date | None: ...
     def set_meta(self, key: str, value: str) -> None: ...
     def close(self) -> None: ...
 
@@ -260,6 +261,10 @@ class SQLiteStore(Store):
     def get_meta(self, key):
         row = self.conn.execute("select value from warehouse_meta where key=?", (key,)).fetchone()
         return row[0] if row else None
+
+    def earliest_obs(self, series_key):
+        row = self.conn.execute("select min(obs_date) from observations where series_key=?", (series_key,)).fetchone()
+        return date.fromisoformat(row[0]) if row and row[0] else None
 
     def set_meta(self, key, value):
         self.conn.execute("insert or replace into warehouse_meta values (?,?,?)", (key, value, datetime.now(timezone.utc).isoformat()))
@@ -425,6 +430,12 @@ class PostgresStore(Store):
     def get_meta(self, key):
         with self.conn.cursor() as cur:
             cur.execute("select value from public.warehouse_meta where key=%s", (key,))
+            row = cur.fetchone()
+        return row[0] if row else None
+
+    def earliest_obs(self, series_key):
+        with self.conn.cursor() as cur:
+            cur.execute("select min(obs_date) from public.observations where series_key=%s", (series_key,))
             row = cur.fetchone()
         return row[0] if row else None
 

@@ -70,14 +70,24 @@ def main(argv: list[str] | None = None) -> int:
             defs = series_defs(args.provider, args.series, runner=args.runner)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
-            if store.get_meta("factset_backfill") != "done" and not args.provider:
-                print("one-time FactSet Earnings Insight backfill")
-                os.environ["FACTSET_BACKFILL"] = "1"
-                more = fetch(store, series_defs("FACTSET"), start=WEEKLY_START, runner=args.runner)
-                os.environ.pop("FACTSET_BACKFILL", None)
-                for name, extra in more.items():
-                    summaries.setdefault(name, extra).initial.extend(extra.initial)
-                store.set_meta("factset_backfill", "done")
+            backfill = store.get_meta("factset_backfill")
+            if backfill != "done" and not args.provider and args.runner == "cloud":
+                # Resumable: each run walks back up to 70 weekly issues from the earliest stored one.
+                earliest = store.earliest_obs("FACTSET:forward_pe")
+                anchor = (earliest - timedelta(days=7)) if earliest else date.today()
+                if anchor <= WEEKLY_START:
+                    store.set_meta("factset_backfill", "done")
+                else:
+                    print(f"FactSet Earnings Insight backfill from {anchor} backwards")
+                    os.environ["FACTSET_BACKFILL"] = anchor.isoformat()
+                    more = fetch(store, series_defs("FACTSET"), start=WEEKLY_START, runner=args.runner)
+                    os.environ.pop("FACTSET_BACKFILL", None)
+                    for name, extra in more.items():
+                        summaries.setdefault(name, extra).initial.extend(extra.initial)
+                    earliest = store.earliest_obs("FACTSET:forward_pe")
+                    if earliest and earliest <= WEEKLY_START + timedelta(days=14):
+                        store.set_meta("factset_backfill", "done")
+                    changed |= indicators_using([d.key for d in series_defs("FACTSET")])
             if store.weekly_count() == 0 or store.get_meta("engine_version") != ENGINE_VERSION:
                 print(f"backfilling all weekly values from {WEEKLY_START} (engine {ENGINE_VERSION})")
                 derive(store, backfill_from=WEEKLY_START)
