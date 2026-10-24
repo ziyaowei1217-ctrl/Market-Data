@@ -1129,6 +1129,100 @@ def build_factset() -> None:
     api("90-002", f"100 / {pe} - {{FRED:DGS10}}", "1 / FactSet 远期 P/E 减美国 10 年国债收益率")
 
 
+def build_batch3() -> None:
+    """Parsers written against real file samples: TIC, Japan CPI, NY Fed SCE, ISM, consensus calendar."""
+    # ---------------------------------------------------------- TIC
+    tic_url = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt"
+    total = series("TIC", "Grand Total", "Foreign holdings of Treasuries, total (TIC)", "M", "十亿美元", 50, tic_url)
+    official = series("TIC", "Of Which: Foreign Official", "Foreign official holdings of Treasuries (TIC)", "M", "十亿美元", 50, tic_url)
+    tnote = "美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）"
+    api("106-018", official, tnote)
+    api("106-020", f"{total} - {official}", tnote + "；外国私人 = 合计 − 官方")
+
+    # ---------------------------------------------------------- Japan CPI
+    jp_url = "https://www.stat.go.jp/data/cpi/"
+    jp_head = series("JPCPI", "headline_yoy", "Japan CPI all items y/y", "M", "%", 25, jp_url)
+    jp_core = series("JPCPI", "ex_fresh_yoy", "Japan CPI ex fresh food y/y", "M", "%", 25, jp_url)
+    jnote = "日本总务省统计局 CPI 指数 CSV，同一基期内计算同比（2026 年起为 2025 年基期）"
+    api("42-001", jp_head, jnote)
+    api("42-002", jp_core, jnote)
+    api("102-080", f"prior({jp_head})", "本次发布所列前值（本库逐次留存版本）")
+
+    # ---------------------------------------------------------- NY Fed SCE
+    sce_url = "https://www.newyorkfed.org/microeconomics/sce"
+    def sce(code, title, unit):
+        return series("SCE", code, f"NY Fed SCE: {title}", "M", unit, 12, sce_url)
+    snote = "纽约联储消费者预期调查（官方图表数据 Excel）"
+    for k, horizon in enumerate(["one", "three", "five"]):
+        med = sce(f"Median {horizon}-year ahead expected inflation rate", f"median {horizon}-year inflation expectation", "%")
+        spread = sce(f"75th Percentile {horizon}-year ahead expected inflation rate - 25th Percentile {horizon}-year ahead expected inflation rate",
+                     f"{horizon}-year P75-P25", "百分点")
+        api(f"63-{3 + 2 * k:03d}", med, snote)
+        api(f"63-{4 + 2 * k:03d}", spread, snote + "；75 分位减 25 分位")
+
+    # ---------------------------------------------------------- ISM manufacturing
+    ism_url = "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/"
+    def ism(code, title):
+        return series("ISM", code, f"ISM Manufacturing {title}", "M", "指数点", 3, ism_url)
+    inote = "ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值"
+    for iid, code, title in [("36-001", "pmi", "PMI"), ("36-002", "new_orders", "New Orders"), ("36-003", "employment", "Employment"),
+                             ("36-004", "prices", "Prices"), ("36-005", "inventories", "Inventories")]:
+        api(iid, ism(code, title), inote)
+    api("36-011", f"{ism('new_orders', 'New Orders')} - {ism('inventories', 'Inventories')}", inote)
+
+    # ---------------------------------------------------------- consensus (Forex Factory calendar)
+    ff_url = "https://www.forexfactory.com/calendar"
+    def ff(country, title, field="forecast", unit="%", scale=1):
+        return series("FFCAL", f"{country}|{title}|{field}", f"Consensus {country} {title} ({field})", "E", unit, 0, ff_url,
+                      params={"scale": scale} if scale != 1 else None)
+    fnote = "Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）"
+    gdp_cons = [ff("USD", t) for t in ("Advance GDP q/q", "Prelim GDP q/q", "Final GDP q/q")]
+    consensus = {
+        "52-001": ff("USD", "CPI y/y"), "52-003": ff("USD", "Core CPI m/m"), "52-005": ff("USD", "Core PCE Price Index m/m"),
+        "52-007": ff("USD", "Non-Farm Employment Change", unit="千人", scale=1000), "52-009": ff("USD", "Retail Sales m/m"),
+        "52-013": ff("EUR", "CPI Flash Estimate y/y"), "52-015": ff("GBP", "CPI y/y"), "52-017": ff("JPY", "National Core CPI y/y"),
+        "52-019": ff("CNY", "GDP q/y"),
+        "102-001": ff("USD", "PPI m/m"), "102-007": ff("USD", "Core PPI m/m"),
+        "102-016": ff("CNY", "Trade Balance", unit="亿美元", scale=1e8), "102-025": ff("GBP", "GDP m/m"),
+        "102-043": ff("CAD", "GDP m/m"), "102-046": ff("CAD", "Employment Change", unit="千人", scale=1000),
+        "102-049": ff("CAD", "Unemployment Rate"), "102-052": ff("CAD", "Retail Sales m/m"), "102-064": ff("CAD", "Overnight Rate"),
+        "102-067": ff("CNY", "Industrial Production y/y"), "102-070": ff("CNY", "Retail Sales y/y"),
+        "102-082": ff("USD", "Industrial Production m/m"), "102-085": ff("USD", "Federal Funds Rate"),
+        "102-088": ff("GBP", "Official Bank Rate"), "102-091": ff("JPY", "BOJ Policy Rate"),
+    }
+    for iid, x in consensus.items():
+        api(iid, x, fnote)
+    api("52-011", f"newest({', '.join(gdp_cons)})", fnote + "；取最近一次（初值/修正/终值）")
+    api("102-094", f"{ff('EUR', 'Main Refinancing Rate')} - 0.15", fnote + "；DFR 预期 = MRO 预期 − 0.15（2024-09 起固定利差，推算）")
+    for iid, title, unit, scale in [("102-017", "Trade Balance", "亿美元", 1e8), ("102-068", "Industrial Production y/y", "%", 1),
+                                    ("102-071", "Retail Sales y/y", "%", 1)]:
+        api(iid, ff("CNY", title, "previous", unit, scale), "Forex Factory 日历所列前值（第三方）")
+
+    # ---------------------------------------------------------- surprises: first print − consensus snapshot
+    snote2 = "首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算"
+    surprises = {
+        "54-001": ("yoy({BLS:CUUR0000SA0})", [consensus["52-001"]]),
+        "54-002": ("pop({BLS:CUSR0000SA0L1E})", [consensus["52-003"]]),
+        "54-003": ("pop({FRED:PCEPILFE})", [consensus["52-005"]]),
+        "54-004": ("diff({FRED:PAYEMS})", [consensus["52-007"]]),
+        "54-005": ("pop({FRED:RSAFS})", [consensus["52-009"]]),
+        "54-006": ("{FRED:A191RL1Q225SBEA}", gdp_cons),
+        "54-007": ("{EUROSTAT:prc_hicp_minr:EA:TOTAL}", [consensus["52-013"]]),
+        "54-008": ("{ONS:D7G7}", [consensus["52-015"]]),
+        "54-009": ("{JPCPI:ex_fresh_yoy}", [consensus["52-017"]]),
+        "102-003": ("pop({BLS:WPSFD4})", [consensus["102-001"]]),
+        "102-009": ("pop({BLS:WPSFD49104})", [consensus["102-007"]]),
+        "102-027": ("pop({ONS:ECY2})", [consensus["102-025"]]),
+        "102-045": ("pop({STATCAN:65201210})", [consensus["102-043"]]),
+        "102-048": ("diff({STATCAN:2062811})", [consensus["102-046"]]),
+        "102-051": ("{STATCAN:2062815}", [consensus["102-049"]]),
+        "102-054": ("pop({STATCAN:1446859483})", [consensus["102-052"]]),
+        "102-084": ("pop({FRED:INDPRO})", [consensus["102-082"]]),
+    }
+    for iid, (actual, cons) in surprises.items():
+        api(iid, f"surprise({actual}, {', '.join(cons)})", snote2)
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1138,6 +1232,7 @@ def write() -> tuple[int, int]:
     build_publishers()
     build_batch2()
     build_factset()
+    build_batch3()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

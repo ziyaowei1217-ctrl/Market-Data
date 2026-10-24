@@ -269,3 +269,53 @@ class BreadthTests(unittest.TestCase):
         self.assertEqual(m["pct_above_200dma"].iloc[-1], 100.0)
         self.assertEqual(m["advancers"].iloc[-1], 10)
         self.assertAlmostEqual(m["median_drawdown_52w"].iloc[-1], 0.0)
+
+
+class FileParserTests(unittest.TestCase):
+    def test_tic_table5(self):
+        from pipeline.warehouse.providers.files import TicTable5
+
+        txt = ("Table 5\r\nCountry\t2026-08\t2026-07\r\nJapan\t1068.3\t1103.9\r\nGrand Total\t9331.7\t9248.4\r\n"
+               "Of Which: Foreign Official\t3755.6\t3773.1\r\n")
+        session = FakeSession({"slt_table5.txt": txt})
+        [res] = TicTable5(session, env={}).fetch([sd("TIC", "Grand Total")], date(2026, 1, 1))
+        self.assertEqual(res.observations[-1], Observation(date(2026, 8, 1), 9331.7))
+
+    def test_ism_glance_rows(self):
+        from pipeline.warehouse.providers.files import parse_ism
+
+        text = ("Manufacturing PMI® 54.5 54.6 -0.1 Growing Slower 9\n New Orders   55.3 53.7 +1.6  Growing\n"
+                " Employment 52.7 51.2 +1.5 Growing\n Inventories  48.6 50.6 -2.0 Contracting\n Customers’ Inventories 41.6 42.8 -1.2\n"
+                " Prices 77.9 71.1 +6.8 Increasing\n New Export Orders 50.9 53.2 -2.3")
+        got = parse_ism(text)
+        self.assertEqual(got["pmi"], (54.5, 54.6))
+        self.assertEqual(got["new_orders"], (55.3, 53.7))
+        self.assertEqual(got["inventories"], (48.6, 50.6))
+        self.assertEqual(got["prices"], (77.9, 71.1))
+
+    def test_ff_numbers_and_calendar(self):
+        from pipeline.warehouse.providers.files import ForexFactoryCalendar, _ff_number
+
+        self.assertEqual(_ff_number("150K"), 150000)
+        self.assertEqual(_ff_number("0.3%"), 0.3)
+        self.assertEqual(_ff_number("95.2B"), 95.2e9)
+        self.assertIsNone(_ff_number(""))
+        events = [{"title": "CPI y/y", "country": "USD", "date": "2026-10-14T08:30:00-04:00", "forecast": "3.7%", "previous": "3.5%"}]
+        session = FakeSession({"ff_calendar_thisweek.json": events})
+        [res] = ForexFactoryCalendar(session, env={}).fetch([sd("FFCAL", "USD|CPI y/y|forecast")], date(2026, 1, 1))
+        self.assertEqual(res.observations, [Observation(date(2026, 10, 14), 3.7)])
+
+
+class SurpriseTests(unittest.TestCase):
+    def test_first_print_minus_consensus(self):
+        from pipeline.warehouse.engine.formula import Context, RawSeries, evaluate
+
+        actual = pd.DataFrame({"obs_date": pd.to_datetime(["2026-08-01", "2026-09-01"]),
+                               "realtime_start": pd.to_datetime(["2026-09-12", "2026-10-17"]),
+                               "value": [3.5, 3.9], "vintage_source": ["first_seen", "first_seen"]})
+        cons = pd.DataFrame({"obs_date": pd.to_datetime(["2026-09-10", "2026-10-14"]), "realtime_start": pd.to_datetime(["2026-09-08", "2026-10-12"]),
+                             "value": [3.4, 3.7], "vintage_source": ["first_seen", "first_seen"]})
+        ctx = Context({"A:X": RawSeries.from_frame(actual), "C:Y": RawSeries.from_frame(cons)},
+                      pd.Timestamp("2026-10-23"), pd.Timestamp("2026-10-25"))
+        result = evaluate("surprise({A:X}, {C:Y})", ctx)
+        self.assertAlmostEqual(result.value, 0.2)

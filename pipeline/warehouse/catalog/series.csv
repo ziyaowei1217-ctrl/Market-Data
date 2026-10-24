@@ -202,6 +202,37 @@ FACTSET:pct_reported,FACTSET,pct_reported,FactSet Earnings Insight: % of compani
 FACTSET:pct_revenue_beat,FACTSET,pct_revenue_beat,FactSet Earnings Insight: % beating revenue,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
 FACTSET:revenue_growth_blended,FACTSET,revenue_growth_blended,FactSet Earnings Insight: blended revenue growth y/y,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
 FACTSET:revenue_surprise_aggregate,FACTSET,revenue_surprise_aggregate,FactSet Earnings Insight: aggregate revenue surprise,W,%,0,https://insight.factset.com/topic/earnings,,False,cloud
+FFCAL:CAD|Employment Change|forecast,FFCAL,CAD|Employment Change|forecast,Consensus CAD Employment Change (forecast),E,千人,0,https://www.forexfactory.com/calendar,"{""scale"": 1000}",False,cloud
+FFCAL:CAD|GDP m/m|forecast,FFCAL,CAD|GDP m/m|forecast,Consensus CAD GDP m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CAD|Overnight Rate|forecast,FFCAL,CAD|Overnight Rate|forecast,Consensus CAD Overnight Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CAD|Retail Sales m/m|forecast,FFCAL,CAD|Retail Sales m/m|forecast,Consensus CAD Retail Sales m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CAD|Unemployment Rate|forecast,FFCAL,CAD|Unemployment Rate|forecast,Consensus CAD Unemployment Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|GDP q/y|forecast,FFCAL,CNY|GDP q/y|forecast,Consensus CNY GDP q/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|Industrial Production y/y|forecast,FFCAL,CNY|Industrial Production y/y|forecast,Consensus CNY Industrial Production y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|Industrial Production y/y|previous,FFCAL,CNY|Industrial Production y/y|previous,Consensus CNY Industrial Production y/y (previous),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|Retail Sales y/y|forecast,FFCAL,CNY|Retail Sales y/y|forecast,Consensus CNY Retail Sales y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|Retail Sales y/y|previous,FFCAL,CNY|Retail Sales y/y|previous,Consensus CNY Retail Sales y/y (previous),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:CNY|Trade Balance|forecast,FFCAL,CNY|Trade Balance|forecast,Consensus CNY Trade Balance (forecast),E,亿美元,0,https://www.forexfactory.com/calendar,"{""scale"": 100000000.0}",False,cloud
+FFCAL:CNY|Trade Balance|previous,FFCAL,CNY|Trade Balance|previous,Consensus CNY Trade Balance (previous),E,亿美元,0,https://www.forexfactory.com/calendar,"{""scale"": 100000000.0}",False,cloud
+FFCAL:EUR|CPI Flash Estimate y/y|forecast,FFCAL,EUR|CPI Flash Estimate y/y|forecast,Consensus EUR CPI Flash Estimate y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:EUR|Main Refinancing Rate|forecast,FFCAL,EUR|Main Refinancing Rate|forecast,Consensus EUR Main Refinancing Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:GBP|CPI y/y|forecast,FFCAL,GBP|CPI y/y|forecast,Consensus GBP CPI y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:GBP|GDP m/m|forecast,FFCAL,GBP|GDP m/m|forecast,Consensus GBP GDP m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:GBP|Official Bank Rate|forecast,FFCAL,GBP|Official Bank Rate|forecast,Consensus GBP Official Bank Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:JPY|BOJ Policy Rate|forecast,FFCAL,JPY|BOJ Policy Rate|forecast,Consensus JPY BOJ Policy Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:JPY|National Core CPI y/y|forecast,FFCAL,JPY|National Core CPI y/y|forecast,Consensus JPY National Core CPI y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Advance GDP q/q|forecast,FFCAL,USD|Advance GDP q/q|forecast,Consensus USD Advance GDP q/q (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|CPI y/y|forecast,FFCAL,USD|CPI y/y|forecast,Consensus USD CPI y/y (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Core CPI m/m|forecast,FFCAL,USD|Core CPI m/m|forecast,Consensus USD Core CPI m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Core PCE Price Index m/m|forecast,FFCAL,USD|Core PCE Price Index m/m|forecast,Consensus USD Core PCE Price Index m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Core PPI m/m|forecast,FFCAL,USD|Core PPI m/m|forecast,Consensus USD Core PPI m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Federal Funds Rate|forecast,FFCAL,USD|Federal Funds Rate|forecast,Consensus USD Federal Funds Rate (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Final GDP q/q|forecast,FFCAL,USD|Final GDP q/q|forecast,Consensus USD Final GDP q/q (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Industrial Production m/m|forecast,FFCAL,USD|Industrial Production m/m|forecast,Consensus USD Industrial Production m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Non-Farm Employment Change|forecast,FFCAL,USD|Non-Farm Employment Change|forecast,Consensus USD Non-Farm Employment Change (forecast),E,千人,0,https://www.forexfactory.com/calendar,"{""scale"": 1000}",False,cloud
+FFCAL:USD|PPI m/m|forecast,FFCAL,USD|PPI m/m|forecast,Consensus USD PPI m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Prelim GDP q/q|forecast,FFCAL,USD|Prelim GDP q/q|forecast,Consensus USD Prelim GDP q/q (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FFCAL:USD|Retail Sales m/m|forecast,FFCAL,USD|Retail Sales m/m|forecast,Consensus USD Retail Sales m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
 FRED:A007RY2Q224SBEA,FRED,A007RY2Q224SBEA,A007RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A007RY2Q224SBEA,,False,cloud
 FRED:A014RY2Q224SBEA,FRED,A014RY2Q224SBEA,A014RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A014RY2Q224SBEA,,False,cloud
 FRED:A019RY2Q224SBEA,FRED,A019RY2Q224SBEA,A019RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A019RY2Q224SBEA,,False,cloud
@@ -336,6 +367,13 @@ FRED:WALCL,FRED,WALCL,Fed total assets,W,百万美元,1,https://fred.stlouisfed.
 FRED:WRESBAL,FRED,WRESBAL,Reserve balances,W,百万美元,1,https://fred.stlouisfed.org/series/WRESBAL,,False,cloud
 FRED:WSHOMCB,FRED,WSHOMCB,Fed MBS holdings,W,百万美元,1,https://fred.stlouisfed.org/series/WSHOMCB,,False,cloud
 FRED:WTREGEN,FRED,WTREGEN,Treasury General Account,W,百万美元,1,https://fred.stlouisfed.org/series/WTREGEN,,False,cloud
+ISM:employment,ISM,employment,ISM Manufacturing Employment,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+ISM:inventories,ISM,inventories,ISM Manufacturing Inventories,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+ISM:new_orders,ISM,new_orders,ISM Manufacturing New Orders,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+ISM:pmi,ISM,pmi,ISM Manufacturing PMI,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+ISM:prices,ISM,prices,ISM Manufacturing Prices,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+JPCPI:ex_fresh_yoy,JPCPI,ex_fresh_yoy,Japan CPI ex fresh food y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
+JPCPI:headline_yoy,JPCPI,headline_yoy,Japan CPI all items y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPX:TOPIX,JPX,TOPIX,"TOPIX (price, JPY)",D,点,0,https://www.jpx.co.jp/english/markets/indices/topix/,,False,cloud
 MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
@@ -386,6 +424,12 @@ ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/infla
 ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
 ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
 ONS:IHYQ,ONS,IHYQ,UK GDP q/q,Q,%,135,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ihyq/qna,"{""period"": ""quarters"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ihyq/qna""}",False,cloud
+SCE:75th Percentile five-year ahead expected inflation rate - 25th Percentile five-year ahead expected inflation rate,SCE,75th Percentile five-year ahead expected inflation rate - 25th Percentile five-year ahead expected inflation rate,NY Fed SCE: five-year P75-P25,M,百分点,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SCE:75th Percentile one-year ahead expected inflation rate - 25th Percentile one-year ahead expected inflation rate,SCE,75th Percentile one-year ahead expected inflation rate - 25th Percentile one-year ahead expected inflation rate,NY Fed SCE: one-year P75-P25,M,百分点,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SCE:75th Percentile three-year ahead expected inflation rate - 25th Percentile three-year ahead expected inflation rate,SCE,75th Percentile three-year ahead expected inflation rate - 25th Percentile three-year ahead expected inflation rate,NY Fed SCE: three-year P75-P25,M,百分点,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SCE:Median five-year ahead expected inflation rate,SCE,Median five-year ahead expected inflation rate,NY Fed SCE: median five-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SCE:Median one-year ahead expected inflation rate,SCE,Median one-year ahead expected inflation rate,NY Fed SCE: median one-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
+SCE:Median three-year ahead expected inflation rate,SCE,Median three-year ahead expected inflation rate,NY Fed SCE: median three-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
@@ -394,6 +438,8 @@ STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150
 STATCAN:41690973,STATCAN,41690973,Canada CPI all-items NSA,M,指数点,20,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:65201210,STATCAN,65201210,Canada real GDP monthly,M,百万加元,60,https://www150.statcan.gc.ca/,,False,cloud
 STOXX:sx5p,STOXX,sx5p,"STOXX Europe 50 (price, EUR)",D,点,1,https://www.stoxx.com/index/sx5p/,,False,cloud
+TIC:Grand Total,TIC,Grand Total,"Foreign holdings of Treasuries, total (TIC)",M,十亿美元,50,https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt,,False,cloud
+TIC:Of Which: Foreign Official,TIC,Of Which: Foreign Official,Foreign official holdings of Treasuries (TIC),M,十亿美元,50,https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt,,False,cloud
 TSY:auction:10-Year:bid_to_cover_ratio,TSY,auction:10-Year:bid_to_cover_ratio,10-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud
 TSY:auction:10-Year:direct_bidder_accepted,TSY,auction:10-Year:direct_bidder_accepted,10-Year auction direct accepted,E,美元,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""direct_bidder_accepted""}",False,cloud
 TSY:auction:10-Year:high_yield,TSY,auction:10-Year:high_yield,10-Year auction high yield,E,%,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""high_yield""}",False,cloud

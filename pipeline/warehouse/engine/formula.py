@@ -692,6 +692,43 @@ def v_parbond(ctx: Context, metric: ast.AST, tenor: ast.AST, shift: ast.AST | No
     return Scalar(float(value), max(dates), detail=f"par curve {max(dates).date()}")
 
 
+def f_newest(ctx: Context, *xs: TS) -> Scalar:
+    """Latest value across several series (e.g. Advance/Prelim/Final GDP consensus)."""
+    best = None
+    for x in xs:
+        last = _last(_scalar_input(ctx, x, "newest"))
+        if last is not None and (best is None or last[1] > best[1]):
+            best = last
+    if best is None:
+        return Scalar.missing("missing_input")
+    return Scalar(best[0], best[1])
+
+
+def v_surprise(ctx: Context, actual: ast.AST, *consensus: ast.AST) -> Scalar:
+    """First print of the latest period minus the consensus snapshot taken for that
+    release (consensus dated within 20 days before / 3 days after the first print)."""
+    found = _latest_period(ctx, actual)
+    if found is None:
+        return Scalar.missing("missing_input")
+    _, period = found
+    release, status = _release_date(ctx, _primary_key(actual), period)
+    if release is None:
+        return Scalar.missing(status, "first release of the actual not recorded")
+    first_frame = _series_at(ctx, actual, release)
+    if period not in first_frame.index:
+        return Scalar.missing("missing_input")
+    first_value = float(first_frame.at[period, "value"])
+    best = None
+    for node in consensus:
+        frame = ctx.visible(_require_ts(evaluate_node(node, ctx), "surprise"))
+        window = frame[(frame.index >= release - pd.Timedelta(days=20)) & (frame.index <= release + pd.Timedelta(days=3))]
+        if not window.empty and (best is None or window.index[-1] > best[1]):
+            best = (float(window["value"].iat[-1]), window.index[-1])
+    if best is None:
+        return Scalar.missing("missing_input", f"no consensus snapshot near release {release.date()}")
+    return Scalar(first_value - best[0], period, detail=f"first print {release.date()} vs consensus {best[1].date()}")
+
+
 SERIES_FUNCS: dict[str, Callable[..., Any]] = {
     "level": f_level,
     "pop": f_pop,
@@ -719,6 +756,7 @@ SCALAR_FUNCS: dict[str, Callable[..., Any]] = {
     "before_change": f_before_change,
     "hist_mean": f_hist_mean,
     "hist_share": f_hist_share,
+    "newest": f_newest,
 }
 VINTAGE_FUNCS: dict[str, Callable[..., Any]] = {
     "first": v_first,
@@ -726,6 +764,7 @@ VINTAGE_FUNCS: dict[str, Callable[..., Any]] = {
     "rev": v_rev,
     "prev_vintage": v_prev_vintage,
     "parbond": v_parbond,
+    "surprise": v_surprise,
 }
 # Functions that read fixed series in addition to the {KEY} references in a formula.
 IMPLICIT_SERIES: dict[str, tuple[str, ...]] = {"parbond": tuple(PAR_KEYS.values())}

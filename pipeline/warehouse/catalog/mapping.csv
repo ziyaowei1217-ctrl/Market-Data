@@ -424,17 +424,17 @@ indicator_id,method,phase,formula,coverage_note
 34-001,api,P1,{FRED:JTSJOL},
 34-002,api,P1,{FRED:JTSJOR},
 34-003,api,P1,{FRED:JTSQUR},
-36-001,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-002,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-003,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-004,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-005,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-001,api,P1,{ISM:pmi},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-002,api,P1,{ISM:new_orders},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-003,api,P1,{ISM:employment},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-004,api,P1,{ISM:prices},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-005,api,P1,{ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-006,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
 36-007,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
 36-008,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
 36-009,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
 36-010,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-011,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-011,api,P1,{ISM:new_orders} - {ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-012,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
 37-001,api,P1,{FRED:RSAFS},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
 37-002,api,P1,{FRED:RSFSXMV},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
@@ -503,8 +503,8 @@ indicator_id,method,phase,formula,coverage_note
 41-002,api,P1,{ONS:DKO8},ONS 时间序列
 41-003,api,P1,pop({ONS:ECY2}),ONS 月度 GDP 指数计算环比
 41-004,api,P1,{ONS:IHYQ},ONS 时间序列
-42-001,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
-42-002,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
+42-001,api,P1,{JPCPI:headline_yoy},日本总务省统计局 CPI 指数 CSV，同一基期内计算同比（2026 年起为 2025 年基期）
+42-002,api,P1,{JPCPI:ex_fresh_yoy},日本总务省统计局 CPI 指数 CSV，同一基期内计算同比（2026 年起为 2025 年基期）
 42-003,api,P1,pop({FRED:JPNRGDPEXP}),日本实际 GDP（FRED 镜像）季环比
 42-004,api,P1,"ann({FRED:JPNRGDPEXP}, 1)",季环比折年
 43-001,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
@@ -631,25 +631,25 @@ indicator_id,method,phase,formula,coverage_note
 51-012,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
 51-013,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"") - ret({FRED:SP500}, ""W"")",MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）
 51-014,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-52-001,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-001,api,P1,{FFCAL:USD|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-003,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-003,api,P1,{FFCAL:USD|Core CPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-004,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-005,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-005,api,P1,{FFCAL:USD|Core PCE Price Index m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-006,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-007,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-007,api,P1,{FFCAL:USD|Non-Farm Employment Change|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-008,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-009,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-009,api,P1,{FFCAL:USD|Retail Sales m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-010,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-011,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-011,api,P1,"newest({FFCAL:USD|Advance GDP q/q|forecast}, {FFCAL:USD|Prelim GDP q/q|forecast}, {FFCAL:USD|Final GDP q/q|forecast})",Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）；取最近一次（初值/修正/终值）
 52-012,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-013,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-013,api,P1,{FFCAL:EUR|CPI Flash Estimate y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-014,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-015,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-015,api,P1,{FFCAL:GBP|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-016,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-017,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-017,api,P1,{FFCAL:JPY|National Core CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-018,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
-52-019,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-019,api,P1,{FFCAL:CNY|GDP q/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-020,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
 53-001,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
 53-002,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
@@ -659,15 +659,15 @@ indicator_id,method,phase,formula,coverage_note
 53-006,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
 53-007,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
 53-008,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
-54-001,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-002,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-003,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-004,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-005,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-006,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-007,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-008,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
-54-009,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-001,api,P1,"surprise(yoy({BLS:CUUR0000SA0}), {FFCAL:USD|CPI y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-002,api,P1,"surprise(pop({BLS:CUSR0000SA0L1E}), {FFCAL:USD|Core CPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-003,api,P1,"surprise(pop({FRED:PCEPILFE}), {FFCAL:USD|Core PCE Price Index m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-004,api,P1,"surprise(diff({FRED:PAYEMS}), {FFCAL:USD|Non-Farm Employment Change|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-005,api,P1,"surprise(pop({FRED:RSAFS}), {FFCAL:USD|Retail Sales m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-006,api,P1,"surprise({FRED:A191RL1Q225SBEA}, {FFCAL:USD|Advance GDP q/q|forecast}, {FFCAL:USD|Prelim GDP q/q|forecast}, {FFCAL:USD|Final GDP q/q|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-007,api,P1,"surprise({EUROSTAT:prc_hicp_minr:EA:TOTAL}, {FFCAL:EUR|CPI Flash Estimate y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-008,api,P1,"surprise({ONS:D7G7}, {FFCAL:GBP|CPI y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+54-009,api,P1,"surprise({JPCPI:ex_fresh_yoy}, {FFCAL:JPY|National Core CPI y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 54-010,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
 55-001,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
 55-002,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
@@ -718,12 +718,12 @@ indicator_id,method,phase,formula,coverage_note
 62-008,api,P1,"ann({FRED:ULCNFB}, 1)",季环比折年（BLS 口径）
 63-001,pending,P2,,BoE DMP 月度 Excel，待写解析
 63-002,pending,P2,,BoE DMP 月度 Excel，待写解析
-63-003,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
-63-004,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
-63-005,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
-63-006,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
-63-007,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
-63-008,pending,P2,,纽约联储 SCE 数据 Excel，待写解析
+63-003,api,P1,{SCE:Median one-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）
+63-004,api,P1,{SCE:75th Percentile one-year ahead expected inflation rate - 25th Percentile one-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）；75 分位减 25 分位
+63-005,api,P1,{SCE:Median three-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）
+63-006,api,P1,{SCE:75th Percentile three-year ahead expected inflation rate - 25th Percentile three-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）；75 分位减 25 分位
+63-007,api,P1,{SCE:Median five-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）
+63-008,api,P1,{SCE:75th Percentile five-year ahead expected inflation rate - 25th Percentile five-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）；75 分位减 25 分位
 64-001,pending,P2,,OIS 曲线需授权
 64-002,pending,P2,,OIS 曲线需授权
 64-003,pending,P2,,OIS 曲线需授权
@@ -1560,23 +1560,23 @@ indicator_id,method,phase,formula,coverage_note
 101-024,api,P1,{BIS:WS_CBPOL/D.TR},国际清算银行央行政策利率库（各央行官方利率汇总，滞后约 3 个工作日）
 101-025,api,P1,{BCB:432},巴西央行 SGS 432
 101-026,api,P1,{BOC:V39079},加拿大央行 Valet API
-102-001,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-001,api,P1,{FFCAL:USD|PPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-002,api,P1,prior(pop({BLS:WPSFD4})),本次发布所列前值（本库逐次留存版本）
-102-003,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-003,api,P1,"surprise(pop({BLS:WPSFD4}), {FFCAL:USD|PPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-004,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-005,api,P1,prior(yoy({BLS:WPUFD4})),本次发布所列前值（本库逐次留存版本）
 102-006,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-007,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-007,api,P1,{FFCAL:USD|Core PPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-008,api,P1,prior(pop({BLS:WPSFD49104})),本次发布所列前值（本库逐次留存版本）
-102-009,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-009,api,P1,"surprise(pop({BLS:WPSFD49104}), {FFCAL:USD|Core PPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-010,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-011,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-012,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-013,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-014,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-015,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-016,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-017,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-016,api,P1,{FFCAL:CNY|Trade Balance|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
+102-017,api,P1,{FFCAL:CNY|Trade Balance|previous},Forex Factory 日历所列前值（第三方）
 102-018,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-019,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-020,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
@@ -1584,9 +1584,9 @@ indicator_id,method,phase,formula,coverage_note
 102-022,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-023,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-024,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-025,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-025,api,P1,{FFCAL:GBP|GDP m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-026,api,P1,prior(pop({ONS:ECY2})),本次发布所列前值（本库逐次留存版本）
-102-027,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-027,api,P1,"surprise(pop({ONS:ECY2}), {FFCAL:GBP|GDP m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-028,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-029,api,P1,"prior((msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100)",本次发布所列前值（本库逐次留存版本）
 102-030,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
@@ -1602,18 +1602,18 @@ indicator_id,method,phase,formula,coverage_note
 102-040,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-041,api,P1,prior(yoy({STATCAN:41690973})),本次发布所列前值（本库逐次留存版本）
 102-042,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-043,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-043,api,P1,{FFCAL:CAD|GDP m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-044,api,P1,prior(pop({STATCAN:65201210})),本次发布所列前值（本库逐次留存版本）
-102-045,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-046,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-045,api,P1,"surprise(pop({STATCAN:65201210}), {FFCAL:CAD|GDP m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+102-046,api,P1,{FFCAL:CAD|Employment Change|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-047,api,P1,prior(diff({STATCAN:2062811})),本次发布所列前值（本库逐次留存版本）
-102-048,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-049,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-048,api,P1,"surprise(diff({STATCAN:2062811}), {FFCAL:CAD|Employment Change|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+102-049,api,P1,{FFCAL:CAD|Unemployment Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-050,api,P1,prior({STATCAN:2062815}),本次发布所列前值（本库逐次留存版本）
-102-051,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-052,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-051,api,P1,"surprise({STATCAN:2062815}, {FFCAL:CAD|Unemployment Rate|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+102-052,api,P1,{FFCAL:CAD|Retail Sales m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-053,api,P1,prior(pop({STATCAN:1446859483})),本次发布所列前值（本库逐次留存版本）
-102-054,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-054,api,P1,"surprise(pop({STATCAN:1446859483}), {FFCAL:CAD|Retail Sales m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-055,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-056,api,P1,before_change({BIS:WS_CBPOL/D.CL}),上一次调整前的政策利率（BIS）
 102-057,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
@@ -1623,33 +1623,33 @@ indicator_id,method,phase,formula,coverage_note
 102-061,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
 102-062,api,P1,before_change({BCB:432}),上一次调整前的目标利率
 102-063,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-064,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-064,api,P1,{FFCAL:CAD|Overnight Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-065,api,P1,before_change({BOC:V39079}),上一次调整前的目标利率
 102-066,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-067,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-068,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+102-067,api,P1,{FFCAL:CNY|Industrial Production y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
+102-068,api,P1,{FFCAL:CNY|Industrial Production y/y|previous},Forex Factory 日历所列前值（第三方）
 102-069,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-070,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-071,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+102-070,api,P1,{FFCAL:CNY|Retail Sales y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
+102-071,api,P1,{FFCAL:CNY|Retail Sales y/y|previous},Forex Factory 日历所列前值（第三方）
 102-072,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-074,api,P1,prior(pop({FRED:RSAFS})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
 102-077,api,P1,prior({ONS:D7G7}),本次发布所列前值（本库逐次留存版本）
 102-079,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
-102-080,pending,P2,,日本 CPI 需 e-Stat API（需注册 appId），待接入
+102-080,api,P1,prior({JPCPI:headline_yoy}),本次发布所列前值（本库逐次留存版本）
 102-081,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-082,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-082,api,P1,{FFCAL:USD|Industrial Production m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-083,api,P1,prior(pop({FRED:INDPRO})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
-102-084,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-085,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-084,api,P1,"surprise(pop({FRED:INDPRO}), {FFCAL:USD|Industrial Production m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
+102-085,api,P1,{FFCAL:USD|Federal Funds Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-086,api,P1,before_change({FRED:DFEDTARU}),上一次调整前的目标上限
 102-087,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-088,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-088,api,P1,{FFCAL:GBP|Official Bank Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-089,api,P1,before_change({BOE:IUDBEDR}),上一次调整前的 Bank Rate
 102-090,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-091,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-091,api,P1,{FFCAL:JPY|BOJ Policy Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-092,api,P1,before_change({BIS:WS_CBPOL/D.JP}),上一次调整前的政策利率（BIS）
 102-093,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-094,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-094,api,P1,{FFCAL:EUR|Main Refinancing Rate|forecast} - 0.15,Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）；DFR 预期 = MRO 预期 − 0.15（2024-09 起固定利差，推算）
 102-095,api,P1,before_change({FRED:ECBDFR}),上一次调整前的存款便利利率
 102-096,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 103-001,excluded,excluded,,按需求排除机构预测
@@ -1816,8 +1816,8 @@ indicator_id,method,phase,formula,coverage_note
 106-015,api,P1,({FRED:BOGZ1LM513061105Q} + {FRED:BOGZ1LM543061105Q}) / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
 106-016,api,P1,({FRED:BOGZ1LM513061105Q} + {FRED:BOGZ1LM543061105Q}) / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
 106-017,api,P1,{FRED:BOGZ1LM713061103Q} / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105
-106-018,pending,P2,,TIC 文本表，待写解析
-106-020,pending,P2,,TIC 文本表，待写解析
+106-018,api,P1,{TIC:Of Which: Foreign Official},美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）
+106-020,api,P1,{TIC:Grand Total} - {TIC:Of Which: Foreign Official},美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）；外国私人 = 合计 − 官方
 106-023,api,P1,({FRED:BOGZ1FL893061105Q} - {FRED:BOGZ1LM713061103Q} - {FRED:BOGZ1LM263061105Q} - {FRED:BOGZ1LM213061103Q} - {FRED:BOGZ1LM343061105Q} - {FRED:BOGZ1LM403061105Q}) / {FRED:BOGZ1FL893061105Q} * 100,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；残差法
 107-001,pending,P2,,Preqin/MSCI 需授权
 107-002,pending,P2,,Preqin/MSCI 需授权

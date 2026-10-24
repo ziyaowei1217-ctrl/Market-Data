@@ -16,14 +16,14 @@ from .catalog.build_catalog import load_catalog
 from .catalog.mapping import load_mapping, load_series
 from .db.store import Observation, Store
 from .engine.weekly import compute, last_completed_friday, week_cutoffs
-from .providers import breadth, factset, official  # noqa: F401  (registers providers)
+from .providers import breadth, factset, files, official  # noqa: F401  (registers providers)
 from .providers.base import REGISTRY, FetchResult, SeriesDef
 
 # A value older than this (by the fastest-moving input's frequency) is reported as
 # status "stale" instead of "ok": e.g. a daily series that stopped updating.
 MAX_AGE_DAYS = {"D": 14, "W": 28, "M": 95, "Q": 200, "A": 760, "E": 120}
 
-INTENTIONALLY_DATED = ("snap(", "at_year(", "year_ret(", "before_change(", "prior(", "rev(", "first(", "prev_vintage(")
+INTENTIONALLY_DATED = ("snap(", "at_year(", "year_ret(", "before_change(", "prior(", "rev(", "first(", "prev_vintage(", "surprise(")
 
 OBS_START = date(2020, 10, 1)      # 5 years of weekly history plus a one-year look-back
 WEEKLY_START = date(2021, 10, 1)
@@ -110,6 +110,9 @@ def fetch(
                 log(f"  {d.key}: no provider {provider_name}")
             continue
         provider = cls(session=session, env=env)
+        if getattr(cls, "supports_backfill", False) and store is not None:
+            if any(not store.latest_values(d.key)[1] for d in items):
+                provider.env["BACKFILL"] = "1"  # first load: provider walks back to `start`
         results = provider.fetch(items, start)
         by_key = {d.key: d for d in items}
         for result in results:
