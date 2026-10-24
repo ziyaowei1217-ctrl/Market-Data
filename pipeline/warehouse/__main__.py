@@ -20,7 +20,8 @@ from datetime import date, timedelta
 
 from .db.store import open_store
 from .engine.weekly import ENGINE_VERSION
-from .runner import OBS_START, WEEKLY_START, derive, fetch, indicators_using, series_defs, sync_catalog
+from .runner import (OBS_START, WEEKLY_START, apply_series_resets, derive, fetch, indicators_using, series_defs,
+                     sync_catalog)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"report pages stored: {archive_all(store)}")
         elif args.command == "weekly":
             _, _, changed = sync_catalog(store)
+            apply_series_resets(store)
             defs = series_defs(args.provider, args.series, runner=args.runner)
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)

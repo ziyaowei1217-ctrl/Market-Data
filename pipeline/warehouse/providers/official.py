@@ -865,7 +865,9 @@ class Bundesbank(Provider):
         body = self.get(self.URL.format(code=d.code), {"format": "csv", "startPeriod": start.isoformat()},
                         headers={"Accept": "text/csv, application/vnd.sdmx.data+csv, */*"})
         pairs = _sdmx_csv_pairs(body.decode("utf-8-sig", errors="replace"))
-        return obs_from_pairs(((_period_to_date(p) or p, v) for p, v in pairs), start)
+        # Bundesbank CSV uses a decimal comma ("3,33"); never treat it as a thousands separator.
+        return obs_from_pairs(((_period_to_date(p) or p, v.replace(".", "").replace(",", ".") if "," in v else v)
+                               for p, v in pairs), start)
 
 
 @register

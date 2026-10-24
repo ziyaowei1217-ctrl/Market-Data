@@ -60,6 +60,30 @@ def series_defs(only_provider: str | None = None, only_keys: Sequence[str] | Non
     return defs
 
 
+# One-off reloads after a parser fix: stored history for these series was wrong, so it is
+# dropped once (tracked in warehouse_meta) and refetched as a first load.
+SERIES_RESETS: dict[str, tuple[str, ...]] = {
+    "2026-10-24-bbk-decimal-comma": (
+        "BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A",
+        "BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A",
+    ),
+}
+
+
+def apply_series_resets(store: Store) -> list[str]:
+    done = set(filter(None, (store.get_meta("series_resets") or "").split(",")))
+    cleared = []
+    for token, keys in SERIES_RESETS.items():
+        if token in done:
+            continue
+        n = store.clear_observations(keys)
+        print(f"reset {token}: removed {n} observations")
+        cleared.extend(keys)
+        done.add(token)
+        store.set_meta("series_resets", ",".join(sorted(done)))
+    return cleared
+
+
 def sync_catalog(store: Store) -> tuple[int, int, set[str]]:
     """Upsert catalog and registry. Returns counts and the indicator ids whose
     formula is new or changed (their history must be recomputed)."""

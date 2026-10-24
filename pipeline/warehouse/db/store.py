@@ -99,6 +99,7 @@ class Store:
     def prune_series(self, keep: Sequence[str]) -> int: ...
     def get_meta(self, key: str) -> str | None: ...
     def earliest_obs(self, series_key: str) -> date | None: ...
+    def clear_observations(self, keys: Sequence[str]) -> int: ...
     def set_meta(self, key: str, value: str) -> None: ...
     def close(self) -> None: ...
 
@@ -265,6 +266,13 @@ class SQLiteStore(Store):
     def earliest_obs(self, series_key):
         row = self.conn.execute("select min(obs_date) from observations where series_key=?", (series_key,)).fetchone()
         return date.fromisoformat(row[0]) if row and row[0] else None
+
+    def clear_observations(self, keys):
+        n = 0
+        for key in keys:
+            n += self.conn.execute("delete from observations where series_key=?", (key,)).rowcount
+        self.conn.commit()
+        return n
 
     def set_meta(self, key, value):
         self.conn.execute("insert or replace into warehouse_meta values (?,?,?)", (key, value, datetime.now(timezone.utc).isoformat()))
@@ -438,6 +446,13 @@ class PostgresStore(Store):
             cur.execute("select min(obs_date) from public.observations where series_key=%s", (series_key,))
             row = cur.fetchone()
         return row[0] if row else None
+
+    def clear_observations(self, keys):
+        with self.conn.cursor() as cur:
+            cur.execute("delete from public.observations where series_key = any(%s)", (list(keys),))
+            n = cur.rowcount
+        self.conn.commit()
+        return n
 
     def set_meta(self, key, value):
         with self.conn.cursor() as cur:

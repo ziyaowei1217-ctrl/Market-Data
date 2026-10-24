@@ -319,3 +319,28 @@ class SurpriseTests(unittest.TestCase):
                       pd.Timestamp("2026-10-23"), pd.Timestamp("2026-10-25"))
         result = evaluate("surprise({A:X}, {C:Y})", ctx)
         self.assertAlmostEqual(result.value, 0.2)
+
+
+class BundesbankTests(unittest.TestCase):
+    def test_decimal_comma(self):
+        csv = "Date;BBSSY.D.REN.EUR.A630.000000WT1010.A;Flags\n2026-10-22;3,31;\n2026-10-23;3,33;\n"
+        session = FakeSession({"api.statistiken.bundesbank.de": csv})
+        [res] = official.Bundesbank(session, env={}).fetch([sd("BBK", "BBSSY/D.REN.EUR.A630.000000WT1010.A")], date(2026, 1, 1))
+        self.assertEqual(res.observations[-1], Observation(date(2026, 10, 23), 3.33))
+
+
+class SeriesResetTests(unittest.TestCase):
+    def test_reset_runs_once(self):
+        from unittest import mock
+
+        store = SQLiteStore()
+        store.init_schema()
+        key = "BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A"
+        store.write_observations(key, [Observation(date(2026, 10, 23), 333.0)], release_lag_days=1)
+        with mock.patch.object(runner, "SERIES_RESETS", {"t1": (key,)}):
+            self.assertEqual(runner.apply_series_resets(store), [key])
+            self.assertEqual(store.latest_values(key)[1], False)
+            store.write_observations(key, [Observation(date(2026, 10, 23), 3.33)], release_lag_days=1)
+            self.assertEqual(runner.apply_series_resets(store), [])
+        self.assertEqual(store.latest_values(key)[1], True)
+        store.close()
