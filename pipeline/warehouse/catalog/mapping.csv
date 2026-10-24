@@ -397,7 +397,7 @@ indicator_id,method,phase,formula,coverage_note
 30-008,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
 30-009,api,P1,pop({FRED:DSERRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
 30-010,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
-30-011,api,P1,pop({FRED:DHSGRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
+30-011,api,P1,pop({BEA:NIUnderlyingDetail:U20404:DHSGRG}),BEA 个人收入与支出（FRED 镜像）
 30-012,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
 30-013,api,P1,pop({FRED:IA001260M}),BEA 个人收入与支出（FRED 镜像）
 30-014,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
@@ -797,7 +797,7 @@ indicator_id,method,phase,formula,coverage_note
 68-007,api,P1,-1 * fytd({FRED:MTSDS133FMS}),财年累计，赤字记为正数
 68-008,api,P1,fytd({TSY:mts9:net_interest}),财年累计
 68-009,api,P1,fytd({TSY:mts9:net_interest}) / fytd({FRED:MTSR133FMS}) * 100,财年累计净利息/财年累计收入
-68-010,api,P1,{FRED:FYGFGDQ188S},
+68-010,api,P1,{FRED:FYGFGDQ188S},FRED 季度，发布滞后约半年
 69-001,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
 69-002,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
 69-003,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做

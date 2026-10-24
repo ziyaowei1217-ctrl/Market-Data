@@ -381,7 +381,8 @@ def build() -> None:
     core = fred("PCEPILFE", "Core PCE price index", "M", "指数点", lag=60)
     goods = fred("DGDSRG3M086SBEA", "PCE goods price index", "M", "指数点", lag=60)
     serv = fred("DSERRG3M086SBEA", "PCE services price index", "M", "指数点", lag=60)
-    housing = fred("DHSGRG3M086SBEA", "PCE housing price index", "M", "指数点", lag=60)
+    housing = series("BEA", "NIUnderlyingDetail:U20404:DHSGRG", "PCE housing price index (monthly)", "M", "指数点", 60,
+                     "https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=underlying")
     supercore = fred("IA001260M", "PCE services ex energy and housing price index", "M", "指数点", lag=60)
     pce_note = "BEA 个人收入与支出（FRED 镜像）"
     api("30-001", pce, pce_note)
@@ -646,7 +647,7 @@ def build() -> None:
     api("68-007", f"-1 * fytd({surplus})", "财年累计，赤字记为正数")
     api("68-008", f"fytd({interest})", "财年累计")
     api("68-009", f"fytd({interest}) / fytd({rcpt}) * 100", "财年累计净利息/财年累计收入")
-    api("68-010", fred("FYGFGDQ188S", "Federal debt held by public % GDP", "Q", "%", lag=90))
+    api("68-010", fred("FYGFGDQ188S", "Federal debt held by public % GDP", "Q", "%", lag=180), "FRED 季度，发布滞后约半年")
     for iid in ids("69", 1, 17):
         other(iid, "pending", "季度再融资与发行到期需解析财政部公告/MSPD，待做")
 

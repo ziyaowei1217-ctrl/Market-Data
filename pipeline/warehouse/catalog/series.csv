@@ -31,6 +31,7 @@ ACM:ACMY09,ACM,ACMY09,ACM 9y fitted yield,D,%,35,https://www.newyorkfed.org/rese
 ACM:ACMY10,ACM,ACMY10,ACM 10y fitted yield,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 BCB:13522,BCB,13522,IPCA 12-month accumulated,M,%,12,https://www3.bcb.gov.br/sgspub/,,False,cloud
 BCB:432,BCB,432,Selic target,D,%,0,https://www3.bcb.gov.br/sgspub/,,False,cloud
+BEA:NIUnderlyingDetail:U20404:DHSGRG,BEA,NIUnderlyingDetail:U20404:DHSGRG,PCE housing price index (monthly),M,指数点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=underlying,,False,cloud
 BLS:CES0500000021,BLS,CES0500000021,"Diffusion index, 1-month, total private",M,,37,https://data.bls.gov/timeseries/CES0500000021,,False,cloud
 BLS:CIS2020000000000Q,BLS,CIS2020000000000Q,ECI wages private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2020000000000Q,,False,cloud
 BLS:CIS2030000000000Q,BLS,CIS2030000000000Q,ECI benefits private 3m % (SA),Q,,30,https://data.bls.gov/timeseries/CIS2030000000000Q,,False,cloud
@@ -181,7 +182,6 @@ FRED:DGS30,FRED,DGS30,US Treasury 30Y CMT yield,D,%,1,https://fred.stlouisfed.or
 FRED:DGS3MO,FRED,DGS3MO,US Treasury 3M CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS3MO,,False,cloud
 FRED:DGS5,FRED,DGS5,US Treasury 5Y CMT yield,D,%,1,https://fred.stlouisfed.org/series/DGS5,,False,cloud
 FRED:DHHNGSP,FRED,DHHNGSP,Henry Hub natural gas spot,D,美元/MMBtu,7,https://fred.stlouisfed.org/series/DHHNGSP,,False,cloud
-FRED:DHSGRG3M086SBEA,FRED,DHSGRG3M086SBEA,PCE housing price index,M,指数点,60,https://fred.stlouisfed.org/series/DHSGRG3M086SBEA,,False,cloud
 FRED:DJIA,FRED,DJIA,Dow Jones Industrial Average,D,点,1,https://fred.stlouisfed.org/series/DJIA,,False,cloud
 FRED:DPCERY2Q224SBEA,FRED,DPCERY2Q224SBEA,DPCERY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/DPCERY2Q224SBEA,,False,cloud
 FRED:DPSACBW027SBOG,FRED,DPSACBW027SBOG,"Deposits, all commercial banks",W,十亿美元,9,https://fred.stlouisfed.org/series/DPSACBW027SBOG,,False,cloud
@@ -199,7 +199,7 @@ FRED:DTWEXBGS,FRED,DTWEXBGS,Nominal broad USD index,D,指数点,1,https://fred.s
 FRED:ECBDFR,FRED,ECBDFR,ECB deposit facility rate,D,%,0,https://fred.stlouisfed.org/series/ECBDFR,,False,cloud
 FRED:EMRATIO,FRED,EMRATIO,Employment-population ratio,M,%,37,https://fred.stlouisfed.org/series/EMRATIO,,False,cloud
 FRED:FEDTARMD,FRED,FEDTARMD,FOMC SEP fed funds median,A,%,0,https://fred.stlouisfed.org/series/FEDTARMD,,False,cloud
-FRED:FYGFGDQ188S,FRED,FYGFGDQ188S,Federal debt held by public % GDP,Q,%,90,https://fred.stlouisfed.org/series/FYGFGDQ188S,,False,cloud
+FRED:FYGFGDQ188S,FRED,FYGFGDQ188S,Federal debt held by public % GDP,Q,%,180,https://fred.stlouisfed.org/series/FYGFGDQ188S,,False,cloud
 FRED:GDI,FRED,GDI,Gross domestic income,Q,十亿美元,150,https://fred.stlouisfed.org/series/GDI,,False,cloud
 FRED:GDP,FRED,GDP,Nominal GDP,Q,十亿美元,120,https://fred.stlouisfed.org/series/GDP,,False,cloud
 FRED:GDPNOW,FRED,GDPNOW,Atlanta Fed GDPNow,Q,%,0,https://fred.stlouisfed.org/series/GDPNOW,,True,cloud

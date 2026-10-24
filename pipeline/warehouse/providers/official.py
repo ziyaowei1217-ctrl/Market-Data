@@ -317,6 +317,54 @@ def _post_json(provider: Provider, url: str, body: dict, attempts: int = 4) -> A
     raise ProviderError("POST failed")
 
 
+# --------------------------------------------------------------------------- BEA
+
+
+@register
+class Bea(Provider):
+    """BEA API (BEA_API_KEY). code = "<dataset>:<table>:<SeriesCode>", e.g.
+    "NIUnderlyingDetail:U20404:DHSGRG" (monthly PCE housing price index).
+    Series codes are BEA's stable identifiers (FRED ids are built from them)."""
+
+    name = "BEA"
+    env_keys = ("BEA_API_KEY",)
+    batch = True
+    URL = "https://apps.bea.gov/api/data"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        groups: dict[tuple[str, str, str], list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            dataset, table, _ = d.code.split(":")
+            groups[(dataset, table, d.frequency or "M")].append(d)
+        out = []
+        years = ",".join(str(y) for y in range(start.year, _today().year + 1))
+        for (dataset, table, freq), items in groups.items():
+            payload = self.get_json(self.URL, {
+                "UserID": self.env["BEA_API_KEY"], "method": "GetData", "DataSetName": dataset,
+                "TableName": table, "Frequency": freq, "Year": years, "ResultFormat": "JSON",
+            })
+            results = payload.get("BEAAPI", {}).get("Results", {})
+            if isinstance(results, list):
+                results = results[0] if results else {}
+            if "Error" in results or "Error" in payload.get("BEAAPI", {}):
+                err = results.get("Error") or payload["BEAAPI"]["Error"]
+                raise ProviderError(f"BEA: {str(err)[:200]}")
+            rows = results.get("Data", [])
+            for d in items:
+                code = d.code.split(":")[2]
+                obs = []
+                for r in rows:
+                    if r.get("SeriesCode") != code:
+                        continue
+                    obs_date = _period_to_date(str(r.get("TimePeriod", "")))
+                    value = to_float(r.get("DataValue"))
+                    if obs_date and value is not None and obs_date >= start:
+                        obs.append(Observation(obs_date, value))
+                obs = sorted({o.obs_date: o for o in obs}.values(), key=lambda o: o.obs_date)
+                out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else f"SeriesCode {code} not in {table}"))
+        return out
+
+
 # --------------------------------------------------------------------------- EIA
 
 
