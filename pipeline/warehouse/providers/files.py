@@ -234,20 +234,27 @@ def parse_mhlw_real_wages(sheet: pd.DataFrame) -> dict[date, float]:
 
     out: dict[date, float] = {}
     year = None
+    prev_month = None
     for _, row in sheet.iterrows():
         cells = [unicodedata.normalize("NFKC", str(c)).strip() for c in row.tolist()]
         label = cells[0] or (cells[1] if len(cells) > 1 else "")
         era = re.match(r"(?:(\d{4})|令和\s*(\d+|元))\s*年\s*(?:(\d{1,2})\s*月)?", label)
         if label.startswith("注") or (out and era and not era.group(3)):
             break  # the next block (other establishment sizes / worker types) starts with annual rows again
+        short = re.match(r"(\d{1,2})\s*年\s*(\d{1,2})\s*月", label)  # "７年１月": Reiwa year without the era name
         if era and era.group(3):  # "2025年７月" or (older workbooks) "令和6年8月"
             year = int(era.group(1)) if era.group(1) else 2018 + (1 if era.group(2) == "元" else int(era.group(2)))
             month = int(era.group(3))
+        elif short:
+            year, month = 2018 + int(short.group(1)), int(short.group(2))
         else:
             m = re.match(r"(\d{1,2})\s*月", label)
             if not (m and year):
                 continue
             month = int(m.group(1))
+            if prev_month and month <= prev_month:
+                year += 1  # an unlabelled January (or skipped rows): months only move forward within a block
+        prev_month = month
         value = to_float(cells[4]) if len(cells) > 4 else None
         if value is not None:
             out[date(year, month, 1)] = value

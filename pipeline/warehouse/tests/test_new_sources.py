@@ -194,6 +194,15 @@ class MhlwRealWageTests(unittest.TestCase):
         self.assertEqual(parse_mhlw_real_wages(frame(sheet)), {date(2024, 8, 1): -0.8, date(2024, 9, 1): -0.4,
                                                                date(2025, 1, 1): -1.8, date(2025, 8, 1): -1.4})
 
+    def test_short_era_january_and_year_rollover(self):
+        from pipeline.warehouse.providers.files import parse_mhlw_real_wages
+
+        sheet = (",,,前年比,実質前年比\n令和６年11月,,96.9,3.9,0.5\n12月,,193.9,4.4,0.3\n７年１月,,90.0,2.0,-1.8\n"
+                 "２月,,90.7,2.7,-1.5\n12月,,100,1,0.9\n２月,,90,1,0.7\n")  # second January unlabelled: still a new year
+        self.assertEqual(parse_mhlw_real_wages(frame(sheet)),
+                         {date(2024, 11, 1): 0.5, date(2024, 12, 1): 0.3, date(2025, 1, 1): -1.8, date(2025, 2, 1): -1.5,
+                          date(2025, 12, 1): 0.9, date(2026, 2, 1): 0.7})
+
     def test_urls_use_reiwa_year_folders(self):
         from pipeline.warehouse.providers.files import mhlw_url
 
