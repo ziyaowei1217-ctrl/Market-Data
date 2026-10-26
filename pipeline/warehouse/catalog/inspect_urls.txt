@@ -1,3 +1,4 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field" | GREP "regex"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
 # A name ending in _botua sends the project's declared user agent instead of a browser one.
+dmp_oct_headers  https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-october-2026.xlsx GREP "^\[sheet (Price|Wage)|average|single|^,*(Realised|Expected)|^Survey"
