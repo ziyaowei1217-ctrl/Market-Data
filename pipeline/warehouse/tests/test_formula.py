@@ -78,6 +78,18 @@ class WindowTests(unittest.TestCase):
         result = evaluate('vol({T:PX}, "52W")', ctx(self.raw, "2026-10-23"))
         self.assertLess(result.value, 0.01)
 
+    def test_correlation_of_mirrored_returns(self):
+        days = pd.date_range("2026-01-02", "2026-10-23", freq="W-FRI")
+        up = [100.0]
+        for i in range(1, len(days)):
+            up.append(up[-1] * (1.01 if i % 2 else 0.99))
+        down = [100.0]
+        for i in range(1, len(days)):
+            down.append(down[-1] * (0.99 if i % 2 else 1.01))
+        raw = {"T:A": frame(days, up), "T:B": frame(days, down)}
+        result = evaluate('corr({T:A}, {T:B}, "13W")', ctx(raw, "2026-10-23"))
+        self.assertAlmostEqual(result.value, -1.0, places=6)
+
     def test_drawdown(self):
         raw = {"T:P": frame(["2026-01-02", "2026-01-09", "2026-01-16"], [100.0, 120.0, 90.0])}
         result = evaluate("drawdown({T:P})", ctx(raw, "2026-01-16"))

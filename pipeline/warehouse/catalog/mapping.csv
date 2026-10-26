@@ -615,22 +615,22 @@ indicator_id,method,phase,formula,coverage_note
 48-007,api,P1,{CBOE:VIX9D} - {CBOE:VIX},同日差值
 49-001,api,P1,{YAHOO:^MOVE},MOVE 免费延迟行情（Yahoo），完整授权历史需 ICE
 49-002,api,P1,"chg({YAHOO:^MOVE}, ""W"")",Yahoo 免费行情
-50-001,pending,P2,,需美国国债总回报指数（授权），待定替代口径
-50-002,pending,P2,,需美国国债总回报指数（授权），待定替代口径
+50-001,proxy,P1,"corr({FRED:SP500}, {YAHOO:GOVT:TR}, ""13W"")",代理：S&P 500 价格周回报与 iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
+50-002,proxy,P1,"corr({FRED:SP500}, {YAHOO:GOVT:TR}, ""52W"")",代理：S&P 500 价格周回报与 iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
 51-001,api,P1,"vol({FRED:SP500}, ""52W"")",周五采样周收益标准差×√52（价格指数）
 51-002,api,P1,drawdown({FRED:SP500}),相对本库已存历史最高点（FRED 历史约 10 年）
 51-003,api,P1,"maxdd({FRED:SP500}, ""YTD"")",年内最大回撤（日频路径）
 51-004,api,P1,"vol({MSCI:990100:NETR:USD}, ""52W"")",MSCI World 净总回报（官网日收盘）；周五采样周收益标准差×√52
 51-005,api,P1,drawdown({MSCI:990100:NETR:USD}),MSCI World 净总回报（官网日收盘）；相对本库已存历史高点（2020-10 起）
 51-006,api,P1,"maxdd({MSCI:990100:NETR:USD}, ""YTD"")",MSCI World 净总回报（官网日收盘）
-51-007,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-008,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-009,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-010,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-011,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
-51-012,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-007,proxy,P1,"vol({YAHOO:GOVT:TR}, ""52W"")",代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
+51-008,proxy,P1,drawdown({YAHOO:GOVT:TR}),代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）；相对本库已存历史高点（2020-10 起）
+51-009,proxy,P1,"maxdd({YAHOO:GOVT:TR}, ""YTD"")",代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
+51-010,api,P1,"vol({LBMA:gold_pm}, ""52W"")",LBMA 官方金价 PM（USD）；周五采样周收益标准差×√52
+51-011,api,P1,drawdown({LBMA:gold_pm}),LBMA 官方金价 PM（USD）；相对本库已存历史高点（2020-10 起）
+51-012,api,P1,"maxdd({LBMA:gold_pm}, ""YTD"")",LBMA 官方金价 PM（USD）
 51-013,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"") - ret({FRED:SP500}, ""W"")",MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）
-51-014,pending,P2,,MSCI World/国债总回报/LBMA 黄金需授权数据
+51-014,api,P1,"ret({LBMA:gold_pm}, ""W"") - ret({FRED:SP500}, ""W"")",LBMA 金价周回报减 S&P 500 价格周回报
 52-001,api,P1,{FFCAL:USD|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
 52-003,api,P1,{FFCAL:USD|Core CPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）

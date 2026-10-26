@@ -1311,6 +1311,21 @@ def build_batch4() -> None:
     table(["98-029", None, "98-031", None], etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
           "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
 
+    # ---------------------------------------------------------- risk metrics (module 50/51)
+    sp = fred("SP500", "S&P 500", "D", "点")
+    gnote = "LBMA 官方金价 PM（USD）"
+    api("51-010", f'vol({gold}, "52W")', gnote + "；周五采样周收益标准差×√52")
+    api("51-011", f"drawdown({gold})", gnote + "；相对本库已存历史高点（2020-10 起）")
+    api("51-012", f'maxdd({gold}, "YTD")', gnote)
+    api("51-014", f'ret({gold}, "W") - ret({sp}, "W")', "LBMA 金价周回报减 S&P 500 价格周回报")
+    ust = etf_tr("GOVT", "iShares US Treasury Bond", "ICE US Treasury Core")
+    unote = "iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）"
+    proxy("51-007", f'vol({ust}, "52W")', unote)
+    proxy("51-008", f"drawdown({ust})", unote + "；相对本库已存历史高点（2020-10 起）")
+    proxy("51-009", f'maxdd({ust}, "YTD")', unote)
+    proxy("50-001", f'corr({sp}, {ust}, "13W")', "S&P 500 价格周回报与 " + unote)
+    proxy("50-002", f'corr({sp}, {ust}, "52W")', "S&P 500 价格周回报与 " + unote)
+
 
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"

@@ -429,6 +429,23 @@ def f_vol(ctx: Context, x: TS, window: str = "52W") -> Scalar:
     return Scalar(float(np.std(returns, ddof=1) * math.sqrt(52) * 100.0), last[1], detail=f"{len(returns)} weekly returns")
 
 
+def f_corr(ctx: Context, x: TS, y: TS, window: str = "52W") -> Scalar:
+    """Correlation of weekly (Friday) returns of two series over the window."""
+    fx, fy = _scalar_input(ctx, x, "corr"), _scalar_input(ctx, y, "corr")
+    lx, ly = _last(fx), _last(fy)
+    if lx is None or ly is None:
+        return Scalar.missing("missing_input")
+    start = window_anchor(ctx.obs_cutoff, window)
+    sx = _sample_weekly(fx, start, ctx.obs_cutoff, stale_days=7)
+    sy = _sample_weekly(fy, start, ctx.obs_cutoff, stale_days=7)
+    if len(sx) < 2 or not (np.all(np.isfinite(sx)) and np.all(np.isfinite(sy))):
+        return Scalar.missing("insufficient_history", "gaps in weekly samples")
+    rx, ry = sx[1:] / sx[:-1] - 1.0, sy[1:] / sy[:-1] - 1.0
+    if len(rx) < 8:
+        return Scalar.missing("insufficient_history", f"{len(rx)} weekly returns")
+    return Scalar(float(np.corrcoef(rx, ry)[0, 1]), min(lx[1], ly[1]), detail=f"{len(rx)} weekly returns")
+
+
 def f_drawdown(ctx: Context, x: TS) -> Scalar:
     """Current value relative to the running peak of all stored history, in percent."""
     frame = _scalar_input(ctx, x, "drawdown")
@@ -749,6 +766,7 @@ SCALAR_FUNCS: dict[str, Callable[..., Any]] = {
     "snap": f_snap,
     "pctile": f_pctile,
     "vol": f_vol,
+    "corr": f_corr,
     "drawdown": f_drawdown,
     "maxdd": f_maxdd,
     "at_year": f_at_year,

@@ -13,3 +13,8 @@ nbs_api          https://data.stats.gov.cn/english/easyquery.htm?m=QueryData&dbc
 nbs_list_33      https://www.stats.gov.cn/english/PressRelease/index_33.html
 yahoo_aggg       https://query2.finance.yahoo.com/v8/finance/chart/AGGG.L?range=3mo&interval=1d&events=div
 yahoo_euna       https://query2.finance.yahoo.com/v8/finance/chart/EUNA.DE?range=3mo&interval=1d&events=div
+fd_auctions      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?page%5Bsize%5D=5&sort=-auction_date
+td_auctioned     https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&days=7
+fd_mspd_mkt      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_3_market?page%5Bsize%5D=5&sort=-record_date
+msci_page        https://www.msci.com/indexes/index/984000
+boe_dmp          https://www.bankofengland.co.uk/decision-maker-panel FOLLOWAFTER "Decision Maker Panel data"

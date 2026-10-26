@@ -491,6 +491,7 @@ YAHOO:EMB:TR,YAHOO,EMB,iShares JPM USD EM Bond ETF total return (tracks J.P. Mor
 YAHOO:EMLC:TR,YAHOO,EMLC,VanEck JPM EM Local Currency Bond ETF total return (tracks J.P. Morgan GBI-EM Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMLC,"{""tr"": true}",False,cloud
 YAHOO:EUNA.DE:TR,YAHOO,EUNA.DE,iShares Core EUR Aggregate Bond ETF total return (tracks Bloomberg Euro Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EUNA.DE,"{""tr"": true}",False,cloud
 YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quote/FTSEMIB.MI,,False,cloud
+YAHOO:GOVT:TR,YAHOO,GOVT,iShares US Treasury Bond ETF total return (tracks ICE US Treasury Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GOVT,"{""tr"": true}",False,cloud
 YAHOO:GSG:TR,YAHOO,GSG,iShares S&P GSCI Commodity-Indexed Trust ETF total return (tracks S&P GSCI Total Return),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GSG,"{""tr"": true}",False,cloud
 YAHOO:HG=F,YAHOO,HG=F,COMEX copper front-month futures,D,点,1,https://finance.yahoo.com/quote/HG=F,,False,cloud
 YAHOO:IYR:TR,YAHOO,IYR,iShares US Real Estate ETF total return (tracks Dow Jones U.S. Real Estate Capped),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IYR,"{""tr"": true}",False,cloud
