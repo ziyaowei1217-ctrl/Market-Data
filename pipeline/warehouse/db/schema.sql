@@ -138,7 +138,30 @@ left join (
   from public.weekly_values group by indicator_id
 ) s using (indicator_id);
 
--- Read-only access for anon/authenticated (REST API, classmates, agents).
+-- Who may read: classmates sign in with Supabase Auth (email + password, confirmed email)
+-- and must be on public.readers. Signed-out (anon) requests see nothing. The pipeline writes
+-- through the database connection string and is not affected.
+create table if not exists public.readers (
+  email    text primary key check (email = lower(email)),
+  note     text,
+  added_at timestamptz not null default now()
+);
+alter table public.readers enable row level security;
+revoke all on public.readers from anon, authenticated;
+
+create or replace function public.is_reader() returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1
+    from auth.users u
+    join public.readers r on r.email = lower(u.email)
+    where u.id = auth.uid() and u.email_confirmed_at is not null
+  )
+$$;
+revoke all on function public.is_reader() from public, anon;
+grant execute on function public.is_reader() to authenticated;
+
 alter table public.indicators    enable row level security;
 alter table public.series        enable row level security;
 alter table public.observations  enable row level security;
@@ -149,17 +172,22 @@ do $$
 declare t text;
 begin
   foreach t in array array['indicators','series','observations','weekly_values','fetch_log'] loop
+    execute format('drop policy if exists read_all on public.%I', t);
     if not exists (
-      select 1 from pg_policies where schemaname = 'public' and tablename = t and policyname = 'read_all'
+      select 1 from pg_policies where schemaname = 'public' and tablename = t and policyname = 'readers_only'
     ) then
-      execute format('create policy read_all on public.%I for select to anon, authenticated using (true)', t);
+      execute format('create policy readers_only on public.%I for select to authenticated using ((select public.is_reader()))', t);
     end if;
   end loop;
 end $$;
 
+revoke all on public.indicators, public.series, public.observations,
+              public.weekly_values, public.fetch_log, public.warehouse_meta,
+              public.obs_latest, public.weekly, public.latest_week, public.catalog
+  from anon;
 grant select on public.indicators, public.series, public.observations,
                 public.weekly_values, public.fetch_log,
                 public.obs_latest, public.weekly, public.latest_week, public.catalog
-  to anon, authenticated;
+  to authenticated;
 revoke insert, update, delete, truncate on public.indicators, public.series, public.observations,
-                public.weekly_values, public.fetch_log from anon, authenticated;
+                public.weekly_values, public.fetch_log from authenticated;
