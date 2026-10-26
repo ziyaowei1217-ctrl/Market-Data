@@ -129,7 +129,7 @@ def parse_nbs_listing(html: str, base: str) -> list[tuple[str, date, str]]:
         title = (title_attr.group(1) if title_attr else re.sub(r"<[^>]+>", "", m.group(2))).strip()
         title = re.sub(r"^\d+\.\s*", "", re.sub(r"\s+", " ", title))
         url = urljoin(base, href.group(1))
-        if url in seen:
+        if url in seen or "/PressRelease/" not in url:
             continue
         seen.add(url)
         d = href.group(2)
@@ -303,7 +303,9 @@ def parse_spg_final(kind: str, text: str) -> dict[str, dict[date, float]]:
         for pattern in anchors[k]:
             hit = re.search(pattern, flat)
             if hit:
-                nums = _DECIMAL.findall(flat[hit.end(): hit.end() + 400])
+                window = flat[hit.end(): hit.end() + 400]
+                nums = [m.group(0) for m in _DECIMAL.finditer(window)
+                        if not re.match(r"\s*(?:\S+\s+){0,1}(?:no-change|neutral|threshold|mark|level\b)", window[m.end(): m.end() + 30])]
                 if nums:
                     out[k] = {data_month: float(nums[0])}
                     break
@@ -311,10 +313,17 @@ def parse_spg_final(kind: str, text: str) -> dict[str, dict[date, float]]:
 
 
 def parse_spg_listing(html: str) -> list[tuple[str, str]]:
-    """(title, url) pairs from the PMI releases page."""
+    """(title, url) pairs from the PMI releases page: each release title with the first
+    press-release link that follows it (markup between the two varies)."""
+    import html as _html
+
     out = []
-    for m in re.finditer(r'class="releaseTitle">([^<]+)</span>\s*<span[^>]*>\s*<a href="([^"]+)"', html):
-        out.append((re.sub(r"\s+", " ", m.group(1).replace("&amp;", "&")).strip(), m.group(2)))
+    chunks = re.split(r'class="releaseTitle"[^>]*>', html)
+    for chunk in chunks[1:]:
+        title = _html.unescape(re.sub(r"<[^>]+>", "", chunk.split("</span>", 1)[0]))
+        link = re.search(r'href="([^"]*PressRelease[^"]*)"', chunk)
+        if link:
+            out.append((re.sub(r"\s+", " ", title).strip(), _html.unescape(link.group(1))))
     return out
 
 
@@ -359,6 +368,7 @@ class SpGlobalPmi(Provider):
         out = []
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
-            note = f"{len(obs)} months; {len(problems)} problems" + (f" (e.g. {problems[0][:100]})" if problems else "")
+            note = f"{len(obs)} months from {len(listing)} listed; {len(problems)} problems" + (
+                f": {'; '.join(x[:70] for x in problems[:4])}" if problems else "")
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty", note))
         return out

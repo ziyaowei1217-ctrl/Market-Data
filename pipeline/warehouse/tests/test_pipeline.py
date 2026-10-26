@@ -434,6 +434,8 @@ class NbsTests(unittest.TestCase):
         self.assertEqual(items[0], ("Consumer Price Index in September 2026", date(2026, 10, 15),
                                     "https://www.stats.gov.cn/english/PressRelease/202610/t20261015_1965500.html"))
         self.assertEqual([nbs_kind(t) for t, _, _ in items], ["cpi_yoy", "mfg_pmi"])
+        sidebar = '<a href="https://www.stats.gov.cn/english/nbs/201312/t20131213_480293.html">FAQs</a>'
+        self.assertEqual(parse_nbs_listing(sidebar, "https://www.stats.gov.cn/english/PressRelease/"), [])
 
 
 class TotalReturnTests(unittest.TestCase):
@@ -491,7 +493,7 @@ class SpgPmiTests(unittest.TestCase):
 
         html = ('<span class="releaseDate">October&nbsp;01&nbsp;2026</span>\r\n <span class="releaseTitle">S&amp;P Global US Manufacturing PMI</span>\r\n'
                 ' <span class="greenListItem"><a href="https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4" target="_blank">View More</a></span>'
-                '<span class="releaseTitle">S&P Global Eurozone Manufacturing PMI (Français)</span>\r\n <span class="greenListItem"><a href="https://x/y">')
+                '<span class="releaseTitle">S&P Global Eurozone Manufacturing PMI (Français)</span>\r\n <span class="greenListItem"><a href="https://www.pmi.spglobal.com/Public/Home/PressRelease/ff01">')
         items = parse_spg_listing(html)
         self.assertEqual(items[0], ("S&P Global US Manufacturing PMI", "https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4"))
         self.assertIsNotNone(_SPG_TITLE.match(items[0][0]))
@@ -520,3 +522,12 @@ class TokyoCloseTests(unittest.TestCase):
         self.assertIsNone(tokyo_close_date(utc(2026, 10, 26, 2, 29)))                     # Mon 11:29 JST
         self.assertEqual(tokyo_close_date(utc(2026, 10, 25, 23, 0)), date(2026, 10, 23))   # Mon 08:00 JST
         self.assertEqual(tokyo_close_date(utc(2026, 10, 26, 7, 0)), date(2026, 10, 26))    # Mon 16:00 JST
+
+
+class SpgFinalThresholdTests(unittest.TestCase):
+    def test_skips_no_change_mark(self):
+        from pipeline.warehouse.providers.releases import parse_spg_final
+
+        text = ("Embargoed until 0030 UTC 3 October 2026. The headline S&P Global Japan Services PMI Business Activity Index "
+                "rose above the 50.0 no-change mark to 51.2 in September.")
+        self.assertEqual(parse_spg_final("Services", text)["serv"], {date(2026, 9, 1): 51.2})

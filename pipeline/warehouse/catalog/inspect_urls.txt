@@ -11,3 +11,6 @@ glc_nominal_arch https://www.bankofengland.co.uk/-/media/boe/files/statistics/yi
 ecb_fm_daily     https://data-api.ecb.europa.eu/service/data/FM/D..EUR..BB..YLD?lastNObservations=1&format=csvdata
 ecb_fm_bonds     https://data-api.ecb.europa.eu/service/data/FM/D.IT+FR+DE+GR+ES.EUR..BB..?lastNObservations=1&format=csvdata
 ishares_agg      https://www.ishares.com/us/products/239458/ishares-core-total-us-bond-market-etf RAW "Yield to Worst"
+spg_raw_flash    https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en RAW "Flash US PMI"
+spg_jp_mfg       https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Japan Manufacturing PMI</span>"
+spg_ez_flash     https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Flash Eurozone PMI</span>"

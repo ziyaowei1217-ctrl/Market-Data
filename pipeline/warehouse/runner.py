@@ -71,6 +71,8 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
     "2026-10-26-nbs-walkback": tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
     # an intraday snapshot was stamped as a close
     "2026-10-26-jpx-intraday": ("JPX:TOPIX",),
+    # the 50.0 no-change mark was read as the index; the NBS walk-back stopped at sidebar links
+    "2026-10-26-spg-nbs-parsers": ("SPGPMI:JP:serv",) + tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
 }
 
 
