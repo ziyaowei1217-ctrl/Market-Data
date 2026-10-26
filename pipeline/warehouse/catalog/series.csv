@@ -506,6 +506,7 @@ TSYCURVE:6 Mo,TSYCURVE,6 Mo,Treasury par yield curve 6 Mo,D,%,1,https://home.tre
 TSYCURVE:7 Yr,TSYCURVE,7 Yr,Treasury par yield curve 7 Yr,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
 YAHOO:AGG:TR,YAHOO,AGG,iShares Core US Aggregate Bond ETF total return (tracks Bloomberg US Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGG,"{""tr"": true}",False,cloud
 YAHOO:AGGG.L:TR,YAHOO,AGGG.L,iShares Core Global Aggregate Bond (USD Dist) ETF total return (tracks Bloomberg Global Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGGG.L,"{""tr"": true}",False,cloud
+YAHOO:AMLP:TR,YAHOO,AMLP,Alerian MLP ETF ETF total return (tracks Alerian MLP Infrastructure),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AMLP,"{""tr"": true}",False,cloud
 YAHOO:BTC-USD,YAHOO,BTC-USD,Bitcoin USD,D,点,1,https://finance.yahoo.com/quote/BTC-USD,,False,cloud
 YAHOO:DX-Y.NYB,YAHOO,DX-Y.NYB,ICE US Dollar Index,D,点,1,https://finance.yahoo.com/quote/DX-Y.NYB,,False,cloud
 YAHOO:EMB:TR,YAHOO,EMB,iShares JPM USD EM Bond ETF total return (tracks J.P. Morgan EMBI Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMB,"{""tr"": true}",False,cloud

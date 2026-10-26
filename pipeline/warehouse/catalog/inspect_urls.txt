@@ -8,3 +8,6 @@ mospi_cpi        https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&ser
 bcb_focus_selic  https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoSelic?$top=20&$orderby=Data%20desc&$format=json
 bcb_copom        https://www.bcb.gov.br/api/servico/sitebcb/copomcalendarios
 glc_nominal_arch https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/glcnominalddata.zip
+ecb_fm_daily     https://data-api.ecb.europa.eu/service/data/FM/D..EUR..BB..YLD?lastNObservations=1&format=csvdata
+ecb_fm_bonds     https://data-api.ecb.europa.eu/service/data/FM/D.IT+FR+DE+GR+ES.EUR..BB..?lastNObservations=1&format=csvdata
+ishares_agg      https://www.ishares.com/us/products/239458/ishares-core-total-us-bond-market-etf RAW "Yield to Worst"

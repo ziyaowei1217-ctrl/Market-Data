@@ -1362,6 +1362,34 @@ def build_batch4() -> None:
     proxy("29-015", f"pop({bls('CUSR0000SASL2RS', 'CPI services less rent of shelter SA')})", snote + "；季调环比")
     proxy("29-016", f"yoy({bls('CUUR0000SASL2RS', 'CPI services less rent of shelter NSA')})", snote + "；未季调同比")
 
+    # ---------------------------------------------------------- more return-table stand-ins
+    agg = etf_tr("AGG", "iShares Core US Aggregate Bond", "Bloomberg US Aggregate")
+    gagg = etf_tr("AGGG.L", "iShares Core Global Aggregate Bond (USD Dist)", "Bloomberg Global Aggregate")
+    anote = "iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）"
+    gnote2 = "iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）"
+    proxy("19-001", ret(agg, "W"), anote)
+    proxy("19-002", ret(agg, "YTD"), anote)
+    proxy("19-013", ret(gagg, "W"), gnote2)
+    proxy("19-014", ret(gagg, "YTD"), gnote2)
+    iyr = etf_tr("IYR", "iShares US Real Estate", "Dow Jones U.S. Real Estate Capped")
+    gsg = etf_tr("GSG", "iShares S&P GSCI Commodity-Indexed Trust", "S&P GSCI Total Return")
+    amlp = etf_tr("AMLP", "Alerian MLP ETF", "Alerian MLP Infrastructure")
+    proxy("99-029", ret(iyr, "W"), "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    proxy("99-031", ret(iyr, "QTD"), "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    proxy("99-033", ret(gsg, "W"), "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+    proxy("99-035", ret(gsg, "QTD"), "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+    mnote = "Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）"
+    for iid, w in [("99-037", "W"), ("99-038", "MTD"), ("99-039", "QTD"), ("99-040", "YTD")]:
+        proxy(iid, ret(amlp, w), mnote)
+    # gold: COMEX futures stand in for the LBMA fixes
+    proxy("27-001", gold, gnote + "；LBMA 上午定盘价无免费云端来源")
+    proxy("27-002", gold, gnote)
+    proxy("27-003", ret(gold, "W"), gnote)
+    for iid, w in [("99-101", "ME"), ("99-102", "QE"), ("99-103", "YE")]:
+        proxy(iid, f'snap({gold}, "{w}")', gnote)
+    proxy("28-001", f"{yahoo('HG=F', 'COMEX copper front-month futures')} * 2204.62",
+          "COMEX 铜期货近月（美元/磅 × 2204.62 换算为美元/吨），非 LME 现货")
+
     # ---------------------------------------------------------- risk metrics (module 50/51)
     sp = fred("SP500", "S&P 500", "D", "点")
     proxy("51-010", f'vol({gold}, "52W")', gnote + "；周五采样周收益标准差×√52")

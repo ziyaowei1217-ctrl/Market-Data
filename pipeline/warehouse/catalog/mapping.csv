@@ -292,8 +292,8 @@ indicator_id,method,phase,formula,coverage_note
 18-001,report,P1b,,JPM EMBI 需授权；取周报快照
 18-002,report,P1b,,JPM EMBI 需授权；取周报快照
 18-003,report,P1b,,JPM EMBI 需授权；取周报快照
-19-001,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
-19-002,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-001,proxy,P1,"ret({YAHOO:AGG:TR}, ""W"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
+19-002,proxy,P1,"ret({YAHOO:AGG:TR}, ""YTD"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
 19-003,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-004,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-005,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
@@ -304,8 +304,8 @@ indicator_id,method,phase,formula,coverage_note
 19-010,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-011,api,P1,{FRED:BAMLH0A0HYM2SYTW},ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 19-012,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
-19-013,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
-19-014,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-013,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""W"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
+19-014,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""YTD"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
 19-015,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 19-016,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
 20-001,api,P1,{FRED:DFEDTARL},
@@ -365,10 +365,10 @@ indicator_id,method,phase,formula,coverage_note
 26-010,api,P1,{EIA:PET.WGFUPUS2.W},EIA 周度石油状况报告
 26-011,api,P1,{EIA:PET.WDIUPUS2.W},EIA 周度石油状况报告
 26-012,api,P1,{EIA:PET.WPULEUS3.W},EIA 周度石油状况报告
-27-001,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
-27-002,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
-27-003,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
-28-001,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+27-001,proxy,P1,{YAHOO:GC=F},代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）；LBMA 上午定盘价无免费云端来源
+27-002,proxy,P1,{YAHOO:GC=F},代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+27-003,proxy,P1,"ret({YAHOO:GC=F}, ""W"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+28-001,proxy,P1,{YAHOO:HG=F} * 2204.62,代理：COMEX 铜期货近月（美元/磅 × 2204.62 换算为美元/吨），非 LME 现货
 28-002,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
 28-003,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
 29-001,api,P1,{BLS:CUSR0000SA0},BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
@@ -1330,9 +1330,9 @@ indicator_id,method,phase,formula,coverage_note
 99-098,api,P1,"snap({FRED:DCOILBRENTEU}, ""ME"")",
 99-099,api,P1,"snap({FRED:DCOILBRENTEU}, ""QE"")",
 99-100,api,P1,"snap({FRED:DCOILBRENTEU}, ""YE"")",
-99-101,report,P1b,,LBMA 黄金需授权；取周报快照
-99-102,report,P1b,,LBMA 黄金需授权；取周报快照
-99-103,report,P1b,,LBMA 黄金需授权；取周报快照
+99-101,proxy,P1,"snap({YAHOO:GC=F}, ""ME"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+99-102,proxy,P1,"snap({YAHOO:GC=F}, ""QE"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+99-103,proxy,P1,"snap({YAHOO:GC=F}, ""YE"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
 99-104,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""ME"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
 99-105,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""QE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
 99-106,api,P1,"snap({ECB:EXR/D.USD.EUR.SP00.A}, ""YE"")",ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
@@ -1490,14 +1490,14 @@ indicator_id,method,phase,formula,coverage_note
 99-017,api,P1,{FRED:BAMLHE00EHYIOAS} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-021,api,P1,{FRED:DHHNGSP},EIA Henry Hub 现货（FRED 镜像）
 99-025,api,P1,{ECB:EXR/D.CHF.EUR.SP00.A},ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
-99-029,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-031,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-033,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-035,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-037,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-038,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-039,report,P1b,,指数需授权；取高盛周报另类资产表快照
-99-040,report,P1b,,指数需授权；取高盛周报另类资产表快照
+99-029,proxy,P1,"ret({YAHOO:IYR:TR}, ""W"")",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+99-031,proxy,P1,"ret({YAHOO:IYR:TR}, ""QTD"")",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+99-033,proxy,P1,"ret({YAHOO:GSG:TR}, ""W"")",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+99-035,proxy,P1,"ret({YAHOO:GSG:TR}, ""QTD"")",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+99-037,proxy,P1,"ret({YAHOO:AMLP:TR}, ""W"")",代理：Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）
+99-038,proxy,P1,"ret({YAHOO:AMLP:TR}, ""MTD"")",代理：Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）
+99-039,proxy,P1,"ret({YAHOO:AMLP:TR}, ""QTD"")",代理：Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）
+99-040,proxy,P1,"ret({YAHOO:AMLP:TR}, ""YTD"")",代理：Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）
 99-041,api,P1,"ret({YAHOO:BTC-USD}, ""W"")",Yahoo 免费行情，USD 价格回报
 99-043,api,P1,"ret({YAHOO:BTC-USD}, ""QTD"")",Yahoo 免费行情，USD 价格回报
 99-045,api,P1,"ret({CBOE:VIX}, ""W"")",VIX 指数百分比变化，不是可投资回报
