@@ -153,37 +153,40 @@ def build() -> None:
     for iid in ids("02", 1, 20) + ids("02", 26, 40):
         other(iid, "report", "MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照", "P1b")
 
-    # ---------------------------------------------------------- 03 S&P 500 行业 (Yahoo S&P sector indices)
+    # ---------------------------------------------------------- 03 S&P 500 行业 (sector ETFs, total return)
+    # Yahoo's S&P sector index tickers return only the latest point, and the JPM recap uses
+    # total returns, so the Select Sector SPDR ETFs (dividends reinvested) stand in.
     sp500 = fred("SP500", "S&P 500", "D", "点")
+    spy = etf_tr("SPY", "SPDR S&P 500", "S&P 500")
     sectors = [
-        ("通讯服务", "^SP500-50"), ("能源", "^GSPE"), ("信息技术", "^SP500-45"), ("公用事业", "^SP500-55"),
-        ("金融", "^SP500-40"), ("必需消费", "^SP500-30"), ("房地产", "^SP500-60"), ("工业", "^SP500-20"),
-        ("可选消费", "^SP500-25"), ("医疗保健", "^SP500-35"), ("材料", "^SP500-15"),
+        ("通讯服务", "XLC"), ("能源", "XLE"), ("信息技术", "XLK"), ("公用事业", "XLU"),
+        ("金融", "XLF"), ("必需消费", "XLP"), ("房地产", "XLRE"), ("工业", "XLI"),
+        ("可选消费", "XLY"), ("医疗保健", "XLV"), ("材料", "XLB"),
     ]
-    note = "S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差"
+    note = "Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准"
     for i, (name, ticker) in enumerate(sectors):
-        x = yahoo(ticker, f"S&P 500 {name}行业指数")
+        x = etf_tr(ticker, f"Select Sector SPDR {name}", f"S&P 500 {name} (capped)")
         b = 1 + 4 * i
-        api(f"03-{b:03d}", ret(x, "W"), note)
-        api(f"03-{b + 1:03d}", f"{ret(x, 'W')} - {ret(sp500, 'W')}", note)
-        api(f"03-{b + 2:03d}", ret(x, "YTD"), note)
-        api(f"03-{b + 3:03d}", f"{ret(x, 'YTD')} - {ret(sp500, 'YTD')}", note)
-        api(f"95-{23 + i:03d}", ret(x, "MTD"), note)
+        proxy(f"03-{b:03d}", ret(x, "W"), note)
+        proxy(f"03-{b + 1:03d}", f"{ret(x, 'W')} - {ret(spy, 'W')}", note)
+        proxy(f"03-{b + 2:03d}", ret(x, "YTD"), note)
+        proxy(f"03-{b + 3:03d}", f"{ret(x, 'YTD')} - {ret(spy, 'YTD')}", note)
+        proxy(f"95-{23 + i:03d}", ret(x, "MTD"), note)
 
-    # ---------------------------------------------------------- 04 Russell 风格
+    # ---------------------------------------------------------- 04 Russell 风格 (iShares ETFs, total return)
     russell = [
-        ("Russell 1000 Value", "^RLV"), ("Russell 1000", "^RUI"), ("Russell 1000 Growth", "^RLG"),
-        ("Russell Midcap Value", "^RMCCV"), ("Russell Midcap", "^RMCC"), ("Russell Midcap Growth", "^RMCCG"),
-        ("Russell 2000 Value", "^RUJ"), ("Russell 2000", "^RUT"), ("Russell 2000 Growth", "^RUO"),
+        ("Russell 1000 Value", "IWD"), ("Russell 1000", "IWB"), ("Russell 1000 Growth", "IWF"),
+        ("Russell Midcap Value", "IWS"), ("Russell Midcap", "IWR"), ("Russell Midcap Growth", "IWP"),
+        ("Russell 2000 Value", "IWN"), ("Russell 2000", "IWM"), ("Russell 2000 Growth", "IWO"),
     ]
-    rx = [yahoo(t, n) for n, t in russell]
-    rnote = "Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径"
+    rx = [etf_tr(t, f"iShares {n}", n) for n, t in russell]
+    rnote = "iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径"
     for i, x in enumerate(rx):
-        api(f"04-{1 + 2 * i:03d}", ret(x, "W"), rnote)
-        api(f"04-{2 + 2 * i:03d}", ret(x, "YTD"), rnote)
-        api(f"95-{56 + i:03d}", ret(x, "MTD"), rnote)
+        proxy(f"04-{1 + 2 * i:03d}", ret(x, "W"), rnote)
+        proxy(f"04-{2 + 2 * i:03d}", ret(x, "YTD"), rnote)
+        proxy(f"95-{56 + i:03d}", ret(x, "MTD"), rnote)
     for k, (g, v) in enumerate([(2, 0), (5, 3), (8, 6)]):
-        api(f"04-{19 + k:03d}", f"{ret(rx[g], 'W')} - {ret(rx[v], 'W')}", rnote)
+        proxy(f"04-{19 + k:03d}", f"{ret(rx[g], 'W')} - {ret(rx[v], 'W')}", rnote)
 
     # ---------------------------------------------------------- 05-10 估值/盈利 (FactSet / 摩根)
     for iid in ids("05", 1, 9):

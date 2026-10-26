@@ -54,71 +54,71 @@ indicator_id,method,phase,formula,coverage_note
 02-038,api,P1,"ret({MSCI:935600:NETR:INR}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 02-039,api,P1,"ret({MSCI:935600:NETR:INR}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 02-040,api,P1,"ret({MSCI:935600:NETR:INR}, ""1Y"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
-03-001,api,P1,"ret({YAHOO:^SP500-50}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-002,api,P1,"ret({YAHOO:^SP500-50}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-003,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-004,api,P1,"ret({YAHOO:^SP500-50}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-005,api,P1,"ret({YAHOO:^GSPE}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-006,api,P1,"ret({YAHOO:^GSPE}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-007,api,P1,"ret({YAHOO:^GSPE}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-008,api,P1,"ret({YAHOO:^GSPE}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-009,api,P1,"ret({YAHOO:^SP500-45}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-010,api,P1,"ret({YAHOO:^SP500-45}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-011,api,P1,"ret({YAHOO:^SP500-45}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-012,api,P1,"ret({YAHOO:^SP500-45}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-013,api,P1,"ret({YAHOO:^SP500-55}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-014,api,P1,"ret({YAHOO:^SP500-55}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-015,api,P1,"ret({YAHOO:^SP500-55}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-016,api,P1,"ret({YAHOO:^SP500-55}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-017,api,P1,"ret({YAHOO:^SP500-40}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-018,api,P1,"ret({YAHOO:^SP500-40}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-019,api,P1,"ret({YAHOO:^SP500-40}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-020,api,P1,"ret({YAHOO:^SP500-40}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-021,api,P1,"ret({YAHOO:^SP500-30}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-022,api,P1,"ret({YAHOO:^SP500-30}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-023,api,P1,"ret({YAHOO:^SP500-30}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-024,api,P1,"ret({YAHOO:^SP500-30}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-025,api,P1,"ret({YAHOO:^SP500-60}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-026,api,P1,"ret({YAHOO:^SP500-60}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-027,api,P1,"ret({YAHOO:^SP500-60}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-028,api,P1,"ret({YAHOO:^SP500-60}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-029,api,P1,"ret({YAHOO:^SP500-20}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-030,api,P1,"ret({YAHOO:^SP500-20}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-031,api,P1,"ret({YAHOO:^SP500-20}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-032,api,P1,"ret({YAHOO:^SP500-20}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-033,api,P1,"ret({YAHOO:^SP500-25}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-034,api,P1,"ret({YAHOO:^SP500-25}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-035,api,P1,"ret({YAHOO:^SP500-25}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-036,api,P1,"ret({YAHOO:^SP500-25}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-037,api,P1,"ret({YAHOO:^SP500-35}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-038,api,P1,"ret({YAHOO:^SP500-35}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-039,api,P1,"ret({YAHOO:^SP500-35}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-040,api,P1,"ret({YAHOO:^SP500-35}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-041,api,P1,"ret({YAHOO:^SP500-15}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-042,api,P1,"ret({YAHOO:^SP500-15}, ""W"") - ret({FRED:SP500}, ""W"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-043,api,P1,"ret({YAHOO:^SP500-15}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-03-044,api,P1,"ret({YAHOO:^SP500-15}, ""YTD"") - ret({FRED:SP500}, ""YTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-04-001,api,P1,"ret({YAHOO:^RLV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-002,api,P1,"ret({YAHOO:^RLV}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-003,api,P1,"ret({YAHOO:^RUI}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-004,api,P1,"ret({YAHOO:^RUI}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-005,api,P1,"ret({YAHOO:^RLG}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-006,api,P1,"ret({YAHOO:^RLG}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-007,api,P1,"ret({YAHOO:^RMCCV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-008,api,P1,"ret({YAHOO:^RMCCV}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-009,api,P1,"ret({YAHOO:^RMCC}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-010,api,P1,"ret({YAHOO:^RMCC}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-011,api,P1,"ret({YAHOO:^RMCCG}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-012,api,P1,"ret({YAHOO:^RMCCG}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-013,api,P1,"ret({YAHOO:^RUJ}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-014,api,P1,"ret({YAHOO:^RUJ}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-015,api,P1,"ret({YAHOO:^RUT}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-016,api,P1,"ret({YAHOO:^RUT}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-017,api,P1,"ret({YAHOO:^RUO}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-018,api,P1,"ret({YAHOO:^RUO}, ""YTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-019,api,P1,"ret({YAHOO:^RLG}, ""W"") - ret({YAHOO:^RLV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-020,api,P1,"ret({YAHOO:^RMCCG}, ""W"") - ret({YAHOO:^RMCCV}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-04-021,api,P1,"ret({YAHOO:^RUO}, ""W"") - ret({YAHOO:^RUJ}, ""W"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+03-001,proxy,P1,"ret({YAHOO:XLC:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-002,proxy,P1,"ret({YAHOO:XLC:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-003,proxy,P1,"ret({YAHOO:XLC:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-004,proxy,P1,"ret({YAHOO:XLC:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-005,proxy,P1,"ret({YAHOO:XLE:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-006,proxy,P1,"ret({YAHOO:XLE:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-007,proxy,P1,"ret({YAHOO:XLE:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-008,proxy,P1,"ret({YAHOO:XLE:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-009,proxy,P1,"ret({YAHOO:XLK:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-010,proxy,P1,"ret({YAHOO:XLK:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-011,proxy,P1,"ret({YAHOO:XLK:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-012,proxy,P1,"ret({YAHOO:XLK:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-013,proxy,P1,"ret({YAHOO:XLU:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-014,proxy,P1,"ret({YAHOO:XLU:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-015,proxy,P1,"ret({YAHOO:XLU:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-016,proxy,P1,"ret({YAHOO:XLU:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-017,proxy,P1,"ret({YAHOO:XLF:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-018,proxy,P1,"ret({YAHOO:XLF:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-019,proxy,P1,"ret({YAHOO:XLF:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-020,proxy,P1,"ret({YAHOO:XLF:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-021,proxy,P1,"ret({YAHOO:XLP:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-022,proxy,P1,"ret({YAHOO:XLP:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-023,proxy,P1,"ret({YAHOO:XLP:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-024,proxy,P1,"ret({YAHOO:XLP:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-025,proxy,P1,"ret({YAHOO:XLRE:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-026,proxy,P1,"ret({YAHOO:XLRE:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-027,proxy,P1,"ret({YAHOO:XLRE:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-028,proxy,P1,"ret({YAHOO:XLRE:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-029,proxy,P1,"ret({YAHOO:XLI:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-030,proxy,P1,"ret({YAHOO:XLI:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-031,proxy,P1,"ret({YAHOO:XLI:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-032,proxy,P1,"ret({YAHOO:XLI:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-033,proxy,P1,"ret({YAHOO:XLY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-034,proxy,P1,"ret({YAHOO:XLY:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-035,proxy,P1,"ret({YAHOO:XLY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-036,proxy,P1,"ret({YAHOO:XLY:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-037,proxy,P1,"ret({YAHOO:XLV:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-038,proxy,P1,"ret({YAHOO:XLV:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-039,proxy,P1,"ret({YAHOO:XLV:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-040,proxy,P1,"ret({YAHOO:XLV:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-041,proxy,P1,"ret({YAHOO:XLB:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-042,proxy,P1,"ret({YAHOO:XLB:TR}, ""W"") - ret({YAHOO:SPY:TR}, ""W"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-043,proxy,P1,"ret({YAHOO:XLB:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+03-044,proxy,P1,"ret({YAHOO:XLB:TR}, ""YTD"") - ret({YAHOO:SPY:TR}, ""YTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+04-001,proxy,P1,"ret({YAHOO:IWD:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-002,proxy,P1,"ret({YAHOO:IWD:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-003,proxy,P1,"ret({YAHOO:IWB:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-004,proxy,P1,"ret({YAHOO:IWB:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-005,proxy,P1,"ret({YAHOO:IWF:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-006,proxy,P1,"ret({YAHOO:IWF:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-007,proxy,P1,"ret({YAHOO:IWS:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-008,proxy,P1,"ret({YAHOO:IWS:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-009,proxy,P1,"ret({YAHOO:IWR:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-010,proxy,P1,"ret({YAHOO:IWR:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-011,proxy,P1,"ret({YAHOO:IWP:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-012,proxy,P1,"ret({YAHOO:IWP:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-013,proxy,P1,"ret({YAHOO:IWN:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-014,proxy,P1,"ret({YAHOO:IWN:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-015,proxy,P1,"ret({YAHOO:IWM:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-016,proxy,P1,"ret({YAHOO:IWM:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-017,proxy,P1,"ret({YAHOO:IWO:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-018,proxy,P1,"ret({YAHOO:IWO:TR}, ""YTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-019,proxy,P1,"ret({YAHOO:IWF:TR}, ""W"") - ret({YAHOO:IWD:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-020,proxy,P1,"ret({YAHOO:IWP:TR}, ""W"") - ret({YAHOO:IWS:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+04-021,proxy,P1,"ret({YAHOO:IWO:TR}, ""W"") - ret({YAHOO:IWN:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
 05-001,api,P1,{FACTSET:forward_pe},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 05-002,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
 05-003,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
@@ -1023,17 +1023,17 @@ indicator_id,method,phase,formula,coverage_note
 95-020,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-021,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-022,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
-95-023,api,P1,"ret({YAHOO:^SP500-50}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-024,api,P1,"ret({YAHOO:^GSPE}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-025,api,P1,"ret({YAHOO:^SP500-45}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-026,api,P1,"ret({YAHOO:^SP500-55}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-027,api,P1,"ret({YAHOO:^SP500-40}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-028,api,P1,"ret({YAHOO:^SP500-30}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-029,api,P1,"ret({YAHOO:^SP500-60}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-030,api,P1,"ret({YAHOO:^SP500-20}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-031,api,P1,"ret({YAHOO:^SP500-25}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-032,api,P1,"ret({YAHOO:^SP500-35}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
-95-033,api,P1,"ret({YAHOO:^SP500-15}, ""MTD"")",S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差
+95-023,proxy,P1,"ret({YAHOO:XLC:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-024,proxy,P1,"ret({YAHOO:XLE:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-025,proxy,P1,"ret({YAHOO:XLK:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-026,proxy,P1,"ret({YAHOO:XLU:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-027,proxy,P1,"ret({YAHOO:XLF:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-028,proxy,P1,"ret({YAHOO:XLP:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-029,proxy,P1,"ret({YAHOO:XLRE:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-030,proxy,P1,"ret({YAHOO:XLI:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-031,proxy,P1,"ret({YAHOO:XLY:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-032,proxy,P1,"ret({YAHOO:XLV:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
+95-033,proxy,P1,"ret({YAHOO:XLB:TR}, ""MTD"")",代理：Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准
 95-034,api,P1,"ret({MSCI:106804:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-035,api,P1,"ret({MSCI:106804:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-036,api,P1,"ret({MSCI:106796:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
@@ -1056,15 +1056,15 @@ indicator_id,method,phase,formula,coverage_note
 95-053,api,P1,"ret({MSCI:106801:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-054,api,P1,"ret({MSCI:106797:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-055,api,P1,"ret({MSCI:106797:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
-95-056,api,P1,"ret({YAHOO:^RLV}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-057,api,P1,"ret({YAHOO:^RUI}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-058,api,P1,"ret({YAHOO:^RLG}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-059,api,P1,"ret({YAHOO:^RMCCV}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-060,api,P1,"ret({YAHOO:^RMCC}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-061,api,P1,"ret({YAHOO:^RMCCG}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-062,api,P1,"ret({YAHOO:^RUJ}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-063,api,P1,"ret({YAHOO:^RUT}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
-95-064,api,P1,"ret({YAHOO:^RUO}, ""MTD"")",Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径
+95-056,proxy,P1,"ret({YAHOO:IWD:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-057,proxy,P1,"ret({YAHOO:IWB:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-058,proxy,P1,"ret({YAHOO:IWF:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-059,proxy,P1,"ret({YAHOO:IWS:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-060,proxy,P1,"ret({YAHOO:IWR:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-061,proxy,P1,"ret({YAHOO:IWP:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-062,proxy,P1,"ret({YAHOO:IWN:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-063,proxy,P1,"ret({YAHOO:IWM:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
+95-064,proxy,P1,"ret({YAHOO:IWO:TR}, ""MTD"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
 95-065,api,P1,"ret({MSCI:650143:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-066,api,P1,"ret({MSCI:650143:NETR:USD}, ""YTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 95-067,api,P1,"ret({MSCI:650038:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）

@@ -494,36 +494,38 @@ YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quo
 YAHOO:GOVT:TR,YAHOO,GOVT,iShares US Treasury Bond ETF total return (tracks ICE US Treasury Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GOVT,"{""tr"": true}",False,cloud
 YAHOO:GSG:TR,YAHOO,GSG,iShares S&P GSCI Commodity-Indexed Trust ETF total return (tracks S&P GSCI Total Return),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GSG,"{""tr"": true}",False,cloud
 YAHOO:HG=F,YAHOO,HG=F,COMEX copper front-month futures,D,点,1,https://finance.yahoo.com/quote/HG=F,,False,cloud
+YAHOO:IWB:TR,YAHOO,IWB,iShares Russell 1000 ETF total return (tracks Russell 1000),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWB,"{""tr"": true}",False,cloud
+YAHOO:IWD:TR,YAHOO,IWD,iShares Russell 1000 Value ETF total return (tracks Russell 1000 Value),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWD,"{""tr"": true}",False,cloud
+YAHOO:IWF:TR,YAHOO,IWF,iShares Russell 1000 Growth ETF total return (tracks Russell 1000 Growth),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWF,"{""tr"": true}",False,cloud
+YAHOO:IWM:TR,YAHOO,IWM,iShares Russell 2000 ETF total return (tracks Russell 2000),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWM,"{""tr"": true}",False,cloud
+YAHOO:IWN:TR,YAHOO,IWN,iShares Russell 2000 Value ETF total return (tracks Russell 2000 Value),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWN,"{""tr"": true}",False,cloud
+YAHOO:IWO:TR,YAHOO,IWO,iShares Russell 2000 Growth ETF total return (tracks Russell 2000 Growth),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWO,"{""tr"": true}",False,cloud
+YAHOO:IWP:TR,YAHOO,IWP,iShares Russell Midcap Growth ETF total return (tracks Russell Midcap Growth),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWP,"{""tr"": true}",False,cloud
+YAHOO:IWR:TR,YAHOO,IWR,iShares Russell Midcap ETF total return (tracks Russell Midcap),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWR,"{""tr"": true}",False,cloud
+YAHOO:IWS:TR,YAHOO,IWS,iShares Russell Midcap Value ETF total return (tracks Russell Midcap Value),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IWS,"{""tr"": true}",False,cloud
 YAHOO:IYR:TR,YAHOO,IYR,iShares US Real Estate ETF total return (tracks Dow Jones U.S. Real Estate Capped),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IYR,"{""tr"": true}",False,cloud
 YAHOO:MUB:TR,YAHOO,MUB,iShares National Muni Bond ETF total return (tracks ICE AMT-Free US National Municipal),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/MUB,"{""tr"": true}",False,cloud
 YAHOO:SCHP:TR,YAHOO,SCHP,Schwab US TIPS ETF total return (tracks Bloomberg US TIPS (Series-L)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/SCHP,"{""tr"": true}",False,cloud
+YAHOO:SPY:TR,YAHOO,SPY,SPDR S&P 500 ETF total return (tracks S&P 500),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/SPY,"{""tr"": true}",False,cloud
+YAHOO:XLB:TR,YAHOO,XLB,Select Sector SPDR 材料 ETF total return (tracks S&P 500 材料 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLB,"{""tr"": true}",False,cloud
+YAHOO:XLC:TR,YAHOO,XLC,Select Sector SPDR 通讯服务 ETF total return (tracks S&P 500 通讯服务 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLC,"{""tr"": true}",False,cloud
+YAHOO:XLE:TR,YAHOO,XLE,Select Sector SPDR 能源 ETF total return (tracks S&P 500 能源 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLE,"{""tr"": true}",False,cloud
+YAHOO:XLF:TR,YAHOO,XLF,Select Sector SPDR 金融 ETF total return (tracks S&P 500 金融 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLF,"{""tr"": true}",False,cloud
+YAHOO:XLI:TR,YAHOO,XLI,Select Sector SPDR 工业 ETF total return (tracks S&P 500 工业 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLI,"{""tr"": true}",False,cloud
+YAHOO:XLK:TR,YAHOO,XLK,Select Sector SPDR 信息技术 ETF total return (tracks S&P 500 信息技术 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLK,"{""tr"": true}",False,cloud
+YAHOO:XLP:TR,YAHOO,XLP,Select Sector SPDR 必需消费 ETF total return (tracks S&P 500 必需消费 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLP,"{""tr"": true}",False,cloud
+YAHOO:XLRE:TR,YAHOO,XLRE,Select Sector SPDR 房地产 ETF total return (tracks S&P 500 房地产 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLRE,"{""tr"": true}",False,cloud
+YAHOO:XLU:TR,YAHOO,XLU,Select Sector SPDR 公用事业 ETF total return (tracks S&P 500 公用事业 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLU,"{""tr"": true}",False,cloud
+YAHOO:XLV:TR,YAHOO,XLV,Select Sector SPDR 医疗保健 ETF total return (tracks S&P 500 医疗保健 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLV,"{""tr"": true}",False,cloud
+YAHOO:XLY:TR,YAHOO,XLY,Select Sector SPDR 可选消费 ETF total return (tracks S&P 500 可选消费 (capped)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/XLY,"{""tr"": true}",False,cloud
 YAHOO:^FCHI,YAHOO,^FCHI,CAC 40,D,点,1,https://finance.yahoo.com/quote/^FCHI,,False,cloud
 YAHOO:^FTSE,YAHOO,^FTSE,FTSE 100,D,点,1,https://finance.yahoo.com/quote/^FTSE,,False,cloud
 YAHOO:^GDAXI,YAHOO,^GDAXI,DAX (performance index),D,点,1,https://finance.yahoo.com/quote/^GDAXI,,False,cloud
-YAHOO:^GSPE,YAHOO,^GSPE,S&P 500 能源行业指数,D,点,1,https://finance.yahoo.com/quote/^GSPE,,False,cloud
 YAHOO:^HSI,YAHOO,^HSI,Hang Seng,D,点,1,https://finance.yahoo.com/quote/^HSI,,False,cloud
 YAHOO:^MOVE,YAHOO,^MOVE,ICE BofA MOVE Index,D,点,1,https://finance.yahoo.com/quote/^MOVE,,False,cloud
 YAHOO:^NSEI,YAHOO,^NSEI,Nifty 50,D,点,1,https://finance.yahoo.com/quote/^NSEI,,False,cloud
-YAHOO:^RLG,YAHOO,^RLG,Russell 1000 Growth,D,点,1,https://finance.yahoo.com/quote/^RLG,,False,cloud
-YAHOO:^RLV,YAHOO,^RLV,Russell 1000 Value,D,点,1,https://finance.yahoo.com/quote/^RLV,,False,cloud
-YAHOO:^RMCC,YAHOO,^RMCC,Russell Midcap,D,点,1,https://finance.yahoo.com/quote/^RMCC,,False,cloud
-YAHOO:^RMCCG,YAHOO,^RMCCG,Russell Midcap Growth,D,点,1,https://finance.yahoo.com/quote/^RMCCG,,False,cloud
-YAHOO:^RMCCV,YAHOO,^RMCCV,Russell Midcap Value,D,点,1,https://finance.yahoo.com/quote/^RMCCV,,False,cloud
-YAHOO:^RUI,YAHOO,^RUI,Russell 1000,D,点,1,https://finance.yahoo.com/quote/^RUI,,False,cloud
-YAHOO:^RUJ,YAHOO,^RUJ,Russell 2000 Value,D,点,1,https://finance.yahoo.com/quote/^RUJ,,False,cloud
-YAHOO:^RUO,YAHOO,^RUO,Russell 2000 Growth,D,点,1,https://finance.yahoo.com/quote/^RUO,,False,cloud
 YAHOO:^RUT,YAHOO,^RUT,Russell 2000,D,点,1,https://finance.yahoo.com/quote/^RUT,,False,cloud
 YAHOO:^SP400,YAHOO,^SP400,S&P MidCap 400,D,点,1,https://finance.yahoo.com/quote/^SP400,,False,cloud
-YAHOO:^SP500-15,YAHOO,^SP500-15,S&P 500 材料行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-15,,False,cloud
-YAHOO:^SP500-20,YAHOO,^SP500-20,S&P 500 工业行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-20,,False,cloud
-YAHOO:^SP500-25,YAHOO,^SP500-25,S&P 500 可选消费行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-25,,False,cloud
-YAHOO:^SP500-30,YAHOO,^SP500-30,S&P 500 必需消费行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-30,,False,cloud
-YAHOO:^SP500-35,YAHOO,^SP500-35,S&P 500 医疗保健行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-35,,False,cloud
-YAHOO:^SP500-40,YAHOO,^SP500-40,S&P 500 金融行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-40,,False,cloud
-YAHOO:^SP500-45,YAHOO,^SP500-45,S&P 500 信息技术行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-45,,False,cloud
-YAHOO:^SP500-50,YAHOO,^SP500-50,S&P 500 通讯服务行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-50,,False,cloud
-YAHOO:^SP500-55,YAHOO,^SP500-55,S&P 500 公用事业行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-55,,False,cloud
-YAHOO:^SP500-60,YAHOO,^SP500-60,S&P 500 房地产行业指数,D,点,1,https://finance.yahoo.com/quote/^SP500-60,,False,cloud
 YAHOO:^SPXEW,YAHOO,^SPXEW,S&P 500 Equal Weight,D,点,1,https://finance.yahoo.com/quote/^SPXEW,,False,cloud
 YAHOO:^SSMI,YAHOO,^SSMI,Swiss Market Index,D,点,1,https://finance.yahoo.com/quote/^SSMI,,False,cloud
 YAHOO:^STOXX,YAHOO,^STOXX,STOXX Europe 600,D,点,1,https://finance.yahoo.com/quote/^STOXX,,False,cloud
