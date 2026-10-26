@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         name, rest = line.split(None, 1)
         url, mode, arg = rest.strip(), "", ""
-        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW ", " LINKS ", " JSONKEYS "):
+        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW ", " LINKS ", " JSONKEYS ", " GREP "):
             if keyword in rest:
                 url, arg = (x.strip() for x in rest.split(keyword, 1))
                 mode, arg = keyword.strip(), arg.strip('"')
@@ -141,6 +141,11 @@ def main(argv: list[str] | None = None) -> int:
                 pages.append("\n".join(f"{h} | {x}" for h, x in anchors(r.text) if arg.lower() in (h + x).lower())[:MAX_CHARS])
             elif r.status_code == 200 and mode == "JSONKEYS":  # distinct combinations of the named fields
                 pages.append(json_keys(r.json(), [f.strip() for f in arg.split(",")]))
+            elif r.status_code == 200 and mode == "GREP":  # matching lines of the preview (raw source for HTML)
+                import re
+
+                body = r.text if "html" in (r.headers.get("Content-Type") or "") else "\n".join(preview(r.content, url))
+                pages.append("\n".join(line.strip()[:300] for line in body.splitlines() if re.search(arg, line, flags=re.I))[:MAX_CHARS])
             elif r.status_code == 200:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001

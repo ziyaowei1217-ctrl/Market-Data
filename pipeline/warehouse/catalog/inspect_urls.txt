@@ -1,11 +1,10 @@
-# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field"]
+# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field" | GREP "regex"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
 # A name ending in _botua sends the project's declared user agent instead of a browser one.
-bea_u20405_lines https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIUnderlyingDetail&TableName=U20405&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,SeriesCode,LineDescription"
-bea_t20808_codes https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIPA&TableName=T20808&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,SeriesCode,LineDescription"
-bea_mne_data2    https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=MNE&DirectionOfInvestment=inward&Classification=Country&SeriesID=22,23&Year=2024&Country=000&ResultFormat=JSON
-boe_dmp_media    https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 LINKS "media"
-customs_monthly  http://english.customs.gov.cn/statics/report/monthly.html LINKS "statics"
-jil_202609       https://www.jil.go.jp/english/estatis/esaikin/2026/documents/e202609.pdf
-mhlw_jp_2608p    https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/2608p.html LINKS "."
-ici_flows_botua  https://www.ici.org/flows_data_2026.xls
+bea_mne_codes    https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=MNE&DirectionOfInvestment=inward&Classification=Country&SeriesID=22&Year=2024&Country=all&ResultFormat=JSON JSONKEYS "RowCode,Row"
+boe_dmp_grep     https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 GREP "xls|csv|download|/-/media"
+mhlw_2608p       https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "実質"
+mhlw_c01         https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608c01p.xlsx GREP "実質|sheet"
+mhlw_t08         https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608t08p.xlsx GREP "実質|sheet"
+oecd_imts_all    https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/all?startPeriod=2026-07&endPeriod=2026-07&format=csvfilewithlabels GREP "^STRUCTURE|CHN"
+customs_cn       http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/302277/index.html GREP "href"
