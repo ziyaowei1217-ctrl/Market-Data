@@ -7,3 +7,5 @@ ism_aug_baby     https://www.ismworld.org/globalassets/pub/research-and-surveys/
 ism_svcs_page    https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/august/ LINKS ".pdf"
 mhlw_2608_block1 https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "^\[sheet 賃金指数|^,*\s*([0-9０-９]{1,2})\s*月"
 mhlw_2508p       https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r07/2508p/xls/2508p.xlsx GREP "^\[sheet|^HTTP"
+mhlw_2508_rows   https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r07/2508p/xls/2508p.xlsx GREP "^\[sheet 賃金指数|^,*\s*(20[0-9]{2}年|[0-9０-９]{1,2}\s*月)"
+mhlw_2408_head   https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r06/2408p/xls/2408p.xlsx GREP "^HTTP|^\[sheet"
