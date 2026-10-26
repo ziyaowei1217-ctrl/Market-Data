@@ -40,10 +40,10 @@ indicator_id,method,phase,formula,coverage_note
 02-024,api,P1,"ret({YAHOO:^STOXX}, ""YTD"")",Yahoo Finance 免费行情，价格回报
 02-025,api,P1,"ret({YAHOO:^STOXX}, ""1Y"")",Yahoo Finance 免费行情，价格回报
 02-026,api,P1,{JPX:TOPIX},日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-02-027,api,P1,"ret({JPX:TOPIX}, ""W"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-02-028,api,P1,"ret({JPX:TOPIX}, ""MTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-02-029,api,P1,"ret({JPX:TOPIX}, ""YTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-02-030,api,P1,"ret({JPX:TOPIX}, ""1Y"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+02-027,proxy,P1,"ret({YAHOO:1306.T}, ""W"")",代理：NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）
+02-028,proxy,P1,"ret({YAHOO:1306.T}, ""MTD"")",代理：NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）
+02-029,proxy,P1,"ret({YAHOO:1306.T}, ""YTD"")",代理：NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）
+02-030,proxy,P1,"ret({YAHOO:1306.T}, ""1Y"")",代理：NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）
 02-031,api,P1,{MSCI:302400:NETR:USD},MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 02-032,api,P1,"ret({MSCI:302400:NETR:USD}, ""W"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 02-033,api,P1,"ret({MSCI:302400:NETR:USD}, ""MTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
@@ -1176,7 +1176,7 @@ indicator_id,method,phase,formula,coverage_note
 96-101,api,P1,"ret({MSCI:990300:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-102,api,P1,"ret({MSCI:891800:NETR:USD}, ""QTD"")",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 96-103,api,P1,"ret({YAHOO:^STOXX}, ""QTD"")",Yahoo 免费行情
-96-104,api,P1,"ret({JPX:TOPIX}, ""QTD"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
+96-104,proxy,P1,"ret({YAHOO:1306.T}, ""QTD"")",代理：NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）
 96-107,api,P1,"snap({YAHOO:^SP400}, ""ME"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-108,api,P1,"snap({YAHOO:^SP400}, ""QE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数
 96-109,api,P1,"snap({YAHOO:^SP400}, ""YE"")",Yahoo Finance 免费行情（非官方接口），本币价格指数；DAX 为含红利绩效指数

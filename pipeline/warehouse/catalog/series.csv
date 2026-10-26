@@ -447,7 +447,7 @@ SCE:75th Percentile three-year ahead expected inflation rate - 25th Percentile t
 SCE:Median five-year ahead expected inflation rate,SCE,Median five-year ahead expected inflation rate,NY Fed SCE: median five-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median one-year ahead expected inflation rate,SCE,Median one-year ahead expected inflation rate,NY Fed SCE: median one-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median three-year ahead expected inflation rate,SCE,Median three-year ahead expected inflation rate,NY Fed SCE: median three-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
-SNB:rendeiduebd:CHF.10J,SNB,rendeiduebd:CHF.10J,Swiss Confederation 10Y spot rate (SNB),D,%,1,https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd,,False,cloud
+SNB:rendeiduebd:CHF.10J,SNB,rendeiduebd:CHF.10J,Swiss Confederation 10Y spot rate (SNB),D,%,35,https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd,,False,cloud
 SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPGPMI:EZ:comp,SPGPMI,EZ:comp,S&P Global Eurozone Composite Output,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
@@ -504,6 +504,7 @@ TSYCURVE:30 Yr,TSYCURVE,30 Yr,Treasury par yield curve 30 Yr,D,%,1,https://home.
 TSYCURVE:5 Yr,TSYCURVE,5 Yr,Treasury par yield curve 5 Yr,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
 TSYCURVE:6 Mo,TSYCURVE,6 Mo,Treasury par yield curve 6 Mo,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
 TSYCURVE:7 Yr,TSYCURVE,7 Yr,Treasury par yield curve 7 Yr,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
+YAHOO:1306.T,YAHOO,1306.T,NEXT FUNDS TOPIX ETF (price),D,点,1,https://finance.yahoo.com/quote/1306.T,,False,cloud
 YAHOO:AGG:TR,YAHOO,AGG,iShares Core US Aggregate Bond ETF total return (tracks Bloomberg US Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGG,"{""tr"": true}",False,cloud
 YAHOO:AGGG.L:TR,YAHOO,AGGG.L,iShares Core Global Aggregate Bond (USD Dist) ETF total return (tracks Bloomberg Global Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGGG.L,"{""tr"": true}",False,cloud
 YAHOO:AMLP:TR,YAHOO,AMLP,Alerian MLP ETF ETF total return (tracks Alerian MLP Infrastructure),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AMLP,"{""tr"": true}",False,cloud

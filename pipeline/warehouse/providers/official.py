@@ -815,6 +815,24 @@ class Stoxx(Provider):
         return obs_from_pairs(pairs, start)
 
 
+def tokyo_close_date(now_utc: datetime) -> date | None:
+    """Trading day whose close the JPX snapshot shows: today after 15:30 JST, the previous
+    weekday before 09:00 JST, None while the market is open; weekends give Friday."""
+    tokyo = now_utc + timedelta(hours=9)
+    day = tokyo.date()
+    if day.weekday() >= 5:
+        return day - timedelta(days=day.weekday() - 4)
+    minutes = tokyo.hour * 60 + tokyo.minute
+    if minutes >= 15 * 60 + 30:
+        return day
+    if minutes < 9 * 60:
+        prev = day - timedelta(days=1)
+        while prev.weekday() >= 5:
+            prev -= timedelta(days=1)
+        return prev
+    return None
+
+
 @register
 class JpxTopix(Provider):
     """JPX daily index snapshot (no date field: stamped with the last Tokyo trading
@@ -842,8 +860,9 @@ class JpxTopix(Provider):
                     walk(item)
 
         walk(payload)
-        tokyo_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
-        stamp = tokyo_today if tokyo_today.weekday() < 5 else tokyo_today - timedelta(days=tokyo_today.weekday() - 4)
+        stamp = tokyo_close_date(datetime.now(timezone.utc))
+        if stamp is None:
+            return [FetchResult(d.key, [], "empty", "Tokyo market open: snapshot is intraday") for d in defs]
         wanted = {"TOPIX": ("TOPIX",), "TOPIX_TR": ("TOPIX TOTAL RETURN INDEX", "TOPIX TOTAL RETURN", "TOPIXTR")}
         out = []
         for d in defs:

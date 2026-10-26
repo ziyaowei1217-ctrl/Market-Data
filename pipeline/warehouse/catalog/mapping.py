@@ -828,7 +828,7 @@ def build() -> None:
     for iid in ["99-005", "99-006", "99-007", "99-008", "99-013", "99-014", "99-015", "99-016"]:
         other(iid, "report", "中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照", "P1b")
     # rendoblid (2002 method) stopped in July 2025; rendeiduebd holds spot rates under the new method.
-    ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 1,
+    ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 35,
                   "https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd")
     api("99-001", ch10, "瑞士央行数据门户：联邦债券 10 年期收益率")
     for k, w in enumerate(["ME", "QE", "YE"]):
@@ -1033,9 +1033,14 @@ def build_publishers() -> None:
     # ---------------------------------------------------------- TOPIX (JPX daily snapshot, accumulated)
     topix = series("JPX", "TOPIX", "TOPIX (price, JPY)", "D", "点", 0, "https://www.jpx.co.jp/english/markets/indices/topix/")
     tnote = "日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）"
-    for k, w in enumerate(["level", "W", "MTD", "YTD", "1Y"]):
-        api(f"02-{26 + k:03d}", topix if w == "level" else ret(topix, w), tnote)
-    api("96-104", ret(topix, "QTD"), tnote)
+    api("02-026", topix, tnote)
+    # Returns need history the snapshot does not have: the NEXT FUNDS TOPIX ETF (1306.T) price
+    # tracks TOPIX's price return (minus a ~0.06% fee).
+    etf = yahoo("1306.T", "NEXT FUNDS TOPIX ETF (price)")
+    enote = "NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）"
+    for k, w in enumerate(["W", "MTD", "YTD", "1Y"]):
+        proxy(f"02-{27 + k:03d}", ret(etf, w), enote)
+    proxy("96-104", ret(etf, "QTD"), enote)
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"96-{188 + k:03d}", f'snap({topix}, "{w}")', tnote)
 

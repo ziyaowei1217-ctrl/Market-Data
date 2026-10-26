@@ -69,6 +69,8 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
     ),
     # first load stopped after the first listing page; reload so the walk-back runs again
     "2026-10-26-nbs-walkback": tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
+    # an intraday snapshot was stamped as a close
+    "2026-10-26-jpx-intraday": ("JPX:TOPIX",),
 }
 
 

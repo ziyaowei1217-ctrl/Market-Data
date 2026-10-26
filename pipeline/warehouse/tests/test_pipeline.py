@@ -508,3 +508,15 @@ class BoeCurveTests(unittest.TestCase):
         frame = pd.DataFrame(rows)
         self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 24), [(date(2026, 10, 22), 3.6)])
         self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 12)[-1], (date(2026, 10, 23), 3.71))
+
+
+class TokyoCloseTests(unittest.TestCase):
+    def test_stamps(self):
+        from datetime import datetime, timezone
+        from pipeline.warehouse.providers.official import tokyo_close_date
+
+        utc = lambda *a: datetime(*a, tzinfo=timezone.utc)
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 24, 13, 17)), date(2026, 10, 23))  # Sat 22:17 JST
+        self.assertIsNone(tokyo_close_date(utc(2026, 10, 26, 2, 29)))                     # Mon 11:29 JST
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 25, 23, 0)), date(2026, 10, 23))   # Mon 08:00 JST
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 26, 7, 0)), date(2026, 10, 26))    # Mon 16:00 JST
