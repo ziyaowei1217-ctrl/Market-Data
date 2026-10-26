@@ -16,7 +16,7 @@ import pandas as pd
 
 from ..db.store import Observation
 from .base import FetchResult, Provider, ProviderError, SeriesDef, register, to_float
-from .reports import BROWSER_UA, pdf_pages
+from .documents import BROWSER_UA, pdf_pages
 
 
 def _today() -> date:

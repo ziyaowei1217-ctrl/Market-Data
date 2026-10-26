@@ -120,41 +120,41 @@ indicator_id,method,phase,formula,coverage_note
 04-020,proxy,P1,"ret({YAHOO:IWP:TR}, ""W"") - ret({YAHOO:IWS:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
 04-021,proxy,P1,"ret({YAHOO:IWO:TR}, ""W"") - ret({YAHOO:IWN:TR}, ""W"")",代理：iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径
 05-001,api,P1,{FACTSET:forward_pe},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
-05-002,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-003,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-004,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-005,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-006,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-007,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-008,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-05-009,report,P1b,,FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照
-06-001,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-002,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+05-002,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-003,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-004,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-005,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-006,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-007,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-008,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+05-009,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照）
+06-001,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-002,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
 06-003,api,P1,{SPDJI:340:marketCap},S&P 道琼斯指数公司官网，月末值；美元→十亿美元（该站屏蔽数据中心 IP，由本地电脑抓取）
-06-004,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-005,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-006,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-007,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-008,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-009,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-010,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-011,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-012,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-013,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-014,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-015,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-016,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-017,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-018,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-019,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-020,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-021,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-022,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-023,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-024,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-025,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-026,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
-06-027,report,P1b,,摩根 Weekly Market Recap 指数特征表快照
+06-004,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-005,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-006,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-007,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-008,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-009,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-010,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-011,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-012,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-013,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-014,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-015,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-016,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-017,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-018,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-019,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-020,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-021,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-022,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-023,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-024,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-025,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-026,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
+06-027,excluded,excluded,,按需求不使用机构周报（原计划：摩根 Weekly Market Recap 指数特征表快照）
 07-001,api,P1,{SPDJI:340:topNConstituentWeight},S&P 道琼斯指数公司官网，月末值（由本地电脑抓取）
 07-002,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
 07-003,pending,P2,,成分权重需指数商 factsheet（月度 PDF），待接入
@@ -202,39 +202,39 @@ indicator_id,method,phase,formula,coverage_note
 08-001,api,P1,{FACTSET:eps_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-002,api,P1,{FACTSET:revenue_growth_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-003,api,P1,{FACTSET:net_margin_blended},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
-08-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-005,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-006,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-007,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-008,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-009,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-010,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-011,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-012,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-013,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-014,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-015,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-016,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-017,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-018,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-019,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-020,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-021,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-022,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-023,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-024,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-025,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-026,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-027,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-028,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-029,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-030,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-031,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-032,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-033,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-034,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-035,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-08-036,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+08-004,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-005,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-006,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-007,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-008,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-009,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-010,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-011,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-012,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-013,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-014,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-015,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-016,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-017,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-018,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-019,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-020,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-021,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-022,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-023,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-024,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-025,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-026,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-027,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-028,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-029,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-030,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-031,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-032,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-033,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-034,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-035,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+08-036,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
 08-037,api,P1,{FACTSET:pct_reported},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-038,api,P1,{FACTSET:cy_eps_growth_0},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 08-039,api,P1,{FACTSET:cy_eps_growth_1},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
@@ -245,10 +245,10 @@ indicator_id,method,phase,formula,coverage_note
 09-004,api,P1,{FACTSET:revenue_surprise_aggregate},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存
 09-005,api,P1,{FACTSET:guidance_positive_next_q},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存；下一季度指引口径
 09-006,api,P1,{FACTSET:guidance_negative_next_q},FactSet Earnings Insight 每周 PDF 正文（FactSet 为原始发布方）；按期留存；下一季度指引口径
-10-001,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-10-002,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-10-003,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
-10-004,report,P1b,,FactSet Earnings Insight 每周 PDF 快照
+10-001,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+10-002,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+10-003,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
+10-004,excluded,excluded,,按需求不使用机构周报（原计划：FactSet Earnings Insight 每周 PDF 快照）
 12-001,api,P1,{FRED:DGS3MO},财政部常数期限收益率（FRED 镜像）
 12-002,api,P1,"chg({FRED:DGS3MO}, ""W"") * 100",本周末减上周末，%→bp
 12-003,api,P1,{FRED:DGS2},财政部常数期限收益率（FRED 镜像）
@@ -273,41 +273,41 @@ indicator_id,method,phase,formula,coverage_note
 14-008,api,P1,"chg({FRED:T10YIE}, ""W"") * 100",
 15-001,api,P1,{BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A},德国央行：当期基准券日收益率（非常数期限，随新券滚动）
 15-002,api,P1,{BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A},德国央行：当期基准券日收益率（非常数期限，随新券滚动）
-15-003,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-004,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-005,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-006,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-003,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
+15-004,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
+15-005,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
+15-006,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
 15-007,api,P1,{BOECURVE:GLC Nominal:spot:24},英格兰银行名义零息曲线 2 年（与基准券到期收益率可能差几个 bp）
 15-008,api,P1,{BOE:IUDMNZC},英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 15-009,api,P1,{MOFJP:2Y},日本财务省 JGB 常数期限收益率
 15-010,api,P1,{MOFJP:10Y},日本财务省 JGB 常数期限收益率
-15-011,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-012,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-011,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
+15-012,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照）
 16-001,api,P1,{FRED:BAMLC0A0CM} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；%×100→bp
 16-002,api,P1,"chg({FRED:BAMLC0A0CM}, ""W"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 16-003,api,P1,"pctile({FRED:BAMLC0A0CM}, ""3Y"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；周度采样 3 年分位
 17-001,api,P1,{FRED:BAMLH0A0HYM2} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；%×100→bp
 17-002,api,P1,"chg({FRED:BAMLH0A0HYM2}, ""W"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 17-003,api,P1,"pctile({FRED:BAMLH0A0HYM2}, ""3Y"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；周度采样 3 年分位
-18-001,report,P1b,,JPM EMBI 需授权；取周报快照
-18-002,report,P1b,,JPM EMBI 需授权；取周报快照
-18-003,report,P1b,,JPM EMBI 需授权；取周报快照
+18-001,excluded,excluded,,按需求不使用机构周报（原计划：JPM EMBI 需授权；取周报快照）
+18-002,excluded,excluded,,按需求不使用机构周报（原计划：JPM EMBI 需授权；取周报快照）
+18-003,excluded,excluded,,按需求不使用机构周报（原计划：JPM EMBI 需授权；取周报快照）
 19-001,proxy,P1,"ret({YAHOO:AGG:TR}, ""W"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
 19-002,proxy,P1,"ret({YAHOO:AGG:TR}, ""YTD"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
-19-003,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
-19-004,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-003,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
+19-004,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
 19-005,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-006,api,P1,"ret({FRED:BAMLCC0A0CMTRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-007,api,P1,{FRED:BAMLC0A0CMSYTW},ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
-19-008,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-008,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
 19-009,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""W"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-010,api,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""YTD"")",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）；总回报指数
 19-011,api,P1,{FRED:BAMLH0A0HYM2SYTW},ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
-19-012,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-012,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
 19-013,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""W"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
 19-014,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""YTD"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
-19-015,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
-19-016,report,P1b,,Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照
+19-015,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
+19-016,excluded,excluded,,按需求不使用机构周报（原计划：Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照）
 20-001,api,P1,{FRED:DFEDTARL},
 20-002,api,P1,{FRED:DFEDTARU},
 20-003,api,P1,{FRED:ECBDFR},
@@ -369,8 +369,8 @@ indicator_id,method,phase,formula,coverage_note
 27-002,proxy,P1,{YAHOO:GC=F},代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
 27-003,proxy,P1,"ret({YAHOO:GC=F}, ""W"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
 28-001,proxy,P1,{YAHOO:HG=F} * 2204.62,代理：COMEX 铜期货近月（美元/磅 × 2204.62 换算为美元/吨），非 LME 现货
-28-002,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
-28-003,report,P1b,,LBMA/LME 价格需授权；取摩根周报商品快照
+28-002,excluded,excluded,,按需求不使用机构周报（原计划：LBMA/LME 价格需授权；取摩根周报商品快照）
+28-003,excluded,excluded,,按需求不使用机构周报（原计划：LBMA/LME 价格需授权；取摩根周报商品快照）
 29-001,api,P1,{BLS:CUSR0000SA0},BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
 29-002,api,P1,yoy({BLS:CUUR0000SA0}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
 29-003,api,P1,pop({BLS:CUSR0000SA0}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
@@ -632,25 +632,25 @@ indicator_id,method,phase,formula,coverage_note
 51-013,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"") - ret({FRED:SP500}, ""W"")",MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）
 51-014,proxy,P1,"ret({YAHOO:GC=F}, ""W"") - ret({FRED:SP500}, ""W"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）；减 S&P 500 价格周回报
 52-001,api,P1,{FFCAL:USD|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-002,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-003,api,P1,{FFCAL:USD|Core CPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-004,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-004,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-005,api,P1,{FFCAL:USD|Core PCE Price Index m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-006,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-006,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-007,api,P1,{FFCAL:USD|Non-Farm Employment Change|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-008,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-008,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-009,api,P1,{FFCAL:USD|Retail Sales m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-010,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-010,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-011,api,P1,"newest({FFCAL:USD|Advance GDP q/q|forecast}, {FFCAL:USD|Prelim GDP q/q|forecast}, {FFCAL:USD|Final GDP q/q|forecast})",Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）；取最近一次（初值/修正/终值）
-52-012,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-012,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-013,api,P1,{FFCAL:EUR|CPI Flash Estimate y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-014,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-014,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-015,api,P1,{FFCAL:GBP|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-016,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-016,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-017,api,P1,{FFCAL:JPY|National Core CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-018,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-018,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 52-019,api,P1,{FFCAL:CNY|GDP q/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
-52-020,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
+52-020,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项））
 53-001,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
 53-002,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
 53-003,manual,P1,,央行会议日程：按官方日历人工维护（catalog/manual）
@@ -963,10 +963,10 @@ indicator_id,method,phase,formula,coverage_note
 88-004,manual,P2,,民调/政策事件：人工维护
 90-001,api,P1,100 / {FACTSET:forward_pe},1 / FactSet 远期 P/E
 90-002,api,P1,100 / {FACTSET:forward_pe} - {FRED:DGS10},1 / FactSet 远期 P/E 减美国 10 年国债收益率
-90-003,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
-90-004,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
-90-005,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
-90-006,report,P1b,,由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算
+90-003,excluded,excluded,,按需求不使用机构周报（原计划：由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算）
+90-004,excluded,excluded,,按需求不使用机构周报（原计划：由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算）
+90-005,excluded,excluded,,按需求不使用机构周报（原计划：由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算）
+90-006,excluded,excluded,,按需求不使用机构周报（原计划：由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算）
 91-001,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
 91-002,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
 91-003,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
@@ -987,20 +987,20 @@ indicator_id,method,phase,formula,coverage_note
 91-018,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
 91-019,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
 91-020,pending,P2,,情景参数未在清单中固定，且公司债指数久期需授权
-94-001,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-002,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-003,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-004,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-005,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-006,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-007,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-008,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-009,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-010,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-011,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-012,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-013,report,P1b,,一致预期 EPS：取 FactSet/周报快照
-94-014,report,P1b,,一致预期 EPS：取 FactSet/周报快照
+94-001,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-002,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-003,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-004,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-005,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-006,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-007,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-008,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-009,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-010,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-011,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-012,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-013,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
+94-014,excluded,excluded,,按需求不使用机构周报（原计划：一致预期 EPS：取 FactSet/周报快照）
 95-001,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-002,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
 95-003,pending,P2,,MSCI 行业权重：月度 factsheet PDF，待做
@@ -1264,15 +1264,15 @@ indicator_id,method,phase,formula,coverage_note
 99-002,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""ME"")",瑞士央行数据门户
 99-003,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""QE"")",瑞士央行数据门户
 99-004,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""YE"")",瑞士央行数据门户
-99-006,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
-99-007,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
-99-008,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-006,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
+99-007,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
+99-008,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
 99-010,api,P1,"snap({MOFJP:30Y}, ""ME"")",
 99-011,api,P1,"snap({MOFJP:30Y}, ""QE"")",
 99-012,api,P1,"snap({MOFJP:30Y}, ""YE"")",
-99-014,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
-99-015,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
-99-016,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-014,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
+99-015,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
+99-016,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
 99-018,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-019,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-020,api,P1,"snap({FRED:BAMLHE00EHYIOAS}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
@@ -1309,21 +1309,21 @@ indicator_id,method,phase,formula,coverage_note
 99-077,api,P1,"snap({BOE:IUDMNZC}, ""ME"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 99-078,api,P1,"snap({BOE:IUDMNZC}, ""QE"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 99-079,api,P1,"snap({BOE:IUDMNZC}, ""YE"")",英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
-99-080,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-081,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-082,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-083,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-084,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-085,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-080,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-081,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-082,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-083,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-084,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-085,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
 99-086,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-087,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-088,api,P1,"snap({FRED:BAMLH0A0HYM2}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-089,api,P1,"snap({FRED:BAMLC0A0CM}, ""ME"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-090,api,P1,"snap({FRED:BAMLC0A0CM}, ""QE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-091,api,P1,"snap({FRED:BAMLC0A0CM}, ""YE"") * 100",ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
-99-092,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-093,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
-99-094,report,P1b,,欧洲国债/EMBI 期末快照：从周报快照历史生成
+99-092,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-093,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
+99-094,excluded,excluded,,按需求不使用机构周报（原计划：欧洲国债/EMBI 期末快照：从周报快照历史生成）
 99-095,api,P1,"snap({FRED:DCOILWTICO}, ""ME"")",
 99-096,api,P1,"snap({FRED:DCOILWTICO}, ""QE"")",
 99-097,api,P1,"snap({FRED:DCOILWTICO}, ""YE"")",
@@ -1367,26 +1367,26 @@ indicator_id,method,phase,formula,coverage_note
 97-033,api,P1,"year_ret({MSCI:990100:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
 97-037,api,P1,"ret({MSCI:891800:NETR:USD}, ""1Y"") + 100",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）；一年前归一100
 97-038,api,P1,"year_ret({MSCI:891800:NETR:USD}, 2025)",MSCI 官网日收盘指数（net total return，非官方公开接口；MSCI 条款限非商业用途）
-97-041,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-042,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-043,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-044,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-045,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-046,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-047,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-048,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-049,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-050,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-051,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-052,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-053,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-054,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-055,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-056,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-057,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-058,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-059,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-060,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-041,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-042,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-043,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-044,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-045,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-046,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-047,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-048,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-049,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-050,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-051,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-052,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-053,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-054,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-055,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-056,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-057,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-058,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-059,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
+97-060,excluded,excluded,,按需求不使用机构周报（原计划：取汇丰 Investment Weekly（英国）快照）
 97-066,proxy,P1,{YAHOO:EMLC:TR},代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
 97-067,proxy,P1,"ret({YAHOO:EMLC:TR}, ""1Y"") + 100",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
 97-068,proxy,P1,"year_ret({YAHOO:EMLC:TR}, 2025)",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
@@ -1453,40 +1453,40 @@ indicator_id,method,phase,formula,coverage_note
 98-028,proxy,P1,"ret({YAHOO:EMB:TR}, ""YTD"")",代理：iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）
 98-029,proxy,P1,"ret({YAHOO:EMLC:TR}, ""W"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
 98-031,proxy,P1,"ret({YAHOO:EMLC:TR}, ""QTD"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
-98-033,report,P1b,,取高盛 Market Monitor Weekly快照
-98-034,report,P1b,,取高盛 Market Monitor Weekly快照
-98-035,report,P1b,,取高盛 Market Monitor Weekly快照
-98-036,report,P1b,,取高盛 Market Monitor Weekly快照
-98-037,report,P1b,,取高盛 Market Monitor Weekly快照
-98-038,report,P1b,,取高盛 Market Monitor Weekly快照
-98-039,report,P1b,,取高盛 Market Monitor Weekly快照
-98-040,report,P1b,,取高盛 Market Monitor Weekly快照
-98-041,report,P1b,,取高盛 Market Monitor Weekly快照
-98-042,report,P1b,,取高盛 Market Monitor Weekly快照
-98-043,report,P1b,,取高盛 Market Monitor Weekly快照
-98-044,report,P1b,,取高盛 Market Monitor Weekly快照
-98-045,report,P1b,,取高盛 Market Monitor Weekly快照
-98-046,report,P1b,,取高盛 Market Monitor Weekly快照
-98-047,report,P1b,,取高盛 Market Monitor Weekly快照
-98-048,report,P1b,,取高盛 Market Monitor Weekly快照
-98-049,report,P1b,,取高盛 Market Monitor Weekly快照
-98-050,report,P1b,,取高盛 Market Monitor Weekly快照
-98-051,report,P1b,,取高盛 Market Monitor Weekly快照
-98-052,report,P1b,,取高盛 Market Monitor Weekly快照
-98-053,report,P1b,,取高盛 Market Monitor Weekly快照
-98-054,report,P1b,,取高盛 Market Monitor Weekly快照
-98-055,report,P1b,,取高盛 Market Monitor Weekly快照
-98-056,report,P1b,,取高盛 Market Monitor Weekly快照
-98-057,report,P1b,,取高盛 Market Monitor Weekly快照
-98-058,report,P1b,,取高盛 Market Monitor Weekly快照
-98-059,report,P1b,,取高盛 Market Monitor Weekly快照
-98-060,report,P1b,,取高盛 Market Monitor Weekly快照
-98-061,report,P1b,,取高盛 Market Monitor Weekly快照
-98-062,report,P1b,,取高盛 Market Monitor Weekly快照
+98-033,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-034,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-035,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-036,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-037,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-038,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-039,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-040,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-041,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-042,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-043,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-044,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-045,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-046,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-047,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-048,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-049,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-050,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-051,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-052,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-053,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-054,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-055,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-056,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-057,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-058,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-059,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-060,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-061,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+98-062,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
 99-001,api,P1,{SNB:rendeiduebd:CHF.10J},瑞士央行数据门户：联邦债券 10 年期收益率
-99-005,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-005,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
 99-009,api,P1,{MOFJP:30Y},日本财务省 JGB 常数期限收益率
-99-013,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
+99-013,excluded,excluded,,按需求不使用机构周报（原计划：中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照）
 99-017,api,P1,{FRED:BAMLHE00EHYIOAS} * 100,ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）
 99-021,api,P1,{FRED:DHHNGSP},EIA Henry Hub 现货（FRED 镜像）
 99-025,api,P1,{ECB:EXR/D.CHF.EUR.SP00.A},ECB 欧元参考汇率；非欧元货币对由同日参考汇率交叉计算
@@ -1505,36 +1505,36 @@ indicator_id,method,phase,formula,coverage_note
 99-047,api,P1,"ret({CBOE:VIX}, ""QTD"")",VIX 指数百分比变化，不是可投资回报
 99-048,api,P1,"ret({CBOE:VIX}, ""YTD"")",VIX 指数百分比变化，不是可投资回报
 99-051,api,P1,"ret({YAHOO:DX-Y.NYB}, ""QTD"")",Yahoo 免费行情
-100-001,report,P1b,,取高盛 Market Monitor Weekly快照
-100-003,report,P1b,,取高盛 Market Monitor Weekly快照
-100-004,report,P1b,,取高盛 Market Monitor Weekly快照
-100-005,report,P1b,,取高盛 Market Monitor Weekly快照
-100-006,report,P1b,,取高盛 Market Monitor Weekly快照
-100-007,report,P1b,,取高盛 Market Monitor Weekly快照
-100-009,report,P1b,,取高盛 Market Monitor Weekly快照
-100-010,report,P1b,,取高盛 Market Monitor Weekly快照
-100-011,report,P1b,,取高盛 Market Monitor Weekly快照
-100-012,report,P1b,,取高盛 Market Monitor Weekly快照
-100-013,report,P1b,,取高盛 Market Monitor Weekly快照
-100-015,report,P1b,,取高盛 Market Monitor Weekly快照
-100-016,report,P1b,,取高盛 Market Monitor Weekly快照
-100-017,report,P1b,,取高盛 Market Monitor Weekly快照
-100-018,report,P1b,,取高盛 Market Monitor Weekly快照
-100-019,report,P1b,,取高盛 Market Monitor Weekly快照
-100-021,report,P1b,,取高盛 Market Monitor Weekly快照
-100-022,report,P1b,,取高盛 Market Monitor Weekly快照
-100-023,report,P1b,,取高盛 Market Monitor Weekly快照
-100-024,report,P1b,,取高盛 Market Monitor Weekly快照
-100-025,report,P1b,,取高盛 Market Monitor Weekly快照
-100-027,report,P1b,,取高盛 Market Monitor Weekly快照
-100-028,report,P1b,,取高盛 Market Monitor Weekly快照
-100-029,report,P1b,,取高盛 Market Monitor Weekly快照
-100-030,report,P1b,,取高盛 Market Monitor Weekly快照
-100-031,report,P1b,,取高盛 Market Monitor Weekly快照
-100-033,report,P1b,,取高盛 Market Monitor Weekly快照
-100-034,report,P1b,,取高盛 Market Monitor Weekly快照
-100-035,report,P1b,,取高盛 Market Monitor Weekly快照
-100-036,report,P1b,,取高盛 Market Monitor Weekly快照
+100-001,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-003,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-004,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-005,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-006,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-007,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-009,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-010,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-011,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-012,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-013,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-015,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-016,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-017,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-018,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-019,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-021,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-022,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-023,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-024,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-025,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-027,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-028,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-029,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-030,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-031,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-033,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-034,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-035,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
+100-036,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
 101-001,pending,P2,,NFIB 无公开接口，月报 PDF 待解析
 101-002,api,P1,{BLS:WPSFD4},BLS PPI；环比季调、同比未季调
 101-003,api,P1,pop({BLS:WPSFD4}),BLS PPI；环比季调、同比未季调
@@ -1563,43 +1563,43 @@ indicator_id,method,phase,formula,coverage_note
 102-001,api,P1,{FFCAL:USD|PPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-002,api,P1,prior(pop({BLS:WPSFD4})),本次发布所列前值（本库逐次留存版本）
 102-003,api,P1,"surprise(pop({BLS:WPSFD4}), {FFCAL:USD|PPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
-102-004,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-004,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-005,api,P1,prior(yoy({BLS:WPUFD4})),本次发布所列前值（本库逐次留存版本）
 102-006,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-007,api,P1,{FFCAL:USD|Core PPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-008,api,P1,prior(pop({BLS:WPSFD49104})),本次发布所列前值（本库逐次留存版本）
 102-009,api,P1,"surprise(pop({BLS:WPSFD49104}), {FFCAL:USD|Core PPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
-102-010,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-010,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-011,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-012,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-013,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-013,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-014,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-015,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-016,api,P1,{FFCAL:CNY|Trade Balance|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-017,api,P1,{FFCAL:CNY|Trade Balance|previous},Forex Factory 日历所列前值（第三方）
 102-018,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-019,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-019,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-020,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-021,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-022,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-022,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-023,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
 102-024,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-025,api,P1,{FFCAL:GBP|GDP m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-026,api,P1,prior(pop({ONS:ECY2})),本次发布所列前值（本库逐次留存版本）
 102-027,api,P1,"surprise(pop({ONS:ECY2}), {FFCAL:GBP|GDP m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
-102-028,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-028,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-029,api,P1,"prior((msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100)",本次发布所列前值（本库逐次留存版本）
 102-030,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-031,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-031,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-032,pending,P2,,厚生劳动省每月勤劳统计 Excel，待写解析
 102-033,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-034,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-034,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-035,pending,P2,,MoSPI 接口待接入
 102-036,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-037,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-037,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-038,api,P1,prior({BCB:13522}),本次发布所列前值（本库逐次留存版本）
 102-039,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-040,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-040,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-041,api,P1,prior(yoy({STATCAN:41690973})),本次发布所列前值（本库逐次留存版本）
 102-042,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-043,api,P1,{FFCAL:CAD|GDP m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
@@ -1614,13 +1614,13 @@ indicator_id,method,phase,formula,coverage_note
 102-052,api,P1,{FFCAL:CAD|Retail Sales m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-053,api,P1,prior(pop({STATCAN:1446859483})),本次发布所列前值（本库逐次留存版本）
 102-054,api,P1,"surprise(pop({STATCAN:1446859483}), {FFCAL:CAD|Retail Sales m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
-102-055,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-055,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-056,api,P1,before_change({BIS:WS_CBPOL/D.CL}),上一次调整前的政策利率（BIS）
 102-057,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-058,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-058,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-059,api,P1,before_change({BIS:WS_CBPOL/D.TR}),上一次调整前的政策利率（BIS）
 102-060,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
-102-061,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-061,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-062,api,P1,before_change({BCB:432}),上一次调整前的目标利率
 102-063,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-064,api,P1,{FFCAL:CAD|Overnight Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
@@ -1634,7 +1634,7 @@ indicator_id,method,phase,formula,coverage_note
 102-072,api,P1,"surprise({NBS:retail_yoy}, {FFCAL:CNY|Retail Sales y/y|forecast})",国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算
 102-074,api,P1,prior(pop({FRED:RSAFS})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
 102-077,api,P1,prior({ONS:D7G7}),本次发布所列前值（本库逐次留存版本）
-102-079,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项
+102-079,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-080,api,P1,prior({JPCPI:headline_yoy}),本次发布所列前值（本库逐次留存版本）
 102-081,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-082,api,P1,{FFCAL:USD|Industrial Production m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
@@ -1947,8 +1947,8 @@ indicator_id,method,phase,formula,coverage_note
 110-001,api,P1,{FRED:EXHOSLUSM495S} / 10000,NAR 成屋销售（FRED 仅保留约 13 个月，本库逐月累积）；套→万套
 110-002,manual,P1,,BoJ 加息生效日：人工维护
 110-003,api,P1,yoy({FRED:GDP}),BEA GDP（FRED 镜像），季环比折年率及贡献
-110-004,report,P1b,,需希腊/法国/意大利 10 年国债收益率，取周报快照后派生
-110-005,report,P1b,,需希腊/法国/意大利 10 年国债收益率，取周报快照后派生
+110-004,excluded,excluded,,按需求不使用机构周报（原计划：需希腊/法国/意大利 10 年国债收益率，取周报快照后派生）
+110-005,excluded,excluded,,按需求不使用机构周报（原计划：需希腊/法国/意大利 10 年国债收益率，取周报快照后派生）
 110-006,pending,P2,,Eurostat 国际贸易数据集（Comext），待接入
 110-007,pending,P2,,Eurostat 国际贸易数据集（Comext），待接入
 111-001,excluded,excluded,,机构历史增长参考值（Amundi 报告固定版本），随机构预测一并排除

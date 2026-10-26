@@ -1,7 +1,8 @@
-"""Download unfamiliar source files and store a text preview (private table),
-so parsers are written against real layouts rather than guesses.
+"""Development tool: download unfamiliar source files and write a text preview to a
+local folder, so parsers are written against real layouts rather than guesses.
+Nothing is written to the database (the warehouse keeps numbers only).
 
-    python3 -m pipeline.warehouse.inspect_sources        # uses catalog/inspect_urls.txt
+    python3 -m pipeline.warehouse.inspect_sources [--out inspect_out]   # uses catalog/inspect_urls.txt
 
 Line format: ``name url [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"]``.
 FOLLOW opens the first link whose text contains the words; FOLLOWAFTER opens the first
@@ -18,8 +19,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from .db.store import open_store
-from .providers.reports import BROWSER_UA, html_text, pdf_pages
+from .providers.documents import BROWSER_UA, html_text, pdf_pages
 
 URLS = Path(__file__).with_name("catalog") / "inspect_urls.txt"
 MAX_CHARS = 60_000
@@ -73,10 +73,13 @@ def anchors(html: str) -> list[tuple[str, str]]:
     return out
 
 
-def main() -> int:
-    import os
+def main(argv: list[str] | None = None) -> int:
+    import argparse
 
-    store = open_store(os.environ.get("WAREHOUSE_DB_URL"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=Path("inspect_out"))
+    args = parser.parse_args(argv)
+    args.out.mkdir(parents=True, exist_ok=True)
     session = requests.Session()
     today = datetime.now(timezone.utc).date()
     for line in URLS.read_text(encoding="utf-8").splitlines():
@@ -116,9 +119,9 @@ def main() -> int:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001
             pages = [f"ERROR {type(error).__name__}: {error}"]
-        store.upsert_report_pages(f"INSPECT:{name}", today, url, pages)
-        print(f"{name}: {pages[0][:120]}")
-    store.close()
+        target = args.out / f"{today:%Y%m%d}-{name}.txt"
+        target.write_text(f"{url}\n\n" + "\n\n==== page break ====\n\n".join(pages), encoding="utf-8")
+        print(f"{name}: {pages[0][:120]} -> {target}")
     return 0
 
 

@@ -25,7 +25,7 @@ create table if not exists public.indicators (
   updated_at      timestamptz not null default now()
 );
 comment on table public.indicators is '周报指标目录：来自数据采集清单，加上采集方式(method)、阶段(phase)与派生公式(formula)。';
-comment on column public.indicators.method is 'api=官方/免费接口直取或派生; proxy=用跟踪同一指数的ETF或同类指数代理（见coverage_note）; report=机构周报快照; manual=人工维护表; excluded=按需求排除; pending=暂未取得来源';
+comment on column public.indicators.method is 'api=官方/免费接口直取或派生; proxy=用跟踪同一指数的ETF或同类指数代理（见coverage_note）; manual=人工维护表; excluded=按需求排除（机构预测/长期假设，以及只见于机构周报的数字）; pending=暂未取得来源';
 
 create table if not exists public.series (
   series_key       text primary key,
@@ -88,18 +88,8 @@ create table if not exists public.warehouse_meta (
 );
 alter table public.warehouse_meta enable row level security;
 
--- Private archive of weekly institution reports (copyrighted text: no anon policy).
-create table if not exists public.report_pages (
-  source      text not null,
-  report_date date not null,
-  page        integer not null,
-  url         text,
-  text        text,
-  fetched_at  timestamptz not null default now(),
-  primary key (source, report_date, page)
-);
-alter table public.report_pages enable row level security;
-revoke all on public.report_pages from anon, authenticated;
+-- The warehouse stores numbers only: the earlier archive of institution-report text is removed.
+drop table if exists public.report_pages;
 
 create index if not exists observations_series_date on public.observations (series_key, obs_date desc);
 create index if not exists weekly_values_cutoff on public.weekly_values (week_cutoff);

@@ -9,9 +9,9 @@ method values
 api       formula over free official / free market feeds (this module)
 proxy     same kind of formula, but over a stand-in (e.g. an ETF tracking the index,
           or a sister index family); coverage_note names the stand-in
-report    weekly snapshot parsed from an institution's free weekly report
 manual    maintained by hand in catalog/manual (events, dates, decisions)
-excluded  out of scope by request (institution forecasts / CMAs)
+excluded  out of scope by request: institution forecasts / CMAs, and indicators only
+          published in institution weekly reports (the warehouse keeps no reports)
 pending   no free source wired yet; see coverage_note
 """
 
@@ -87,6 +87,12 @@ def other(iid: str, method: str, note: str, phase: str = "P2") -> None:
     MAP[iid] = {"method": method, "phase": phase, "formula": "", "coverage_note": note}
 
 
+def report_only(iid: str, note: str) -> None:
+    """Indicator only published in an institution's weekly report. By request the warehouse
+    keeps no institution reports, so it is excluded; the note keeps the original plan."""
+    other(iid, "excluded", f"按需求不使用机构周报（原计划：{note}）", "excluded")
+
+
 def ids(prefix: str, start: int, end: int) -> list[str]:
     return [f"{prefix}-{i:03d}" for i in range(start, end + 1)]
 
@@ -151,7 +157,7 @@ def build() -> None:
     for k, w in enumerate(["W", "MTD", "YTD", "1Y"], start=22):
         api(f"02-{k:03d}", ret(stoxx600, w), "Yahoo Finance 免费行情，价格回报")
     for iid in ids("02", 1, 20) + ids("02", 26, 40):
-        other(iid, "report", "MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照", "P1b")
+        report_only(iid, "MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照")
 
     # ---------------------------------------------------------- 03 S&P 500 行业 (sector ETFs, total return)
     # Yahoo's S&P sector index tickers return only the latest point, and the JPM recap uses
@@ -190,16 +196,16 @@ def build() -> None:
 
     # ---------------------------------------------------------- 05-10 估值/盈利 (FactSet / 摩根)
     for iid in ids("05", 1, 9):
-        other(iid, "report", "FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照", "P1b")
+        report_only(iid, "FactSet Earnings Insight（S&P 500）/ 摩根周报估值页快照")
     for iid in ids("06", 1, 27):
-        other(iid, "report", "摩根 Weekly Market Recap 指数特征表快照", "P1b")
+        report_only(iid, "摩根 Weekly Market Recap 指数特征表快照")
     for iid in ids("07", 1, 3):
         other(iid, "pending", "成分权重需指数商 factsheet（月度 PDF），待接入")
     spew = yahoo("^SPXEW", "S&P 500 Equal Weight")
     api("07-004", f"{ret(spew, 'W')} - {ret(sp500, 'W')}", "等权与市值加权价格指数（Yahoo/FRED），价格回报差")
     api("07-005", f"{ret(spew, 'YTD')} - {ret(sp500, 'YTD')}", "等权与市值加权价格指数（Yahoo/FRED），价格回报差")
     for iid in ids("08", 1, 40) + ids("09", 1, 6) + ids("10", 1, 4):
-        other(iid, "report", "FactSet Earnings Insight 每周 PDF 快照", "P1b")
+        report_only(iid, "FactSet Earnings Insight 每周 PDF 快照")
 
     # ---------------------------------------------------------- 12-14 美债收益率
     for k, (code, title) in enumerate([("DGS3MO", "3M"), ("DGS2", "2Y"), ("DGS5", "5Y"), ("DGS10", "10Y"), ("DGS30", "30Y")]):
@@ -226,7 +232,7 @@ def build() -> None:
     api("15-009", jgb2, "日本财务省 JGB 常数期限收益率")
     api("15-010", jgb10, "日本财务省 JGB 常数期限收益率")
     for iid in ids("15", 1, 8) + ["15-011", "15-012"]:
-        other(iid, "report", "欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照", "P1b")
+        report_only(iid, "欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照")
     api("99-009", jgb30, "日本财务省 JGB 常数期限收益率")
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"99-{10 + k:03d}", f'snap({jgb30}, "{w}")')
@@ -254,7 +260,7 @@ def build() -> None:
 
     # ---------------------------------------------------------- 18-19 EM 利差 / 债券指数回报
     for iid in ids("18", 1, 3):
-        other(iid, "report", "JPM EMBI 需授权；取周报快照", "P1b")
+        report_only(iid, "JPM EMBI 需授权；取周报快照")
     igtr = fred("BAMLCC0A0CMTRIV", "ICE BofA US Corporate Index Total Return", "D", "指数点")
     hytr = fred("BAMLHYH0A0HYM2TRIV", "ICE BofA US High Yield Index Total Return", "D", "指数点")
     api("19-005", ret(igtr, "W"), ice_note + "；总回报指数")
@@ -262,7 +268,7 @@ def build() -> None:
     api("19-009", ret(hytr, "W"), ice_note + "；总回报指数")
     api("19-010", ret(hytr, "YTD"), ice_note + "；总回报指数")
     for iid in ["19-001", "19-002", "19-003", "19-004", "19-007", "19-008", "19-011", "19-012", "19-013", "19-014", "19-015", "19-016"]:
-        other(iid, "report", "Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照", "P1b")
+        report_only(iid, "Bloomberg 指数/YTW/久期需授权；取摩根周报固定收益表快照")
 
     # ---------------------------------------------------------- 20 政策利率
     fl = fred("DFEDTARL", "Fed funds target range lower", "D", "%", lag=0)
@@ -367,9 +373,9 @@ def build() -> None:
     for src, dst in [("26-001", "26-004"), ("26-002", "26-005"), ("26-003", "26-006")]:
         api(dst, f"diff({stocks[src]}) / 1000", "本周减上周；千桶→百万桶")
     for iid in ids("27", 1, 3) + ids("28", 1, 3):
-        other(iid, "report", "LBMA/LME 价格需授权；取摩根周报商品快照", "P1b")
+        report_only(iid, "LBMA/LME 价格需授权；取摩根周报商品快照")
     for iid in ["99-101", "99-102", "99-103"]:
-        other(iid, "report", "LBMA 黄金需授权；取周报快照", "P1b")
+        report_only(iid, "LBMA 黄金需授权；取周报快照")
 
     # ---------------------------------------------------------- 29 CPI (BLS)
     cpi = [
@@ -574,7 +580,7 @@ def build() -> None:
         other(iid, "pending", "MSCI World/国债总回报/LBMA 黄金需授权数据")
 
     for iid in ids("52", 1, 20):
-        other(iid, "report", "发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）", "P1b")
+        report_only(iid, "发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）")
     for iid in ids("53", 1, 8):
         other(iid, "manual", "央行会议日程：按官方日历人工维护（catalog/manual）", "P1")
     for iid in ids("54", 1, 10) + ids("55", 1, 10):
@@ -754,15 +760,15 @@ def build() -> None:
 
     # ---------------------------------------------------------- 90-96 估值、全球指数
     for iid in ids("90", 1, 6):
-        other(iid, "report", "由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算", "P1b")
+        report_only(iid, "由 FactSet/周报远期 PE 快照派生（1/PE），PE 入库后自动计算")
     for iid in ids("91", 1, 20):
         other(iid, "pending", "情景参数未在清单中固定，且公司债指数久期需授权")
     for iid in ids("94", 1, 14):
-        other(iid, "report", "一致预期 EPS：取 FactSet/周报快照", "P1b")
+        report_only(iid, "一致预期 EPS：取 FactSet/周报快照")
     for iid in ids("95", 1, 22):
         other(iid, "pending", "MSCI 行业权重：月度 factsheet PDF，待做")
     for iid in ids("95", 34, 55) + ids("95", 65, 82):
-        other(iid, "report", "MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照", "P1b")
+        report_only(iid, "MSCI 行业/风格回报需授权；取高盛 Market Monitor 表格快照")
 
     gidx = [
         ("96-001", "^SP400", "S&P MidCap 400"), ("96-006", "^RUT", "Russell 2000"), ("96-011", "^SPXEW", "S&P 500 Equal Weight"),
@@ -785,9 +791,9 @@ def build() -> None:
         for k, w in enumerate(["ME", "QE", "YE"]):
             api(f"96-{snap_base[iid] + k:03d}", f'snap({x}, "{w}")', yn)
     for iid in ids("96", 16, 25) + ids("96", 61, 85) + ["96-089", "96-094"] + ids("96", 99, 102) + ["96-104"]:
-        other(iid, "report", "MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照", "P1b")
+        report_only(iid, "MSCI/STOXX 50/TOPIX 需授权；取高盛 Market Monitor 表格快照")
     for iid in ids("96", 116, 121) + ids("96", 143, 163) + ids("96", 173, 184) + ids("96", 188, 190):
-        other(iid, "report", "期末快照：从高盛周报快照历史序列生成", "P1b")
+        report_only(iid, "期末快照：从高盛周报快照历史序列生成")
     nasdaq = fred("NASDAQCOM", "Nasdaq Composite", "D", "点")
     djia = fred("DJIA", "Dow Jones Industrial Average", "D", "点")
     api("96-096", ret(sp500, "QTD"))
@@ -824,9 +830,9 @@ def build() -> None:
         api(f"99-{65 + k:03d}", f'snap({t10y2y}, "{w}") * 100', "%→bp")
         api(f"99-{74 + k:03d}", f'snap({jgb10}, "{w}")', "日本财务省")
     for iid in ids("99", 68, 73) + ids("99", 77, 85) + ids("99", 92, 94):
-        other(iid, "report", "欧洲国债/EMBI 期末快照：从周报快照历史生成", "P1b")
+        report_only(iid, "欧洲国债/EMBI 期末快照：从周报快照历史生成")
     for iid in ["99-005", "99-006", "99-007", "99-008", "99-013", "99-014", "99-015", "99-016"]:
-        other(iid, "report", "中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照", "P1b")
+        report_only(iid, "中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照")
     # rendoblid (2002 method) stopped in July 2025; rendeiduebd holds spot rates under the new method.
     ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 35,
                   "https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd")
@@ -834,7 +840,7 @@ def build() -> None:
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"99-{2 + k:03d}", f'snap({ch10}, "{w}")', "瑞士央行数据门户")
     for iid in ["99-029", "99-031", "99-033", "99-035", "99-037", "99-038", "99-039", "99-040"]:
-        other(iid, "report", "指数需授权；取高盛周报另类资产表快照", "P1b")
+        report_only(iid, "指数需授权；取高盛周报另类资产表快照")
 
     # ---------------------------------------------------------- 101-102 全球宏观补充
     other("101-001", "pending", "NFIB 无公开接口，月报 PDF 待解析")
@@ -883,7 +889,7 @@ def build() -> None:
                 "102-063", "102-066", "102-069", "102-072", "102-081", "102-084", "102-087", "102-090", "102-093", "102-096"]:
         other(iid, "pending", "首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算")
     for iid in [f"102-{n:03d}" for n in (1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58, 61, 64, 67, 70, 79, 82, 85, 88, 91, 94)]:
-        other(iid, "report", "发布前调查中位数：取汇丰周报日历表公开项", "P1b")
+        report_only(iid, "发布前调查中位数：取汇丰周报日历表公开项")
 
     # ---------------------------------------------------------- 105-110
     for iid in ids("105", 1, 20):
@@ -923,7 +929,7 @@ def build() -> None:
     other("110-001", "pending", "NAR 数据需授权")
     other("110-002", "manual", "BoJ 加息生效日：人工维护", "P1")
     for iid in ["110-004", "110-005"]:
-        other(iid, "report", "需希腊/法国/意大利 10 年国债收益率，取周报快照后派生", "P1b")
+        report_only(iid, "需希腊/法国/意大利 10 年国债收益率，取周报快照后派生")
     for iid in ["110-006", "110-007"]:
         other(iid, "pending", "Eurostat 国际贸易数据集（Comext），待接入")
     for iid in ids("111", 1, 7):
@@ -1446,7 +1452,8 @@ def write() -> tuple[int, int]:
         else:
             host = r["source_url"].split("/")[2] if r["source_url"].count("/") >= 2 else ""
             if host in REPORT_SOURCES:
-                m = {"method": "report", "phase": "P1b", "formula": "", "coverage_note": f"取{REPORT_SOURCES[host]}快照"}
+                m = {"method": "excluded", "phase": "excluded", "formula": "",
+                     "coverage_note": f"按需求不使用机构周报（原计划：取{REPORT_SOURCES[host]}快照）"}
             else:
                 m = {"method": "pending", "phase": "P2", "formula": "", "coverage_note": "未接入免费来源"}
         rows.append({"indicator_id": iid, **m})
