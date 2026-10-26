@@ -194,3 +194,33 @@ grant select on public.indicators, public.series, public.observations,
   to authenticated;
 revoke insert, update, delete, truncate on public.indicators, public.series, public.observations,
                 public.weekly_values, public.fetch_log from authenticated;
+
+-- Personal keys for the read-only MCP connector (supabase/functions/warehouse-mcp).
+-- Only SHA-256 hashes are stored; removing a reader deletes their keys.
+--   issue:  select private.issue_reader_key('classmate@example.com', 'Claude');  (shown once)
+--   revoke: delete from public.reader_keys where email = 'classmate@example.com';
+create table if not exists public.reader_keys (
+  key_hash     text primary key,
+  email        text not null references public.readers(email) on delete cascade,
+  label        text,
+  created_at   timestamptz not null default now(),
+  last_used_at timestamptz
+);
+alter table public.reader_keys enable row level security;
+revoke all on public.reader_keys from anon, authenticated;
+
+create or replace function private.issue_reader_key(p_email text, p_label text default null) returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare k text;
+begin
+  if not exists (select 1 from public.readers where email = lower(p_email)) then
+    raise exception 'not on the readers list: %', p_email;
+  end if;
+  k := 'cw_' || encode(extensions.gen_random_bytes(24), 'hex');
+  insert into public.reader_keys (key_hash, email, label)
+  values (encode(extensions.digest(k, 'sha256'), 'hex'), lower(p_email), p_label);
+  return k;
+end
+$$;
+revoke all on function private.issue_reader_key(text, text) from public, anon, authenticated;

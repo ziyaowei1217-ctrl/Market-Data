@@ -19,6 +19,30 @@
   （`weekly`、`latest`、`find`、`series`）；或者先用 `POST /auth/v1/token?grant_type=password`
   换取 access token，再在 REST 请求里带上 `Authorization: Bearer <token>`。
 
+## 让 agent 直接用：MCP 连接器
+
+`supabase/functions/warehouse-mcp` 是一个只读 MCP 服务器（Supabase Edge Function，
+Streamable HTTP），地址 `https://ujomxngmefoplrsxmuyf.supabase.co/functions/v1/warehouse-mcp`。
+Claude、Claude Code、Cursor 等接上之后，agent 直接调用工具查数画图，不需要登录或写代码。
+
+工具：`search_indicators`（中文关键词找指标）、`list_modules`、`describe_indicator`、
+`get_weekly`（≤20 个指标的周度序列）、`get_latest`（最近一周）、`get_series`（原始频率序列）、
+`data_status`（新鲜度）。没有任意 SQL；服务器自带使用说明（method、status、obs_date、画图规范）。
+
+每个读者一把个人钥匙，库里只存 SHA-256：
+
+* 发钥匙（读者须已在 `public.readers`）：SQL Editor 运行
+  `select private.issue_reader_key('同学邮箱', 'Claude');`，结果只显示这一次，私下发给本人。
+* 收回：`delete from public.reader_keys where email = '同学邮箱';`；把人移出 `readers` 也会连带删除。
+* 谁在用：`select email, label, created_at, last_used_at from public.reader_keys;`
+* 连接（推荐把钥匙放在请求头，不进 URL 和日志）：
+  * Claude（网页/桌面/手机）：*Customize → Connectors → + Add → Add custom connector*，填地址，
+    Authentication 选 *No sign in*，Request headers 加 `Authorization: Bearer cw_...`。
+  * Claude Code：`claude mcp add --transport http capital-weekly <地址> --header "Authorization: Bearer cw_..."`
+  * 只能填 URL 的客户端：`<地址>?key=cw_...`。
+* 部署：`supabase functions deploy warehouse-mcp --no-verify-jwt`（鉴权由函数自己做）。
+* 测试：`node --experimental-strip-types --test supabase/functions/warehouse-mcp/server.test.ts`（Node ≥ 22.6，无网络）。
+
 ## 数据在哪、怎么查
 
 | 表/视图 | 内容 |

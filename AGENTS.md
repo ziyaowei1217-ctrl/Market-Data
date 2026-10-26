@@ -34,6 +34,10 @@
 - Reading requires a signed-in Supabase account whose confirmed email is in
   `public.readers` (`private.is_reader()` policy); anon sees nothing. Never commit
   reader emails or passwords; add readers in the database, not in `schema.sql`.
+- `supabase/functions/warehouse-mcp/` is the read-only MCP server (Edge Function, deployed
+  with `--no-verify-jwt`; it checks personal `cw_` reader keys stored as hashes in
+  `public.reader_keys`). Never commit a reader key. Tests:
+  `node --experimental-strip-types --test supabase/functions/warehouse-mcp/server.test.ts`.
 - `method = 'proxy'` values come from a stand-in (an ETF tracking the index, or a
   sister index family); say so when charting them.
 - Scheduled and manual runs start on the default branch but check out `warehouse`;
