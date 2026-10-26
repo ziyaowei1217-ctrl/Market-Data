@@ -64,6 +64,13 @@ class WindowTests(unittest.TestCase):
         result = evaluate('snap({T:PX}, "ME")', ctx(self.raw, "2026-10-23"))
         self.assertEqual(result.obs_date, pd.Timestamp("2026-09-30"))
 
+    def test_snapshot_too_old_is_stale(self):
+        days = pd.bdate_range("2025-01-01", "2025-07-31")
+        raw = {"T:Y": frame(days, [1.0] * len(days))}
+        result = evaluate('snap({T:Y}, "ME")', ctx(raw, "2026-10-23"))
+        self.assertEqual(result.status, "stale")
+        self.assertEqual(result.value, 1.0)
+
     def test_insufficient_history_is_explicit(self):
         raw = {"T:Y": frame(["2026-10-16", "2026-10-23"], [1.0, 2.0])}
         result = evaluate('pctile({T:Y}, "3Y")', ctx(raw, "2026-10-23"))

@@ -190,6 +190,7 @@ def infer_freq(index: pd.DatetimeIndex) -> str:
 
 
 PERIODS_PER_YEAR = {"D": 252, "W": 52, "M": 12, "Q": 4, "A": 1}
+SNAP_TOLERANCE_DAYS = {"D": 10, "W": 14, "M": 45, "Q": 100, "A": 380}
 
 
 def window_anchor(t: pd.Timestamp, window: str) -> pd.Timestamp:
@@ -387,6 +388,9 @@ def f_snap(ctx: Context, x: TS, window: str) -> Scalar:
     hit = _asof(frame, anchor_date)
     if hit is None:
         return Scalar.missing("insufficient_history")
+    limit = SNAP_TOLERANCE_DAYS.get(infer_freq(frame.index) if len(frame) > 2 else "D", 10)
+    if (anchor_date - hit[1]).days > limit:
+        return Scalar(hit[0], hit[1], status="stale", detail=f"latest value before {anchor_date.date()} is from {hit[1].date()}")
     return Scalar(hit[0], hit[1])
 
 

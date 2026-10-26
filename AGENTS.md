@@ -31,6 +31,10 @@
 - Its catalog comes from the 数据采集清单 workbook (`catalog/indicators.csv`) and
   `catalog/mapping.py`; regenerate the CSVs instead of editing them by hand.
 - Missing data stays NULL with an explicit `status`; never fill with zero.
+- `method = 'proxy'` values come from a stand-in (an ETF tracking the index, or a
+  sister index family); say so when charting them.
+- The scheduled run uses the default branch; `sync_catalog` refuses to run from a
+  checkout older than the one that last wrote the catalog, so keep `main` merged.
 - Tests: `python3 -m unittest discover -s pipeline/warehouse/tests -t .` (no network).
 - See `pipeline/warehouse/README.md` for tables, formulas and operations.
 

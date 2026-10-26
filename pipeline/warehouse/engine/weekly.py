@@ -15,7 +15,7 @@ from .formula import Context, FormulaError, RawSeries, evaluate, parse
 KNOWLEDGE_GRACE = pd.Timedelta(days=2)
 
 # Bump when calculation rules change; the weekly job then recomputes all history.
-ENGINE_VERSION = "2026-10-24.2"
+ENGINE_VERSION = "2026-10-26.1"
 
 
 @dataclass(frozen=True)
