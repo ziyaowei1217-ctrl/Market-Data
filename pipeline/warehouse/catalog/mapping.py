@@ -1345,6 +1345,16 @@ def build_batch4() -> None:
     api("64-016", boe("OIS:fwds:12", "OIS instantaneous forward 12M"), "英格兰银行 OIS 瞬时远期曲线 12 个月处（市场隐含 12 个月后 SONIA）")
     api("15-007", boe("GLC Nominal:spot:24", "nominal gilt spot 2Y"), "英格兰银行名义零息曲线 2 年（与基准券到期收益率可能差几个 bp）")
 
+    # ---------------------------------------------------------- Treasury issuance by month (auction records)
+    turl = "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
+    tnote = ("财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，"
+             "两边同口径；当月只含已交割的拍卖")
+    k = 5
+    for cat, cname in [("bills", "bills incl. CMBs"), ("coupons", "fixed-rate notes and bonds"), ("tips", "TIPS"), ("frn", "FRNs")]:
+        for part in ("gross", "maturing", "net"):
+            api(f"69-{k:03d}", series("TSYAUCT", f"{cat}:{part}", f"Treasury {cname}: {part} (monthly)", "M", "百万美元", 0, turl), tnote)
+            k += 1
+
     # ---------------------------------------------------------- S&P Global PMI headlines
     purl = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
     pnote = ("S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，"

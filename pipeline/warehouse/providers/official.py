@@ -1036,3 +1036,74 @@ class BankOfEnglandCurves(Provider):
                 obs = [Observation(k, v) for k, v in sorted(values[d.key].items()) if k >= start]
                 out.append(FetchResult(d.key, obs, "ok" if obs else "empty", "" if obs else "column not found"))
         return out
+
+
+def auction_category(row: dict) -> str | None:
+    """bills | coupons (fixed-rate notes and bonds) | tips | frn."""
+    kind = (row.get("security_type") or "").strip()
+    if kind == "Bill":
+        return "bills"
+    if kind not in ("Note", "Bond"):
+        return None
+    if (row.get("inflation_index_security") or "").strip() == "Yes":
+        return "tips"
+    if (row.get("floating_rate") or "").strip() == "Yes":
+        return "frn"
+    return "coupons"
+
+
+def monthly_issuance(rows: Sequence[dict], start: date, today: date) -> dict[str, dict[date, float]]:
+    """Gross issuance (issue month), principal maturing (maturity month) and net, in $ million,
+    from auction records. Amount = total accepted + SOMA add-ons, so maturing principal and
+    issuance use the same (total) basis; auctions not yet settled are skipped."""
+    out: dict[str, dict[date, float]] = defaultdict(lambda: defaultdict(float))
+    last_month = date(today.year, today.month, 1)
+    for row in rows:
+        cat = auction_category(row)
+        amount = (to_float(row.get("total_accepted")) or 0.0) + (to_float(row.get("soma_accepted")) or 0.0)
+        if cat is None or not amount:
+            continue
+        issue = pd.to_datetime(row.get("issue_date"), errors="coerce")
+        mature = pd.to_datetime(row.get("maturity_date"), errors="coerce")
+        if pd.notna(issue) and issue.date() <= today:
+            m = issue.date().replace(day=1)
+            if m >= start.replace(day=1):
+                out[f"{cat}:gross"][m] += amount / 1e6
+        if pd.notna(mature) and mature.date() <= today:
+            m = mature.date().replace(day=1)
+            if m >= start.replace(day=1):
+                out[f"{cat}:maturing"][m] += amount / 1e6
+    for cat in ("bills", "coupons", "tips", "frn"):
+        gross, maturing = out.get(f"{cat}:gross", {}), out.get(f"{cat}:maturing", {})
+        for m in {m for m in set(gross) | set(maturing) if m <= last_month}:
+            out[f"{cat}:net"][m] = gross.get(m, 0.0) - maturing.get(m, 0.0)
+    return {k: dict(v) for k, v in out.items() if v}
+
+
+@register
+class TreasuryAuctions(Provider):
+    """Monthly Treasury issuance from Fiscal Data auction records (auctions_query).
+    code = "<bills|coupons|tips|frn>:<gross|maturing|net>" in $ million."""
+
+    name = "TSYAUCT"
+    batch = True
+    URL = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
+    FIELDS = "security_type,issue_date,maturity_date,total_accepted,soma_accepted,inflation_index_security,floating_rate"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        rows: list[dict] = []
+        page = 1
+        while True:
+            payload = self.get_json(self.URL, {"filter": f"maturity_date:gte:{start.isoformat()}", "fields": self.FIELDS,
+                                               "sort": "issue_date", "page[size]": 10000, "page[number]": page, "format": "json"})
+            rows.extend(payload.get("data", []))
+            if page >= int(payload.get("meta", {}).get("total-pages", 1) or 1):
+                break
+            page += 1
+        table = monthly_issuance(rows, start, _today())
+        out = []
+        for d in defs:
+            series = table.get(d.code, {})
+            obs = [Observation(k, round(v, 1)) for k, v in sorted(series.items())]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty", f"{len(rows)} auction records"))
+        return out

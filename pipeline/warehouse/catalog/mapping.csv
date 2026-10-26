@@ -802,18 +802,18 @@ indicator_id,method,phase,formula,coverage_note
 69-002,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
 69-003,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
 69-004,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-005,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-006,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-007,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-008,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-009,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-010,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-011,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-012,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-013,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-014,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-015,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
-69-016,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
+69-005,api,P1,{TSYAUCT:bills:gross},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-006,api,P1,{TSYAUCT:bills:maturing},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-007,api,P1,{TSYAUCT:bills:net},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-008,api,P1,{TSYAUCT:coupons:gross},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-009,api,P1,{TSYAUCT:coupons:maturing},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-010,api,P1,{TSYAUCT:coupons:net},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-011,api,P1,{TSYAUCT:tips:gross},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-012,api,P1,{TSYAUCT:tips:maturing},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-013,api,P1,{TSYAUCT:tips:net},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-014,api,P1,{TSYAUCT:frn:gross},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-015,api,P1,{TSYAUCT:frn:maturing},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
+69-016,api,P1,{TSYAUCT:frn:net},财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，两边同口径；当月只含已交割的拍卖
 69-017,pending,P2,,季度再融资与发行到期需解析财政部公告/MSPD，待做
 70-001,api,P1,{TSY:auction:2-Year:offering_amt},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计
 70-002,api,P1,{TSY:auction:2-Year:high_yield},财政部拍卖结果（Fiscal Data API），含增发；占比分母为三类竞争性获配合计

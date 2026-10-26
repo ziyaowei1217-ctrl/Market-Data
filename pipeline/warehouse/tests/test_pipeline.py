@@ -531,3 +531,22 @@ class SpgFinalThresholdTests(unittest.TestCase):
         text = ("Embargoed until 0030 UTC 3 October 2026. The headline S&P Global Japan Services PMI Business Activity Index "
                 "rose above the 50.0 no-change mark to 51.2 in September.")
         self.assertEqual(parse_spg_final("Services", text)["serv"], {date(2026, 9, 1): 51.2})
+
+
+class TreasuryIssuanceTests(unittest.TestCase):
+    def test_gross_maturing_net(self):
+        from pipeline.warehouse.providers.official import monthly_issuance
+
+        rows = [
+            {"security_type": "Bill", "issue_date": "2026-10-06", "maturity_date": "2026-11-03", "total_accepted": "80000000000", "soma_accepted": "5000000000"},
+            {"security_type": "Bill", "issue_date": "2026-09-08", "maturity_date": "2026-10-06", "total_accepted": "70000000000", "soma_accepted": "null"},
+            {"security_type": "Note", "issue_date": "2026-10-31", "maturity_date": "2031-10-31", "total_accepted": "null", "soma_accepted": "null"},
+            {"security_type": "Note", "issue_date": "2026-10-15", "maturity_date": "2036-10-15", "total_accepted": "20000000000",
+             "inflation_index_security": "Yes", "floating_rate": "No"},
+        ]
+        out = monthly_issuance(rows, date(2026, 9, 1), date(2026, 10, 25))
+        self.assertEqual(out["bills:gross"][date(2026, 10, 1)], 85000.0)
+        self.assertEqual(out["bills:maturing"][date(2026, 10, 1)], 70000.0)
+        self.assertEqual(out["bills:net"][date(2026, 10, 1)], 15000.0)
+        self.assertEqual(out["tips:gross"][date(2026, 10, 1)], 20000.0)
+        self.assertNotIn("coupons:gross", out)
