@@ -149,7 +149,12 @@ create table if not exists public.readers (
 alter table public.readers enable row level security;
 revoke all on public.readers from anon, authenticated;
 
-create or replace function public.is_reader() returns boolean
+-- The check lives in a non-exposed schema so it is not callable through the REST API.
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_reader() returns boolean
 language sql stable security definer set search_path = ''
 as $$
   select exists (
@@ -159,8 +164,8 @@ as $$
     where u.id = auth.uid() and u.email_confirmed_at is not null
   )
 $$;
-revoke all on function public.is_reader() from public, anon;
-grant execute on function public.is_reader() to authenticated;
+revoke all on function private.is_reader() from public, anon;
+grant execute on function private.is_reader() to authenticated;
 
 alter table public.indicators    enable row level security;
 alter table public.series        enable row level security;
@@ -173,13 +178,11 @@ declare t text;
 begin
   foreach t in array array['indicators','series','observations','weekly_values','fetch_log'] loop
     execute format('drop policy if exists read_all on public.%I', t);
-    if not exists (
-      select 1 from pg_policies where schemaname = 'public' and tablename = t and policyname = 'readers_only'
-    ) then
-      execute format('create policy readers_only on public.%I for select to authenticated using ((select public.is_reader()))', t);
-    end if;
+    execute format('drop policy if exists readers_only on public.%I', t);
+    execute format('create policy readers_only on public.%I for select to authenticated using ((select private.is_reader()))', t);
   end loop;
 end $$;
+drop function if exists public.is_reader();
 
 revoke all on public.indicators, public.series, public.observations,
               public.weekly_values, public.fetch_log, public.warehouse_meta,

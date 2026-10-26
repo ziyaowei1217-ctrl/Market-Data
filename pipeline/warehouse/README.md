@@ -6,6 +6,19 @@
 和现有五条管线（`pipeline.indices` 等，输出 `output/*.json`）互不影响：
 那边每周覆盖最新一期 JSON；这里按发布版本保存历史，并累积周度序列。
 
+## 谁能读、怎么登录
+
+只有在读者名单（`public.readers`）上、并且邮箱已验证的 Supabase 账号才能读，未登录的请求什么都读不到。
+写入只走 GitHub Actions 的数据库连接串，不受影响。
+
+* 加人：所有者在 Supabase 后台的 SQL Editor 运行
+  `insert into public.readers (email) values ('同学邮箱');`（邮箱用小写）。
+* 同学注册：在 Supabase 后台由所有者 *Authentication → Add user*（勾选 Auto Confirm），
+  或者自己运行 `python3 -m pipeline.warehouse.client signup 邮箱`，然后点验证邮件里的链接。
+* 读数据：设置 `WAREHOUSE_EMAIL`、`WAREHOUSE_PASSWORD` 后用 `pipeline.warehouse.client`
+  （`weekly`、`latest`、`find`、`series`）；或者先用 `POST /auth/v1/token?grant_type=password`
+  换取 access token，再在 REST 请求里带上 `Authorization: Bearer <token>`。
+
 ## 数据在哪、怎么查
 
 | 表/视图 | 内容 |

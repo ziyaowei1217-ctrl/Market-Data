@@ -31,6 +31,9 @@
 - Its catalog comes from the 数据采集清单 workbook (`catalog/indicators.csv`) and
   `catalog/mapping.py`; regenerate the CSVs instead of editing them by hand.
 - Missing data stays NULL with an explicit `status`; never fill with zero.
+- Reading requires a signed-in Supabase account whose confirmed email is in
+  `public.readers` (`private.is_reader()` policy); anon sees nothing. Never commit
+  reader emails or passwords; add readers in the database, not in `schema.sql`.
 - `method = 'proxy'` values come from a stand-in (an ETF tracking the index, or a
   sister index family); say so when charting them.
 - The scheduled run uses the default branch; `sync_catalog` refuses to run from a
