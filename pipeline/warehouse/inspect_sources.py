@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         name, rest = line.split(None, 1)
         url, mode, arg = rest.strip(), "", ""
-        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW "):
+        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW ", " LINKS ", " JSONKEYS "):
             if keyword in rest:
                 url, arg = (x.strip() for x in rest.split(keyword, 1))
                 mode, arg = keyword.strip(), arg.strip('"')
@@ -135,6 +135,10 @@ def main(argv: list[str] | None = None) -> int:
                 raw = r.text
                 at = max(raw.find(arg.replace("&", "&amp;")), raw.find(arg))
                 pages.append(raw[max(0, at - 3000): at + 12000] if at >= 0 else "marker not found\n" + raw[:15000])
+            elif r.status_code == 200 and mode == "LINKS":  # only the links whose href or text contains arg
+                pages.append("\n".join(f"{h} | {x}" for h, x in anchors(r.text) if arg.lower() in (h + x).lower())[:MAX_CHARS])
+            elif r.status_code == 200 and mode == "JSONKEYS":  # distinct combinations of the named fields
+                pages.append(json_keys(r.json(), [f.strip() for f in arg.split(",")]))
             elif r.status_code == 200:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001
@@ -153,6 +157,24 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(text + f"\n==== end {name} ====")
     return 0
+
+
+def json_keys(payload, fields: list[str], width: int = 70) -> str:
+    """Distinct tuples of ``fields`` over every JSON object that has the first field."""
+    seen: dict[tuple, None] = {}
+
+    def walk(x):
+        if isinstance(x, dict):
+            if fields[0] in x:
+                seen.setdefault(tuple(str(x.get(f, ""))[:width] for f in fields), None)
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+
+    walk(payload)
+    return "\n".join(" | ".join(k) for k in seen)
 
 
 def annotation_escape(text: str) -> str:

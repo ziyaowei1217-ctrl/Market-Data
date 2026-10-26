@@ -1,23 +1,14 @@
-# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
+# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
-ici_flows        https://www.ici.org/flows_data_2026.xls
-ici_combined     https://www.ici.org/research/stats/combined_flows
-ici_mmf          https://www.ici.org/research/stats/mmf
-ism_svcs         https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/nmi/rain202609svcs.pdf
-yahoo_clz26      https://query1.finance.yahoo.com/v8/finance/chart/CLZ26.NYM?range=2y&interval=1d
-yahoo_clz25      https://query1.finance.yahoo.com/v8/finance/chart/CLZ25.NYM?range=2y&interval=1d
-yahoo_bzf27      https://query1.finance.yahoo.com/v8/finance/chart/BZF27.NYM?range=2y&interval=1d
-yahoo_clu27      https://query1.finance.yahoo.com/v8/finance/chart/CLU27.NYM?range=2y&interval=1d
-cboe_ovx         https://cdn.cboe.com/api/global/us_indices/daily_prices/OVX_History.csv
-eia_steo         https://api.eia.gov/v2/seriesid/STEO.COPS_OPEC.M?api_key={EIA_API_KEY}&start=2025-01&length=40
-boe_dmp          https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026
-bea_t20808       https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIPA&TableName=T20808&Frequency=M&Year=2026&ResultFormat=JSON
-bea_mne_series   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=SeriesID&ResultFormat=JSON
-bea_mne_country  https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=Country&ResultFormat=JSON
-bea_mne_data     https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=MNE&DirectionOfInvestment=Inward&Classification=Country&SeriesID=30&Year=2023,2024&Country=all&ResultFormat=JSON
-mospi_cpi        https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&series=Current%20series&year=2026&format=JSON
-oecd_india_cpi   https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY?startPeriod=2025-01&format=csvfilewithlabels
-fred_china_exp   https://fred.stlouisfed.org/graph/fredgraph.csv?id=XTEXVA01CNM667S
-mhlw_index       https://www.mhlw.go.jp/english/database/db-l/monthly-labour.html
-nfib_sbet        https://www.nfib.com/news/monthly_report/sbet/
-customs_en       http://english.customs.gov.cn/statics/report/preliminary.html
+bea_t20808_lines https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIPA&TableName=T20808&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,LineDescription,SeriesCode"
+bea_nid_tables   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=NIUnderlyingDetail&ParameterName=TableName&ResultFormat=JSON JSONKEYS "TableName,Description"
+bea_mne_params   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterList&DataSetName=MNE&ResultFormat=JSON JSONKEYS "ParameterName,ParameterIsRequiredFlag,ParameterDefaultValue,AllValue,ParameterDescription"
+bea_mne_series   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=SeriesID&ResultFormat=JSON JSONKEYS "key,desc"
+bea_mne_country  https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=Country&ResultFormat=JSON JSONKEYS "key,desc"
+boe_dmp_links    https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 LINKS "xls"
+customs_links    http://english.customs.gov.cn/statics/report/preliminary.html LINKS "statics"
+mhlw_2608        https://www.mhlw.go.jp/english/database/db-l/r08/2608pe/2608pe.html
+mhlw_2608_links  https://www.mhlw.go.jp/english/database/db-l/r08/2608pe/2608pe.html LINKS "."
+idc_mmf          https://www.idc.org/research/stats/mmfassets
+ici_mmf_data     https://www.ici.org/mm_summary_data_2026.xls
+ofr_mmf          https://data.financialresearch.gov/v1/metadata/mnemonics?dataset=mmf JSONKEYS "mnemonic,series_name"
