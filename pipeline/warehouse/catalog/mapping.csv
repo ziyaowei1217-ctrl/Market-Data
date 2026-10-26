@@ -277,7 +277,7 @@ indicator_id,method,phase,formula,coverage_note
 15-004,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-005,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
 15-006,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
-15-007,report,P1b,,欧洲国债无统一免费日频官方接口；取高盛/摩根周报利率表快照
+15-007,api,P1,{BOECURVE:GLC Nominal:spot:24},英格兰银行名义零息曲线 2 年（与基准券到期收益率可能差几个 bp）
 15-008,api,P1,{BOE:IUDMNZC},英格兰银行拟合名义零息曲线 10 年点（与基准券报价可能差几个 bp）
 15-009,api,P1,{MOFJP:2Y},日本财务省 JGB 常数期限收益率
 15-010,api,P1,{MOFJP:10Y},日本财务省 JGB 常数期限收益率
@@ -451,18 +451,18 @@ indicator_id,method,phase,formula,coverage_note
 39-002,api,P1,{FRED:PERMIT},
 39-003,api,P1,pop({FRED:HOUST}),
 39-004,api,P1,pop({FRED:PERMIT}),
-35-001,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-002,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-003,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-004,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-005,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-006,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-007,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-008,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-009,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-010,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-011,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-012,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-001,api,P1,{SPGPMI:US:mfg},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-002,api,P1,{SPGPMI:US:serv},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-003,api,P1,{SPGPMI:US:comp},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-004,api,P1,{SPGPMI:EZ:mfg},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-005,api,P1,{SPGPMI:EZ:serv},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-006,api,P1,{SPGPMI:EZ:comp},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-007,api,P1,{SPGPMI:UK:mfg},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-008,api,P1,{SPGPMI:UK:serv},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-009,api,P1,{SPGPMI:UK:comp},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-010,api,P1,{SPGPMI:JP:mfg},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-011,api,P1,{SPGPMI:JP:serv},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
+35-012,api,P1,{SPGPMI:JP:comp},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
 35-013,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
 35-014,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
 35-015,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
@@ -626,11 +626,11 @@ indicator_id,method,phase,formula,coverage_note
 51-007,proxy,P1,"vol({YAHOO:GOVT:TR}, ""52W"")",代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
 51-008,proxy,P1,drawdown({YAHOO:GOVT:TR}),代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）；相对本库已存历史高点（2020-10 起）
 51-009,proxy,P1,"maxdd({YAHOO:GOVT:TR}, ""YTD"")",代理：iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）
-51-010,api,P1,"vol({LBMA:gold_pm}, ""52W"")",LBMA 官方金价 PM（USD）；周五采样周收益标准差×√52
-51-011,api,P1,drawdown({LBMA:gold_pm}),LBMA 官方金价 PM（USD）；相对本库已存历史高点（2020-10 起）
-51-012,api,P1,"maxdd({LBMA:gold_pm}, ""YTD"")",LBMA 官方金价 PM（USD）
+51-010,proxy,P1,"vol({YAHOO:GC=F}, ""52W"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）；周五采样周收益标准差×√52
+51-011,proxy,P1,drawdown({YAHOO:GC=F}),代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）；相对本库已存历史高点（2020-10 起）
+51-012,proxy,P1,"maxdd({YAHOO:GC=F}, ""YTD"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
 51-013,api,P1,"ret({MSCI:990100:NETR:USD}, ""W"") - ret({FRED:SP500}, ""W"")",MSCI World 净总回报减 S&P 500 价格回报（口径不同，含股息差）
-51-014,api,P1,"ret({LBMA:gold_pm}, ""W"") - ret({FRED:SP500}, ""W"")",LBMA 金价周回报减 S&P 500 价格周回报
+51-014,proxy,P1,"ret({YAHOO:GC=F}, ""W"") - ret({FRED:SP500}, ""W"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）；减 S&P 500 价格周回报
 52-001,api,P1,{FFCAL:USD|CPI y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 52-002,report,P1b,,发布前调查中位数：取汇丰 Investment Weekly 日历表（公开项）
 52-003,api,P1,{FFCAL:USD|Core CPI m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
@@ -730,16 +730,16 @@ indicator_id,method,phase,formula,coverage_note
 64-004,pending,P2,,OIS 曲线需授权
 64-005,pending,P2,,OIS 曲线需授权
 64-006,pending,P2,,OIS 曲线需授权
-64-007,pending,P2,,OIS 曲线需授权
-64-008,pending,P2,,OIS 曲线需授权
-64-009,pending,P2,,OIS 曲线需授权
+64-007,api,P1,{BOECURVE:OIS:spot:12},英格兰银行 OIS 曲线（SONIA，零息即期，日频；数据来自 Bloomberg 与英央行计算）
+64-008,api,P1,{BOECURVE:OIS:spot:24},英格兰银行 OIS 曲线（SONIA，零息即期，日频；数据来自 Bloomberg 与英央行计算）
+64-009,api,P1,2 * {BOECURVE:OIS:spot:24} - {BOECURVE:OIS:spot:12},英格兰银行 OIS 曲线（SONIA，零息即期，日频；数据来自 Bloomberg 与英央行计算）；1y1y 远期 = 2×2 年 − 1 年（连续复利近似）
 64-010,pending,P2,,OIS 曲线需授权
 64-011,pending,P2,,OIS 曲线需授权
 64-012,pending,P2,,OIS 曲线需授权
 64-013,pending,P2,,OIS 曲线需授权
 64-014,pending,P2,,OIS 曲线需授权
 64-015,pending,P2,,OIS 曲线需授权
-64-016,pending,P2,,OIS 曲线需授权
+64-016,api,P1,{BOECURVE:OIS:fwds:12},英格兰银行 OIS 瞬时远期曲线 12 个月处（市场隐含 12 个月后 SONIA）
 64-017,pending,P2,,OIS 曲线需授权
 64-018,pending,P2,,OIS 曲线需授权
 64-019,pending,P2,,OIS 曲线需授权
@@ -1407,10 +1407,10 @@ indicator_id,method,phase,formula,coverage_note
 97-083,api,P1,"year_ret({YAHOO:BTC-USD}, 2025)",2025 年末÷2024 年末−1
 97-084,api,P1,"ret({YAHOO:BTC-USD}, ""MTD"")",
 97-085,api,P1,"ret({YAHOO:BTC-USD}, ""YTD"")",
-97-087,api,P1,"ret({LBMA:gold_pm}, ""1Y"") + 100",LBMA 官方金价 PM（USD）
-97-088,api,P1,"year_ret({LBMA:gold_pm}, 2025)",LBMA 官方金价 PM（USD）
-97-089,api,P1,"ret({LBMA:gold_pm}, ""MTD"")",LBMA 官方金价 PM（USD）
-97-090,api,P1,"ret({LBMA:gold_pm}, ""YTD"")",LBMA 官方金价 PM（USD）
+97-087,proxy,P1,"ret({YAHOO:GC=F}, ""1Y"") + 100",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+97-088,proxy,P1,"year_ret({YAHOO:GC=F}, 2025)",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+97-089,proxy,P1,"ret({YAHOO:GC=F}, ""MTD"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
+97-090,proxy,P1,"ret({YAHOO:GC=F}, ""YTD"")",代理：COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）
 97-092,proxy,P1,"ret({YAHOO:HG=F}, ""1Y"") + 100",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
 97-093,proxy,P1,"year_ret({YAHOO:HG=F}, 2025)",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
 97-094,proxy,P1,"ret({YAHOO:HG=F}, ""MTD"")",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点

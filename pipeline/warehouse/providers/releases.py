@@ -4,6 +4,7 @@ pages saved by inspect_sources.py): National Bureau of Statistics of China."""
 from __future__ import annotations
 
 import re
+import time
 from collections import defaultdict
 from datetime import date, timedelta
 from typing import Sequence
@@ -156,21 +157,28 @@ class NbsReleases(Provider):
         wanted = {d.code for d in defs}
         pages = self.MAX_PAGES if self.env.get("BACKFILL") else 2
         listing: list[tuple[str, date, str]] = []
+        failures: list[str] = []
         for i in range(pages):
             url = self.LIST + ("" if i == 0 else f"index_{i}.html")
-            try:
-                items = parse_nbs_listing(self._get(url).decode("utf-8", errors="replace"), url)
-            except ProviderError:
-                if i == 0:
-                    raise
-                break
+            items = None
+            for attempt in range(2):
+                try:
+                    items = parse_nbs_listing(self._get(url).decode("utf-8", errors="replace"), url)
+                    break
+                except ProviderError as error:
+                    if i == 0 and attempt == 1:
+                        raise
+                    failures.append(f"listing page {i}: {error}")
+                    time.sleep(3)
+            if items is not None and not items:
+                failures.append(f"listing page {i}: no release links")
             if not items:
                 break
             listing.extend(items)
             if min(d for _, d, _ in items) < start - timedelta(days=40):
                 break
+            time.sleep(0.5)
         values: dict[str, dict[date, float]] = defaultdict(dict)
-        failures = []
         for title, _, url in sorted(listing, key=lambda x: x[1]):  # oldest first: later releases overwrite
             kind = nbs_kind(title)
             if kind not in wanted:
@@ -188,7 +196,7 @@ class NbsReleases(Provider):
         out = []
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
-            note = f"{len(obs)} releases; {len(failures)} not parsed" + (f" (e.g. {failures[0][:80]})" if failures else "")
+            note = f"{len(obs)} releases from {len(listing)} listed; {len(failures)} problems" + (f" (e.g. {failures[0][:120]})" if failures else "")
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty", note))
         return out
 
@@ -231,4 +239,126 @@ class AaiiSentiment(Provider):
         for d in defs:
             obs = [Observation(k, pick[d.code](v)) for k, v in sorted(table.items()) if k >= start]
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty"))
+        return out
+
+
+# --------------------------------------------------------------------------- S&P Global PMI
+
+SPG_REGIONS = {"US": "US", "Eurozone": "EZ", "UK": "UK", "Japan": "JP"}
+_SPG_TITLE = re.compile(r"^(?:S&P Global|HCOB|au Jibun Bank) (Flash )?(US|Eurozone|UK|Japan) (?:(Manufacturing|Services|Composite) )?PMI$")
+_DECIMAL = re.compile(r"(?<![\d.])\d{2}\.\d(?![\d.])")
+
+
+def _embargo_month(text: str) -> date | None:
+    m = re.search(rf"Embargoed until .{{0,60}}?(\d{{1,2}}) ({_MONTH_RE}) (\d{{4}})", text)
+    return date(int(m.group(3)), MONTHS.index(m.group(2).lower()) + 1, 1) if m else None
+
+
+def _prev_month(m: date) -> date:
+    return (m - timedelta(days=1)).replace(day=1)
+
+
+def parse_spg_flash(text: str) -> dict[str, dict[date, float]]:
+    """Bullets like 'Flash US Composite PMI Output Index: 57.6 (September: 58.4).' — chart axis
+    integers are interleaved in the PDF text, so only one-decimal numbers count."""
+    flat = re.sub(r"\s+", " ", text)
+    month = _embargo_month(flat)
+    if month is None:
+        return {}
+    out: dict[str, dict[date, float]] = defaultdict(dict)
+    for m in re.finditer(r"Flash (?:US|Eurozone|UK|Japan) ([^:()]{3,70}?):([^()]{0,60})\(([A-Z][a-z]+):([^()]{0,40})\)", flat):
+        label = m.group(1)
+        if "Composite" in label:
+            kind = "comp"
+        elif "Services" in label:
+            kind = "serv"
+        elif "Manufacturing" in label and "Output" not in label:
+            kind = "mfg"
+        else:
+            continue
+        current, previous = _DECIMAL.findall(m.group(2)), _DECIMAL.findall(m.group(4))
+        if current:
+            out[kind][month] = float(current[0])
+        if previous and m.group(3).lower() in MONTHS:
+            prev = _prev_month(month)
+            if MONTHS[prev.month - 1] == m.group(3).lower():
+                out[kind][prev] = float(previous[0])
+    return dict(out)
+
+
+def parse_spg_final(kind: str, text: str) -> dict[str, dict[date, float]]:
+    """Final releases (first working days of the next month): the first one-decimal number
+    after the index name."""
+    flat = re.sub(r"\s+", " ", text).replace("’", "'")
+    month = _embargo_month(flat)
+    if month is None:
+        return {}
+    data_month = _prev_month(month)
+    anchors = {"mfg": [r"Purchasing Managers' Index"],
+               "serv": [r"Services PMI(?:®)? Business Activity Index", r"Services Business Activity Index"],
+               "comp": [r"Composite PMI(?:®)? Output Index", r"Composite Output Index"]}
+    kinds = ["mfg"] if kind == "Manufacturing" else ["serv", "comp"]
+    out: dict[str, dict[date, float]] = {}
+    for k in kinds:
+        for pattern in anchors[k]:
+            hit = re.search(pattern, flat)
+            if hit:
+                nums = _DECIMAL.findall(flat[hit.end(): hit.end() + 400])
+                if nums:
+                    out[k] = {data_month: float(nums[0])}
+                    break
+    return out
+
+
+def parse_spg_listing(html: str) -> list[tuple[str, str]]:
+    """(title, url) pairs from the PMI releases page."""
+    out = []
+    for m in re.finditer(r'class="releaseTitle">([^<]+)</span>\s*<span[^>]*>\s*<a href="([^"]+)"', html):
+        out.append((re.sub(r"\s+", " ", m.group(1).replace("&amp;", "&")).strip(), m.group(2)))
+    return out
+
+
+@register
+class SpGlobalPmi(Provider):
+    """S&P Global PMI press releases (headline indices only; the site keeps about one month
+    of releases, so history accumulates). code = "<US|EZ|UK|JP>:<mfg|serv|comp>". Flash
+    releases give the current month and the final value of the previous month; final
+    releases give the final value."""
+
+    name = "SPGPMI"
+    batch = True
+    LIST = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        from .reports import pdf_pages
+
+        listing = parse_spg_listing(self.get(self.LIST, headers={"User-Agent": BROWSER_UA}).decode("utf-8", errors="replace"))
+        if not listing:
+            raise ProviderError("PMI release list layout changed")
+        wanted = {d.code.split(":")[0] for d in defs}
+        values: dict[str, dict[date, float]] = defaultdict(dict)
+        problems = []
+        for title, url in reversed(listing):  # the page lists newest first; apply oldest first
+            m = _SPG_TITLE.match(title)
+            if not m or SPG_REGIONS[m.group(2)] not in wanted:
+                continue
+            region, flash, kind = SPG_REGIONS[m.group(2)], bool(m.group(1)), m.group(3)
+            if not flash and kind is None:
+                continue
+            try:
+                text = "\n".join(pdf_pages(self.get(url, headers={"User-Agent": BROWSER_UA}))[:2])
+            except Exception as error:  # noqa: BLE001
+                problems.append(f"{title}: {error}")
+                continue
+            parsed = parse_spg_flash(text) if flash else parse_spg_final(kind, text)
+            if not parsed:
+                problems.append(f"unparsed: {title}")
+            for k, by_month in parsed.items():
+                values[f"{region}:{k}"].update(by_month)
+            time.sleep(0.5)
+        out = []
+        for d in defs:
+            obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
+            note = f"{len(obs)} months; {len(problems)} problems" + (f" (e.g. {problems[0][:100]})" if problems else "")
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty", note))
         return out

@@ -68,6 +68,10 @@ BLS:WPUFD4,BLS,WPUFD4,PPI final demand NSA,M,,45,https://data.bls.gov/timeseries
 BOC:V39079,BOC,V39079,BoC target overnight rate,D,%,0,https://www.bankofcanada.ca/rates/interest-rates/,,False,cloud
 BOE:IUDBEDR,BOE,IUDBEDR,Bank Rate,D,%,0,https://www.bankofengland.co.uk/boeapps/database/,,False,cloud
 BOE:IUDMNZC,BOE,IUDMNZC,UK 10Y nominal zero-coupon yield (BoE fitted curve),D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
+BOECURVE:GLC Nominal:spot:24,BOECURVE,GLC Nominal:spot:24,BoE nominal gilt spot 2Y,D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
+BOECURVE:OIS:fwds:12,BOECURVE,OIS:fwds:12,BoE OIS instantaneous forward 12M,D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
+BOECURVE:OIS:spot:12,BOECURVE,OIS:spot:12,BoE OIS spot 1Y,D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
+BOECURVE:OIS:spot:24,BOECURVE,OIS:spot:24,BoE OIS spot 2Y,D,%,1,https://www.bankofengland.co.uk/statistics/yield-curves,,False,cloud
 BREADTH:advancers,BREADTH,advancers,S&P 500 breadth: advancers,D,家,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
 BREADTH:decliners,BREADTH,decliners,S&P 500 breadth: decliners,D,家,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
 BREADTH:median_drawdown_52w,BREADTH,median_drawdown_52w,S&P 500 breadth: median drawdown from 52w high,D,%,1,https://en.wikipedia.org/wiki/List_of_S%26P_500_companies,,False,cloud
@@ -382,7 +386,6 @@ ISM:prices,ISM,prices,ISM Manufacturing Prices,M,指数点,3,https://www.ismworl
 JPCPI:ex_fresh_yoy,JPCPI,ex_fresh_yoy,Japan CPI ex fresh food y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPCPI:headline_yoy,JPCPI,headline_yoy,Japan CPI all items y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPX:TOPIX,JPX,TOPIX,"TOPIX (price, JPY)",D,点,0,https://www.jpx.co.jp/english/markets/indices/topix/,,False,cloud
-LBMA:gold_pm,LBMA,gold_pm,LBMA Gold Price PM (USD),D,美元/盎司,1,https://www.lbma.org.uk/prices-and-data/precious-metal-prices,,False,cloud
 MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:30Y,MOFJP,30Y,JGB 30Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
@@ -447,6 +450,18 @@ SCE:Median three-year ahead expected inflation rate,SCE,Median three-year ahead 
 SNB:rendeiduebd:CHF.10J,SNB,rendeiduebd:CHF.10J,Swiss Confederation 10Y spot rate (SNB),D,%,1,https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd,,False,cloud
 SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
+SPGPMI:EZ:comp,SPGPMI,EZ:comp,S&P Global Eurozone Composite Output,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:EZ:mfg,SPGPMI,EZ:mfg,S&P Global Eurozone Manufacturing PMI,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:EZ:serv,SPGPMI,EZ:serv,S&P Global Eurozone Services Business Activity,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:JP:comp,SPGPMI,JP:comp,S&P Global Japan Composite Output,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:JP:mfg,SPGPMI,JP:mfg,S&P Global Japan Manufacturing PMI,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:JP:serv,SPGPMI,JP:serv,S&P Global Japan Services Business Activity,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:UK:comp,SPGPMI,UK:comp,S&P Global UK Composite Output,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:UK:mfg,SPGPMI,UK:mfg,S&P Global UK Manufacturing PMI,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:UK:serv,SPGPMI,UK:serv,S&P Global UK Services Business Activity,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:US:comp,SPGPMI,US:comp,S&P Global US Composite Output,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:US:mfg,SPGPMI,US:mfg,S&P Global US Manufacturing PMI,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
+SPGPMI:US:serv,SPGPMI,US:serv,S&P Global US Services Business Activity,M,指数点,23,https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en,,False,cloud
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062811,STATCAN,2062811,Canada LFS employment SA,M,千人,8,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150.statcan.gc.ca/,,False,cloud
@@ -497,6 +512,7 @@ YAHOO:EMB:TR,YAHOO,EMB,iShares JPM USD EM Bond ETF total return (tracks J.P. Mor
 YAHOO:EMLC:TR,YAHOO,EMLC,VanEck JPM EM Local Currency Bond ETF total return (tracks J.P. Morgan GBI-EM Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMLC,"{""tr"": true}",False,cloud
 YAHOO:EUNA.DE:TR,YAHOO,EUNA.DE,iShares Core EUR Aggregate Bond ETF total return (tracks Bloomberg Euro Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EUNA.DE,"{""tr"": true}",False,cloud
 YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quote/FTSEMIB.MI,,False,cloud
+YAHOO:GC=F,YAHOO,GC=F,COMEX gold front-month futures,D,点,1,https://finance.yahoo.com/quote/GC=F,,False,cloud
 YAHOO:GOVT:TR,YAHOO,GOVT,iShares US Treasury Bond ETF total return (tracks ICE US Treasury Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GOVT,"{""tr"": true}",False,cloud
 YAHOO:GSG:TR,YAHOO,GSG,iShares S&P GSCI Commodity-Indexed Trust ETF total return (tracks S&P GSCI Total Return),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GSG,"{""tr"": true}",False,cloud
 YAHOO:HG=F,YAHOO,HG=F,COMEX copper front-month futures,D,点,1,https://finance.yahoo.com/quote/HG=F,,False,cloud

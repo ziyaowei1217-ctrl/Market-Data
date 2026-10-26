@@ -1277,8 +1277,10 @@ def build_batch4() -> None:
         parts = ([x] if level else []) + [f'ret({x}, "1Y") + 100', f"year_ret({x}, 2025)", f'ret({x}, "MTD")', f'ret({x}, "YTD")']
         for k, formula in enumerate(parts):
             how(f"97-{n + k:03d}", formula, note)
-    gold = series("LBMA", "gold_pm", "LBMA Gold Price PM (USD)", "D", "美元/盎司", 1, "https://www.lbma.org.uk/prices-and-data/precious-metal-prices")
-    five("97-087", gold, "LBMA 官方金价 PM（USD）", level=False, how=api)
+    # LBMA's JSON (prices.lbma.org.uk) answers 403 to GitHub Actions, so COMEX gold futures stand in.
+    gold = yahoo("GC=F", "COMEX gold front-month futures")
+    gnote = "COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）"
+    five("97-087", gold, gnote, level=False)
     dxy = yahoo("DX-Y.NYB", "ICE US Dollar Index")
     five("97-102", dxy, "ICE 美元指数（Yahoo 行情）", level=False, how=api)
     five("97-092", yahoo("HG=F", "COMEX copper front-month futures"), "COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点", level=False)
@@ -1326,6 +1328,28 @@ def build_batch4() -> None:
         enote + "；DFR 预期 = MRO 预期 − 0.15")
     api("102-066", f"event_surprise({series('BOC', 'V39079', 'BoC target overnight rate', 'D', '%', 1)}, {ffc('CAD', 'Overnight Rate')})", enote)
 
+    # ---------------------------------------------------------- Bank of England curves (OIS, gilts)
+    burl = "https://www.bankofengland.co.uk/statistics/yield-curves"
+    def boe(code, title):
+        return series("BOECURVE", code, f"BoE {title}", "D", "%", 1, burl)
+    onote = "英格兰银行 OIS 曲线（SONIA，零息即期，日频；数据来自 Bloomberg 与英央行计算）"
+    o1, o2 = boe("OIS:spot:12", "OIS spot 1Y"), boe("OIS:spot:24", "OIS spot 2Y")
+    api("64-007", o1, onote)
+    api("64-008", o2, onote)
+    api("64-009", f"2 * {o2} - {o1}", onote + "；1y1y 远期 = 2×2 年 − 1 年（连续复利近似）")
+    api("64-016", boe("OIS:fwds:12", "OIS instantaneous forward 12M"), "英格兰银行 OIS 瞬时远期曲线 12 个月处（市场隐含 12 个月后 SONIA）")
+    api("15-007", boe("GLC Nominal:spot:24", "nominal gilt spot 2Y"), "英格兰银行名义零息曲线 2 年（与基准券到期收益率可能差几个 bp）")
+
+    # ---------------------------------------------------------- S&P Global PMI headlines
+    purl = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
+    pnote = ("S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，"
+             "历史从 2026-10 起累积；分项指数需授权）")
+    k = 1
+    for region, rname in [("US", "US"), ("EZ", "Eurozone"), ("UK", "UK"), ("JP", "Japan")]:
+        for kind, kname in [("mfg", "Manufacturing PMI"), ("serv", "Services Business Activity"), ("comp", "Composite Output")]:
+            api(f"35-{k:03d}", series("SPGPMI", f"{region}:{kind}", f"S&P Global {rname} {kname}", "M", "指数点", 23, purl), pnote)
+            k += 1
+
     # ---------------------------------------------------------- AAII sentiment
     aurl = "https://www.aaii.com/sentimentsurvey/sent_results"
     anote = "AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）"
@@ -1340,11 +1364,10 @@ def build_batch4() -> None:
 
     # ---------------------------------------------------------- risk metrics (module 50/51)
     sp = fred("SP500", "S&P 500", "D", "点")
-    gnote = "LBMA 官方金价 PM（USD）"
-    api("51-010", f'vol({gold}, "52W")', gnote + "；周五采样周收益标准差×√52")
-    api("51-011", f"drawdown({gold})", gnote + "；相对本库已存历史高点（2020-10 起）")
-    api("51-012", f'maxdd({gold}, "YTD")', gnote)
-    api("51-014", f'ret({gold}, "W") - ret({sp}, "W")', "LBMA 金价周回报减 S&P 500 价格周回报")
+    proxy("51-010", f'vol({gold}, "52W")', gnote + "；周五采样周收益标准差×√52")
+    proxy("51-011", f"drawdown({gold})", gnote + "；相对本库已存历史高点（2020-10 起）")
+    proxy("51-012", f'maxdd({gold}, "YTD")', gnote)
+    proxy("51-014", f'ret({gold}, "W") - ret({sp}, "W")', gnote + "；减 S&P 500 价格周回报")
     ust = etf_tr("GOVT", "iShares US Treasury Bond", "ICE US Treasury Core")
     unote = "iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）"
     proxy("51-007", f'vol({ust}, "52W")', unote)

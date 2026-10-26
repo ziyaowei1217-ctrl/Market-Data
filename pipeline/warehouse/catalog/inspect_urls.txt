@@ -1,18 +1,4 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
-spg_raw          https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en RAW "S&P Global US Manufacturing PMI"
-spg_us_mfg       https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global US Manufacturing PMI"
-spg_us_flash     https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Flash US PMI"
-spg_calendar     https://www.pmi.spglobal.com/Public/Release/ReleaseDates?language=en
-ism_srv_html     https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/services/september/
-ism_mfg_html_aug https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/pmi/august/
-lbma_gold        https://prices.lbma.org.uk/json/gold_pm.json
-boe_ois_archive  https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/oisddata.zip
-jscc_settle      https://www.jpx.co.jp/jscc/en/interest_rate_swap.html FOLLOWAFTER "Settlement Rates for Interest Rate Swap"
-jscc_settle_old  https://www.jpx.co.jp/jscc/en/cimhll0000000umu-att/SettlementRates_20260930.pdf
-nbs_api          https://data.stats.gov.cn/english/easyquery.htm?m=QueryData&dbcode=hgyd&rowcode=zb&colcode=sj&wds=%5B%5D&dfwds=%5B%7B%22wdcode%22%3A%22zb%22%2C%22valuecode%22%3A%22A0101%22%7D%2C%7B%22wdcode%22%3A%22sj%22%2C%22valuecode%22%3A%22LAST72%22%7D%5D
-nbs_list_33      https://www.stats.gov.cn/english/PressRelease/index_33.html
-yahoo_aggg       https://query2.finance.yahoo.com/v8/finance/chart/AGGG.L?range=3mo&interval=1d&events=div
-yahoo_euna       https://query2.finance.yahoo.com/v8/finance/chart/EUNA.DE?range=3mo&interval=1d&events=div
 fd_auctions      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?page%5Bsize%5D=5&sort=-auction_date
 td_auctioned     https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&days=7
 fd_mspd_mkt      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_3_market?page%5Bsize%5D=5&sort=-record_date
@@ -21,3 +7,4 @@ boe_dmp          https://www.bankofengland.co.uk/decision-maker-panel FOLLOWAFTE
 mospi_cpi        https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&series=Current&year=2025&month_code=9&format=JSON
 bcb_focus_selic  https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoSelic?$top=20&$orderby=Data%20desc&$format=json
 bcb_copom        https://www.bcb.gov.br/api/servico/sitebcb/copomcalendarios
+glc_nominal_arch https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/glcnominalddata.zip

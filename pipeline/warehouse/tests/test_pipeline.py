@@ -461,3 +461,50 @@ class AaiiTests(unittest.TestCase):
         out = parse_aaii(text, date(2027, 1, 10))
         self.assertEqual(sorted(out), [date(2026, 12, 31), date(2027, 1, 7)])
         self.assertEqual(out[date(2027, 1, 7)], (36.9, 17.3, 45.8))
+
+
+class SpgPmiTests(unittest.TestCase):
+    FLASH = ("News Release Embargoed until 0945 EDT (1345 UTC) 23 October 2026 ® S&P Global Flash US PMI\n"
+             "Flash US Composite PMI Output Index: 57.6 70 12 (September: 58.4). 2-month low. 65 9 60 6 "
+             "Flash US Services PMI Business Activity Index: 55 3\n 57.9 (September: 58.8). 2-month low. 50 0 45 -3 "
+             "Flash US Manufacturing Output Index: 55.8 40 -6 (September: 56.2). 2-month low. 35 -9 30 -12 "
+             "Flash US Manufacturing PMI: 56.0 (September: 25 -15 55.9). 53-month high.")
+
+    def test_flash_bullets_skip_axis_numbers(self):
+        from pipeline.warehouse.providers.releases import parse_spg_flash
+
+        out = parse_spg_flash(self.FLASH)
+        self.assertEqual(out["comp"], {date(2026, 10, 1): 57.6, date(2026, 9, 1): 58.4})
+        self.assertEqual(out["serv"], {date(2026, 10, 1): 57.9, date(2026, 9, 1): 58.8})
+        self.assertEqual(out["mfg"], {date(2026, 10, 1): 56.0, date(2026, 9, 1): 55.9})
+
+    def test_final_manufacturing(self):
+        from pipeline.warehouse.providers.releases import parse_spg_final
+
+        text = ("News Release Embargoed until 0945 EDT 1 October 2026 / 1345 UTC 1 October 2026 ... The seasonally adjusted "
+                "S&P Global US Manufacturing factories to lift output sharply higher and take on Purchasing Managers’ Index™ "
+                "(PMI®) surged higher in workers in increasing numbers. September, posting 55.9, up from 53.9 in August.")
+        self.assertEqual(parse_spg_final("Manufacturing", text), {"mfg": {date(2026, 9, 1): 55.9}})
+
+    def test_listing(self):
+        from pipeline.warehouse.providers.releases import _SPG_TITLE, parse_spg_listing
+
+        html = ('<span class="releaseDate">October&nbsp;01&nbsp;2026</span>\r\n <span class="releaseTitle">S&amp;P Global US Manufacturing PMI</span>\r\n'
+                ' <span class="greenListItem"><a href="https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4" target="_blank">View More</a></span>'
+                '<span class="releaseTitle">S&P Global Eurozone Manufacturing PMI (Français)</span>\r\n <span class="greenListItem"><a href="https://x/y">')
+        items = parse_spg_listing(html)
+        self.assertEqual(items[0], ("S&P Global US Manufacturing PMI", "https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4"))
+        self.assertIsNotNone(_SPG_TITLE.match(items[0][0]))
+        self.assertIsNone(_SPG_TITLE.match(items[1][0]))
+
+
+class BoeCurveTests(unittest.TestCase):
+    def test_spot_sheet_column_by_months(self):
+        from pipeline.warehouse.providers.official import BankOfEnglandCurves
+
+        rows = [[None, "UK OIS spot curve, short end", None, None], ["Maturity ", None, None, None],
+                ["months:", 1, 12, 23.99999999999999], ["years:", 0.083, 1.0, 2.0],
+                [pd.Timestamp("2026-10-22"), 3.9, 3.7, 3.6], [pd.Timestamp("2026-10-23"), 3.91, 3.71, None]]
+        frame = pd.DataFrame(rows)
+        self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 24), [(date(2026, 10, 22), 3.6)])
+        self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 12)[-1], (date(2026, 10, 23), 3.71))

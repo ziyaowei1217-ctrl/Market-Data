@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -948,3 +949,71 @@ class Lbma(Provider):
         if not isinstance(rows, list) or not rows or "d" not in rows[0] or "v" not in rows[0]:
             raise ProviderError("LBMA JSON layout changed (expected a list of {d, v})")
         return obs_from_pairs(((r["d"], (r.get("v") or [None])[0]) for r in rows if r.get("v")), start)
+
+
+@register
+class BankOfEnglandCurves(Provider):
+    """Bank of England yield-curve spreadsheets (OIS and GLC nominal; daily, from the
+    latest-month zip, plus the archive zips on first load or in the first week of a month).
+    code = "<OIS|GLC Nominal>:<spot|fwds>:<months>", e.g. "OIS:spot:12" (1-year OIS)."""
+
+    name = "BOECURVE"
+    batch = True
+    supports_backfill = True
+    BASE = "https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/"
+    LATEST = "latest-yield-curve-data.zip"
+    ARCHIVE = {"OIS": "oisddata.zip", "GLC Nominal": "glcnominalddata.zip"}
+
+    @staticmethod
+    def parse_sheet(frame: pd.DataFrame, months: float) -> list[tuple[date, float]]:
+        first = frame.iloc[:, 0].astype(str).str.strip()
+        header_rows = first[first.str.lower().str.startswith("months")].index
+        if not len(header_rows):
+            return []
+        header = frame.loc[header_rows[0]]
+        col = next((c for c in frame.columns[1:] if to_float(header[c]) is not None and abs(float(header[c]) - months) < 0.01), None)
+        if col is None:
+            return []
+        out = []
+        for _, row in frame.iterrows():
+            when = pd.to_datetime(row.iloc[0], errors="coerce")
+            value = to_float(row[col])
+            if pd.notna(when) and value is not None and value == value and not isinstance(row.iloc[0], (int, float)):
+                out.append((when.date(), value))
+        return out
+
+    def _workbooks(self, curve: str, archive: bool, start: date) -> list[bytes]:
+        import zipfile
+
+        books = []
+        sources = [self.LATEST] + ([self.ARCHIVE[curve]] if archive else [])
+        for name in sources:
+            with zipfile.ZipFile(io.BytesIO(self.get(self.BASE + name, headers={"User-Agent": "Mozilla/5.0"}))) as zf:
+                for member in zf.namelist():
+                    if not member.startswith(curve) or not member.endswith(".xlsx"):
+                        continue
+                    years = [int(y) for y in re.findall(r"(\d{4})", member)]
+                    if years and max(years) < start.year and "present" not in member:
+                        continue
+                    books.append(zf.read(member))
+        return books
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        archive = bool(self.env.get("BACKFILL")) or _today().day <= 7
+        by_curve: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_curve[d.code.split(":")[0]].append(d)
+        out = []
+        for curve, items in by_curve.items():
+            values: dict[str, dict[date, float]] = defaultdict(dict)
+            for book in reversed(self._workbooks(curve, archive, start)):  # latest month applied last
+                sheets = pd.read_excel(io.BytesIO(book), sheet_name=None, header=None)
+                for d in items:
+                    _, kind, months = d.code.split(":")
+                    sheet = next((f for n, f in sheets.items() if f"{kind}, short end" in n), None)
+                    if sheet is not None:
+                        values[d.key].update(dict(self.parse_sheet(sheet, float(months))))
+            for d in items:
+                obs = [Observation(k, v) for k, v in sorted(values[d.key].items()) if k >= start]
+                out.append(FetchResult(d.key, obs, "ok" if obs else "empty", "" if obs else "column not found"))
+        return out

@@ -67,6 +67,8 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
         "BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A",
         "BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A",
     ),
+    # first load stopped after the first listing page; reload so the walk-back runs again
+    "2026-10-26-nbs-walkback": tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
 }
 
 
