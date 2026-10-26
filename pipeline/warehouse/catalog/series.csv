@@ -50,12 +50,14 @@ BLS:CUSR0000SA0L1E,BLS,CUSR0000SA0L1E,CPI 核心 SA,M,,45,https://data.bls.gov/t
 BLS:CUSR0000SACL1E,BLS,CUSR0000SACL1E,CPI 核心商品 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SACL1E,,False,cloud
 BLS:CUSR0000SAF1,BLS,CUSR0000SAF1,CPI 食品 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SAF1,,False,cloud
 BLS:CUSR0000SAH1,BLS,CUSR0000SAH1,CPI 住房 SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SAH1,,False,cloud
+BLS:CUSR0000SASL2RS,BLS,CUSR0000SASL2RS,CPI services less rent of shelter SA,M,,45,https://data.bls.gov/timeseries/CUSR0000SASL2RS,,False,cloud
 BLS:CUUR0000SA0,BLS,CUUR0000SA0,CPI 总体 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0,,False,cloud
 BLS:CUUR0000SA0E,BLS,CUUR0000SA0E,CPI 能源 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0E,,False,cloud
 BLS:CUUR0000SA0L1E,BLS,CUUR0000SA0L1E,CPI 核心 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SA0L1E,,False,cloud
 BLS:CUUR0000SACL1E,BLS,CUUR0000SACL1E,CPI 核心商品 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SACL1E,,False,cloud
 BLS:CUUR0000SAF1,BLS,CUUR0000SAF1,CPI 食品 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SAF1,,False,cloud
 BLS:CUUR0000SAH1,BLS,CUUR0000SAH1,CPI 住房 NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SAH1,,False,cloud
+BLS:CUUR0000SASL2RS,BLS,CUUR0000SASL2RS,CPI services less rent of shelter NSA,M,,45,https://data.bls.gov/timeseries/CUUR0000SASL2RS,,False,cloud
 BLS:WPSFD4,BLS,WPSFD4,PPI final demand SA,M,,45,https://data.bls.gov/timeseries/WPSFD4,,False,cloud
 BLS:WPSFD49104,BLS,WPSFD49104,PPI final demand less foods & energy SA,M,,45,https://data.bls.gov/timeseries/WPSFD49104,,False,cloud
 BLS:WPUFD4,BLS,WPUFD4,PPI final demand NSA,M,,45,https://data.bls.gov/timeseries/WPUFD4,,False,cloud

@@ -1314,6 +1314,23 @@ def build_batch4() -> None:
     table(["98-029", None, "98-031", None], etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
           "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
 
+    # ---------------------------------------------------------- policy-rate decisions vs consensus
+    ff_url = "https://www.forexfactory.com/calendar"
+    def ffc(country, title):
+        return series("FFCAL", f"{country}|{title}|forecast", f"Consensus {country} {title} (forecast)", "E", "%", 0, ff_url)
+    enote = "最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional"
+    api("102-087", f"event_surprise({fred('DFEDTARU', 'Fed funds target range upper', 'D', '%')}, {ffc('USD', 'Federal Funds Rate')})", enote)
+    api("102-090", f"event_surprise({series('BOE', 'IUDBEDR', 'Bank Rate', 'D', '%', 1)}, {ffc('GBP', 'Official Bank Rate')})", enote)
+    api("102-093", f"event_surprise({series('BIS', 'WS_CBPOL/D.JP', 'BIS policy rate JP', 'D', '%', 7)}, {ffc('JPY', 'BOJ Policy Rate')})", enote)
+    api("102-096", f"event_surprise({fred('ECBDFR', 'ECB deposit facility rate', 'D', '%')}, {ffc('EUR', 'Main Refinancing Rate')} - 0.15)",
+        enote + "；DFR 预期 = MRO 预期 − 0.15")
+    api("102-066", f"event_surprise({series('BOC', 'V39079', 'BoC target overnight rate', 'D', '%', 1)}, {ffc('CAD', 'Overnight Rate')})", enote)
+
+    # ---------------------------------------------------------- CPI "supercore" stand-in
+    snote = "BLS「服务减住房租金」（含能源服务，非严格的核心服务减住房；BLS 不发布后者）"
+    proxy("29-015", f"pop({bls('CUSR0000SASL2RS', 'CPI services less rent of shelter SA')})", snote + "；季调环比")
+    proxy("29-016", f"yoy({bls('CUUR0000SASL2RS', 'CPI services less rent of shelter NSA')})", snote + "；未季调同比")
+
     # ---------------------------------------------------------- risk metrics (module 50/51)
     sp = fred("SP500", "S&P 500", "D", "点")
     gnote = "LBMA 官方金价 PM（USD）"

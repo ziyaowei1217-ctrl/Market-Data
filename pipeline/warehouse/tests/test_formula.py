@@ -236,3 +236,20 @@ class ParBondTests(unittest.TestCase):
         self.assertAlmostEqual(tr.value, 4.04, places=2)
         self.assertGreater(down.value, tr.value)
         self.assertAlmostEqual(dur.value, 8.18, places=2)
+
+
+class EventSurpriseTests(unittest.TestCase):
+    def test_cut_against_hold_consensus(self):
+        days = pd.bdate_range("2026-09-01", "2026-10-23")
+        rate = [4.0 if d < pd.Timestamp("2026-10-16") else 3.75 for d in days]
+        raw = {"T:R": frame(days, rate), "T:C": frame(["2026-10-15"], [4.0])}
+        result = evaluate("event_surprise({T:R}, {T:C})", ctx(raw, "2026-10-23"))
+        self.assertAlmostEqual(result.value, -0.25)
+        self.assertEqual(result.obs_date, pd.Timestamp("2026-10-15"))
+
+    def test_change_not_yet_effective_is_provisional(self):
+        days = pd.bdate_range("2026-09-01", "2026-10-23")
+        raw = {"T:R": frame(days, [2.0] * len(days)), "T:C": frame(["2026-10-22"], [1.75])}
+        result = evaluate("event_surprise({T:R}, {T:C} - 0.0)", ctx(raw, "2026-10-23"))
+        self.assertEqual(result.status, "provisional")
+        self.assertAlmostEqual(result.value, 0.25)

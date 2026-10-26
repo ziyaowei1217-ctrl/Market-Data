@@ -385,8 +385,8 @@ indicator_id,method,phase,formula,coverage_note
 29-012,api,P1,yoy({BLS:CUUR0000SAH1}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
 29-013,api,P1,pop({BLS:CUSR0000SACL1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
 29-014,api,P1,yoy({BLS:CUUR0000SACL1E}),BLS CPI；环比用季调指数，同比用未季调指数（BLS 官方口径）
-29-015,pending,P2,,非住房核心服务需 BLS 分项与相对权重自建，待做
-29-016,pending,P2,,非住房核心服务需 BLS 分项与相对权重自建，待做
+29-015,proxy,P1,pop({BLS:CUSR0000SASL2RS}),代理：BLS「服务减住房租金」（含能源服务，非严格的核心服务减住房；BLS 不发布后者）；季调环比
+29-016,proxy,P1,yoy({BLS:CUUR0000SASL2RS}),代理：BLS「服务减住房租金」（含能源服务，非严格的核心服务减住房；BLS 不发布后者）；未季调同比
 30-001,api,P1,{FRED:PCEPI},BEA 个人收入与支出（FRED 镜像）
 30-002,api,P1,yoy({FRED:PCEPI}),BEA 个人收入与支出（FRED 镜像）
 30-003,api,P1,pop({FRED:PCEPI}),BEA 个人收入与支出（FRED 镜像）
@@ -1625,7 +1625,7 @@ indicator_id,method,phase,formula,coverage_note
 102-063,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-064,api,P1,{FFCAL:CAD|Overnight Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-065,api,P1,before_change({BOC:V39079}),上一次调整前的目标利率
-102-066,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-066,api,P1,"event_surprise({BOC:V39079}, {FFCAL:CAD|Overnight Rate|forecast})",最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional
 102-067,api,P1,{FFCAL:CNY|Industrial Production y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-068,api,P1,{FFCAL:CNY|Industrial Production y/y|previous},Forex Factory 日历所列前值（第三方）
 102-069,api,P1,"surprise({NBS:ip_yoy}, {FFCAL:CNY|Industrial Production y/y|forecast})",国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算
@@ -1642,16 +1642,16 @@ indicator_id,method,phase,formula,coverage_note
 102-084,api,P1,"surprise(pop({FRED:INDPRO}), {FFCAL:USD|Industrial Production m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-085,api,P1,{FFCAL:USD|Federal Funds Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-086,api,P1,before_change({FRED:DFEDTARU}),上一次调整前的目标上限
-102-087,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-087,api,P1,"event_surprise({FRED:DFEDTARU}, {FFCAL:USD|Federal Funds Rate|forecast})",最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional
 102-088,api,P1,{FFCAL:GBP|Official Bank Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-089,api,P1,before_change({BOE:IUDBEDR}),上一次调整前的 Bank Rate
-102-090,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-090,api,P1,"event_surprise({BOE:IUDBEDR}, {FFCAL:GBP|Official Bank Rate|forecast})",最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional
 102-091,api,P1,{FFCAL:JPY|BOJ Policy Rate|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-092,api,P1,before_change({BIS:WS_CBPOL/D.JP}),上一次调整前的政策利率（BIS）
-102-093,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-093,api,P1,"event_surprise({BIS:WS_CBPOL/D.JP}, {FFCAL:JPY|BOJ Policy Rate|forecast})",最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional
 102-094,api,P1,{FFCAL:EUR|Main Refinancing Rate|forecast} - 0.15,Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）；DFR 预期 = MRO 预期 − 0.15（2024-09 起固定利差，推算）
 102-095,api,P1,before_change({FRED:ECBDFR}),上一次调整前的存款便利利率
-102-096,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-096,api,P1,"event_surprise({FRED:ECBDFR}, {FFCAL:EUR|Main Refinancing Rate|forecast} - 0.15)",最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional；DFR 预期 = MRO 预期 − 0.15
 103-001,excluded,excluded,,按需求排除机构预测
 103-002,excluded,excluded,,按需求排除机构预测
 103-003,excluded,excluded,,按需求排除机构预测
