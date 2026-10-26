@@ -1,16 +1,2 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
-fd_auctions      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?page%5Bsize%5D=5&sort=-auction_date
-td_auctioned     https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&days=7
-fd_mspd_mkt      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_3_market?page%5Bsize%5D=5&sort=-record_date
-msci_page        https://www.msci.com/indexes/index/984000
-boe_dmp          https://www.bankofengland.co.uk/decision-maker-panel FOLLOWAFTER "Decision Maker Panel data"
-mospi_cpi        https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&series=Current&year=2025&month_code=9&format=JSON
-bcb_focus_selic  https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoSelic?$top=20&$orderby=Data%20desc&$format=json
-bcb_copom        https://www.bcb.gov.br/api/servico/sitebcb/copomcalendarios
-glc_nominal_arch https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/glcnominalddata.zip
-ecb_fm_daily     https://data-api.ecb.europa.eu/service/data/FM/D..EUR..BB..YLD?lastNObservations=1&format=csvdata
-ecb_fm_bonds     https://data-api.ecb.europa.eu/service/data/FM/D.IT+FR+DE+GR+ES.EUR..BB..?lastNObservations=1&format=csvdata
-ishares_agg      https://www.ishares.com/us/products/239458/ishares-core-total-us-bond-market-etf RAW "Yield to Worst"
-spg_raw_flash    https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en RAW "Flash US PMI"
-spg_jp_mfg       https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Japan Manufacturing PMI</span>"
-spg_ez_flash     https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Flash Eurozone PMI</span>"
+spg_jp_serv      https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Japan Services PMI</span>"
