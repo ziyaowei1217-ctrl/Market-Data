@@ -885,8 +885,9 @@ class Bis(Provider):
 
 @register
 class Snb(Provider):
-    """Swiss National Bank data portal cube (long CSV: "Date";"D0";"Value").
-    code = "<cube>:<D0 code>", e.g. "rendoblid:10J0" (10-year Confederation bond yield)."""
+    """Swiss National Bank data portal cube (long CSV: "Date";"D0";["D1";...]"Value").
+    code = "<cube>:<dimension codes joined by '.'>", e.g. "rendeiduebd:CHF.10J"
+    (10-year Confederation spot rate)."""
 
     name = "SNB"
     batch = True
@@ -902,9 +903,9 @@ class Snb(Provider):
             values: dict[str, list[tuple[str, str]]] = defaultdict(list)
             for line in text.splitlines():
                 parts = [p.strip().strip('"') for p in line.split(";")]
-                if len(parts) >= 3 and len(parts[0]) == 10 and parts[0][:4].isdigit():
-                    values[parts[1]].append((parts[0], parts[2]))
+                if len(parts) >= 3 and len(parts[0]) in (7, 10) and parts[0][:4].isdigit():
+                    values[".".join(parts[1:-1])].append((parts[0], parts[-1]))
             for d in items:
-                obs = obs_from_pairs(values.get(d.code.split(":")[1], []), start)
+                obs = obs_from_pairs(values.get(d.code.split(":", 1)[1], []), start)
                 out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "dimension not found"))
         return out

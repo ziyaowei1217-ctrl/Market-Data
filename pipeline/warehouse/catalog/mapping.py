@@ -815,8 +815,9 @@ def build() -> None:
         other(iid, "report", "欧洲国债/EMBI 期末快照：从周报快照历史生成", "P1b")
     for iid in ["99-005", "99-006", "99-007", "99-008", "99-013", "99-014", "99-015", "99-016"]:
         other(iid, "report", "中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照", "P1b")
-    ch10 = series("SNB", "rendoblid:10J0", "Swiss Confederation 10Y bond yield (SNB)", "D", "%", 1,
-                  "https://data.snb.ch/en/topics/ziredev/cube/rendoblid")
+    # rendoblid (2002 method) stopped in July 2025; rendeiduebd holds spot rates under the new method.
+    ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 1,
+                  "https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd")
     api("99-001", ch10, "瑞士央行数据门户：联邦债券 10 年期收益率")
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"99-{2 + k:03d}", f'snap({ch10}, "{w}")', "瑞士央行数据门户")

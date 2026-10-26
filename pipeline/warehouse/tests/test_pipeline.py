@@ -344,3 +344,37 @@ class SeriesResetTests(unittest.TestCase):
             self.assertEqual(runner.apply_series_resets(store), [])
         self.assertEqual(store.latest_values(key)[1], True)
         store.close()
+
+
+class CodeVersionGuardTests(unittest.TestCase):
+    def test_older_checkout_refuses(self):
+        from unittest import mock
+
+        store = SQLiteStore()
+        store.init_schema()
+        with mock.patch.object(runner, "code_version", return_value="2026-10-25T00:00:00Z bbb"):
+            runner.guard_code_version(store)
+        with mock.patch.object(runner, "code_version", return_value="2026-10-23T00:00:00Z aaa"):
+            with self.assertRaises(runner.StaleCodeError):
+                runner.guard_code_version(store)
+        with mock.patch.object(runner, "code_version", return_value="2026-10-26T00:00:00Z ccc"):
+            runner.guard_code_version(store)
+        self.assertEqual(store.get_meta("code_version"), "2026-10-26T00:00:00Z ccc")
+        store.close()
+
+
+class SnbTests(unittest.TestCase):
+    def test_two_dimension_cube(self):
+        csv = ('"CubeId";"rendeiduebd"\n"PublishingDate";"2026-10-24 09:00"\n\n"Date";"D0";"D1";"Value"\n'
+               '"2026-10-22";"CHF";"10J";"0.50"\n"2026-10-23";"CHF";"10J";"0.491"\n"2026-10-23";"CHF";"2J";"0.1"\n')
+        session = FakeSession({"data.snb.ch": csv})
+        [res] = official.Snb(session, env={}).fetch_many([sd("SNB", "rendeiduebd:CHF.10J")], date(2026, 1, 1))
+        self.assertEqual([o.value for o in res.observations], [0.50, 0.491])
+
+
+class ObsOrderingTests(unittest.TestCase):
+    def test_sorted_newest_first_input(self):
+        from pipeline.warehouse.providers.base import obs_from_pairs
+
+        obs = obs_from_pairs([("2026-10-22", "4.1"), ("2026-01-02", "4.5"), ("2025-12-31", "4.6")])
+        self.assertEqual([o.obs_date for o in obs], [date(2025, 12, 31), date(2026, 1, 2), date(2026, 10, 22)])
