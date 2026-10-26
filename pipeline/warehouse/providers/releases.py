@@ -366,10 +366,11 @@ class SpGlobalPmi(Provider):
             region, flash, kind = SPG_REGIONS[m.group(2)], bool(m.group(1)), m.group(3)
             if flash or kind is not None:
                 wanted_items.append((position, title, url, region, flash, kind))
-        # The site starts answering with empty pages after a burst of downloads, so go slowly and
-        # fetch flash releases (two months each) first; results are applied oldest first.
+        # The site starts answering with empty pages after about five downloads, so go slowly and
+        # fetch the newest releases first (flash releases also carry the previous month's final
+        # value); results are applied oldest first.
         parsed_items = []
-        for position, title, url, region, flash, kind in sorted(wanted_items, key=lambda x: (not x[4], x[0])):
+        for position, title, url, region, flash, kind in sorted(wanted_items, key=lambda x: x[0]):
             text = None
             for wait in (0, 15, 40):
                 time.sleep(wait or self.PAUSE)
