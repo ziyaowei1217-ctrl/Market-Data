@@ -99,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--log-chars", type=int, default=0, help="also print the first N characters of each preview")
     args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
+    annotated = 0
     session = requests.Session()
     today = datetime.now(timezone.utc).date()
     for line in URLS.read_text(encoding="utf-8").splitlines():
@@ -142,9 +143,20 @@ def main(argv: list[str] | None = None) -> int:
         target = args.out / f"{today:%Y%m%d}-{name}.txt"
         target.write_text(f"{url}\n\n" + "\n\n==== page break ====\n\n".join(pages), encoding="utf-8")
         print(f"{name}: {pages[0][:120]} -> {target}")
-        if args.log_chars:  # CI has no local folder to read back: show the start of each preview in the log
-            print("\n".join(p[:args.log_chars] for p in pages[1:4]) + f"\n==== end {name} ====")
+        if args.log_chars:  # CI has no local folder to read back: show the start of each preview
+            text = "\n".join(p[:args.log_chars] for p in pages[:4])
+            if os.environ.get("GITHUB_ACTIONS"):
+                # annotations are readable through the REST API; GitHub keeps 10 per type per step
+                kind = ("notice", "warning", "error")[min(annotated // 10, 2)]
+                annotated += 1
+                print(f"::{kind} title=inspect {name}::{annotation_escape(text)}")
+            else:
+                print(text + f"\n==== end {name} ====")
     return 0
+
+
+def annotation_escape(text: str) -> str:
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
 if __name__ == "__main__":
