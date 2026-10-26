@@ -1,7 +1,8 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field" | GREP "regex"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
 # A name ending in _botua sends the project's declared user agent instead of a browser one.
-dmp_sep_sheets   https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-september-2026.xlsx GREP "^\[sheet"
-dmp_sep_rows     https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-september-2026.xlsx GREP "price|wage|Sep|2026-0[789]"
-mhlw_rows        https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "^\[sheet|8月|7月"
-oecd_chn_levels  https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X+M.C.M...?startPeriod=2026-06&format=csvfilewithlabels GREP "CHN"
+dmp_headers      https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-september-2026.xlsx GREP "^\[sheet (Price|Wage)|month|^,+(Realised|Expected|Mean)|^,?(Wage|Price) growth"
+oecd_chn_usd     https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X+M.C.M.USD_EXC.N.N?startPeriod=2025-08&format=csvfilewithlabels GREP "CHN|NoResults|STRUCTURE"
+oecd_chn_units   https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M...?startPeriod=2026-08&endPeriod=2026-08&format=csvfilewithlabels GREP "CHN"
+mhlw_wage_index  https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "^\[sheet 賃金指数|実質|^,*\s*(令和|20[12][0-9]|R)"
+jil_real_wages   https://www.jil.go.jp/english/estatis/esaikin/2026/documents/e202609.pdf GREP "Monthly Labour|real wage|Real wage|cash earnings"
