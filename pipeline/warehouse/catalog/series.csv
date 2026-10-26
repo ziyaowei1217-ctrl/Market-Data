@@ -1,4 +1,8 @@
 key,provider,code,title,frequency,unit,release_lag_days,source_url,params,vintages,runner
+AAII:bearish,AAII,bearish,AAII sentiment bearish,W,%,0,https://www.aaii.com/sentimentsurvey/sent_results,,False,cloud
+AAII:bullish,AAII,bullish,AAII sentiment bullish,W,%,0,https://www.aaii.com/sentimentsurvey/sent_results,,False,cloud
+AAII:neutral,AAII,neutral,AAII sentiment neutral,W,%,0,https://www.aaii.com/sentimentsurvey/sent_results,,False,cloud
+AAII:spread,AAII,spread,AAII sentiment bull minus bear,W,百分点,0,https://www.aaii.com/sentimentsurvey/sent_results,,False,cloud
 ACM:ACMRNY01,ACM,ACMRNY01,ACM 1y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 ACM:ACMRNY02,ACM,ACMRNY02,ACM 2y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud
 ACM:ACMRNY03,ACM,ACMRNY03,ACM 3y expected avg short rate,D,%,35,https://www.newyorkfed.org/research/data_indicators/term-premia-tabs,,False,cloud

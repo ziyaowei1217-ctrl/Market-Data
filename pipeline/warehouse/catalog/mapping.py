@@ -1326,6 +1326,13 @@ def build_batch4() -> None:
         enote + "；DFR 预期 = MRO 预期 − 0.15")
     api("102-066", f"event_surprise({series('BOC', 'V39079', 'BoC target overnight rate', 'D', '%', 1)}, {ffc('CAD', 'Overnight Rate')})", enote)
 
+    # ---------------------------------------------------------- AAII sentiment
+    aurl = "https://www.aaii.com/sentimentsurvey/sent_results"
+    anote = "AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）"
+    for iid, code, title, unit in [("77-001", "bullish", "bullish", "%"), ("77-002", "neutral", "neutral", "%"),
+                                   ("77-003", "bearish", "bearish", "%"), ("77-004", "spread", "bull minus bear", "百分点")]:
+        api(iid, series("AAII", code, f"AAII sentiment {title}", "W", unit, 0, aurl), anote)
+
     # ---------------------------------------------------------- CPI "supercore" stand-in
     snote = "BLS「服务减住房租金」（含能源服务，非严格的核心服务减住房；BLS 不发布后者）"
     proxy("29-015", f"pop({bls('CUSR0000SASL2RS', 'CPI services less rent of shelter SA')})", snote + "；季调环比")

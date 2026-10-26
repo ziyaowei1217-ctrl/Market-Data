@@ -599,10 +599,10 @@ indicator_id,method,phase,formula,coverage_note
 47-058,api,P1,{CFTC:gpe5-46if:097741:open_interest_all},CFTC TFF，合约 097741
 47-059,api,P1,{CFTC:72hh-3qpy:067651:open_interest_all},CFTC Disaggregated 期货单独口径，合约 067651
 47-060,api,P1,{CFTC:72hh-3qpy:088691:open_interest_all},CFTC Disaggregated 期货单独口径，合约 088691
-77-001,pending,P2,,AAII 历史文件需会员；机构调查需授权
-77-002,pending,P2,,AAII 历史文件需会员；机构调查需授权
-77-003,pending,P2,,AAII 历史文件需会员；机构调查需授权
-77-004,pending,P2,,AAII 历史文件需会员；机构调查需授权
+77-001,api,P1,{AAII:bullish},AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）
+77-002,api,P1,{AAII:neutral},AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）
+77-003,api,P1,{AAII:bearish},AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）
+77-004,api,P1,{AAII:spread},AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）
 77-005,pending,P2,,AAII 历史文件需会员；机构调查需授权
 77-006,pending,P2,,AAII 历史文件需会员；机构调查需授权
 77-007,pending,P2,,AAII 历史文件需会员；机构调查需授权

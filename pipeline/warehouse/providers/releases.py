@@ -191,3 +191,44 @@ class NbsReleases(Provider):
             note = f"{len(obs)} releases; {len(failures)} not parsed" + (f" (e.g. {failures[0][:80]})" if failures else "")
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty", note))
         return out
+
+
+def parse_aaii(text: str, today: date) -> dict[date, tuple[float, float, float]]:
+    """'Reported Date | Bullish | Neutral | Bearish' table without years: the first row is
+    the latest survey (on or before today); years roll back as months go back."""
+    rows = re.findall(r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s*\|\s*(\d+(?:\.\d+)?)%\s*\|\s*(\d+(?:\.\d+)?)%\s*\|\s*(\d+(?:\.\d+)?)%",
+                      re.sub(r"\s*\r?\n\s*", " ", text))
+    out: dict[date, tuple[float, float, float]] = {}
+    year, prev_month = today.year, None
+    for mon, day, bull, neutral, bear in rows:
+        month = [m[:3] for m in MONTHS].index(mon.lower()) + 1
+        if prev_month is None:
+            year = today.year if (month, int(day)) <= (today.month, today.day) else today.year - 1
+        elif month > prev_month:
+            year -= 1
+        prev_month = month
+        out[date(year, month, int(day))] = (float(bull), float(neutral), float(bear))
+    return out
+
+
+@register
+class AaiiSentiment(Provider):
+    """AAII Sentiment Survey past-results table (about the latest 22 weeks; the warehouse
+    accumulates). code = bullish | neutral | bearish | spread (bullish − bearish)."""
+
+    name = "AAII"
+    batch = True
+    URL = "https://www.aaii.com/sentimentsurvey/sent_results"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        text, _ = html_text(self.get(self.URL, headers={"User-Agent": BROWSER_UA}))
+        table = parse_aaii(text, date.today())
+        if not table:
+            raise ProviderError("AAII table not found")
+        pick = {"bullish": lambda r: r[0], "neutral": lambda r: r[1], "bearish": lambda r: r[2],
+                "spread": lambda r: round(r[0] - r[2], 4)}
+        out = []
+        for d in defs:
+            obs = [Observation(k, pick[d.code](v)) for k, v in sorted(table.items()) if k >= start]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty"))
+        return out

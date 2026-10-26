@@ -18,3 +18,6 @@ td_auctioned     https://www.treasurydirect.gov/TA_WS/securities/auctioned?forma
 fd_mspd_mkt      https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_3_market?page%5Bsize%5D=5&sort=-record_date
 msci_page        https://www.msci.com/indexes/index/984000
 boe_dmp          https://www.bankofengland.co.uk/decision-maker-panel FOLLOWAFTER "Decision Maker Panel data"
+mospi_cpi        https://api.mospi.gov.in/api/cpi/getCPIIndex?base_year=2012&series=Current&year=2025&month_code=9&format=JSON
+bcb_focus_selic  https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativasMercadoSelic?$top=20&$orderby=Data%20desc&$format=json
+bcb_copom        https://www.bcb.gov.br/api/servico/sitebcb/copomcalendarios

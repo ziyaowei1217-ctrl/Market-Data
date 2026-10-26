@@ -450,3 +450,14 @@ class TotalReturnTests(unittest.TestCase):
         session = FakeSession({"prices.lbma.org.uk": body})
         [res] = official.Lbma(session, env={}).fetch([sd("LBMA", "gold_pm")], date(2026, 1, 1))
         self.assertEqual(res.observations[-1], Observation(date(2026, 10, 23), 4120.0))
+
+
+class AaiiTests(unittest.TestCase):
+    def test_year_rollback(self):
+        from pipeline.warehouse.providers.releases import parse_aaii
+
+        text = ("Sentiment Survey Historical Data\r\n | Reported Date\r\n | Bullish\r\n | Neutral\r\n | Bearish\r\n"
+                " | Jan 7\r\n | 36.9% \r\n | 17.3%\r\n | 45.8% \r\n | Dec 31\r\n | 38.7% \r\n | 19.7%\r\n | 41.6% \r\n")
+        out = parse_aaii(text, date(2027, 1, 10))
+        self.assertEqual(sorted(out), [date(2026, 12, 31), date(2027, 1, 7)])
+        self.assertEqual(out[date(2027, 1, 7)], (36.9, 17.3, 45.8))
