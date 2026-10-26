@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -639,13 +640,18 @@ class Yahoo(Provider):
     name = "YAHOO"
     URL = "https://query2.finance.yahoo.com/v8/finance/chart/{ticker}"
 
+    TR_BASE = date(2020, 10, 1)  # total-return series are rebased to 100 here, so levels never shift
+
     def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
-        period1 = int(datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        total_return = bool(d.params.get("tr"))
+        first = min(start, self.TR_BASE) if total_return else start
+        period1 = int(datetime.combine(first, datetime.min.time(), tzinfo=timezone.utc).timestamp())
         period2 = int(datetime.now(timezone.utc).timestamp()) + 86400
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"}
         payload = self.get_json(
             self.URL.format(ticker=d.code),
-            {"period1": period1, "period2": period2, "interval": "1d", "events": "history", "includeAdjustedClose": "false"},
+            {"period1": period1, "period2": period2, "interval": "1d", "events": "div|split" if total_return else "history",
+             "includeAdjustedClose": "false"},
             headers=headers,
         )
         time.sleep(1.0)
@@ -676,14 +682,33 @@ class Yahoo(Provider):
             if close is None:
                 continue
             local = datetime.fromtimestamp(ts + offset, tz=timezone.utc).date()
-            if local >= start:
+            if local >= first:
                 out[local] = Observation(local, float(close))
+        if total_return:
+            dividends = {}
+            for item in ((result.get("events") or {}).get("dividends") or {}).values():
+                when = datetime.fromtimestamp(int(item["date"]) + offset, tz=timezone.utc).date()
+                dividends[when] = dividends.get(when, 0.0) + float(item["amount"])
+            out = {o.obs_date: o for o in total_return_index([out[k] for k in sorted(out)], dividends)}
+        out = {k: v for k, v in out.items() if k >= start}
         # Drop today's intraday bar if the market has not closed.
         regular = meta.get("currentTradingPeriod", {}).get("regular", {})
         end = regular.get("end")
         if end and datetime.now(timezone.utc).timestamp() < end:
             out.pop(datetime.fromtimestamp(end + offset, tz=timezone.utc).date(), None)
         return [out[k] for k in sorted(out)]
+
+
+def total_return_index(closes: Sequence[Observation], dividends: dict[date, float], base: float = 100.0) -> list[Observation]:
+    """Chain price closes and cash dividends (credited on the ex-date) into a total-return
+    index starting at ``base``."""
+    out, level, prev = [], base, None
+    for o in closes:
+        if prev is not None and prev.value:
+            level *= (o.value + dividends.get(o.obs_date, 0.0)) / prev.value
+        out.append(Observation(o.obs_date, round(level, 6)))
+        prev = o
+    return out
 
 
 # --------------------------------------------------------------------------- index publishers
@@ -790,6 +815,24 @@ class Stoxx(Provider):
         return obs_from_pairs(pairs, start)
 
 
+def tokyo_close_date(now_utc: datetime) -> date | None:
+    """Trading day whose close the JPX snapshot shows: today after 15:30 JST, the previous
+    weekday before 09:00 JST, None while the market is open; weekends give Friday."""
+    tokyo = now_utc + timedelta(hours=9)
+    day = tokyo.date()
+    if day.weekday() >= 5:
+        return day - timedelta(days=day.weekday() - 4)
+    minutes = tokyo.hour * 60 + tokyo.minute
+    if minutes >= 15 * 60 + 30:
+        return day
+    if minutes < 9 * 60:
+        prev = day - timedelta(days=1)
+        while prev.weekday() >= 5:
+            prev -= timedelta(days=1)
+        return prev
+    return None
+
+
 @register
 class JpxTopix(Provider):
     """JPX daily index snapshot (no date field: stamped with the last Tokyo trading
@@ -817,8 +860,9 @@ class JpxTopix(Provider):
                     walk(item)
 
         walk(payload)
-        tokyo_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
-        stamp = tokyo_today if tokyo_today.weekday() < 5 else tokyo_today - timedelta(days=tokyo_today.weekday() - 4)
+        stamp = tokyo_close_date(datetime.now(timezone.utc))
+        if stamp is None:
+            return [FetchResult(d.key, [], "empty", "Tokyo market open: snapshot is intraday") for d in defs]
         wanted = {"TOPIX": ("TOPIX",), "TOPIX_TR": ("TOPIX TOTAL RETURN INDEX", "TOPIX TOTAL RETURN", "TOPIXTR")}
         out = []
         for d in defs:
@@ -908,4 +952,158 @@ class Snb(Provider):
             for d in items:
                 obs = obs_from_pairs(values.get(d.code.split(":", 1)[1], []), start)
                 out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "dimension not found"))
+        return out
+
+
+@register
+class Lbma(Provider):
+    """LBMA precious-metal benchmark prices (JSON behind prices.lbma.org.uk charts).
+    code = gold_am | gold_pm | silver; value = USD price (first element of "v")."""
+
+    name = "LBMA"
+    URL = "https://prices.lbma.org.uk/json/{code}.json"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        rows = self.get_json(self.URL.format(code=d.code), headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
+        if not isinstance(rows, list) or not rows or "d" not in rows[0] or "v" not in rows[0]:
+            raise ProviderError("LBMA JSON layout changed (expected a list of {d, v})")
+        return obs_from_pairs(((r["d"], (r.get("v") or [None])[0]) for r in rows if r.get("v")), start)
+
+
+@register
+class BankOfEnglandCurves(Provider):
+    """Bank of England yield-curve spreadsheets (OIS and GLC nominal; daily, from the
+    latest-month zip, plus the archive zips on first load or in the first week of a month).
+    code = "<OIS|GLC Nominal>:<spot|fwds>:<months>", e.g. "OIS:spot:12" (1-year OIS)."""
+
+    name = "BOECURVE"
+    batch = True
+    supports_backfill = True
+    BASE = "https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/"
+    LATEST = "latest-yield-curve-data.zip"
+    ARCHIVE = {"OIS": "oisddata.zip", "GLC Nominal": "glcnominalddata.zip"}
+
+    @staticmethod
+    def parse_sheet(frame: pd.DataFrame, months: float) -> list[tuple[date, float]]:
+        first = frame.iloc[:, 0].astype(str).str.strip()
+        header_rows = first[first.str.lower().str.startswith("months")].index
+        if not len(header_rows):
+            return []
+        header = frame.loc[header_rows[0]]
+        col = next((c for c in frame.columns[1:] if to_float(header[c]) is not None and abs(float(header[c]) - months) < 0.01), None)
+        if col is None:
+            return []
+        out = []
+        for _, row in frame.iterrows():
+            when = pd.to_datetime(row.iloc[0], errors="coerce")
+            value = to_float(row[col])
+            if pd.notna(when) and value is not None and value == value and not isinstance(row.iloc[0], (int, float)):
+                out.append((when.date(), value))
+        return out
+
+    def _workbooks(self, curve: str, archive: bool, start: date) -> list[bytes]:
+        import zipfile
+
+        books = []
+        sources = [self.LATEST] + ([self.ARCHIVE[curve]] if archive else [])
+        for name in sources:
+            with zipfile.ZipFile(io.BytesIO(self.get(self.BASE + name, headers={"User-Agent": "Mozilla/5.0"}))) as zf:
+                for member in zf.namelist():
+                    if not member.startswith(curve) or not member.endswith(".xlsx"):
+                        continue
+                    years = [int(y) for y in re.findall(r"(\d{4})", member)]
+                    if years and max(years) < start.year and "present" not in member:
+                        continue
+                    books.append(zf.read(member))
+        return books
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        archive = bool(self.env.get("BACKFILL")) or _today().day <= 7
+        by_curve: dict[str, list[SeriesDef]] = defaultdict(list)
+        for d in defs:
+            by_curve[d.code.split(":")[0]].append(d)
+        out = []
+        for curve, items in by_curve.items():
+            values: dict[str, dict[date, float]] = defaultdict(dict)
+            for book in reversed(self._workbooks(curve, archive, start)):  # latest month applied last
+                sheets = pd.read_excel(io.BytesIO(book), sheet_name=None, header=None)
+                for d in items:
+                    _, kind, months = d.code.split(":")
+                    sheet = next((f for n, f in sheets.items() if f"{kind}, short end" in n), None)
+                    if sheet is not None:
+                        values[d.key].update(dict(self.parse_sheet(sheet, float(months))))
+            for d in items:
+                obs = [Observation(k, v) for k, v in sorted(values[d.key].items()) if k >= start]
+                out.append(FetchResult(d.key, obs, "ok" if obs else "empty", "" if obs else "column not found"))
+        return out
+
+
+def auction_category(row: dict) -> str | None:
+    """bills | coupons (fixed-rate notes and bonds) | tips | frn."""
+    kind = (row.get("security_type") or "").strip()
+    if kind == "Bill":
+        return "bills"
+    if kind not in ("Note", "Bond"):
+        return None
+    if (row.get("inflation_index_security") or "").strip() == "Yes":
+        return "tips"
+    if (row.get("floating_rate") or "").strip() == "Yes":
+        return "frn"
+    return "coupons"
+
+
+def monthly_issuance(rows: Sequence[dict], start: date, today: date) -> dict[str, dict[date, float]]:
+    """Gross issuance (issue month), principal maturing (maturity month) and net, in $ million,
+    from auction records. Amount = total accepted + SOMA add-ons, so maturing principal and
+    issuance use the same (total) basis; auctions not yet settled are skipped."""
+    out: dict[str, dict[date, float]] = defaultdict(lambda: defaultdict(float))
+    last_month = date(today.year, today.month, 1)
+    for row in rows:
+        cat = auction_category(row)
+        amount = (to_float(row.get("total_accepted")) or 0.0) + (to_float(row.get("soma_accepted")) or 0.0)
+        if cat is None or not amount:
+            continue
+        issue = pd.to_datetime(row.get("issue_date"), errors="coerce")
+        mature = pd.to_datetime(row.get("maturity_date"), errors="coerce")
+        if pd.notna(issue) and issue.date() <= today:
+            m = issue.date().replace(day=1)
+            if m >= start.replace(day=1):
+                out[f"{cat}:gross"][m] += amount / 1e6
+        if pd.notna(mature) and mature.date() <= today:
+            m = mature.date().replace(day=1)
+            if m >= start.replace(day=1):
+                out[f"{cat}:maturing"][m] += amount / 1e6
+    for cat in ("bills", "coupons", "tips", "frn"):
+        gross, maturing = out.get(f"{cat}:gross", {}), out.get(f"{cat}:maturing", {})
+        for m in {m for m in set(gross) | set(maturing) if m <= last_month}:
+            out[f"{cat}:net"][m] = gross.get(m, 0.0) - maturing.get(m, 0.0)
+    return {k: dict(v) for k, v in out.items() if v}
+
+
+@register
+class TreasuryAuctions(Provider):
+    """Monthly Treasury issuance from Fiscal Data auction records (auctions_query).
+    code = "<bills|coupons|tips|frn>:<gross|maturing|net>" in $ million."""
+
+    name = "TSYAUCT"
+    batch = True
+    URL = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query"
+    FIELDS = "security_type,issue_date,maturity_date,total_accepted,soma_accepted,inflation_index_security,floating_rate"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        rows: list[dict] = []
+        page = 1
+        while True:
+            payload = self.get_json(self.URL, {"filter": f"maturity_date:gte:{start.isoformat()}", "fields": self.FIELDS,
+                                               "sort": "issue_date", "page[size]": 10000, "page[number]": page, "format": "json"})
+            rows.extend(payload.get("data", []))
+            if page >= int(payload.get("meta", {}).get("total-pages", 1) or 1):
+                break
+            page += 1
+        table = monthly_issuance(rows, start, _today())
+        out = []
+        for d in defs:
+            series = table.get(d.code, {})
+            obs = [Observation(k, round(v, 1)) for k, v in sorted(series.items())]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty", f"{len(rows)} auction records"))
         return out

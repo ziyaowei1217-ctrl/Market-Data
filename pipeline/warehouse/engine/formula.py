@@ -190,6 +190,7 @@ def infer_freq(index: pd.DatetimeIndex) -> str:
 
 
 PERIODS_PER_YEAR = {"D": 252, "W": 52, "M": 12, "Q": 4, "A": 1}
+SNAP_TOLERANCE_DAYS = {"D": 10, "W": 14, "M": 45, "Q": 100, "A": 380}
 
 
 def window_anchor(t: pd.Timestamp, window: str) -> pd.Timestamp:
@@ -387,6 +388,9 @@ def f_snap(ctx: Context, x: TS, window: str) -> Scalar:
     hit = _asof(frame, anchor_date)
     if hit is None:
         return Scalar.missing("insufficient_history")
+    limit = SNAP_TOLERANCE_DAYS.get(infer_freq(frame.index) if len(frame) > 2 else "D", 10)
+    if (anchor_date - hit[1]).days > limit:
+        return Scalar(hit[0], hit[1], status="stale", detail=f"latest value before {anchor_date.date()} is from {hit[1].date()}")
     return Scalar(hit[0], hit[1])
 
 
@@ -427,6 +431,23 @@ def f_vol(ctx: Context, x: TS, window: str = "52W") -> Scalar:
     if len(returns) < 26:
         return Scalar.missing("insufficient_history", f"{len(returns)} weekly returns")
     return Scalar(float(np.std(returns, ddof=1) * math.sqrt(52) * 100.0), last[1], detail=f"{len(returns)} weekly returns")
+
+
+def f_corr(ctx: Context, x: TS, y: TS, window: str = "52W") -> Scalar:
+    """Correlation of weekly (Friday) returns of two series over the window."""
+    fx, fy = _scalar_input(ctx, x, "corr"), _scalar_input(ctx, y, "corr")
+    lx, ly = _last(fx), _last(fy)
+    if lx is None or ly is None:
+        return Scalar.missing("missing_input")
+    start = window_anchor(ctx.obs_cutoff, window)
+    sx = _sample_weekly(fx, start, ctx.obs_cutoff, stale_days=7)
+    sy = _sample_weekly(fy, start, ctx.obs_cutoff, stale_days=7)
+    if len(sx) < 2 or not (np.all(np.isfinite(sx)) and np.all(np.isfinite(sy))):
+        return Scalar.missing("insufficient_history", "gaps in weekly samples")
+    rx, ry = sx[1:] / sx[:-1] - 1.0, sy[1:] / sy[:-1] - 1.0
+    if len(rx) < 8:
+        return Scalar.missing("insufficient_history", f"{len(rx)} weekly returns")
+    return Scalar(float(np.corrcoef(rx, ry)[0, 1]), min(lx[1], ly[1]), detail=f"{len(rx)} weekly returns")
 
 
 def f_drawdown(ctx: Context, x: TS) -> Scalar:
@@ -729,6 +750,34 @@ def v_surprise(ctx: Context, actual: ast.AST, *consensus: ast.AST) -> Scalar:
     return Scalar(first_value - best[0], period, detail=f"first print {release.date()} vs consensus {best[1].date()}")
 
 
+def v_event_surprise(ctx: Context, actual: ast.AST, *consensus: ast.AST) -> Scalar:
+    """Policy decisions: the rate set at the latest meeting minus the consensus snapshot for
+    that meeting (consensus series are dated by event date). The decision is read from the
+    actual series within 8 days after the event, because some rates take effect later (the
+    ECB's from the following Wednesday); before a change shows up the value is provisional."""
+    best = None
+    for node in consensus:
+        frame = ctx.visible(_require_ts(evaluate_node(node, ctx), "event_surprise"))
+        if not frame.empty and (best is None or frame.index[-1] > best[1]):
+            best = (float(frame["value"].iat[-1]), frame.index[-1])
+    if best is None:
+        return Scalar.missing("missing_input", "no consensus snapshot")
+    expected, event = best
+    act = ctx.visible(_require_ts(evaluate_node(actual, ctx), "event_surprise"))
+    before = act[act.index < event - pd.Timedelta(days=1)]
+    window = act[(act.index >= event - pd.Timedelta(days=1)) & (act.index <= event + pd.Timedelta(days=8))]
+    if before.empty and window.empty:
+        return Scalar.missing("missing_input", f"no actual around {event.date()}")
+    prior = float(before["value"].iat[-1]) if not before.empty else float(window["value"].iat[0])
+    changed = window[window["value"] != prior]
+    detail = f"meeting {event.date()}, consensus {expected:g}"
+    if not changed.empty:
+        return Scalar(float(changed["value"].iat[0]) - expected, event, detail=detail)
+    if ctx.obs_cutoff >= event + pd.Timedelta(days=8):
+        return Scalar(prior - expected, event, detail=detail + ", no change")
+    return Scalar(prior - expected, event, status="provisional", detail=detail + ", no change effective yet")
+
+
 SERIES_FUNCS: dict[str, Callable[..., Any]] = {
     "level": f_level,
     "pop": f_pop,
@@ -749,6 +798,7 @@ SCALAR_FUNCS: dict[str, Callable[..., Any]] = {
     "snap": f_snap,
     "pctile": f_pctile,
     "vol": f_vol,
+    "corr": f_corr,
     "drawdown": f_drawdown,
     "maxdd": f_maxdd,
     "at_year": f_at_year,
@@ -765,6 +815,7 @@ VINTAGE_FUNCS: dict[str, Callable[..., Any]] = {
     "prev_vintage": v_prev_vintage,
     "parbond": v_parbond,
     "surprise": v_surprise,
+    "event_surprise": v_event_surprise,
 }
 # Functions that read fixed series in addition to the {KEY} references in a formula.
 IMPLICIT_SERIES: dict[str, tuple[str, ...]] = {"parbond": tuple(PAR_KEYS.values())}

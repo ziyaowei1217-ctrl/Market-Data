@@ -42,11 +42,14 @@ select indicator_id, name, unit, method, coverage_note from catalog where name i
 
 | method | 数量 | 说明 |
 | --- | ---: | --- |
-| `api` | 716 | 免费官方/行情接口直取或派生（FRED、财政部、纽约联储、BLS、EIA、CFTC、ECB、Eurostat、ONS、加拿大统计局、巴西央行、Cboe、Yahoo 等） |
-| `report` | 548 | 每周机构周报快照（高盛 Market Monitor、摩根 Weekly Market Recap、汇丰 Investment Weekly、FactSet Earnings Insight），解析器建设中 |
-| `manual` | 51 | 事件、日期、央行决议等，人工维护 |
-| `pending` | 510 | 暂无免费来源或待接入，原因写在 `coverage_note` |
+| `api` | 1091 | 免费官方/行情接口直取或派生（FRED、财政部（含拍卖记录）、纽约联储、BLS、BEA、EIA、CFTC、ECB、Eurostat、ONS、英格兰银行（含 OIS/国债曲线）、加拿大统计局、德国央行、BIS、瑞士央行、日本财务省/统计局、中国国家统计局、MSCI、FactSet、ISM、S&P Global PMI 新闻稿、AAII、Cboe、Yahoo 等） |
+| `proxy` | 173 | 同样按公式计算，但用替代来源：跟踪该指数的 ETF 总回报（股息再投资，2020-10-01=100）或同类指数（如 ICE BofA 代替 Bloomberg 高收益）；`coverage_note` 以「代理：」开头写明替代品 |
+| `report` | 229 | 只在机构周报里出现的数字（如高盛估值图、FactSet 未覆盖的一致预期），每周归档原文（私有表），解析器建设中 |
+| `manual` | 45 | 事件、日期、央行决议等，人工维护 |
+| `pending` | 287 | 暂无免费来源或待接入，原因写在 `coverage_note` |
 | `excluded` | 134 | 机构预测与长期资本市场假设，按需求排除 |
+
+画图或比较时，`proxy` 指标与原指数在费率、成分上限、对冲口径上可能有差异，必要时在图注里写明。
 
 Yahoo Finance 是免费延迟行情（非官方接口），只用于没有免费官方来源的指数点位，
 `coverage_note` 中逐条注明。ICE BofA 利差在 FRED 只有约 3 年日频历史，此后本库逐周累积。

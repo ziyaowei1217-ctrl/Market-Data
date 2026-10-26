@@ -7,6 +7,8 @@ formula and coverage note). Both CSVs are committed so changes are reviewable.
 method values
 -------------
 api       formula over free official / free market feeds (this module)
+proxy     same kind of formula, but over a stand-in (e.g. an ETF tracking the index,
+          or a sister index family); coverage_note names the stand-in
 report    weekly snapshot parsed from an institution's free weekly report
 manual    maintained by hand in catalog/manual (events, dates, decisions)
 excluded  out of scope by request (institution forecasts / CMAs)
@@ -70,6 +72,13 @@ def api(iid: str, formula: str, note: str = "") -> None:
     if iid in MAP and MAP[iid]["method"] == "api":
         raise ValueError(f"{iid} mapped twice")
     MAP[iid] = {"method": "api", "phase": "P1", "formula": formula, "coverage_note": note}
+
+
+def proxy(iid: str, formula: str, note: str) -> None:
+    """Like api(), for a stand-in source (ETF tracking the index, sister index family)."""
+    if iid in MAP and MAP[iid]["method"] in ("api", "proxy"):
+        raise ValueError(f"{iid} mapped twice")
+    MAP[iid] = {"method": "proxy", "phase": "P1", "formula": formula, "coverage_note": "代理：" + note}
 
 
 def other(iid: str, method: str, note: str, phase: str = "P2") -> None:
@@ -144,37 +153,40 @@ def build() -> None:
     for iid in ids("02", 1, 20) + ids("02", 26, 40):
         other(iid, "report", "MSCI/TOPIX 指数历史需授权；取汇丰 Investment Weekly（澳洲）每周市场表快照", "P1b")
 
-    # ---------------------------------------------------------- 03 S&P 500 行业 (Yahoo S&P sector indices)
+    # ---------------------------------------------------------- 03 S&P 500 行业 (sector ETFs, total return)
+    # Yahoo's S&P sector index tickers return only the latest point, and the JPM recap uses
+    # total returns, so the Select Sector SPDR ETFs (dividends reinvested) stand in.
     sp500 = fred("SP500", "S&P 500", "D", "点")
+    spy = etf_tr("SPY", "SPDR S&P 500", "S&P 500")
     sectors = [
-        ("通讯服务", "^SP500-50"), ("能源", "^GSPE"), ("信息技术", "^SP500-45"), ("公用事业", "^SP500-55"),
-        ("金融", "^SP500-40"), ("必需消费", "^SP500-30"), ("房地产", "^SP500-60"), ("工业", "^SP500-20"),
-        ("可选消费", "^SP500-25"), ("医疗保健", "^SP500-35"), ("材料", "^SP500-15"),
+        ("通讯服务", "XLC"), ("能源", "XLE"), ("信息技术", "XLK"), ("公用事业", "XLU"),
+        ("金融", "XLF"), ("必需消费", "XLP"), ("房地产", "XLRE"), ("工业", "XLI"),
+        ("可选消费", "XLY"), ("医疗保健", "XLV"), ("材料", "XLB"),
     ]
-    note = "S&P 500 行业价格指数（Yahoo 免费行情）；摩根周报为总回报口径，二者可能有股息差"
+    note = "Select Sector SPDR ETF 总回报（跟踪 S&P 500 行业的上限加权版本；含费率）；相对收益以 SPY 总回报为基准"
     for i, (name, ticker) in enumerate(sectors):
-        x = yahoo(ticker, f"S&P 500 {name}行业指数")
+        x = etf_tr(ticker, f"Select Sector SPDR {name}", f"S&P 500 {name} (capped)")
         b = 1 + 4 * i
-        api(f"03-{b:03d}", ret(x, "W"), note)
-        api(f"03-{b + 1:03d}", f"{ret(x, 'W')} - {ret(sp500, 'W')}", note)
-        api(f"03-{b + 2:03d}", ret(x, "YTD"), note)
-        api(f"03-{b + 3:03d}", f"{ret(x, 'YTD')} - {ret(sp500, 'YTD')}", note)
-        api(f"95-{23 + i:03d}", ret(x, "MTD"), note)
+        proxy(f"03-{b:03d}", ret(x, "W"), note)
+        proxy(f"03-{b + 1:03d}", f"{ret(x, 'W')} - {ret(spy, 'W')}", note)
+        proxy(f"03-{b + 2:03d}", ret(x, "YTD"), note)
+        proxy(f"03-{b + 3:03d}", f"{ret(x, 'YTD')} - {ret(spy, 'YTD')}", note)
+        proxy(f"95-{23 + i:03d}", ret(x, "MTD"), note)
 
-    # ---------------------------------------------------------- 04 Russell 风格
+    # ---------------------------------------------------------- 04 Russell 风格 (iShares ETFs, total return)
     russell = [
-        ("Russell 1000 Value", "^RLV"), ("Russell 1000", "^RUI"), ("Russell 1000 Growth", "^RLG"),
-        ("Russell Midcap Value", "^RMCCV"), ("Russell Midcap", "^RMCC"), ("Russell Midcap Growth", "^RMCCG"),
-        ("Russell 2000 Value", "^RUJ"), ("Russell 2000", "^RUT"), ("Russell 2000 Growth", "^RUO"),
+        ("Russell 1000 Value", "IWD"), ("Russell 1000", "IWB"), ("Russell 1000 Growth", "IWF"),
+        ("Russell Midcap Value", "IWS"), ("Russell Midcap", "IWR"), ("Russell Midcap Growth", "IWP"),
+        ("Russell 2000 Value", "IWN"), ("Russell 2000", "IWM"), ("Russell 2000 Growth", "IWO"),
     ]
-    rx = [yahoo(t, n) for n, t in russell]
-    rnote = "Russell 价格指数（Yahoo 免费行情）；摩根周报为总回报口径"
+    rx = [etf_tr(t, f"iShares {n}", n) for n, t in russell]
+    rnote = "iShares Russell ETF 总回报（含费率）；摩根周报为指数总回报口径"
     for i, x in enumerate(rx):
-        api(f"04-{1 + 2 * i:03d}", ret(x, "W"), rnote)
-        api(f"04-{2 + 2 * i:03d}", ret(x, "YTD"), rnote)
-        api(f"95-{56 + i:03d}", ret(x, "MTD"), rnote)
+        proxy(f"04-{1 + 2 * i:03d}", ret(x, "W"), rnote)
+        proxy(f"04-{2 + 2 * i:03d}", ret(x, "YTD"), rnote)
+        proxy(f"95-{56 + i:03d}", ret(x, "MTD"), rnote)
     for k, (g, v) in enumerate([(2, 0), (5, 3), (8, 6)]):
-        api(f"04-{19 + k:03d}", f"{ret(rx[g], 'W')} - {ret(rx[v], 'W')}", rnote)
+        proxy(f"04-{19 + k:03d}", f"{ret(rx[g], 'W')} - {ret(rx[v], 'W')}", rnote)
 
     # ---------------------------------------------------------- 05-10 估值/盈利 (FactSet / 摩根)
     for iid in ids("05", 1, 9):
@@ -816,7 +828,7 @@ def build() -> None:
     for iid in ["99-005", "99-006", "99-007", "99-008", "99-013", "99-014", "99-015", "99-016"]:
         other(iid, "report", "中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照", "P1b")
     # rendoblid (2002 method) stopped in July 2025; rendeiduebd holds spot rates under the new method.
-    ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 1,
+    ch10 = series("SNB", "rendeiduebd:CHF.10J", "Swiss Confederation 10Y spot rate (SNB)", "D", "%", 35,
                   "https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd")
     api("99-001", ch10, "瑞士央行数据门户：联邦债券 10 年期收益率")
     for k, w in enumerate(["ME", "QE", "YE"]):
@@ -1021,9 +1033,14 @@ def build_publishers() -> None:
     # ---------------------------------------------------------- TOPIX (JPX daily snapshot, accumulated)
     topix = series("JPX", "TOPIX", "TOPIX (price, JPY)", "D", "点", 0, "https://www.jpx.co.jp/english/markets/indices/topix/")
     tnote = "日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）"
-    for k, w in enumerate(["level", "W", "MTD", "YTD", "1Y"]):
-        api(f"02-{26 + k:03d}", topix if w == "level" else ret(topix, w), tnote)
-    api("96-104", ret(topix, "QTD"), tnote)
+    api("02-026", topix, tnote)
+    # Returns need history the snapshot does not have: the NEXT FUNDS TOPIX ETF (1306.T) price
+    # tracks TOPIX's price return (minus a ~0.06% fee).
+    etf = yahoo("1306.T", "NEXT FUNDS TOPIX ETF (price)")
+    enote = "NEXT FUNDS TOPIX ETF（1306.T，Yahoo）价格回报，跟踪 TOPIX 价格指数（含费率；除息日有小幅偏差）"
+    for k, w in enumerate(["W", "MTD", "YTD", "1Y"]):
+        proxy(f"02-{27 + k:03d}", ret(etf, w), enote)
+    proxy("96-104", ret(etf, "QTD"), enote)
     for k, w in enumerate(["ME", "QE", "YE"]):
         api(f"96-{188 + k:03d}", f'snap({topix}, "{w}")', tnote)
 
@@ -1229,6 +1246,180 @@ def build_batch3() -> None:
         api(iid, f"surprise({actual}, {', '.join(cons)})", snote2)
 
 
+def etf_tr(ticker, title, index_name):
+    return series("YAHOO", ticker, f"{title} ETF total return (tracks {index_name})", "D", "指数(2020-10-01=100)", 1,
+                  f"https://finance.yahoo.com/quote/{ticker}", params={"tr": True}, key=f"YAHOO:{ticker}:TR")
+
+
+def build_batch4() -> None:
+    """NBS press releases; LBMA gold; return tables via exact free indices or tracking ETFs."""
+    # ---------------------------------------------------------- China NBS
+    nbs_url = "https://www.stats.gov.cn/english/PressRelease/"
+    def nbs(code, title, freq, unit, lag):
+        return series("NBS", code, f"China NBS {title}", freq, unit, lag, nbs_url)
+    nnote = "国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）"
+    cn = {
+        "43-001": nbs("gdp_yoy", "real GDP y/y (quarter)", "Q", "%", 112),
+        "43-002": nbs("ip_yoy", "industrial value added y/y", "M", "%", 50),
+        "43-003": nbs("retail_yoy", "retail sales y/y", "M", "%", 50),
+        "43-004": nbs("cpi_yoy", "CPI y/y", "M", "%", 45),
+        "43-005": nbs("ppi_yoy", "PPI y/y", "M", "%", 45),
+        "43-006": nbs("mfg_pmi", "official manufacturing PMI", "M", "指数点", 31),
+    }
+    for iid, x in cn.items():
+        api(iid, x, nnote + ("；1–2 月合并发布，记在 2 月" if iid in ("43-002", "43-003") else ""))
+    ff_url = "https://www.forexfactory.com/calendar"
+    def ff(title):
+        return series("FFCAL", f"CNY|{title}|forecast", f"Consensus CNY {title} (forecast)", "E", "%", 0, ff_url)
+    snote = "国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算"
+    api("54-010", f"surprise({cn['43-001']}, {ff('GDP q/y')})", snote)
+    api("102-069", f"surprise({cn['43-002']}, {ff('Industrial Production y/y')})", snote)
+    api("102-072", f"surprise({cn['43-003']}, {ff('Retail Sales y/y')})", snote)
+
+    # ---------------------------------------------------------- HSBC asset-return chart (module 97)
+    def five(first_id, x, note, level=True, how=proxy):
+        n = int(first_id[3:])
+        parts = ([x] if level else []) + [f'ret({x}, "1Y") + 100', f"year_ret({x}, 2025)", f'ret({x}, "MTD")', f'ret({x}, "YTD")']
+        for k, formula in enumerate(parts):
+            how(f"97-{n + k:03d}", formula, note)
+    # LBMA's JSON (prices.lbma.org.uk) answers 403 to GitHub Actions, so COMEX gold futures stand in.
+    gold = yahoo("GC=F", "COMEX gold front-month futures")
+    gnote = "COMEX 黄金期货近月连续（Yahoo），代替 LBMA 金价 PM（LBMA 接口拒绝云端访问）"
+    five("97-087", gold, gnote, level=False)
+    dxy = yahoo("DX-Y.NYB", "ICE US Dollar Index")
+    five("97-102", dxy, "ICE 美元指数（Yahoo 行情）", level=False, how=api)
+    five("97-092", yahoo("HG=F", "COMEX copper front-month futures"), "COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点", level=False)
+    five("97-066", etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
+         "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
+    five("97-071", etf_tr("IYR", "iShares US Real Estate", "Dow Jones U.S. Real Estate Capped"),
+         "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    five("97-076", etf_tr("GSG", "iShares S&P GSCI Commodity-Indexed Trust", "S&P GSCI Total Return"),
+         "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+
+    # ---------------------------------------------------------- GS bond-return table (module 98)
+    def table(ids_, x, note, windows=("W", "MTD", "QTD", "YTD"), how=proxy):
+        for iid, w in zip(ids_, windows):
+            if iid:
+                how(iid, f'ret({x}, "{w}")', note)
+    hytr = fred("BAMLHYH0A0HYM2TRIV", "ICE BofA US High Yield Index Total Return", "D", "指数点")
+    ehytr = fred("BAMLHE00EHYITRIV", "ICE BofA Euro High Yield Index Total Return (EUR)", "D", "指数点")
+    ice = "ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数"
+    table([None, "98-001", "98-002", None], etf_tr("AGG", "iShares Core US Aggregate Bond", "Bloomberg US Aggregate"),
+          "iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）")
+    table([None, "98-003", "98-004", None], etf_tr("AGGG.L", "iShares Core Global Aggregate Bond (USD Dist)", "Bloomberg Global Aggregate"),
+          "iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）")
+    table(ids("98", 5, 8), etf_tr("EUNA.DE", "iShares Core EUR Aggregate Bond", "Bloomberg Euro Aggregate"),
+          "iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）")
+    table(ids("98", 9, 12), hytr, "ICE BofA US High Yield 总回报；" + ice)
+    table(ids("98", 13, 16), ehytr, "ICE BofA Euro High Yield 总回报（EUR）；" + ice)
+    table(ids("98", 17, 20), etf_tr("MUB", "iShares National Muni Bond", "ICE AMT-Free US National Municipal"),
+          "iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）")
+    table(ids("98", 21, 24), etf_tr("SCHP", "Schwab US TIPS", "Bloomberg US TIPS (Series-L)"),
+          "Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）")
+    table(ids("98", 25, 28), etf_tr("EMB", "iShares JPM USD EM Bond", "J.P. Morgan EMBI Global Core"),
+          "iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）")
+    table(["98-029", None, "98-031", None], etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
+          "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
+
+    # ---------------------------------------------------------- policy-rate decisions vs consensus
+    ff_url = "https://www.forexfactory.com/calendar"
+    def ffc(country, title):
+        return series("FFCAL", f"{country}|{title}|forecast", f"Consensus {country} {title} (forecast)", "E", "%", 0, ff_url)
+    enote = "最近一次议息会议的实际决定减 Forex Factory 预期（本库从 2026-10 起留存预期）；生效日晚于会议时先标 provisional"
+    api("102-087", f"event_surprise({fred('DFEDTARU', 'Fed funds target range upper', 'D', '%')}, {ffc('USD', 'Federal Funds Rate')})", enote)
+    api("102-090", f"event_surprise({series('BOE', 'IUDBEDR', 'Bank Rate', 'D', '%', 1)}, {ffc('GBP', 'Official Bank Rate')})", enote)
+    api("102-093", f"event_surprise({series('BIS', 'WS_CBPOL/D.JP', 'BIS policy rate JP', 'D', '%', 7)}, {ffc('JPY', 'BOJ Policy Rate')})", enote)
+    api("102-096", f"event_surprise({fred('ECBDFR', 'ECB deposit facility rate', 'D', '%')}, {ffc('EUR', 'Main Refinancing Rate')} - 0.15)",
+        enote + "；DFR 预期 = MRO 预期 − 0.15")
+    api("102-066", f"event_surprise({series('BOC', 'V39079', 'BoC target overnight rate', 'D', '%', 1)}, {ffc('CAD', 'Overnight Rate')})", enote)
+
+    # ---------------------------------------------------------- Bank of England curves (OIS, gilts)
+    burl = "https://www.bankofengland.co.uk/statistics/yield-curves"
+    def boe(code, title):
+        return series("BOECURVE", code, f"BoE {title}", "D", "%", 1, burl)
+    onote = "英格兰银行 OIS 曲线（SONIA，零息即期，日频；数据来自 Bloomberg 与英央行计算）"
+    o1, o2 = boe("OIS:spot:12", "OIS spot 1Y"), boe("OIS:spot:24", "OIS spot 2Y")
+    api("64-007", o1, onote)
+    api("64-008", o2, onote)
+    api("64-009", f"2 * {o2} - {o1}", onote + "；1y1y 远期 = 2×2 年 − 1 年（连续复利近似）")
+    api("64-016", boe("OIS:fwds:12", "OIS instantaneous forward 12M"), "英格兰银行 OIS 瞬时远期曲线 12 个月处（市场隐含 12 个月后 SONIA）")
+    api("15-007", boe("GLC Nominal:spot:24", "nominal gilt spot 2Y"), "英格兰银行名义零息曲线 2 年（与基准券到期收益率可能差几个 bp）")
+
+    # ---------------------------------------------------------- Treasury issuance by month (auction records)
+    turl = "https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/"
+    tnote = ("财政部 Fiscal Data 拍卖记录按月汇总：发行额按发行日、到期本金按到期日；金额 = 公开中标 + 美联储 SOMA 续作，"
+             "两边同口径；当月只含已交割的拍卖")
+    k = 5
+    for cat, cname in [("bills", "bills incl. CMBs"), ("coupons", "fixed-rate notes and bonds"), ("tips", "TIPS"), ("frn", "FRNs")]:
+        for part in ("gross", "maturing", "net"):
+            api(f"69-{k:03d}", series("TSYAUCT", f"{cat}:{part}", f"Treasury {cname}: {part} (monthly)", "M", "百万美元", 0, turl), tnote)
+            k += 1
+
+    # ---------------------------------------------------------- S&P Global PMI headlines
+    purl = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
+    pnote = ("S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，"
+             "历史从 2026-10 起累积；分项指数需授权）")
+    k = 1
+    for region, rname in [("US", "US"), ("EZ", "Eurozone"), ("UK", "UK"), ("JP", "Japan")]:
+        for kind, kname in [("mfg", "Manufacturing PMI"), ("serv", "Services Business Activity"), ("comp", "Composite Output")]:
+            api(f"35-{k:03d}", series("SPGPMI", f"{region}:{kind}", f"S&P Global {rname} {kname}", "M", "指数点", 23, purl), pnote)
+            k += 1
+
+    # ---------------------------------------------------------- AAII sentiment
+    aurl = "https://www.aaii.com/sentimentsurvey/sent_results"
+    anote = "AAII 官网往期结果表（约近 22 周，本库逐周累积；完整历史文件需会员）"
+    for iid, code, title, unit in [("77-001", "bullish", "bullish", "%"), ("77-002", "neutral", "neutral", "%"),
+                                   ("77-003", "bearish", "bearish", "%"), ("77-004", "spread", "bull minus bear", "百分点")]:
+        api(iid, series("AAII", code, f"AAII sentiment {title}", "W", unit, 0, aurl), anote)
+
+    # ---------------------------------------------------------- CPI "supercore" stand-in
+    snote = "BLS「服务减住房租金」（含能源服务，非严格的核心服务减住房；BLS 不发布后者）"
+    proxy("29-015", f"pop({bls('CUSR0000SASL2RS', 'CPI services less rent of shelter SA')})", snote + "；季调环比")
+    proxy("29-016", f"yoy({bls('CUUR0000SASL2RS', 'CPI services less rent of shelter NSA')})", snote + "；未季调同比")
+
+    # ---------------------------------------------------------- more return-table stand-ins
+    agg = etf_tr("AGG", "iShares Core US Aggregate Bond", "Bloomberg US Aggregate")
+    gagg = etf_tr("AGGG.L", "iShares Core Global Aggregate Bond (USD Dist)", "Bloomberg Global Aggregate")
+    anote = "iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）"
+    gnote2 = "iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）"
+    proxy("19-001", ret(agg, "W"), anote)
+    proxy("19-002", ret(agg, "YTD"), anote)
+    proxy("19-013", ret(gagg, "W"), gnote2)
+    proxy("19-014", ret(gagg, "YTD"), gnote2)
+    iyr = etf_tr("IYR", "iShares US Real Estate", "Dow Jones U.S. Real Estate Capped")
+    gsg = etf_tr("GSG", "iShares S&P GSCI Commodity-Indexed Trust", "S&P GSCI Total Return")
+    amlp = etf_tr("AMLP", "Alerian MLP ETF", "Alerian MLP Infrastructure")
+    proxy("99-029", ret(iyr, "W"), "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    proxy("99-031", ret(iyr, "QTD"), "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    proxy("99-033", ret(gsg, "W"), "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+    proxy("99-035", ret(gsg, "QTD"), "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+    mnote = "Alerian MLP ETF（AMLP）总回报，跟踪 Alerian MLP Infrastructure（非 Alerian MLP 指数；ETF 为 C 类公司，含税费拖累）"
+    for iid, w in [("99-037", "W"), ("99-038", "MTD"), ("99-039", "QTD"), ("99-040", "YTD")]:
+        proxy(iid, ret(amlp, w), mnote)
+    # gold: COMEX futures stand in for the LBMA fixes
+    proxy("27-001", gold, gnote + "；LBMA 上午定盘价无免费云端来源")
+    proxy("27-002", gold, gnote)
+    proxy("27-003", ret(gold, "W"), gnote)
+    for iid, w in [("99-101", "ME"), ("99-102", "QE"), ("99-103", "YE")]:
+        proxy(iid, f'snap({gold}, "{w}")', gnote)
+    proxy("28-001", f"{yahoo('HG=F', 'COMEX copper front-month futures')} * 2204.62",
+          "COMEX 铜期货近月（美元/磅 × 2204.62 换算为美元/吨），非 LME 现货")
+
+    # ---------------------------------------------------------- risk metrics (module 50/51)
+    sp = fred("SP500", "S&P 500", "D", "点")
+    proxy("51-010", f'vol({gold}, "52W")', gnote + "；周五采样周收益标准差×√52")
+    proxy("51-011", f"drawdown({gold})", gnote + "；相对本库已存历史高点（2020-10 起）")
+    proxy("51-012", f'maxdd({gold}, "YTD")', gnote)
+    proxy("51-014", f'ret({gold}, "W") - ret({sp}, "W")', gnote + "；减 S&P 500 价格周回报")
+    ust = etf_tr("GOVT", "iShares US Treasury Bond", "ICE US Treasury Core")
+    unote = "iShares GOVT 总回报（跟踪 ICE US Treasury Core，非 Bloomberg 国债指数；含费率）"
+    proxy("51-007", f'vol({ust}, "52W")', unote)
+    proxy("51-008", f"drawdown({ust})", unote + "；相对本库已存历史高点（2020-10 起）")
+    proxy("51-009", f'maxdd({ust}, "YTD")', unote)
+    proxy("50-001", f'corr({sp}, {ust}, "13W")', "S&P 500 价格周回报与 " + unote)
+    proxy("50-002", f'corr({sp}, {ust}, "52W")', "S&P 500 价格周回报与 " + unote)
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1239,6 +1430,7 @@ def write() -> tuple[int, int]:
     build_batch2()
     build_factset()
     build_batch3()
+    build_batch4()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

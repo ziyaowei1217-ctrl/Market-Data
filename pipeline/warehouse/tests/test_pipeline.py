@@ -378,3 +378,175 @@ class ObsOrderingTests(unittest.TestCase):
 
         obs = obs_from_pairs([("2026-10-22", "4.1"), ("2026-01-02", "4.5"), ("2025-12-31", "4.6")])
         self.assertEqual([o.obs_date for o in obs], [date(2025, 12, 31), date(2026, 1, 2), date(2026, 10, 22)])
+
+
+NBS_HEAD = "Chinese(GB)\nRSS\nHome > Latest Releases\n{title}\n 2026-10-15 09:30\n Print|\n Large|\n"
+
+
+class NbsTests(unittest.TestCase):
+    def parse(self, kind, title, body):
+        from pipeline.warehouse.providers.releases import parse_nbs
+
+        return parse_nbs(kind, title, f"{title}\n" + NBS_HEAD.format(title=title) + body)
+
+    def test_cpi_current_and_older_wording(self):
+        t = "Consumer Price Index in September 2026"
+        self.assertEqual(self.parse("cpi_yoy", t, "In September 2026, China’s Consumer Price Index (CPI) increased by 0.9% year on year. Specifically, urban decreased by 0.2%."),
+                         (date(2026, 9, 1), 0.9))
+        t = "Consumer Price Index for March 2025"
+        self.assertEqual(self.parse("cpi_yoy", t, "In March 2025, the national consumer price index (CPI) decreased by 0.1 percent year-on-year."),
+                         (date(2025, 3, 1), -0.1))
+
+    def test_ppi(self):
+        t = "Producer Price Index in the Industrial Sector for March 2025"
+        self.assertEqual(self.parse("ppi_yoy", t, "In March, the national producer prices for industrial products decreased by 2.5 percent year on year"),
+                         (date(2025, 3, 1), -2.5))
+
+    def test_ip_and_retail_use_single_month(self):
+        t = "Industrial Production Operation in September 2026"
+        body = ("In September, the total value added of industrial enterprises above the designated size increased by 5.5% year on year "
+                "in real terms. From January to September, the total value added ... increased by 5.3% year on year.")
+        self.assertEqual(self.parse("ip_yoy", t, body), (date(2026, 9, 1), 5.5))
+        t = "Total Retail Sales of Consumer Goods from January to September 2026"
+        body = ("From January to September 2026, the total retail sales of consumer goods reached 37,000.1 billion yuan, up by 1.1% year on year. "
+                "In September, the total retail sales of consumer goods reached 4,243.3 billion yuan, up by 1.3% year on year.")
+        self.assertEqual(self.parse("retail_yoy", t, body), (date(2026, 9, 1), 1.3))
+        t = "Total Retail Sales of Consumer Goods from January to February 2025"
+        body = "From January to February 2025, the total retail sales of consumer goods reached 8,373.1 billion yuan, up by 4.0 percent year on year."
+        self.assertEqual(self.parse("retail_yoy", t, body), (date(2025, 2, 1), 4.0))
+
+    def test_gdp_table_and_pmi(self):
+        t = "Preliminary Accounting Results of GDP for the Third Quarter of 2026"
+        body = ("results of the preliminary accounting of China’s GDP in the third quarter of 2026 are as follows.\nTable 1\n | \n | \n"
+                "Absolute Value (100 million yuan)\n | \nGrowth Rate Y/Y (%)\n | \nQ3\n | \nFirst Three Quarters of 2026\n | \nQ3\n | \n"
+                "First Three Quarters of 2026\n | \nGDP\n | \n375367\n | \n1071071\n | \n4.5\n | \n4.6\n | \nPrimary industry\n | \n27472\n")
+        self.assertEqual(self.parse("gdp_yoy", t, body), (date(2026, 7, 1), 4.5))
+        t = "Purchasing Managers' Index for March 2025"
+        body = "In March, the purchasing managers' index (PMI) of China's manufacturing industry came in at 50.5 percent, up 0.3 percentage points"
+        self.assertEqual(self.parse("mfg_pmi", t, body), (date(2025, 3, 1), 50.5))
+
+    def test_listing(self):
+        from pipeline.warehouse.providers.releases import nbs_kind, parse_nbs_listing
+
+        html = ('<li><a href="./202610/t20261015_1965500.html" title="Consumer Price Index in September 2026">13.Consumer Price Index in September 2026</a>'
+                '<span>2026-10-15</span></li><li><a href="./202504/t20250408_1959247.html">Purchasing Managers’ Index for March 2025</a></li>')
+        items = parse_nbs_listing(html, "https://www.stats.gov.cn/english/PressRelease/index_1.html")
+        self.assertEqual(items[0], ("Consumer Price Index in September 2026", date(2026, 10, 15),
+                                    "https://www.stats.gov.cn/english/PressRelease/202610/t20261015_1965500.html"))
+        self.assertEqual([nbs_kind(t) for t, _, _ in items], ["cpi_yoy", "mfg_pmi"])
+        sidebar = '<a href="https://www.stats.gov.cn/english/nbs/201312/t20131213_480293.html">FAQs</a>'
+        self.assertEqual(parse_nbs_listing(sidebar, "https://www.stats.gov.cn/english/PressRelease/"), [])
+
+
+class TotalReturnTests(unittest.TestCase):
+    def test_dividend_on_ex_date(self):
+        from pipeline.warehouse.providers.official import total_return_index
+
+        closes = [Observation(date(2026, 1, d), v) for d, v in [(2, 100.0), (5, 99.0), (6, 99.0)]]
+        out = total_return_index(closes, {date(2026, 1, 5): 1.0})
+        self.assertEqual([o.value for o in out], [100.0, 100.0, 100.0])
+
+    def test_lbma(self):
+        body = json.dumps([{"is_cms_locked": 0, "d": "2026-10-22", "v": [4100.5, 3080.1, 3500.2]},
+                           {"is_cms_locked": 0, "d": "2026-10-23", "v": [4120.0, 3090.0, 3510.0]}])
+        session = FakeSession({"prices.lbma.org.uk": body})
+        [res] = official.Lbma(session, env={}).fetch([sd("LBMA", "gold_pm")], date(2026, 1, 1))
+        self.assertEqual(res.observations[-1], Observation(date(2026, 10, 23), 4120.0))
+
+
+class AaiiTests(unittest.TestCase):
+    def test_year_rollback(self):
+        from pipeline.warehouse.providers.releases import parse_aaii
+
+        text = ("Sentiment Survey Historical Data\r\n | Reported Date\r\n | Bullish\r\n | Neutral\r\n | Bearish\r\n"
+                " | Jan 7\r\n | 36.9% \r\n | 17.3%\r\n | 45.8% \r\n | Dec 31\r\n | 38.7% \r\n | 19.7%\r\n | 41.6% \r\n")
+        out = parse_aaii(text, date(2027, 1, 10))
+        self.assertEqual(sorted(out), [date(2026, 12, 31), date(2027, 1, 7)])
+        self.assertEqual(out[date(2027, 1, 7)], (36.9, 17.3, 45.8))
+
+
+class SpgPmiTests(unittest.TestCase):
+    FLASH = ("News Release Embargoed until 0945 EDT (1345 UTC) 23 October 2026 ® S&P Global Flash US PMI\n"
+             "Flash US Composite PMI Output Index: 57.6 70 12 (September: 58.4). 2-month low. 65 9 60 6 "
+             "Flash US Services PMI Business Activity Index: 55 3\n 57.9 (September: 58.8). 2-month low. 50 0 45 -3 "
+             "Flash US Manufacturing Output Index: 55.8 40 -6 (September: 56.2). 2-month low. 35 -9 30 -12 "
+             "Flash US Manufacturing PMI: 56.0 (September: 25 -15 55.9). 53-month high.")
+
+    def test_flash_bullets_skip_axis_numbers(self):
+        from pipeline.warehouse.providers.releases import parse_spg_flash
+
+        out = parse_spg_flash(self.FLASH)
+        self.assertEqual(out["comp"], {date(2026, 10, 1): 57.6, date(2026, 9, 1): 58.4})
+        self.assertEqual(out["serv"], {date(2026, 10, 1): 57.9, date(2026, 9, 1): 58.8})
+        self.assertEqual(out["mfg"], {date(2026, 10, 1): 56.0, date(2026, 9, 1): 55.9})
+
+    def test_final_manufacturing(self):
+        from pipeline.warehouse.providers.releases import parse_spg_final
+
+        text = ("News Release Embargoed until 0945 EDT 1 October 2026 / 1345 UTC 1 October 2026 ... The seasonally adjusted "
+                "S&P Global US Manufacturing factories to lift output sharply higher and take on Purchasing Managers’ Index™ "
+                "(PMI®) surged higher in workers in increasing numbers. September, posting 55.9, up from 53.9 in August.")
+        self.assertEqual(parse_spg_final("Manufacturing", text), {"mfg": {date(2026, 9, 1): 55.9}})
+
+    def test_listing(self):
+        from pipeline.warehouse.providers.releases import _SPG_TITLE, parse_spg_listing
+
+        html = ('<span class="releaseDate">October&nbsp;01&nbsp;2026</span>\r\n <span class="releaseTitle">S&amp;P Global US Manufacturing PMI</span>\r\n'
+                ' <span class="greenListItem"><a href="https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4" target="_blank">View More</a></span>'
+                '<span class="releaseTitle">S&P Global Eurozone Manufacturing PMI (Français)</span>\r\n <span class="greenListItem"><a href="https://www.pmi.spglobal.com/Public/Home/PressRelease/ff01">')
+        items = parse_spg_listing(html)
+        self.assertEqual(items[0], ("S&P Global US Manufacturing PMI", "https://www.pmi.spglobal.com/Public/Home/PressRelease/e5a4"))
+        self.assertIsNotNone(_SPG_TITLE.match(items[0][0]))
+        self.assertIsNone(_SPG_TITLE.match(items[1][0]))
+
+
+class BoeCurveTests(unittest.TestCase):
+    def test_spot_sheet_column_by_months(self):
+        from pipeline.warehouse.providers.official import BankOfEnglandCurves
+
+        rows = [[None, "UK OIS spot curve, short end", None, None], ["Maturity ", None, None, None],
+                ["months:", 1, 12, 23.99999999999999], ["years:", 0.083, 1.0, 2.0],
+                [pd.Timestamp("2026-10-22"), 3.9, 3.7, 3.6], [pd.Timestamp("2026-10-23"), 3.91, 3.71, None]]
+        frame = pd.DataFrame(rows)
+        self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 24), [(date(2026, 10, 22), 3.6)])
+        self.assertEqual(BankOfEnglandCurves.parse_sheet(frame, 12)[-1], (date(2026, 10, 23), 3.71))
+
+
+class TokyoCloseTests(unittest.TestCase):
+    def test_stamps(self):
+        from datetime import datetime, timezone
+        from pipeline.warehouse.providers.official import tokyo_close_date
+
+        utc = lambda *a: datetime(*a, tzinfo=timezone.utc)
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 24, 13, 17)), date(2026, 10, 23))  # Sat 22:17 JST
+        self.assertIsNone(tokyo_close_date(utc(2026, 10, 26, 2, 29)))                     # Mon 11:29 JST
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 25, 23, 0)), date(2026, 10, 23))   # Mon 08:00 JST
+        self.assertEqual(tokyo_close_date(utc(2026, 10, 26, 7, 0)), date(2026, 10, 26))    # Mon 16:00 JST
+
+
+class SpgFinalThresholdTests(unittest.TestCase):
+    def test_skips_no_change_mark(self):
+        from pipeline.warehouse.providers.releases import parse_spg_final
+
+        text = ("Embargoed until 0030 UTC 3 October 2026. The headline S&P Global Japan Services PMI Business Activity Index "
+                "rose above the 50.0 no-change mark to 51.2 in September.")
+        self.assertEqual(parse_spg_final("Services", text)["serv"], {date(2026, 9, 1): 51.2})
+
+
+class TreasuryIssuanceTests(unittest.TestCase):
+    def test_gross_maturing_net(self):
+        from pipeline.warehouse.providers.official import monthly_issuance
+
+        rows = [
+            {"security_type": "Bill", "issue_date": "2026-10-06", "maturity_date": "2026-11-03", "total_accepted": "80000000000", "soma_accepted": "5000000000"},
+            {"security_type": "Bill", "issue_date": "2026-09-08", "maturity_date": "2026-10-06", "total_accepted": "70000000000", "soma_accepted": "null"},
+            {"security_type": "Note", "issue_date": "2026-10-31", "maturity_date": "2031-10-31", "total_accepted": "null", "soma_accepted": "null"},
+            {"security_type": "Note", "issue_date": "2026-10-15", "maturity_date": "2036-10-15", "total_accepted": "20000000000",
+             "inflation_index_security": "Yes", "floating_rate": "No"},
+        ]
+        out = monthly_issuance(rows, date(2026, 9, 1), date(2026, 10, 25))
+        self.assertEqual(out["bills:gross"][date(2026, 10, 1)], 85000.0)
+        self.assertEqual(out["bills:maturing"][date(2026, 10, 1)], 70000.0)
+        self.assertEqual(out["bills:net"][date(2026, 10, 1)], 15000.0)
+        self.assertEqual(out["tips:gross"][date(2026, 10, 1)], 20000.0)
+        self.assertNotIn("coupons:gross", out)

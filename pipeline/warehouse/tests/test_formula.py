@@ -64,6 +64,13 @@ class WindowTests(unittest.TestCase):
         result = evaluate('snap({T:PX}, "ME")', ctx(self.raw, "2026-10-23"))
         self.assertEqual(result.obs_date, pd.Timestamp("2026-09-30"))
 
+    def test_snapshot_too_old_is_stale(self):
+        days = pd.bdate_range("2025-01-01", "2025-07-31")
+        raw = {"T:Y": frame(days, [1.0] * len(days))}
+        result = evaluate('snap({T:Y}, "ME")', ctx(raw, "2026-10-23"))
+        self.assertEqual(result.status, "stale")
+        self.assertEqual(result.value, 1.0)
+
     def test_insufficient_history_is_explicit(self):
         raw = {"T:Y": frame(["2026-10-16", "2026-10-23"], [1.0, 2.0])}
         result = evaluate('pctile({T:Y}, "3Y")', ctx(raw, "2026-10-23"))
@@ -77,6 +84,18 @@ class WindowTests(unittest.TestCase):
     def test_volatility_of_constant_growth_is_zero(self):
         result = evaluate('vol({T:PX}, "52W")', ctx(self.raw, "2026-10-23"))
         self.assertLess(result.value, 0.01)
+
+    def test_correlation_of_mirrored_returns(self):
+        days = pd.date_range("2026-01-02", "2026-10-23", freq="W-FRI")
+        up = [100.0]
+        for i in range(1, len(days)):
+            up.append(up[-1] * (1.01 if i % 2 else 0.99))
+        down = [100.0]
+        for i in range(1, len(days)):
+            down.append(down[-1] * (0.99 if i % 2 else 1.01))
+        raw = {"T:A": frame(days, up), "T:B": frame(days, down)}
+        result = evaluate('corr({T:A}, {T:B}, "13W")', ctx(raw, "2026-10-23"))
+        self.assertAlmostEqual(result.value, -1.0, places=6)
 
     def test_drawdown(self):
         raw = {"T:P": frame(["2026-01-02", "2026-01-09", "2026-01-16"], [100.0, 120.0, 90.0])}
@@ -217,3 +236,20 @@ class ParBondTests(unittest.TestCase):
         self.assertAlmostEqual(tr.value, 4.04, places=2)
         self.assertGreater(down.value, tr.value)
         self.assertAlmostEqual(dur.value, 8.18, places=2)
+
+
+class EventSurpriseTests(unittest.TestCase):
+    def test_cut_against_hold_consensus(self):
+        days = pd.bdate_range("2026-09-01", "2026-10-23")
+        rate = [4.0 if d < pd.Timestamp("2026-10-16") else 3.75 for d in days]
+        raw = {"T:R": frame(days, rate), "T:C": frame(["2026-10-15"], [4.0])}
+        result = evaluate("event_surprise({T:R}, {T:C})", ctx(raw, "2026-10-23"))
+        self.assertAlmostEqual(result.value, -0.25)
+        self.assertEqual(result.obs_date, pd.Timestamp("2026-10-15"))
+
+    def test_change_not_yet_effective_is_provisional(self):
+        days = pd.bdate_range("2026-09-01", "2026-10-23")
+        raw = {"T:R": frame(days, [2.0] * len(days)), "T:C": frame(["2026-10-22"], [1.75])}
+        result = evaluate("event_surprise({T:R}, {T:C} - 0.0)", ctx(raw, "2026-10-23"))
+        self.assertEqual(result.status, "provisional")
+        self.assertAlmostEqual(result.value, 0.25)

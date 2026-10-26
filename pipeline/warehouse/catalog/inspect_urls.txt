@@ -1,12 +1,2 @@
-# name  url  [FOLLOW "link text"] — previews land in report_pages(source='INSPECT:<name>')
-nbs_cpi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Consumer Price Index in"
-nbs_ppi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Producer Price Indexes in"
-nbs_ip           https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Production Operation in"
-nbs_retail       https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Total Retail Sales of Consumer Goods"
-nbs_gdp          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Preliminary Accounting Results of GDP"
-spg_us           https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOW "S&P Global Flash US PMI"
-spg_list_links   https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en
-ism_services_a   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/nmi/baby202609nmi.pdf
-ism_services_b   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/services/baby202609srv.pdf
-ism_reports      https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/
-aaii_table       https://www.aaii.com/sentimentsurvey/sent_results
+# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
+spg_jp_serv      https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Japan Services PMI</span>"

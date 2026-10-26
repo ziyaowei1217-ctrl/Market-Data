@@ -16,7 +16,7 @@ from .catalog.build_catalog import load_catalog
 from .catalog.mapping import load_mapping, load_series
 from .db.store import Observation, Store
 from .engine.weekly import compute, last_completed_friday, week_cutoffs
-from .providers import breadth, factset, files, official  # noqa: F401  (registers providers)
+from .providers import breadth, factset, files, official, releases  # noqa: F401  (registers providers)
 from .providers.base import REGISTRY, FetchResult, SeriesDef
 
 # A value older than this (by the fastest-moving input's frequency) is reported as
@@ -67,6 +67,13 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
         "BBK:BBSSY/D.REN.EUR.A610.000000WT0202.A",
         "BBK:BBSSY/D.REN.EUR.A630.000000WT1010.A",
     ),
+    # first load stopped after the first listing page; reload so the walk-back runs again
+    "2026-10-26-nbs-walkback": tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
+    # an intraday snapshot was stamped as a close
+    "2026-10-26-jpx-intraday": ("JPX:TOPIX",),
+    # the 50.0 no-change mark was read as the index; the NBS walk-back stopped at sidebar links
+    "2026-10-26-spg-nbs-parsers": ("SPGPMI:JP:serv",) + tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
+    "2026-10-26-spg-final-parser": tuple(f"SPGPMI:{r}:{k}" for r in ("US", "EZ", "UK", "JP") for k in ("mfg", "serv", "comp")),
 }
 
 
@@ -194,13 +201,17 @@ def fetch(
     return summaries
 
 
-def formulas_for(method: str = "api") -> dict[str, str]:
-    return {iid: m["formula"] for iid, m in load_mapping().items() if m["method"] == method and m["formula"]}
+COMPUTED_METHODS = ("api", "proxy")
+
+
+def formulas_for(methods: Sequence[str] = COMPUTED_METHODS) -> dict[str, str]:
+    methods = (methods,) if isinstance(methods, str) else tuple(methods)
+    return {iid: m["formula"] for iid, m in load_mapping().items() if m["method"] in methods and m["formula"]}
 
 
 def indicators_using(series_keys: Iterable[str]) -> set[str]:
     keys = set(series_keys)
-    return {iid for iid, text in formulas_for("api").items() if keys & set(_series_in(text))}
+    return {iid for iid, text in formulas_for().items() if keys & set(_series_in(text))}
 
 
 def derive(
@@ -213,7 +224,7 @@ def derive(
 ) -> int:
     """Compute weekly values. Default: the latest completed week with all data stored so far.
     ``backfill_from``: every Friday since that date, from the latest stored versions (fast mode)."""
-    formulas = formulas_for("api")
+    formulas = formulas_for()
     if only is not None:
         only = set(only)
         formulas = {k: v for k, v in formulas.items() if k in only}
