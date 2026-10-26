@@ -287,28 +287,37 @@ def parse_spg_flash(text: str) -> dict[str, dict[date, float]]:
 
 
 def parse_spg_final(kind: str, text: str) -> dict[str, dict[date, float]]:
-    """Final releases (first working days of the next month): the first one-decimal number
-    after the index name."""
+    """Final releases (first working days of the next month). The index value is the first
+    one-decimal number after the index name that is not the previous month's value
+    ('from 53.9') or the 50.0 no-change mark; the PDF's two columns are interleaved, so the
+    name itself may be split ('Purchasing Global Market Intelligence Managers' Index')."""
     flat = re.sub(r"\s+", " ", text).replace("’", "'")
     month = _embargo_month(flat)
     if month is None:
         return {}
     data_month = _prev_month(month)
-    anchors = {"mfg": [r"Purchasing Managers' Index"],
-               "serv": [r"Services PMI(?:®)? Business Activity Index", r"Services Business Activity Index"],
-               "comp": [r"Composite PMI(?:®)? Output Index", r"Composite Output Index"]}
+    anchors = {"mfg": [r"headline [^.]{0,120}?Manufacturing (?:Purchasing|PMI)", r"Purchasing Managers' Index",
+                       r"Manufacturing PMI(?:®)?"],
+               "serv": [r"Services PMI(?:®)? Business Activity Index", r"Services Business Activity Index", r"Business Activity Index"],
+               "comp": [r"Composite PMI(?:®)? Output Index", r"Composite Output Index", r"Composite PMI"]}
     kinds = ["mfg"] if kind == "Manufacturing" else ["serv", "comp"]
     out: dict[str, dict[date, float]] = {}
     for k in kinds:
         for pattern in anchors[k]:
-            hit = re.search(pattern, flat)
-            if hit:
-                window = flat[hit.end(): hit.end() + 400]
-                nums = [m.group(0) for m in _DECIMAL.finditer(window)
-                        if not re.match(r"\s*(?:\S+\s+){0,1}(?:no-change|neutral|threshold|mark|level\b)", window[m.end(): m.end() + 30])]
-                if nums:
-                    out[k] = {data_month: float(nums[0])}
-                    break
+            hit = re.search(pattern, flat[flat.find("Embargoed"):] if "Embargoed" in flat else flat)
+            if not hit:
+                continue
+            offset = flat.find("Embargoed") if "Embargoed" in flat else 0
+            window = flat[offset + hit.end(): offset + hit.end() + 500]
+            picks = []
+            for m in _DECIMAL.finditer(window):
+                before, after = window[max(0, m.start() - 14): m.start()], window[m.end(): m.end() + 30]
+                if re.search(r"\bfrom\s*$", before) or re.match(r"\s*(?:\S+\s+){0,1}(?:no-change|neutral|threshold|mark|level\b)", after):
+                    continue
+                picks.append(float(m.group(0)))
+            if picks:
+                out[k] = {data_month: picks[0]}
+                break
     return out
 
 
@@ -346,7 +355,8 @@ class SpGlobalPmi(Provider):
             raise ProviderError("PMI release list layout changed")
         wanted = {d.code.split(":")[0] for d in defs}
         values: dict[str, dict[date, float]] = defaultdict(dict)
-        problems = []
+        problems: list[str] = []
+        done: list[str] = []
         for title, url in reversed(listing):  # the page lists newest first; apply oldest first
             m = _SPG_TITLE.match(title)
             if not m or SPG_REGIONS[m.group(2)] not in wanted:
@@ -354,21 +364,31 @@ class SpGlobalPmi(Provider):
             region, flash, kind = SPG_REGIONS[m.group(2)], bool(m.group(1)), m.group(3)
             if not flash and kind is None:
                 continue
-            try:
-                text = "\n".join(pdf_pages(self.get(url, headers={"User-Agent": BROWSER_UA}))[:2])
-            except Exception as error:  # noqa: BLE001
-                problems.append(f"{title}: {error}")
+            text = None
+            for attempt in range(3):
+                try:
+                    body = self.get(url, headers={"User-Agent": BROWSER_UA, "Accept": "application/pdf,*/*"})
+                    if body[:5] == b"%PDF-":
+                        text = "\n".join(pdf_pages(body)[:2])
+                        break
+                except Exception:  # noqa: BLE001 - retried below, reported as "no PDF"
+                    pass
+                time.sleep(4)
+            if text is None:
+                problems.append(f"no PDF: {title}")
                 continue
             parsed = parse_spg_flash(text) if flash else parse_spg_final(kind, text)
             if not parsed:
                 problems.append(f"unparsed: {title}")
+            else:
+                done.append(title.replace("S&P Global ", ""))
             for k, by_month in parsed.items():
                 values[f"{region}:{k}"].update(by_month)
             time.sleep(0.5)
         out = []
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
-            note = f"{len(obs)} months from {len(listing)} listed; {len(problems)} problems" + (
-                f": {'; '.join(x[:70] for x in problems[:4])}" if problems else "")
+            note = (f"{len(obs)} months; parsed {', '.join(done)[:300]}; " +
+                    (f"{len(problems)} problems: {'; '.join(x[:60] for x in problems)[:400]}" if problems else "no problems"))
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty", note))
         return out
