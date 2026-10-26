@@ -21,6 +21,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from .providers.base import USER_AGENT
 from .providers.documents import BROWSER_UA, html_text, pdf_pages
 
 URLS = Path(__file__).with_name("catalog") / "inspect_urls.txt"
@@ -129,7 +130,8 @@ def main(argv: list[str] | None = None) -> int:
                 if hit is None:
                     raise RuntimeError(f"no link for {arg!r} on {url}")
                 url = urljoin(listing.url, hit)
-            r = session.get(fill_secrets(url, os.environ), timeout=(15, 120), headers={"User-Agent": BROWSER_UA, "Accept": "*/*"})
+            ua = USER_AGENT if name.endswith("_botua") else BROWSER_UA  # some sites treat declared bots differently
+            r = session.get(fill_secrets(url, os.environ), timeout=(15, 120), headers={"User-Agent": ua, "Accept": "*/*"})
             pages = [f"HTTP {r.status_code} {r.headers.get('Content-Type')} {len(r.content)} bytes\n{mask_secrets(r.url, os.environ)}"]
             if r.status_code == 200 and mode == "RAW":
                 raw = r.text

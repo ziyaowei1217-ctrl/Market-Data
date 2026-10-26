@@ -1,14 +1,11 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
-bea_t20808_lines https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIPA&TableName=T20808&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,LineDescription,SeriesCode"
-bea_nid_tables   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=NIUnderlyingDetail&ParameterName=TableName&ResultFormat=JSON JSONKEYS "TableName,Description"
-bea_mne_params   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterList&DataSetName=MNE&ResultFormat=JSON JSONKEYS "ParameterName,ParameterIsRequiredFlag,ParameterDefaultValue,AllValue,ParameterDescription"
-bea_mne_series   https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=SeriesID&ResultFormat=JSON JSONKEYS "key,desc"
-bea_mne_country  https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetParameterValues&DataSetName=MNE&ParameterName=Country&ResultFormat=JSON JSONKEYS "key,desc"
-boe_dmp_links    https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 LINKS "xls"
-customs_links    http://english.customs.gov.cn/statics/report/preliminary.html LINKS "statics"
-mhlw_2608        https://www.mhlw.go.jp/english/database/db-l/r08/2608pe/2608pe.html
-mhlw_2608_links  https://www.mhlw.go.jp/english/database/db-l/r08/2608pe/2608pe.html LINKS "."
-idc_mmf          https://www.idc.org/research/stats/mmfassets
-ici_mmf_data     https://www.ici.org/mm_summary_data_2026.xls
-ofr_mmf          https://data.financialresearch.gov/v1/metadata/mnemonics?dataset=mmf JSONKEYS "mnemonic,series_name"
+# A name ending in _botua sends the project's declared user agent instead of a browser one.
+bea_u20405_lines https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIUnderlyingDetail&TableName=U20405&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,SeriesCode,LineDescription"
+bea_t20808_codes https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=NIPA&TableName=T20808&Frequency=M&Year=2026&ResultFormat=JSON JSONKEYS "LineNumber,SeriesCode,LineDescription"
+bea_mne_data2    https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=MNE&DirectionOfInvestment=inward&Classification=Country&SeriesID=22,23&Year=2024&Country=000&ResultFormat=JSON
+boe_dmp_media    https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 LINKS "media"
+customs_monthly  http://english.customs.gov.cn/statics/report/monthly.html LINKS "statics"
+jil_202609       https://www.jil.go.jp/english/estatis/esaikin/2026/documents/e202609.pdf
+mhlw_jp_2608p    https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/2608p.html LINKS "."
+ici_flows_botua  https://www.ici.org/flows_data_2026.xls
