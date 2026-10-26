@@ -1509,8 +1509,10 @@ def build_batch5() -> None:
     # ---------------------------------------------------------- 101-016 India CPI (OECD mirror of MoSPI)
     india = series("OECD", "OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY", "India CPI all items, y/y (OECD)",
                    "M", "%", 50, "https://data-explorer.oecd.org/")
-    api("101-016", india, "OECD 价格数据库转载印度统计与计划执行部（MoSPI）CPI 同比；比 MoSPI 首发晚约 1 个月")
-    api("102-035", f"prior({india})", "本次发布所列前值（本库逐次留存版本）")
+    inote = ("OECD 价格数据库的印度 CPI 同比（OECD 链接序列），与 MoSPI 2024=100 新基期公布值不完全一致"
+             "（如 2026-08：OECD 4.96%，MoSPI 4.82%）；比 MoSPI 首发晚约 1 个月")
+    proxy("101-016", india, inote)
+    proxy("102-035", f"prior({india})", inote + "；本次发布所列前值（本库逐次留存版本）")
 
     # ---------------------------------------------------------- 101-006..010 China trade in USD (OECD mirror of GACC)
     def chn(flow, title):

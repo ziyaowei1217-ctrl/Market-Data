@@ -1549,7 +1549,7 @@ indicator_id,method,phase,formula,coverage_note
 101-013,api,P1,{MHLW:real_total_yoy},厚生劳动省每月勤劳统计速报 Excel（事业所规模 5 人以上，现金给与总额，以除去持家估算租金的 CPI 平减），同比
 101-014,api,P1,{DMP:Wage growth|realised},英格兰银行 Decision Maker Panel 月度数据表，三个月平均（按调查月份）
 101-015,api,P1,"ma(diff({FRED:PAYEMS}), 12)",非农新增 12 个月移动平均
-101-016,api,P1,"{OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY}",OECD 价格数据库转载印度统计与计划执行部（MoSPI）CPI 同比；比 MoSPI 首发晚约 1 个月
+101-016,proxy,P1,"{OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY}",代理：OECD 价格数据库的印度 CPI 同比（OECD 链接序列），与 MoSPI 2024=100 新基期公布值不完全一致（如 2026-08：OECD 4.96%，MoSPI 4.82%）；比 MoSPI 首发晚约 1 个月
 101-017,api,P1,{BCB:13522},巴西央行 SGS 13522（IBGE IPCA 12 个月累计）
 101-018,api,P1,yoy({STATCAN:41690973}),加拿大统计局 WDS 向量
 101-019,api,P1,pop({STATCAN:65201210}),加拿大统计局 WDS 向量
@@ -1594,7 +1594,7 @@ indicator_id,method,phase,formula,coverage_note
 102-032,api,P1,prior({MHLW:real_total_yoy}),本次发布所列前值（本库逐次留存版本）
 102-033,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-034,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-035,api,P1,"prior({OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY})",本次发布所列前值（本库逐次留存版本）
+102-035,proxy,P1,"prior({OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY})",代理：OECD 价格数据库的印度 CPI 同比（OECD 链接序列），与 MoSPI 2024=100 新基期公布值不完全一致（如 2026-08：OECD 4.96%，MoSPI 4.82%）；比 MoSPI 首发晚约 1 个月；本次发布所列前值（本库逐次留存版本）
 102-036,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-037,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-038,api,P1,prior({BCB:13522}),本次发布所列前值（本库逐次留存版本）
