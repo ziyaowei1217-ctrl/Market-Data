@@ -249,6 +249,7 @@ FRED:BAMLH0A1HYBB,FRED,BAMLH0A1HYBB,BAMLH0A1HYBB,D,%,1,https://fred.stlouisfed.o
 FRED:BAMLH0A2HYB,FRED,BAMLH0A2HYB,BAMLH0A2HYB,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A2HYB,,False,cloud
 FRED:BAMLH0A3HYC,FRED,BAMLH0A3HYC,BAMLH0A3HYC,D,%,1,https://fred.stlouisfed.org/series/BAMLH0A3HYC,,False,cloud
 FRED:BAMLHE00EHYIOAS,FRED,BAMLHE00EHYIOAS,ICE BofA Euro HY OAS,D,%,1,https://fred.stlouisfed.org/series/BAMLHE00EHYIOAS,,False,cloud
+FRED:BAMLHE00EHYITRIV,FRED,BAMLHE00EHYITRIV,ICE BofA Euro High Yield Index Total Return (EUR),D,指数点,1,https://fred.stlouisfed.org/series/BAMLHE00EHYITRIV,,False,cloud
 FRED:BAMLHYH0A0HYM2TRIV,FRED,BAMLHYH0A0HYM2TRIV,ICE BofA US High Yield Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLHYH0A0HYM2TRIV,,False,cloud
 FRED:BOGZ1FL633061105Q,FRED,BOGZ1FL633061105Q,Z.1 FL633061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL633061105Q,,False,cloud
 FRED:BOGZ1FL893061105Q,FRED,BOGZ1FL893061105Q,Z.1 FL893061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL893061105Q,,False,cloud
@@ -375,6 +376,7 @@ ISM:prices,ISM,prices,ISM Manufacturing Prices,M,指数点,3,https://www.ismworl
 JPCPI:ex_fresh_yoy,JPCPI,ex_fresh_yoy,Japan CPI ex fresh food y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPCPI:headline_yoy,JPCPI,headline_yoy,Japan CPI all items y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPX:TOPIX,JPX,TOPIX,"TOPIX (price, JPY)",D,点,0,https://www.jpx.co.jp/english/markets/indices/topix/,,False,cloud
+LBMA:gold_pm,LBMA,gold_pm,LBMA Gold Price PM (USD),D,美元/盎司,1,https://www.lbma.org.uk/prices-and-data/precious-metal-prices,,False,cloud
 MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:30Y,MOFJP,30Y,JGB 30Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
@@ -412,6 +414,12 @@ MSCI:984000:NETR:USD,MSCI,984000:NETR:USD,"MSCI USA (NETR, USD)",D,点,1,https:/
 MSCI:990100:NETR:USD,MSCI,990100:NETR:USD,"MSCI World (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
 MSCI:990300:NETR:USD,MSCI,990300:NETR:USD,"MSCI EAFE (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
 MSCI:990500:NETR:USD,MSCI,990500:NETR:USD,"MSCI Europe (NETR, USD)",D,点,1,https://www.msci.com/end-of-day-data-search,,False,cloud
+NBS:cpi_yoy,NBS,cpi_yoy,China NBS CPI y/y,M,%,45,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
+NBS:gdp_yoy,NBS,gdp_yoy,China NBS real GDP y/y (quarter),Q,%,112,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
+NBS:ip_yoy,NBS,ip_yoy,China NBS industrial value added y/y,M,%,50,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
+NBS:mfg_pmi,NBS,mfg_pmi,China NBS official manufacturing PMI,M,指数点,31,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
+NBS:ppi_yoy,NBS,ppi_yoy,China NBS PPI y/y,M,%,45,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
+NBS:retail_yoy,NBS,retail_yoy,China NBS retail sales y/y,M,%,50,https://www.stats.gov.cn/english/PressRelease/,,False,cloud
 NYFED:secured/sofr:percentPercentile25,NYFED,secured/sofr:percentPercentile25,SOFR p25,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:secured/sofr:percentPercentile75,NYFED,secured/sofr:percentPercentile75,SOFR p75,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:secured/sofr:percentRate,NYFED,secured/sofr:percentRate,SOFR,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
@@ -430,7 +438,7 @@ SCE:75th Percentile three-year ahead expected inflation rate - 25th Percentile t
 SCE:Median five-year ahead expected inflation rate,SCE,Median five-year ahead expected inflation rate,NY Fed SCE: median five-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median one-year ahead expected inflation rate,SCE,Median one-year ahead expected inflation rate,NY Fed SCE: median one-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
 SCE:Median three-year ahead expected inflation rate,SCE,Median three-year ahead expected inflation rate,NY Fed SCE: median three-year inflation expectation,M,%,12,https://www.newyorkfed.org/microeconomics/sce,,False,cloud
-SNB:rendoblid:10J0,SNB,rendoblid:10J0,Swiss Confederation 10Y bond yield (SNB),D,%,1,https://data.snb.ch/en/topics/ziredev/cube/rendoblid,,False,cloud
+SNB:rendeiduebd:CHF.10J,SNB,rendeiduebd:CHF.10J,Swiss Confederation 10Y spot rate (SNB),D,%,1,https://data.snb.ch/en/topics/ziredev/cube/rendeiduebd,,False,cloud
 SPDJI:340:marketCap,SPDJI,340:marketCap,S&P 500 total market cap (month-end),M,十亿美元,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 SPDJI:340:topNConstituentWeight,SPDJI,340:topNConstituentWeight,S&P 500 top-10 weight (month-end),M,%,5,https://www.spglobal.com/spdji/en/indices/equity/sp-500/,,False,local
 STATCAN:1446859483,STATCAN,1446859483,Canada retail trade sales SA,M,千加元,52,https://www150.statcan.gc.ca/,,False,cloud
@@ -475,9 +483,19 @@ TSYCURVE:30 Yr,TSYCURVE,30 Yr,Treasury par yield curve 30 Yr,D,%,1,https://home.
 TSYCURVE:5 Yr,TSYCURVE,5 Yr,Treasury par yield curve 5 Yr,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
 TSYCURVE:6 Mo,TSYCURVE,6 Mo,Treasury par yield curve 6 Mo,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
 TSYCURVE:7 Yr,TSYCURVE,7 Yr,Treasury par yield curve 7 Yr,D,%,1,https://home.treasury.gov/resource-center/data-chart-center/interest-rates,"{""type"": ""daily_treasury_yield_curve""}",False,cloud
+YAHOO:AGG:TR,YAHOO,AGG,iShares Core US Aggregate Bond ETF total return (tracks Bloomberg US Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGG,"{""tr"": true}",False,cloud
+YAHOO:AGGG.L:TR,YAHOO,AGGG.L,iShares Core Global Aggregate Bond (USD Dist) ETF total return (tracks Bloomberg Global Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGGG.L,"{""tr"": true}",False,cloud
 YAHOO:BTC-USD,YAHOO,BTC-USD,Bitcoin USD,D,点,1,https://finance.yahoo.com/quote/BTC-USD,,False,cloud
 YAHOO:DX-Y.NYB,YAHOO,DX-Y.NYB,ICE US Dollar Index,D,点,1,https://finance.yahoo.com/quote/DX-Y.NYB,,False,cloud
+YAHOO:EMB:TR,YAHOO,EMB,iShares JPM USD EM Bond ETF total return (tracks J.P. Morgan EMBI Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMB,"{""tr"": true}",False,cloud
+YAHOO:EMLC:TR,YAHOO,EMLC,VanEck JPM EM Local Currency Bond ETF total return (tracks J.P. Morgan GBI-EM Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMLC,"{""tr"": true}",False,cloud
+YAHOO:EUNA.DE:TR,YAHOO,EUNA.DE,iShares Core EUR Aggregate Bond ETF total return (tracks Bloomberg Euro Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EUNA.DE,"{""tr"": true}",False,cloud
 YAHOO:FTSEMIB.MI,YAHOO,FTSEMIB.MI,FTSE MIB,D,点,1,https://finance.yahoo.com/quote/FTSEMIB.MI,,False,cloud
+YAHOO:GSG:TR,YAHOO,GSG,iShares S&P GSCI Commodity-Indexed Trust ETF total return (tracks S&P GSCI Total Return),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/GSG,"{""tr"": true}",False,cloud
+YAHOO:HG=F,YAHOO,HG=F,COMEX copper front-month futures,D,点,1,https://finance.yahoo.com/quote/HG=F,,False,cloud
+YAHOO:IYR:TR,YAHOO,IYR,iShares US Real Estate ETF total return (tracks Dow Jones U.S. Real Estate Capped),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/IYR,"{""tr"": true}",False,cloud
+YAHOO:MUB:TR,YAHOO,MUB,iShares National Muni Bond ETF total return (tracks ICE AMT-Free US National Municipal),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/MUB,"{""tr"": true}",False,cloud
+YAHOO:SCHP:TR,YAHOO,SCHP,Schwab US TIPS ETF total return (tracks Bloomberg US TIPS (Series-L)),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/SCHP,"{""tr"": true}",False,cloud
 YAHOO:^FCHI,YAHOO,^FCHI,CAC 40,D,点,1,https://finance.yahoo.com/quote/^FCHI,,False,cloud
 YAHOO:^FTSE,YAHOO,^FTSE,FTSE 100,D,点,1,https://finance.yahoo.com/quote/^FTSE,,False,cloud
 YAHOO:^GDAXI,YAHOO,^GDAXI,DAX (performance index),D,点,1,https://finance.yahoo.com/quote/^GDAXI,,False,cloud

@@ -7,6 +7,8 @@ formula and coverage note). Both CSVs are committed so changes are reviewable.
 method values
 -------------
 api       formula over free official / free market feeds (this module)
+proxy     same kind of formula, but over a stand-in (e.g. an ETF tracking the index,
+          or a sister index family); coverage_note names the stand-in
 report    weekly snapshot parsed from an institution's free weekly report
 manual    maintained by hand in catalog/manual (events, dates, decisions)
 excluded  out of scope by request (institution forecasts / CMAs)
@@ -70,6 +72,13 @@ def api(iid: str, formula: str, note: str = "") -> None:
     if iid in MAP and MAP[iid]["method"] == "api":
         raise ValueError(f"{iid} mapped twice")
     MAP[iid] = {"method": "api", "phase": "P1", "formula": formula, "coverage_note": note}
+
+
+def proxy(iid: str, formula: str, note: str) -> None:
+    """Like api(), for a stand-in source (ETF tracking the index, sister index family)."""
+    if iid in MAP and MAP[iid]["method"] in ("api", "proxy"):
+        raise ValueError(f"{iid} mapped twice")
+    MAP[iid] = {"method": "proxy", "phase": "P1", "formula": formula, "coverage_note": "代理：" + note}
 
 
 def other(iid: str, method: str, note: str, phase: str = "P2") -> None:
@@ -1229,6 +1238,80 @@ def build_batch3() -> None:
         api(iid, f"surprise({actual}, {', '.join(cons)})", snote2)
 
 
+def etf_tr(ticker, title, index_name):
+    return series("YAHOO", ticker, f"{title} ETF total return (tracks {index_name})", "D", "指数(2020-10-01=100)", 1,
+                  f"https://finance.yahoo.com/quote/{ticker}", params={"tr": True}, key=f"YAHOO:{ticker}:TR")
+
+
+def build_batch4() -> None:
+    """NBS press releases; LBMA gold; return tables via exact free indices or tracking ETFs."""
+    # ---------------------------------------------------------- China NBS
+    nbs_url = "https://www.stats.gov.cn/english/PressRelease/"
+    def nbs(code, title, freq, unit, lag):
+        return series("NBS", code, f"China NBS {title}", freq, unit, lag, nbs_url)
+    nnote = "国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）"
+    cn = {
+        "43-001": nbs("gdp_yoy", "real GDP y/y (quarter)", "Q", "%", 112),
+        "43-002": nbs("ip_yoy", "industrial value added y/y", "M", "%", 50),
+        "43-003": nbs("retail_yoy", "retail sales y/y", "M", "%", 50),
+        "43-004": nbs("cpi_yoy", "CPI y/y", "M", "%", 45),
+        "43-005": nbs("ppi_yoy", "PPI y/y", "M", "%", 45),
+        "43-006": nbs("mfg_pmi", "official manufacturing PMI", "M", "指数点", 31),
+    }
+    for iid, x in cn.items():
+        api(iid, x, nnote + ("；1–2 月合并发布，记在 2 月" if iid in ("43-002", "43-003") else ""))
+    ff_url = "https://www.forexfactory.com/calendar"
+    def ff(title):
+        return series("FFCAL", f"CNY|{title}|forecast", f"Consensus CNY {title} (forecast)", "E", "%", 0, ff_url)
+    snote = "国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算"
+    api("54-010", f"surprise({cn['43-001']}, {ff('GDP q/y')})", snote)
+    api("102-069", f"surprise({cn['43-002']}, {ff('Industrial Production y/y')})", snote)
+    api("102-072", f"surprise({cn['43-003']}, {ff('Retail Sales y/y')})", snote)
+
+    # ---------------------------------------------------------- HSBC asset-return chart (module 97)
+    def five(first_id, x, note, level=True, how=proxy):
+        n = int(first_id[3:])
+        parts = ([x] if level else []) + [f'ret({x}, "1Y") + 100', f"year_ret({x}, 2025)", f'ret({x}, "MTD")', f'ret({x}, "YTD")']
+        for k, formula in enumerate(parts):
+            how(f"97-{n + k:03d}", formula, note)
+    gold = series("LBMA", "gold_pm", "LBMA Gold Price PM (USD)", "D", "美元/盎司", 1, "https://www.lbma.org.uk/prices-and-data/precious-metal-prices")
+    five("97-087", gold, "LBMA 官方金价 PM（USD）", level=False, how=api)
+    dxy = yahoo("DX-Y.NYB", "ICE US Dollar Index")
+    five("97-102", dxy, "ICE 美元指数（Yahoo 行情）", level=False, how=api)
+    five("97-092", yahoo("HG=F", "COMEX copper front-month futures"), "COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点", level=False)
+    five("97-066", etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
+         "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
+    five("97-071", etf_tr("IYR", "iShares US Real Estate", "Dow Jones U.S. Real Estate Capped"),
+         "iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）")
+    five("97-076", etf_tr("GSG", "iShares S&P GSCI Commodity-Indexed Trust", "S&P GSCI Total Return"),
+         "iShares GSG（跟踪 S&P GSCI Total Return；含费率）")
+
+    # ---------------------------------------------------------- GS bond-return table (module 98)
+    def table(ids_, x, note, windows=("W", "MTD", "QTD", "YTD"), how=proxy):
+        for iid, w in zip(ids_, windows):
+            if iid:
+                how(iid, f'ret({x}, "{w}")', note)
+    hytr = fred("BAMLHYH0A0HYM2TRIV", "ICE BofA US High Yield Index Total Return", "D", "指数点")
+    ehytr = fred("BAMLHE00EHYITRIV", "ICE BofA Euro High Yield Index Total Return (EUR)", "D", "指数点")
+    ice = "ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数"
+    table([None, "98-001", "98-002", None], etf_tr("AGG", "iShares Core US Aggregate Bond", "Bloomberg US Aggregate"),
+          "iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）")
+    table([None, "98-003", "98-004", None], etf_tr("AGGG.L", "iShares Core Global Aggregate Bond (USD Dist)", "Bloomberg Global Aggregate"),
+          "iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）")
+    table(ids("98", 5, 8), etf_tr("EUNA.DE", "iShares Core EUR Aggregate Bond", "Bloomberg Euro Aggregate"),
+          "iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）")
+    table(ids("98", 9, 12), hytr, "ICE BofA US High Yield 总回报；" + ice)
+    table(ids("98", 13, 16), ehytr, "ICE BofA Euro High Yield 总回报（EUR）；" + ice)
+    table(ids("98", 17, 20), etf_tr("MUB", "iShares National Muni Bond", "ICE AMT-Free US National Municipal"),
+          "iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）")
+    table(ids("98", 21, 24), etf_tr("SCHP", "Schwab US TIPS", "Bloomberg US TIPS (Series-L)"),
+          "Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）")
+    table(ids("98", 25, 28), etf_tr("EMB", "iShares JPM USD EM Bond", "J.P. Morgan EMBI Global Core"),
+          "iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）")
+    table(["98-029", None, "98-031", None], etf_tr("EMLC", "VanEck JPM EM Local Currency Bond", "J.P. Morgan GBI-EM Global Core"),
+          "VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）")
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1239,6 +1322,7 @@ def write() -> tuple[int, int]:
     build_batch2()
     build_factset()
     build_batch3()
+    build_batch4()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

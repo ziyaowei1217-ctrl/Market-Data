@@ -507,12 +507,12 @@ indicator_id,method,phase,formula,coverage_note
 42-002,api,P1,{JPCPI:ex_fresh_yoy},日本总务省统计局 CPI 指数 CSV，同一基期内计算同比（2026 年起为 2025 年基期）
 42-003,api,P1,pop({FRED:JPNRGDPEXP}),日本实际 GDP（FRED 镜像）季环比
 42-004,api,P1,"ann({FRED:JPNRGDPEXP}, 1)",季环比折年
-43-001,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
-43-002,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
-43-003,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
-43-004,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
-43-005,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
-43-006,pending,P2,,国家统计局数据库对境外 IP 不稳定，计划用本地电脑补抓
+43-001,api,P1,{NBS:gdp_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
+43-002,api,P1,{NBS:ip_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）；1–2 月合并发布，记在 2 月
+43-003,api,P1,{NBS:retail_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）；1–2 月合并发布，记在 2 月
+43-004,api,P1,{NBS:cpi_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
+43-005,api,P1,{NBS:ppi_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
+43-006,api,P1,{NBS:mfg_pmi},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
 44-001,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
 44-002,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
 44-003,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
@@ -668,7 +668,7 @@ indicator_id,method,phase,formula,coverage_note
 54-007,api,P1,"surprise({EUROSTAT:prc_hicp_minr:EA:TOTAL}, {FFCAL:EUR|CPI Flash Estimate y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 54-008,api,P1,"surprise({ONS:D7G7}, {FFCAL:GBP|CPI y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 54-009,api,P1,"surprise({JPCPI:ex_fresh_yoy}, {FFCAL:JPY|National Core CPI y/y|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
-54-010,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
+54-010,api,P1,"surprise({NBS:gdp_yoy}, {FFCAL:CNY|GDP q/y|forecast})",国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算
 55-001,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
 55-002,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
 55-003,pending,P2,,意外值需发布前调查中位数（授权/周报日历），实际值已入库，调查接入后自动计算
@@ -1261,9 +1261,9 @@ indicator_id,method,phase,formula,coverage_note
 96-188,api,P1,"snap({JPX:TOPIX}, ""ME"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 96-189,api,P1,"snap({JPX:TOPIX}, ""QE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
 96-190,api,P1,"snap({JPX:TOPIX}, ""YE"")",日本交易所集团每日快照（无历史接口，本库从 2026-10 起逐周累积）
-99-002,api,P1,"snap({SNB:rendoblid:10J0}, ""ME"")",瑞士央行数据门户
-99-003,api,P1,"snap({SNB:rendoblid:10J0}, ""QE"")",瑞士央行数据门户
-99-004,api,P1,"snap({SNB:rendoblid:10J0}, ""YE"")",瑞士央行数据门户
+99-002,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""ME"")",瑞士央行数据门户
+99-003,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""QE"")",瑞士央行数据门户
+99-004,api,P1,"snap({SNB:rendeiduebd:CHF.10J}, ""YE"")",瑞士央行数据门户
 99-006,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-007,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-008,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
@@ -1387,72 +1387,72 @@ indicator_id,method,phase,formula,coverage_note
 97-058,report,P1b,,取汇丰 Investment Weekly（英国）快照
 97-059,report,P1b,,取汇丰 Investment Weekly（英国）快照
 97-060,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-066,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-067,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-068,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-069,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-070,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-071,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-072,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-073,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-074,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-075,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-076,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-077,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-078,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-079,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-080,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-066,proxy,P1,{YAHOO:EMLC:TR},代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+97-067,proxy,P1,"ret({YAHOO:EMLC:TR}, ""1Y"") + 100",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+97-068,proxy,P1,"year_ret({YAHOO:EMLC:TR}, 2025)",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+97-069,proxy,P1,"ret({YAHOO:EMLC:TR}, ""MTD"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+97-070,proxy,P1,"ret({YAHOO:EMLC:TR}, ""YTD"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+97-071,proxy,P1,{YAHOO:IYR:TR},代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+97-072,proxy,P1,"ret({YAHOO:IYR:TR}, ""1Y"") + 100",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+97-073,proxy,P1,"year_ret({YAHOO:IYR:TR}, 2025)",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+97-074,proxy,P1,"ret({YAHOO:IYR:TR}, ""MTD"")",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+97-075,proxy,P1,"ret({YAHOO:IYR:TR}, ""YTD"")",代理：iShares IYR 总回报（跟踪 DJ U.S. Real Estate Capped；含费率）
+97-076,proxy,P1,{YAHOO:GSG:TR},代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+97-077,proxy,P1,"ret({YAHOO:GSG:TR}, ""1Y"") + 100",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+97-078,proxy,P1,"year_ret({YAHOO:GSG:TR}, 2025)",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+97-079,proxy,P1,"ret({YAHOO:GSG:TR}, ""MTD"")",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
+97-080,proxy,P1,"ret({YAHOO:GSG:TR}, ""YTD"")",代理：iShares GSG（跟踪 S&P GSCI Total Return；含费率）
 97-081,api,P1,{YAHOO:BTC-USD},Yahoo 免费行情，USD 价格
 97-082,api,P1,"ret({YAHOO:BTC-USD}, ""1Y"") + 100",当日水平÷一年前水平×100
 97-083,api,P1,"year_ret({YAHOO:BTC-USD}, 2025)",2025 年末÷2024 年末−1
 97-084,api,P1,"ret({YAHOO:BTC-USD}, ""MTD"")",
 97-085,api,P1,"ret({YAHOO:BTC-USD}, ""YTD"")",
-97-087,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-088,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-089,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-090,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-092,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-093,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-094,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-095,report,P1b,,取汇丰 Investment Weekly（英国）快照
+97-087,api,P1,"ret({LBMA:gold_pm}, ""1Y"") + 100",LBMA 官方金价 PM（USD）
+97-088,api,P1,"year_ret({LBMA:gold_pm}, 2025)",LBMA 官方金价 PM（USD）
+97-089,api,P1,"ret({LBMA:gold_pm}, ""MTD"")",LBMA 官方金价 PM（USD）
+97-090,api,P1,"ret({LBMA:gold_pm}, ""YTD"")",LBMA 官方金价 PM（USD）
+97-092,proxy,P1,"ret({YAHOO:HG=F}, ""1Y"") + 100",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
+97-093,proxy,P1,"year_ret({YAHOO:HG=F}, 2025)",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
+97-094,proxy,P1,"ret({YAHOO:HG=F}, ""MTD"")",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
+97-095,proxy,P1,"ret({YAHOO:HG=F}, ""YTD"")",代理：COMEX 铜期货近月连续（Yahoo），非 LME 现货；换月有跳点
 97-097,api,P1,"ret({FRED:DCOILWTICO}, ""1Y"") + 100",EIA WTI 现货（FRED）
 97-098,api,P1,"year_ret({FRED:DCOILWTICO}, 2025)",EIA WTI 现货（FRED）
 97-099,api,P1,"ret({FRED:DCOILWTICO}, ""MTD"")",EIA WTI 现货（FRED）
 97-100,api,P1,"ret({FRED:DCOILWTICO}, ""YTD"")",EIA WTI 现货（FRED）
-97-102,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-103,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-104,report,P1b,,取汇丰 Investment Weekly（英国）快照
-97-105,report,P1b,,取汇丰 Investment Weekly（英国）快照
-98-001,report,P1b,,取高盛 Market Monitor Weekly快照
-98-002,report,P1b,,取高盛 Market Monitor Weekly快照
-98-003,report,P1b,,取高盛 Market Monitor Weekly快照
-98-004,report,P1b,,取高盛 Market Monitor Weekly快照
-98-005,report,P1b,,取高盛 Market Monitor Weekly快照
-98-006,report,P1b,,取高盛 Market Monitor Weekly快照
-98-007,report,P1b,,取高盛 Market Monitor Weekly快照
-98-008,report,P1b,,取高盛 Market Monitor Weekly快照
-98-009,report,P1b,,取高盛 Market Monitor Weekly快照
-98-010,report,P1b,,取高盛 Market Monitor Weekly快照
-98-011,report,P1b,,取高盛 Market Monitor Weekly快照
-98-012,report,P1b,,取高盛 Market Monitor Weekly快照
-98-013,report,P1b,,取高盛 Market Monitor Weekly快照
-98-014,report,P1b,,取高盛 Market Monitor Weekly快照
-98-015,report,P1b,,取高盛 Market Monitor Weekly快照
-98-016,report,P1b,,取高盛 Market Monitor Weekly快照
-98-017,report,P1b,,取高盛 Market Monitor Weekly快照
-98-018,report,P1b,,取高盛 Market Monitor Weekly快照
-98-019,report,P1b,,取高盛 Market Monitor Weekly快照
-98-020,report,P1b,,取高盛 Market Monitor Weekly快照
-98-021,report,P1b,,取高盛 Market Monitor Weekly快照
-98-022,report,P1b,,取高盛 Market Monitor Weekly快照
-98-023,report,P1b,,取高盛 Market Monitor Weekly快照
-98-024,report,P1b,,取高盛 Market Monitor Weekly快照
-98-025,report,P1b,,取高盛 Market Monitor Weekly快照
-98-026,report,P1b,,取高盛 Market Monitor Weekly快照
-98-027,report,P1b,,取高盛 Market Monitor Weekly快照
-98-028,report,P1b,,取高盛 Market Monitor Weekly快照
-98-029,report,P1b,,取高盛 Market Monitor Weekly快照
-98-031,report,P1b,,取高盛 Market Monitor Weekly快照
+97-102,api,P1,"ret({YAHOO:DX-Y.NYB}, ""1Y"") + 100",ICE 美元指数（Yahoo 行情）
+97-103,api,P1,"year_ret({YAHOO:DX-Y.NYB}, 2025)",ICE 美元指数（Yahoo 行情）
+97-104,api,P1,"ret({YAHOO:DX-Y.NYB}, ""MTD"")",ICE 美元指数（Yahoo 行情）
+97-105,api,P1,"ret({YAHOO:DX-Y.NYB}, ""YTD"")",ICE 美元指数（Yahoo 行情）
+98-001,proxy,P1,"ret({YAHOO:AGG:TR}, ""MTD"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
+98-002,proxy,P1,"ret({YAHOO:AGG:TR}, ""QTD"")",代理：iShares AGG 总回报（跟踪 Bloomberg US Aggregate；含 0.03% 费率）
+98-003,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""MTD"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
+98-004,proxy,P1,"ret({YAHOO:AGGG.L:TR}, ""QTD"")",代理：iShares AGGG（伦敦，USD 分红份额，跟踪 Bloomberg Global Aggregate，未对冲；含费率）
+98-005,proxy,P1,"ret({YAHOO:EUNA.DE:TR}, ""W"")",代理：iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）
+98-006,proxy,P1,"ret({YAHOO:EUNA.DE:TR}, ""MTD"")",代理：iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）
+98-007,proxy,P1,"ret({YAHOO:EUNA.DE:TR}, ""QTD"")",代理：iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）
+98-008,proxy,P1,"ret({YAHOO:EUNA.DE:TR}, ""YTD"")",代理：iShares EUNA（法兰克福，EUR，跟踪 Bloomberg Euro Aggregate；含费率）
+98-009,proxy,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""W"")",代理：ICE BofA US High Yield 总回报；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-010,proxy,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""MTD"")",代理：ICE BofA US High Yield 总回报；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-011,proxy,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""QTD"")",代理：ICE BofA US High Yield 总回报；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-012,proxy,P1,"ret({FRED:BAMLHYH0A0HYM2TRIV}, ""YTD"")",代理：ICE BofA US High Yield 总回报；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-013,proxy,P1,"ret({FRED:BAMLHE00EHYITRIV}, ""W"")",代理：ICE BofA Euro High Yield 总回报（EUR）；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-014,proxy,P1,"ret({FRED:BAMLHE00EHYITRIV}, ""MTD"")",代理：ICE BofA Euro High Yield 总回报（EUR）；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-015,proxy,P1,"ret({FRED:BAMLHE00EHYITRIV}, ""QTD"")",代理：ICE BofA Euro High Yield 总回报（EUR）；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-016,proxy,P1,"ret({FRED:BAMLHE00EHYITRIV}, ""YTD"")",代理：ICE BofA Euro High Yield 总回报（EUR）；ICE BofA 同类指数（FRED，仅约 3 年日频历史），非 Bloomberg 指数
+98-017,proxy,P1,"ret({YAHOO:MUB:TR}, ""W"")",代理：iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）
+98-018,proxy,P1,"ret({YAHOO:MUB:TR}, ""MTD"")",代理：iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）
+98-019,proxy,P1,"ret({YAHOO:MUB:TR}, ""QTD"")",代理：iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）
+98-020,proxy,P1,"ret({YAHOO:MUB:TR}, ""YTD"")",代理：iShares MUB 总回报（跟踪 ICE AMT-Free US National Municipal，非 Bloomberg Muni；含费率）
+98-021,proxy,P1,"ret({YAHOO:SCHP:TR}, ""W"")",代理：Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）
+98-022,proxy,P1,"ret({YAHOO:SCHP:TR}, ""MTD"")",代理：Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）
+98-023,proxy,P1,"ret({YAHOO:SCHP:TR}, ""QTD"")",代理：Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）
+98-024,proxy,P1,"ret({YAHOO:SCHP:TR}, ""YTD"")",代理：Schwab SCHP 总回报（跟踪 Bloomberg US TIPS；含费率）
+98-025,proxy,P1,"ret({YAHOO:EMB:TR}, ""W"")",代理：iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）
+98-026,proxy,P1,"ret({YAHOO:EMB:TR}, ""MTD"")",代理：iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）
+98-027,proxy,P1,"ret({YAHOO:EMB:TR}, ""QTD"")",代理：iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）
+98-028,proxy,P1,"ret({YAHOO:EMB:TR}, ""YTD"")",代理：iShares EMB 总回报（跟踪 EMBI Global Core，非 Global Diversified；含费率）
+98-029,proxy,P1,"ret({YAHOO:EMLC:TR}, ""W"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
+98-031,proxy,P1,"ret({YAHOO:EMLC:TR}, ""QTD"")",代理：VanEck EMLC 总回报（跟踪 GBI-EM Global Core，非 Global Diversified；含费率）
 98-033,report,P1b,,取高盛 Market Monitor Weekly快照
 98-034,report,P1b,,取高盛 Market Monitor Weekly快照
 98-035,report,P1b,,取高盛 Market Monitor Weekly快照
@@ -1483,7 +1483,7 @@ indicator_id,method,phase,formula,coverage_note
 98-060,report,P1b,,取高盛 Market Monitor Weekly快照
 98-061,report,P1b,,取高盛 Market Monitor Weekly快照
 98-062,report,P1b,,取高盛 Market Monitor Weekly快照
-99-001,api,P1,{SNB:rendoblid:10J0},瑞士央行数据门户：联邦债券 10 年期收益率
+99-001,api,P1,{SNB:rendeiduebd:CHF.10J},瑞士央行数据门户：联邦债券 10 年期收益率
 99-005,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
 99-009,api,P1,{MOFJP:30Y},日本财务省 JGB 常数期限收益率
 99-013,report,P1b,,中国国债（中债，需本地补抓）与欧元 IG 利差：暂取高盛周报快照
@@ -1628,10 +1628,10 @@ indicator_id,method,phase,formula,coverage_note
 102-066,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-067,api,P1,{FFCAL:CNY|Industrial Production y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-068,api,P1,{FFCAL:CNY|Industrial Production y/y|previous},Forex Factory 日历所列前值（第三方）
-102-069,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-069,api,P1,"surprise({NBS:ip_yoy}, {FFCAL:CNY|Industrial Production y/y|forecast})",国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算
 102-070,api,P1,{FFCAL:CNY|Retail Sales y/y|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-071,api,P1,{FFCAL:CNY|Retail Sales y/y|previous},Forex Factory 日历所列前值（第三方）
-102-072,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
+102-072,api,P1,"surprise({NBS:retail_yoy}, {FFCAL:CNY|Retail Sales y/y|forecast})",国家统计局首次公布值减 Forex Factory 预期；从开始留存预期之日起可算
 102-074,api,P1,prior(pop({FRED:RSAFS})),本次发布所列前值（ALFRED 版本，需 FRED_API_KEY）
 102-077,api,P1,prior({ONS:D7G7}),本次发布所列前值（本库逐次留存版本）
 102-079,report,P1b,,发布前调查中位数：取汇丰周报日历表公开项

@@ -25,7 +25,7 @@ create table if not exists public.indicators (
   updated_at      timestamptz not null default now()
 );
 comment on table public.indicators is '周报指标目录：来自数据采集清单，加上采集方式(method)、阶段(phase)与派生公式(formula)。';
-comment on column public.indicators.method is 'api=官方/免费接口直取或派生; report=机构周报快照; manual=人工维护表; excluded=按需求排除; pending=暂未取得来源';
+comment on column public.indicators.method is 'api=官方/免费接口直取或派生; proxy=用跟踪同一指数的ETF或同类指数代理（见coverage_note）; report=机构周报快照; manual=人工维护表; excluded=按需求排除; pending=暂未取得来源';
 
 create table if not exists public.series (
   series_key       text primary key,

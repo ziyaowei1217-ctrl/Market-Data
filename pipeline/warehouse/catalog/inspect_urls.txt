@@ -1,12 +1,15 @@
-# name  url  [FOLLOW "link text"] — previews land in report_pages(source='INSPECT:<name>')
-nbs_cpi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Consumer Price Index in"
-nbs_ppi          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Producer Price Indexes in"
-nbs_ip           https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Industrial Production Operation in"
-nbs_retail       https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Total Retail Sales of Consumer Goods"
-nbs_gdp          https://www.stats.gov.cn/english/PressRelease/ FOLLOW "Preliminary Accounting Results of GDP"
-spg_us           https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOW "S&P Global Flash US PMI"
-spg_list_links   https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en
-ism_services_a   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/nmi/baby202609nmi.pdf
-ism_services_b   https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/services/baby202609srv.pdf
-ism_reports      https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/
-aaii_table       https://www.aaii.com/sentimentsurvey/sent_results
+# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
+spg_raw          https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en RAW "S&P Global US Manufacturing PMI"
+spg_us_mfg       https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global US Manufacturing PMI"
+spg_us_flash     https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Flash US PMI"
+spg_calendar     https://www.pmi.spglobal.com/Public/Release/ReleaseDates?language=en
+ism_srv_html     https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/services/september/
+ism_mfg_html_aug https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/pmi/august/
+lbma_gold        https://prices.lbma.org.uk/json/gold_pm.json
+boe_ois_archive  https://www.bankofengland.co.uk/-/media/boe/files/statistics/yield-curves/oisddata.zip
+jscc_settle      https://www.jpx.co.jp/jscc/en/interest_rate_swap.html FOLLOWAFTER "Settlement Rates for Interest Rate Swap"
+jscc_settle_old  https://www.jpx.co.jp/jscc/en/cimhll0000000umu-att/SettlementRates_20260930.pdf
+nbs_api          https://data.stats.gov.cn/english/easyquery.htm?m=QueryData&dbcode=hgyd&rowcode=zb&colcode=sj&wds=%5B%5D&dfwds=%5B%7B%22wdcode%22%3A%22zb%22%2C%22valuecode%22%3A%22A0101%22%7D%2C%7B%22wdcode%22%3A%22sj%22%2C%22valuecode%22%3A%22LAST72%22%7D%5D
+nbs_list_33      https://www.stats.gov.cn/english/PressRelease/index_33.html
+yahoo_aggg       https://query2.finance.yahoo.com/v8/finance/chart/AGGG.L?range=3mo&interval=1d&events=div
+yahoo_euna       https://query2.finance.yahoo.com/v8/finance/chart/EUNA.DE?range=3mo&interval=1d&events=div

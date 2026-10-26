@@ -2,6 +2,10 @@
 so parsers are written against real layouts rather than guesses.
 
     python3 -m pipeline.warehouse.inspect_sources        # uses catalog/inspect_urls.txt
+
+Line format: ``name url [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"]``.
+FOLLOW opens the first link whose text contains the words; FOLLOWAFTER opens the first
+link after the marker in the raw HTML; RAW stores raw HTML around the marker.
 """
 
 from __future__ import annotations
@@ -80,20 +84,35 @@ def main() -> int:
         if not line or line.startswith("#"):
             continue
         name, rest = line.split(None, 1)
-        url, _, follow = rest.partition(" FOLLOW ")
-        url = url.strip()
+        url, mode, arg = rest.strip(), "", ""
+        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW "):
+            if keyword in rest:
+                url, arg = (x.strip() for x in rest.split(keyword, 1))
+                mode, arg = keyword.strip(), arg.strip('"')
+                break
         try:
-            if follow:
+            if mode in ("FOLLOW", "FOLLOWAFTER"):
                 from urllib.parse import urljoin
+                import re
 
                 listing = session.get(url, timeout=(15, 60), headers={"User-Agent": BROWSER_UA})
-                hit = next((h for h, t in anchors(listing.text) if follow.strip().strip('"') in t), None)
+                if mode == "FOLLOW":
+                    hit = next((h for h, t in anchors(listing.text) if arg in t), None)
+                else:  # first link after the first occurrence of the marker text in the raw HTML
+                    at = listing.text.find(arg.replace("&", "&amp;"))
+                    at = listing.text.find(arg) if at < 0 else at
+                    m = re.search(r"<a\b[^>]*href=[\"']([^\"'#]+)[\"']", listing.text[at:]) if at >= 0 else None
+                    hit = m.group(1) if m else None
                 if hit is None:
-                    raise RuntimeError(f"no link containing {follow!r} on {url}")
+                    raise RuntimeError(f"no link for {arg!r} on {url}")
                 url = urljoin(listing.url, hit)
             r = session.get(url, timeout=(15, 120), headers={"User-Agent": BROWSER_UA, "Accept": "*/*"})
             pages = [f"HTTP {r.status_code} {r.headers.get('Content-Type')} {len(r.content)} bytes\n{r.url}"]
-            if r.status_code == 200:
+            if r.status_code == 200 and mode == "RAW":
+                raw = r.text
+                at = max(raw.find(arg.replace("&", "&amp;")), raw.find(arg))
+                pages.append(raw[max(0, at - 3000): at + 12000] if at >= 0 else "marker not found\n" + raw[:15000])
+            elif r.status_code == 200:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001
             pages = [f"ERROR {type(error).__name__}: {error}"]

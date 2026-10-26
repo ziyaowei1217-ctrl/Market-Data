@@ -639,13 +639,18 @@ class Yahoo(Provider):
     name = "YAHOO"
     URL = "https://query2.finance.yahoo.com/v8/finance/chart/{ticker}"
 
+    TR_BASE = date(2020, 10, 1)  # total-return series are rebased to 100 here, so levels never shift
+
     def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
-        period1 = int(datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        total_return = bool(d.params.get("tr"))
+        first = min(start, self.TR_BASE) if total_return else start
+        period1 = int(datetime.combine(first, datetime.min.time(), tzinfo=timezone.utc).timestamp())
         period2 = int(datetime.now(timezone.utc).timestamp()) + 86400
         headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"}
         payload = self.get_json(
             self.URL.format(ticker=d.code),
-            {"period1": period1, "period2": period2, "interval": "1d", "events": "history", "includeAdjustedClose": "false"},
+            {"period1": period1, "period2": period2, "interval": "1d", "events": "div|split" if total_return else "history",
+             "includeAdjustedClose": "false"},
             headers=headers,
         )
         time.sleep(1.0)
@@ -676,14 +681,33 @@ class Yahoo(Provider):
             if close is None:
                 continue
             local = datetime.fromtimestamp(ts + offset, tz=timezone.utc).date()
-            if local >= start:
+            if local >= first:
                 out[local] = Observation(local, float(close))
+        if total_return:
+            dividends = {}
+            for item in ((result.get("events") or {}).get("dividends") or {}).values():
+                when = datetime.fromtimestamp(int(item["date"]) + offset, tz=timezone.utc).date()
+                dividends[when] = dividends.get(when, 0.0) + float(item["amount"])
+            out = {o.obs_date: o for o in total_return_index([out[k] for k in sorted(out)], dividends)}
+        out = {k: v for k, v in out.items() if k >= start}
         # Drop today's intraday bar if the market has not closed.
         regular = meta.get("currentTradingPeriod", {}).get("regular", {})
         end = regular.get("end")
         if end and datetime.now(timezone.utc).timestamp() < end:
             out.pop(datetime.fromtimestamp(end + offset, tz=timezone.utc).date(), None)
         return [out[k] for k in sorted(out)]
+
+
+def total_return_index(closes: Sequence[Observation], dividends: dict[date, float], base: float = 100.0) -> list[Observation]:
+    """Chain price closes and cash dividends (credited on the ex-date) into a total-return
+    index starting at ``base``."""
+    out, level, prev = [], base, None
+    for o in closes:
+        if prev is not None and prev.value:
+            level *= (o.value + dividends.get(o.obs_date, 0.0)) / prev.value
+        out.append(Observation(o.obs_date, round(level, 6)))
+        prev = o
+    return out
 
 
 # --------------------------------------------------------------------------- index publishers
@@ -909,3 +933,18 @@ class Snb(Provider):
                 obs = obs_from_pairs(values.get(d.code.split(":", 1)[1], []), start)
                 out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "dimension not found"))
         return out
+
+
+@register
+class Lbma(Provider):
+    """LBMA precious-metal benchmark prices (JSON behind prices.lbma.org.uk charts).
+    code = gold_am | gold_pm | silver; value = USD price (first element of "v")."""
+
+    name = "LBMA"
+    URL = "https://prices.lbma.org.uk/json/{code}.json"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        rows = self.get_json(self.URL.format(code=d.code), headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
+        if not isinstance(rows, list) or not rows or "d" not in rows[0] or "v" not in rows[0]:
+            raise ProviderError("LBMA JSON layout changed (expected a list of {d, v})")
+        return obs_from_pairs(((r["d"], (r.get("v") or [None])[0]) for r in rows if r.get("v")), start)

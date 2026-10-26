@@ -378,3 +378,75 @@ class ObsOrderingTests(unittest.TestCase):
 
         obs = obs_from_pairs([("2026-10-22", "4.1"), ("2026-01-02", "4.5"), ("2025-12-31", "4.6")])
         self.assertEqual([o.obs_date for o in obs], [date(2025, 12, 31), date(2026, 1, 2), date(2026, 10, 22)])
+
+
+NBS_HEAD = "Chinese(GB)\nRSS\nHome > Latest Releases\n{title}\n 2026-10-15 09:30\n Print|\n Large|\n"
+
+
+class NbsTests(unittest.TestCase):
+    def parse(self, kind, title, body):
+        from pipeline.warehouse.providers.releases import parse_nbs
+
+        return parse_nbs(kind, title, f"{title}\n" + NBS_HEAD.format(title=title) + body)
+
+    def test_cpi_current_and_older_wording(self):
+        t = "Consumer Price Index in September 2026"
+        self.assertEqual(self.parse("cpi_yoy", t, "In September 2026, China’s Consumer Price Index (CPI) increased by 0.9% year on year. Specifically, urban decreased by 0.2%."),
+                         (date(2026, 9, 1), 0.9))
+        t = "Consumer Price Index for March 2025"
+        self.assertEqual(self.parse("cpi_yoy", t, "In March 2025, the national consumer price index (CPI) decreased by 0.1 percent year-on-year."),
+                         (date(2025, 3, 1), -0.1))
+
+    def test_ppi(self):
+        t = "Producer Price Index in the Industrial Sector for March 2025"
+        self.assertEqual(self.parse("ppi_yoy", t, "In March, the national producer prices for industrial products decreased by 2.5 percent year on year"),
+                         (date(2025, 3, 1), -2.5))
+
+    def test_ip_and_retail_use_single_month(self):
+        t = "Industrial Production Operation in September 2026"
+        body = ("In September, the total value added of industrial enterprises above the designated size increased by 5.5% year on year "
+                "in real terms. From January to September, the total value added ... increased by 5.3% year on year.")
+        self.assertEqual(self.parse("ip_yoy", t, body), (date(2026, 9, 1), 5.5))
+        t = "Total Retail Sales of Consumer Goods from January to September 2026"
+        body = ("From January to September 2026, the total retail sales of consumer goods reached 37,000.1 billion yuan, up by 1.1% year on year. "
+                "In September, the total retail sales of consumer goods reached 4,243.3 billion yuan, up by 1.3% year on year.")
+        self.assertEqual(self.parse("retail_yoy", t, body), (date(2026, 9, 1), 1.3))
+        t = "Total Retail Sales of Consumer Goods from January to February 2025"
+        body = "From January to February 2025, the total retail sales of consumer goods reached 8,373.1 billion yuan, up by 4.0 percent year on year."
+        self.assertEqual(self.parse("retail_yoy", t, body), (date(2025, 2, 1), 4.0))
+
+    def test_gdp_table_and_pmi(self):
+        t = "Preliminary Accounting Results of GDP for the Third Quarter of 2026"
+        body = ("results of the preliminary accounting of China’s GDP in the third quarter of 2026 are as follows.\nTable 1\n | \n | \n"
+                "Absolute Value (100 million yuan)\n | \nGrowth Rate Y/Y (%)\n | \nQ3\n | \nFirst Three Quarters of 2026\n | \nQ3\n | \n"
+                "First Three Quarters of 2026\n | \nGDP\n | \n375367\n | \n1071071\n | \n4.5\n | \n4.6\n | \nPrimary industry\n | \n27472\n")
+        self.assertEqual(self.parse("gdp_yoy", t, body), (date(2026, 7, 1), 4.5))
+        t = "Purchasing Managers' Index for March 2025"
+        body = "In March, the purchasing managers' index (PMI) of China's manufacturing industry came in at 50.5 percent, up 0.3 percentage points"
+        self.assertEqual(self.parse("mfg_pmi", t, body), (date(2025, 3, 1), 50.5))
+
+    def test_listing(self):
+        from pipeline.warehouse.providers.releases import nbs_kind, parse_nbs_listing
+
+        html = ('<li><a href="./202610/t20261015_1965500.html" title="Consumer Price Index in September 2026">13.Consumer Price Index in September 2026</a>'
+                '<span>2026-10-15</span></li><li><a href="./202504/t20250408_1959247.html">Purchasing Managers’ Index for March 2025</a></li>')
+        items = parse_nbs_listing(html, "https://www.stats.gov.cn/english/PressRelease/index_1.html")
+        self.assertEqual(items[0], ("Consumer Price Index in September 2026", date(2026, 10, 15),
+                                    "https://www.stats.gov.cn/english/PressRelease/202610/t20261015_1965500.html"))
+        self.assertEqual([nbs_kind(t) for t, _, _ in items], ["cpi_yoy", "mfg_pmi"])
+
+
+class TotalReturnTests(unittest.TestCase):
+    def test_dividend_on_ex_date(self):
+        from pipeline.warehouse.providers.official import total_return_index
+
+        closes = [Observation(date(2026, 1, d), v) for d, v in [(2, 100.0), (5, 99.0), (6, 99.0)]]
+        out = total_return_index(closes, {date(2026, 1, 5): 1.0})
+        self.assertEqual([o.value for o in out], [100.0, 100.0, 100.0])
+
+    def test_lbma(self):
+        body = json.dumps([{"is_cms_locked": 0, "d": "2026-10-22", "v": [4100.5, 3080.1, 3500.2]},
+                           {"is_cms_locked": 0, "d": "2026-10-23", "v": [4120.0, 3090.0, 3510.0]}])
+        session = FakeSession({"prices.lbma.org.uk": body})
+        [res] = official.Lbma(session, env={}).fetch([sd("LBMA", "gold_pm")], date(2026, 1, 1))
+        self.assertEqual(res.observations[-1], Observation(date(2026, 10, 23), 4120.0))
