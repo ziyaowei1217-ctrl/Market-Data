@@ -46,6 +46,10 @@ jobs:
       BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Scheduled and manual runs start from the default branch; always run the warehouse
+          # branch's code so a lagging main never runs (sync_catalog refuses older checkouts).
+          ref: ${{ github.event_name != 'push' && 'warehouse' || '' }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
