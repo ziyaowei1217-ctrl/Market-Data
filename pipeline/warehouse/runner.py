@@ -74,6 +74,8 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
     # the 50.0 no-change mark was read as the index; the NBS walk-back stopped at sidebar links
     "2026-10-26-spg-nbs-parsers": ("SPGPMI:JP:serv",) + tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
     "2026-10-26-spg-final-parser": tuple(f"SPGPMI:{r}:{k}" for r in ("US", "EZ", "UK", "JP") for k in ("mfg", "serv", "comp")),
+    # the parser read the second block of sheet 賃金指数 (not the 5+ employees headline)
+    "2026-10-26-mhlw-first-block": ("MHLW:real_total_yoy",),
 }
 
 

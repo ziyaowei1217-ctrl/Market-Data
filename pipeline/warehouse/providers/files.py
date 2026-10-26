@@ -236,13 +236,13 @@ def parse_mhlw_real_wages(sheet: pd.DataFrame) -> dict[date, float]:
     for _, row in sheet.iterrows():
         cells = [unicodedata.normalize("NFKC", str(c)).strip() for c in row.tolist()]
         label = cells[0] or (cells[1] if len(cells) > 1 else "")
-        if label.startswith("注"):
-            break
-        m = re.fullmatch(r"(\d{4})年\s*(\d{1,2})月", label)
+        if label.startswith("注") or (out and re.fullmatch(r"\d{4}年", label)):
+            break  # the next block (other establishment sizes / worker types) starts with annual rows again
+        m = re.match(r"(\d{4})年\s*(\d{1,2})\s*月", label)
         if m:
             year, month = int(m.group(1)), int(m.group(2))
         else:
-            m = re.fullmatch(r"(\d{1,2})月?", label)
+            m = re.match(r"(\d{1,2})\s*月", label)
             if not (m and year):
                 continue
             month = int(m.group(1))
@@ -312,16 +312,26 @@ def dmp_url(release_month: date) -> str:
 def parse_dmp_sheet(sheet: pd.DataFrame, group: str) -> dict[date, float]:
     """'Quarterly average' column of the Realised or Expected group (three-month average of
     the mean). Rows are dated by survey month, e.g. "Sep-25"."""
-    rows = [[str(c).strip() for c in r] for r in sheet.fillna("").values.tolist()]
+    import unicodedata
+
+    rows = [[unicodedata.normalize("NFKC", str(c)).strip() for c in r] for r in sheet.fillna("").values.tolist()]
+
+    def is_avg(cell: str) -> bool:
+        c = " ".join(cell.lower().replace("-", " ").split())
+        return "quarterly average" in c or "3 month average" in c or "three month average" in c
+
     group_row = next((r for r in rows if any(c.lower().startswith("realised") for c in r)
                       and any(c.lower().startswith("expected") for c in r)), None)
-    sub_row = next((r for r in rows if "Quarterly average" in r), None)
+    sub_row = next((r for r in rows if any(is_avg(c) for c in r)), None)
     if group_row is None or sub_row is None:
-        raise ProviderError("DMP sheet layout changed: no Realised/Expected header or Quarterly average")
+        found = [c for r in rows[:12] for c in r if c][:12]
+        raise ProviderError(f"DMP sheet layout changed: no Realised/Expected header or average column; top cells {found}")
     starts = sorted((i, c.lower().split()[0]) for i, c in enumerate(group_row) if c.lower().startswith(("realised", "expected")))
     bounds = {name: (i, starts[k + 1][0] if k + 1 < len(starts) else len(sub_row)) for k, (i, name) in enumerate(starts)}
     lo, hi = bounds[group]
-    col = next(i for i in range(lo, hi) if sub_row[i] == "Quarterly average")
+    col = next((i for i in range(lo, min(hi, len(sub_row))) if is_avg(sub_row[i])), None)
+    if col is None:
+        raise ProviderError(f"DMP: no average column under {group!r}")
     out = {}
     for r in rows:
         try:
