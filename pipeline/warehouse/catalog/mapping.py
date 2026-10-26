@@ -1216,7 +1216,7 @@ def build_batch3() -> None:
     surl = "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/"
     def isms(code, title):
         return series("ISMS", code, f"ISM Services {title}", "M", "指数点", 3, surl)
-    snote = "ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值"
+    snote = "ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值"
     for iid, code, title in [("36-006", "pmi", "PMI"), ("36-007", "new_orders", "New Orders"), ("36-008", "employment", "Employment"),
                              ("36-009", "prices", "Prices"), ("36-010", "inventories", "Inventories")]:
         api(iid, isms(code, title), snote)

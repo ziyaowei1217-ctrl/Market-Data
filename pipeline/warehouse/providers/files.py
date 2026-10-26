@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import re
+import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
@@ -274,16 +275,22 @@ class MhlwRealWages(Provider):
                 latest = data_month
                 values.update(parsed)
                 break
+        read = [latest] if latest else []
         if latest and self.env.get("BACKFILL"):
             d = date(latest.year - 1, latest.month, 1)
             while d >= start.replace(day=1) and d.year >= 2019:
-                for k, v in self._read(d).items():
+                time.sleep(2)
+                older = self._read(d)
+                if older:
+                    read.append(d)
+                for k, v in older.items():
                     values.setdefault(k, v)  # newer workbooks carry revised values
                 d = date(d.year - 1, d.month, 1)
         out = []
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.items()) if k >= start]
-            out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "no MHLW workbook found"))
+            message = f"{len(obs)} obs from workbooks {', '.join(f'{m:%Y-%m}' for m in read)}" if obs else "no MHLW workbook found"
+            out.append(FetchResult(d.key, obs, "ok" if obs else "error", message))
         return out
 
     def _read(self, data_month: date) -> dict[date, float]:

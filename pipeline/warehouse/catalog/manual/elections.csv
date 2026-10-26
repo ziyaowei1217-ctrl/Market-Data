@@ -1,4 +1,4 @@
 series_key,obs_date,value,source_url,note
-MANUAL:election:EE,2026-10-26,20270307,https://www.valimised.ee/en/riigikogu-elections-2027,Riigikogu elections 7 March 2027 (Estonian electoral office; recorded 2026-10-26)
+MANUAL:election:EE,2026-06-30,20270307,https://www.valimised.ee/sites/default/files/2026-06/RK2027%20Election%20activities%20and%20deadlines.pdf,Riigikogu elections 7 March 2027 (Estonian electoral office schedule published June 2026; dated end of June to be safe)
 MANUAL:election:FI,2026-10-26,20270418,https://www.hel.fi/sv/beslutsfattande-och-forvaltning/delta-och-paverka/delta-i-beslutsfattandet/val-och-rostning/riksdagsvalet-2027,Parliamentary election 18 April 2027; advance voting 7-13 April (recorded 2026-10-26)
 MANUAL:election:FR,2026-07-01,20270418,https://www.internazionale.it/ultime-notizie-reuters/2026/07/01/france-sets-presidential-election-dates,Presidential election first round 18 April 2027 and run-off 2 May 2027; set by the cabinet on 1 July 2026

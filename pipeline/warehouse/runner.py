@@ -76,6 +76,7 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
     "2026-10-26-spg-final-parser": tuple(f"SPGPMI:{r}:{k}" for r in ("US", "EZ", "UK", "JP") for k in ("mfg", "serv", "comp")),
     # the parser read the second block of sheet 賃金指数 (not the 5+ employees headline)
     "2026-10-26-mhlw-first-block": ("MHLW:real_total_yoy",),
+    "2026-10-26-election-ee-date": ("MANUAL:election:EE",),  # announcement date moved earlier
 }
 
 

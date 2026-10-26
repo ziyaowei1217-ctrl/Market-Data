@@ -429,13 +429,13 @@ indicator_id,method,phase,formula,coverage_note
 36-003,api,P1,{ISM:employment},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-004,api,P1,{ISM:prices},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-005,api,P1,{ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-006,api,P1,{ISMS:pmi},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-007,api,P1,{ISMS:new_orders},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-008,api,P1,{ISMS:employment},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-009,api,P1,{ISMS:prices},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-010,api,P1,{ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-006,api,P1,{ISMS:pmi},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
+36-007,api,P1,{ISMS:new_orders},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
+36-008,api,P1,{ISMS:employment},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
+36-009,api,P1,{ISMS:prices},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
+36-010,api,P1,{ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
 36-011,api,P1,{ISM:new_orders} - {ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-012,api,P1,{ISMS:new_orders} - {ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-012,api,P1,{ISMS:new_orders} - {ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；官网只公开最新一期，历史从 2026-08 起逐月累积，每期同时给出上月值
 37-001,api,P1,{FRED:RSAFS},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
 37-002,api,P1,{FRED:RSFSXMV},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
 37-003,api,P1,({FRED:RSXFS} - {FRED:RSMVPD} - {FRED:RSGASS} - {FRED:RSBMGESD}),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
