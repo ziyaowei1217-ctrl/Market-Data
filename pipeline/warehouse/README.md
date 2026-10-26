@@ -42,11 +42,11 @@ select indicator_id, name, unit, method, coverage_note from catalog where name i
 
 | method | 数量 | 说明 |
 | --- | ---: | --- |
-| `api` | 1066 | 免费官方/行情接口直取或派生（FRED、财政部、纽约联储、BLS、BEA、EIA、CFTC、ECB、Eurostat、ONS、加拿大统计局、德国央行、BIS、瑞士央行、日本财务省/统计局、中国国家统计局、LBMA、MSCI、FactSet、ISM、Cboe、Yahoo 等） |
-| `proxy` | 139 | 同样按公式计算，但用替代来源：跟踪该指数的 ETF 总回报（股息再投资，2020-10-01=100）或同类指数（如 ICE BofA 代替 Bloomberg 高收益）；`coverage_note` 以「代理：」开头写明替代品 |
-| `report` | 249 | 只在机构周报里出现的数字（如高盛估值图、FactSet 未覆盖的一致预期），每周归档原文（私有表），解析器建设中 |
+| `api` | 1091 | 免费官方/行情接口直取或派生（FRED、财政部（含拍卖记录）、纽约联储、BLS、BEA、EIA、CFTC、ECB、Eurostat、ONS、英格兰银行（含 OIS/国债曲线）、加拿大统计局、德国央行、BIS、瑞士央行、日本财务省/统计局、中国国家统计局、MSCI、FactSet、ISM、S&P Global PMI 新闻稿、AAII、Cboe、Yahoo 等） |
+| `proxy` | 173 | 同样按公式计算，但用替代来源：跟踪该指数的 ETF 总回报（股息再投资，2020-10-01=100）或同类指数（如 ICE BofA 代替 Bloomberg 高收益）；`coverage_note` 以「代理：」开头写明替代品 |
+| `report` | 229 | 只在机构周报里出现的数字（如高盛估值图、FactSet 未覆盖的一致预期），每周归档原文（私有表），解析器建设中 |
 | `manual` | 45 | 事件、日期、央行决议等，人工维护 |
-| `pending` | 326 | 暂无免费来源或待接入，原因写在 `coverage_note` |
+| `pending` | 287 | 暂无免费来源或待接入，原因写在 `coverage_note` |
 | `excluded` | 134 | 机构预测与长期资本市场假设，按需求排除 |
 
 画图或比较时，`proxy` 指标与原指数在费率、成分上限、对冲口径上可能有差异，必要时在图注里写明。

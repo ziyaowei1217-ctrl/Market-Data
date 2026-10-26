@@ -345,6 +345,7 @@ class SpGlobalPmi(Provider):
 
     name = "SPGPMI"
     batch = True
+    PAUSE = 6  # seconds between PDF downloads
     LIST = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
 
     def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
@@ -357,34 +358,40 @@ class SpGlobalPmi(Provider):
         values: dict[str, dict[date, float]] = defaultdict(dict)
         problems: list[str] = []
         done: list[str] = []
-        for title, url in reversed(listing):  # the page lists newest first; apply oldest first
+        wanted_items = []
+        for position, (title, url) in enumerate(listing):  # the page lists newest first
             m = _SPG_TITLE.match(title)
             if not m or SPG_REGIONS[m.group(2)] not in wanted:
                 continue
             region, flash, kind = SPG_REGIONS[m.group(2)], bool(m.group(1)), m.group(3)
-            if not flash and kind is None:
-                continue
+            if flash or kind is not None:
+                wanted_items.append((position, title, url, region, flash, kind))
+        # The site starts answering with empty pages after a burst of downloads, so go slowly and
+        # fetch flash releases (two months each) first; results are applied oldest first.
+        parsed_items = []
+        for position, title, url, region, flash, kind in sorted(wanted_items, key=lambda x: (not x[4], x[0])):
             text = None
-            for attempt in range(3):
+            for wait in (0, 15, 40):
+                time.sleep(wait or self.PAUSE)
                 try:
                     body = self.get(url, headers={"User-Agent": BROWSER_UA, "Accept": "application/pdf,*/*"})
-                    if body[:5] == b"%PDF-":
-                        text = "\n".join(pdf_pages(body)[:2])
-                        break
-                except Exception:  # noqa: BLE001 - retried below, reported as "no PDF"
-                    pass
-                time.sleep(4)
+                except Exception:  # noqa: BLE001 - retried, then reported as "no PDF"
+                    continue
+                if body[:5] == b"%PDF-":
+                    text = "\n".join(pdf_pages(body)[:2])
+                    break
             if text is None:
                 problems.append(f"no PDF: {title}")
                 continue
             parsed = parse_spg_flash(text) if flash else parse_spg_final(kind, text)
             if not parsed:
                 problems.append(f"unparsed: {title}")
-            else:
-                done.append(title.replace("S&P Global ", ""))
+                continue
+            done.append(title.replace("S&P Global ", ""))
+            parsed_items.append((position, region, parsed))
+        for _, region, parsed in sorted(parsed_items, key=lambda x: -x[0]):  # oldest release first
             for k, by_month in parsed.items():
                 values[f"{region}:{k}"].update(by_month)
-            time.sleep(0.5)
         out = []
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
