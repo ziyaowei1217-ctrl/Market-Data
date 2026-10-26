@@ -237,11 +237,12 @@ def parse_mhlw_real_wages(sheet: pd.DataFrame) -> dict[date, float]:
     for _, row in sheet.iterrows():
         cells = [unicodedata.normalize("NFKC", str(c)).strip() for c in row.tolist()]
         label = cells[0] or (cells[1] if len(cells) > 1 else "")
-        if label.startswith("注") or (out and re.fullmatch(r"\d{4}年", label)):
+        era = re.match(r"(?:(\d{4})|令和\s*(\d+|元))\s*年\s*(?:(\d{1,2})\s*月)?", label)
+        if label.startswith("注") or (out and era and not era.group(3)):
             break  # the next block (other establishment sizes / worker types) starts with annual rows again
-        m = re.match(r"(\d{4})年\s*(\d{1,2})\s*月", label)
-        if m:
-            year, month = int(m.group(1)), int(m.group(2))
+        if era and era.group(3):  # "2025年７月" or (older workbooks) "令和6年8月"
+            year = int(era.group(1)) if era.group(1) else 2018 + (1 if era.group(2) == "元" else int(era.group(2)))
+            month = int(era.group(3))
         else:
             m = re.match(r"(\d{1,2})\s*月", label)
             if not (m and year):

@@ -186,6 +186,14 @@ class MhlwRealWageTests(unittest.TestCase):
         out = parse_mhlw_real_wages(frame(self.SHEET))
         self.assertEqual(out, {date(2025, 7, 1): -0.2, date(2025, 8, 1): 0.4, date(2026, 1, 1): 0.7, date(2026, 7, 1): 2.0})
 
+    def test_japanese_era_labels(self):
+        from pipeline.warehouse.providers.files import parse_mhlw_real_wages
+
+        sheet = (",,,前年比,実質前年比\n令和３年,,100.0,0.3,-0.1\n令和６年８月,,93,2.8,-0.8\n９月,,91.6,2.5,-0.4\n"
+                 "令和７年１月,,90.0,2.0,-1.8\n８月(速報),,94.4,1.5,-1.4\n令和３年,,99.0,0.1,-0.3\n")
+        self.assertEqual(parse_mhlw_real_wages(frame(sheet)), {date(2024, 8, 1): -0.8, date(2024, 9, 1): -0.4,
+                                                               date(2025, 1, 1): -1.8, date(2025, 8, 1): -1.4})
+
     def test_urls_use_reiwa_year_folders(self):
         from pipeline.warehouse.providers.files import mhlw_url
 
