@@ -73,6 +73,10 @@ def main(argv: list[str] | None = None) -> int:
             summaries = fetch(store, defs, start=args.start or OBS_START, runner=args.runner)
             _print_summary(summaries)
             backfill = store.get_meta("factset_backfill")
+            earliest = store.earliest_obs("FACTSET:forward_pe")
+            if backfill == "done" and (earliest is None or earliest > WEEKLY_START + timedelta(days=60)):
+                backfill = None  # history was lost (e.g. series pruned and reloaded): walk back again
+                store.set_meta("factset_backfill", "")
             if backfill != "done" and not args.provider and args.runner == "cloud":
                 # Resumable: each run walks back up to 70 weekly issues from the earliest stored one.
                 earliest = store.earliest_obs("FACTSET:forward_pe")

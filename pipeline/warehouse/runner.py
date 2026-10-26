@@ -84,9 +84,44 @@ def apply_series_resets(store: Store) -> list[str]:
     return cleared
 
 
+class StaleCodeError(RuntimeError):
+    pass
+
+
+def code_version() -> str | None:
+    """Commit time + sha of this checkout ("2026-10-25T02:10:00Z abc1234"), or None outside git."""
+    import subprocess
+
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%ct %h"], cwd=os.path.dirname(__file__),
+                             capture_output=True, text=True, timeout=10, check=True).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if len(out) != 2:
+        return None
+    stamp = datetime.fromtimestamp(int(out[0]), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f"{stamp} {out[1]}"
+
+
+def guard_code_version(store: Store) -> None:
+    """Refuse to sync from a checkout older than the one that last wrote the catalog:
+    an old checkout (e.g. a lagging default branch) would prune newer series."""
+    mine = code_version()
+    if mine is None:
+        return
+    stored = store.get_meta("code_version")
+    if stored and stored.split()[0] > mine.split()[0]:
+        raise StaleCodeError(
+            f"database catalog was written by newer code ({stored}); this checkout is {mine}. "
+            "Run from the up-to-date branch instead (merge 'warehouse' into the default branch)."
+        )
+    store.set_meta("code_version", mine)
+
+
 def sync_catalog(store: Store) -> tuple[int, int, set[str]]:
     """Upsert catalog and registry. Returns counts and the indicator ids whose
     formula is new or changed (their history must be recomputed)."""
+    guard_code_version(store)
     previous = store.indicator_formulas()
     mapping = load_mapping()
     rows = []
@@ -150,7 +185,7 @@ def fetch(
                     summary.initial.append(d.key)
             setattr(summary, result.status, getattr(summary, result.status) + 1)
             summary.rows += written
-            last = result.observations[-1].obs_date.isoformat() if result.observations else "-"
+            last = max(o.obs_date for o in result.observations).isoformat() if result.observations else "-"
             message = result.message or f"{len(result.observations)} obs, last {last}"
             if store is not None:
                 store.update_series_status(d.key, result.status, message)

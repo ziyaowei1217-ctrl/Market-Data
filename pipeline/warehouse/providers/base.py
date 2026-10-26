@@ -132,7 +132,9 @@ def to_float(value: Any) -> float | None:
 
 
 def obs_from_pairs(pairs: Iterable[tuple[Any, Any]], start: date | None = None) -> list[Observation]:
-    out: list[Observation] = []
+    """Observations sorted by date (sources such as Treasury list newest first); a
+    repeated date keeps the last value seen."""
+    out: dict[date, float] = {}
     for when, value in pairs:
         d = pd.Timestamp(when).date()
         if start and d < start:
@@ -140,8 +142,8 @@ def obs_from_pairs(pairs: Iterable[tuple[Any, Any]], start: date | None = None) 
         v = to_float(value)
         if v is None:
             continue
-        out.append(Observation(d, v))
-    return out
+        out[d] = v
+    return [Observation(d, out[d]) for d in sorted(out)]
 
 
 REGISTRY: dict[str, type[Provider]] = {}
