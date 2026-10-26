@@ -33,7 +33,7 @@ const TOOLS = [
   {
     name: "search_indicators",
     description:
-      "Search the indicator catalog (names are in Chinese). Every keyword must match the indicator name, ID or module. Returns indicator_id, module, name, unit, method, a short coverage note and the latest week with a value.",
+      "Search the indicator catalog (names are in Chinese). Every keyword must match the indicator name, ID or module. Returns indicator_id, module, name, unit, method, a short coverage note and the latest week with a value. Indicators excluded on request are left out unless method = excluded.",
     inputSchema: {
       type: "object",
       properties: {
@@ -255,7 +255,8 @@ export async function callTool(w: Warehouse, name: string, args: Json): Promise<
         and: `(${tokens.map((t) => `or(name.ilike.*${t}*,indicator_id.ilike.*${t}*,module.ilike.*${t}*)`).join(",")})`,
       };
       if (args.module) params.module = `eq.${cleanToken(String(args.module))}`;
-      if (args.method) params.method = `eq.${cleanToken(String(args.method))}`;
+      // excluded = boards dropped on request; only shown when asked for by name
+      params.method = args.method ? `eq.${cleanToken(String(args.method))}` : "neq.excluded";
       // fetch a wide candidate set, then rank here: PostgREST can only sort by column
       const { rows, truncated } = await w.rows("catalog", params, 300);
       const best = rankMatches(rows, tokens).slice(0, limit);

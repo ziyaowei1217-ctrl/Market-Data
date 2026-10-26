@@ -223,9 +223,36 @@ class MappingTests(unittest.TestCase):
                 if r["module"] in ("分机构年度增长预测", "长期资本市场假设"):
                     self.assertEqual(mapping[r["indicator_id"]]["method"], "excluded")
 
+    def test_dropped_modules_keep_only_computed_indicators(self):
+        """Valuation/earnings and options/politics boards were dropped on request (2026-10-26):
+        indicators there that already compute stay; the rest are excluded, not left as gaps."""
+        import csv
+        from pipeline.warehouse.catalog.build_catalog import INDICATORS_CSV
+        from pipeline.warehouse.catalog.mapping import load_mapping
+
+        dropped = {"股票估值", "盈利基本面", "估值历史区间", "盈利与估值补充", "期权与事件", "政治与政策",
+                   "跨资产配置", "机构专题辅助数据", "模版历史增长基准"}
+        mapping = load_mapping()
+        seen = 0
+        with INDICATORS_CSV.open(encoding="utf-8") as fh:
+            for r in csv.DictReader(fh):
+                if r["module"] in dropped:
+                    seen += 1
+                    self.assertIn(mapping[r["indicator_id"]]["method"], ("api", "proxy", "excluded"), r["indicator_id"])
+        self.assertEqual(seen, 216)
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InspectSecretTests(unittest.TestCase):
+    def test_placeholders_filled_for_request_and_masked_in_previews(self):
+        from pipeline.warehouse.inspect_sources import fill_secrets, mask_secrets
+
+        env = {"BEA_API_KEY": "abcdef123456", "PATH": "/usr/bin"}
+        self.assertEqual(fill_secrets("https://x/api?UserID={BEA_API_KEY}&y={PATH}", env), "https://x/api?UserID=abcdef123456&y={PATH}")
+        self.assertEqual(mask_secrets('{"USERID": "abcdef123456"}', env), '{"USERID": "***"}')
 
 
 class DocumentTextTests(unittest.TestCase):

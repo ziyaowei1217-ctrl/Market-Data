@@ -86,6 +86,14 @@ test("search builds an AND of keyword filters and strips filter syntax", async (
   assert.equal(q.params.get("and"), "(or(name.ilike.*美国*,indicator_id.ilike.*美国*,module.ilike.*美国*),or(name.ilike.*10年x*,indicator_id.ilike.*10年x*,module.ilike.*10年x*))");
   assert.equal(q.headers.apikey, "sb_secret_test");
   assert.equal(q.headers.Authorization, undefined);
+  assert.equal(q.params.get("method"), "neq.excluded"); // dropped boards stay out of search
+});
+
+test("search can still ask for excluded indicators explicitly", async () => {
+  const calls: Call[] = [];
+  const h = makeHandler(ENV, (await fakeDb(calls)) as any);
+  await rpc(h, { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "search_indicators", arguments: { query: "估值", method: "excluded" } } });
+  assert.equal(calls.find((c) => c.path === "catalog")!.params.get("method"), "eq.excluded");
 });
 
 test("get_weekly returns columns/rows with indicator metadata, ok rows only by default", async () => {

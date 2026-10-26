@@ -29,6 +29,10 @@ SERIES_CSV = CATALOG_DIR / "series.csv"
 MAPPING_CSV = CATALOG_DIR / "mapping.csv"
 
 EXCLUDED_MODULES = {"分机构年度增长预测", "长期资本市场假设"}
+# Boards dropped on request (2026-10-26): what already computes stays, the rest is excluded.
+DROPPED_MODULES = {"股票估值", "盈利基本面", "估值历史区间", "盈利与估值补充", "期权与事件", "政治与政策",
+                   "跨资产配置", "机构专题辅助数据", "模版历史增长基准"}
+DROPPED_NOTE = "按需求排除：估值盈利、期权、政治、跨资产配置等板块不再采集（已能计算的指标保留）"
 REPORT_SOURCES = {
     "am.gs.com": "高盛 Market Monitor Weekly",
     "am.jpmorgan.com": "摩根 Weekly Market Recap",
@@ -1456,6 +1460,8 @@ def write() -> tuple[int, int]:
                      "coverage_note": f"按需求不使用机构周报（原计划：取{REPORT_SOURCES[host]}快照）"}
             else:
                 m = {"method": "pending", "phase": "P2", "formula": "", "coverage_note": "未接入免费来源"}
+        if r["module"] in DROPPED_MODULES and m["method"] not in ("api", "proxy", "excluded"):
+            m = {"method": "excluded", "phase": "excluded", "formula": "", "coverage_note": DROPPED_NOTE}
         rows.append({"indicator_id": iid, **m})
     with MAPPING_CSV.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=["indicator_id", "method", "phase", "formula", "coverage_note"], lineterminator="\n")
