@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
                 import re
 
                 body = r.text if "html" in (r.headers.get("Content-Type") or "") else "\n".join(preview(r.content, url))
-                pages.append("\n".join(line.strip()[:300] for line in body.splitlines() if re.search(arg, line, flags=re.I))[:MAX_CHARS])
+                pages.append("\n".join(line.strip()[:600] for line in body.splitlines() if re.search(arg, line, flags=re.I))[:MAX_CHARS])
             elif r.status_code == 200:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001

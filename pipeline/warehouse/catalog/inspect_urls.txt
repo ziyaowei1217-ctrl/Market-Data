@@ -1,10 +1,7 @@
 # name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field" | GREP "regex"]
 # {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
 # A name ending in _botua sends the project's declared user agent instead of a browser one.
-bea_mne_codes    https://apps.bea.gov/api/data?UserID={BEA_API_KEY}&method=GetData&DataSetName=MNE&DirectionOfInvestment=inward&Classification=Country&SeriesID=22&Year=2024&Country=all&ResultFormat=JSON JSONKEYS "RowCode,Row"
-boe_dmp_grep     https://www.bankofengland.co.uk/decision-maker-panel/2026/october-2026 GREP "xls|csv|download|/-/media"
-mhlw_2608p       https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "実質"
-mhlw_c01         https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608c01p.xlsx GREP "実質|sheet"
-mhlw_t08         https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608t08p.xlsx GREP "実質|sheet"
-oecd_imts_all    https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/all?startPeriod=2026-07&endPeriod=2026-07&format=csvfilewithlabels GREP "^STRUCTURE|CHN"
-customs_cn       http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/302277/index.html GREP "href"
+dmp_sep_sheets   https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-september-2026.xlsx GREP "^\[sheet"
+dmp_sep_rows     https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/2026/monthly-dmp-data-september-2026.xlsx GREP "price|wage|Sep|2026-0[789]"
+mhlw_rows        https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r08/2608p/xls/2608p.xlsx GREP "^\[sheet|8月|7月"
+oecd_chn_levels  https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X+M.C.M...?startPeriod=2026-06&format=csvfilewithlabels GREP "CHN"
