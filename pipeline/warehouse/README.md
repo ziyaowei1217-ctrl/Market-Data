@@ -79,11 +79,11 @@ select indicator_id, name, unit, method, coverage_note from catalog where name i
 
 | method | 数量 | 说明 |
 | --- | ---: | --- |
-| `api` | 1091 | 免费官方/行情接口直取或派生（FRED、财政部（含拍卖记录）、纽约联储、BLS、BEA、EIA、CFTC、ECB、Eurostat、ONS、英格兰银行（含 OIS/国债曲线）、加拿大统计局、德国央行、BIS、瑞士央行、日本财务省/统计局、中国国家统计局、MSCI、FactSet、ISM、S&P Global PMI 新闻稿、AAII、Cboe、Yahoo 等） |
-| `proxy` | 173 | 同样按公式计算，但用替代来源：跟踪该指数的 ETF 总回报（股息再投资，2020-10-01=100）或同类指数（如 ICE BofA 代替 Bloomberg 高收益）；`coverage_note` 以「代理：」开头写明替代品 |
-| `manual` | 45 | 事件、日期、央行决议等，人工维护 |
-| `pending` | 287 | 暂无免费来源或待接入，原因写在 `coverage_note` |
-| `excluded` | 363 | 按需求排除：机构预测与长期资本市场假设（134），以及只在机构周报里出现的数字（229，`coverage_note` 保留原计划） |
+| `api` | 1138 | 免费官方/行情接口直取或派生（FRED、财政部（含拍卖记录）、纽约联储、BLS、BEA（含 PCE 贡献表、对美直接投资）、EIA（含 STEO）、CFTC、ECB、Eurostat、OECD（印度 CPI、中国美元计价贸易）、ONS、英格兰银行（含 OIS/国债曲线、Decision Maker Panel）、加拿大统计局、德国央行、BIS、瑞士央行、日本财务省/统计局/厚生劳动省、中国国家统计局、MSCI、FactSet、ISM 制造业与服务业、S&P Global PMI 新闻稿、AAII、Cboe、Yahoo（含 WTI 各月合约）等） |
+| `proxy` | 182 | 同样按公式计算，但用替代来源：跟踪该指数的 ETF 总回报（股息再投资，2020-10-01=100）、同类指数（如 ICE BofA 代替 Bloomberg 高收益）、NYMEX Brent 金融期货代替 ICE Brent、Cboe OVX 代替 WTI 期权隐波；`coverage_note` 以「代理：」开头写明替代品 |
+| `manual` | 25 | 事件、日期、央行决议等官方公告，人工维护在 `catalog/manual/*.csv`（`MANUAL` 来源）；已录入的（如选举日期，数值写成 YYYYMMDD）照常计算，未公告的没有数值 |
+| `pending` | 182 | 暂无免费来源或待接入，原因写在 `coverage_note`（如 ICI 基金流向拒绝云端访问、S&P Global PMI 分项需授权） |
+| `excluded` | 432 | 按需求排除：机构预测与长期资本市场假设、只在机构周报里出现的数字（`coverage_note` 保留原计划），以及不再采集的估值盈利、期权、政治、跨资产配置等板块中尚无数值的指标 |
 
 本库只存数字，不归档机构周报原文。FactSet Earnings Insight 的标题数字由 `providers/factset.py`
 直接解析成观测值（`vintage_source='report'` 表示数值取自发布方的周报），PDF 本身不入库。

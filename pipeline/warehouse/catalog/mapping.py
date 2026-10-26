@@ -97,6 +97,13 @@ def report_only(iid: str, note: str) -> None:
     other(iid, "excluded", f"按需求不使用机构周报（原计划：{note}）", "excluded")
 
 
+def manual_value(iid: str, formula: str, note: str) -> None:
+    """Hand-maintained official value (catalog/manual/*.csv, MANUAL provider) that is computed like api()."""
+    if iid in MAP:
+        raise ValueError(f"{iid} mapped twice")
+    MAP[iid] = {"method": "manual", "phase": "P1", "formula": formula, "coverage_note": note}
+
+
 def ids(prefix: str, start: int, end: int) -> list[str]:
     return [f"{prefix}-{i:03d}" for i in range(start, end + 1)]
 
@@ -457,7 +464,7 @@ def build() -> None:
     api("34-003", fred("JTSQUR", "JOLTS quits rate", "M", "%", lag=67))
 
     for iid in ids("35", 1, 44):
-        other(iid, "pending", "S&P Global PMI 历史需授权；可解析公开新闻稿，待做")
+        other(iid, "pending", "S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权")
     for iid in ids("36", 1, 12):
         other(iid, "pending", "ISM 数据无免费接口；可解析公开月报，待做")
 
@@ -532,7 +539,7 @@ def build() -> None:
 
     # ---------------------------------------------------------- 44-45 ICI, 47 CFTC
     for iid in ids("44", 1, 18) + ids("45", 1, 8):
-        other(iid, "pending", "ICI 周度 Excel 发布链接每周变化，待写解析")
+        other(iid, "pending", "ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺")
     tff = "gpe5-46if"
     dis = "72hh-3qpy"
     cftc_url = "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm"
@@ -743,14 +750,7 @@ def build() -> None:
         other(iid, "pending", "期权隐波/成交需 Cboe 授权数据")
 
     # ---------------------------------------------------------- 82-85 能源
-    def fut(n):
-        return eia(f"PET.RCLC{n}.D", f"NYMEX WTI futures contract {n}", "D", "美元/桶", lag=7)
-    api("82-001", fut(1), "EIA 公布的 NYMEX 第 n 近月合约结算价")
-    api("82-002", fut(2), "EIA 公布的 NYMEX 第 n 近月合约结算价")
-    api("82-003", fut(3), "EIA 公布的 NYMEX 第 n 近月合约结算价")
-    api("82-006", f"{fut(1)} - {fut(2)}", "同日近月价差")
-    for iid in ["82-004", "82-005", "82-007", "82-008"] + ids("82", 9, 16):
-        other(iid, "pending", "远月/Brent 期货曲线需 CME/ICE 授权")
+    # 82-001..016 WTI/Brent curves: build_batch5 (EIA stopped the contract 1-4 series in 2024-04)
     gas = eia("PET.EER_EPMRU_PF4_RGC_DPG.D", "Gulf Coast conventional gasoline spot", "D", "美元/加仑", lag=7)
     ulsd = eia("PET.EER_EPD2DXL0_PF4_RGC_DPG.D", "Gulf Coast ULSD spot", "D", "美元/加仑", lag=7)
     api("83-001", f"{gas} * 42 - {wti}", "美元/加仑×42 减 WTI 现货（地域不一致，非炼油利润）")
@@ -847,7 +847,7 @@ def build() -> None:
         report_only(iid, "指数需授权；取高盛周报另类资产表快照")
 
     # ---------------------------------------------------------- 101-102 全球宏观补充
-    other("101-001", "pending", "NFIB 无公开接口，月报 PDF 待解析")
+    other("101-001", "pending", "NFIB 网站拒绝云端服务器访问（HTTP 403），且无官方接口；暂缺")
     ppi_sa = bls("WPSFD4", "PPI final demand SA", lag=45)
     ppi_nsa = bls("WPUFD4", "PPI final demand NSA", lag=45)
     ppi_core = bls("WPSFD49104", "PPI final demand less foods & energy SA", lag=45)
@@ -928,8 +928,19 @@ def build() -> None:
         api(f"108-{b + 3:03d}", f"{p} / {eu_pop} * 100", note + "；占 EU27")
         api(f"108-{b + 4:03d}", debt, note)
         api(f"108-{b + 5:03d}", bal, note)
-    for n in (1, 8, 15, 22, 29, 36, 43, 50):
-        other(f"108-{n:03d}", "manual", "选举日期：以本国选举机关公告为准，人工维护", "P1")
+    # election dates: catalog/manual/elections.csv, official announcements only (value = YYYYMMDD)
+    murl = "https://github.com/ziyaowei1217-ctrl/Market-Data/blob/warehouse/pipeline/warehouse/catalog/manual/elections.csv"
+    announced = {"EE": "爱沙尼亚选举机关：议会选举 2027-03-07",
+                 "FR": "法国政府 2026-07-01 公布：总统选举首轮 2027-04-18、次轮 2027-05-02（取首轮）",
+                 "FI": "芬兰议会选举 2027-04-18（法定日期，赫尔辛基市选举页）"}
+    not_yet = {"ES": "约 2027-08", "EL": "约 2027-07", "SK": "约 2027-09", "PL": "约 2027-11", "IT": "约 2027-12"}
+    for geo, b in countries:
+        iid = f"108-{b - 1:03d}"
+        if geo in announced:
+            x = series("MANUAL", f"election:{geo}", f"{geo} next national election date (YYYYMMDD)", "A", "日期", 0, murl)
+            manual_value(iid, x, "人工维护（官方公告）：" + announced[geo] + "；数值为 YYYYMMDD")
+        else:
+            other(iid, "manual", f"尚未正式公告选举日期（法定最晚{not_yet[geo]}）；公告后录入 catalog/manual/elections.csv", "P1")
     other("110-001", "pending", "NAR 数据需授权")
     other("110-002", "manual", "BoJ 加息生效日：人工维护", "P1")
     for iid in ["110-004", "110-005"]:
@@ -1202,6 +1213,14 @@ def build_batch3() -> None:
                              ("36-004", "prices", "Prices"), ("36-005", "inventories", "Inventories")]:
         api(iid, ism(code, title), inote)
     api("36-011", f"{ism('new_orders', 'New Orders')} - {ism('inventories', 'Inventories')}", inote)
+    surl = "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/"
+    def isms(code, title):
+        return series("ISMS", code, f"ISM Services {title}", "M", "指数点", 3, surl)
+    snote = "ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值"
+    for iid, code, title in [("36-006", "pmi", "PMI"), ("36-007", "new_orders", "New Orders"), ("36-008", "employment", "Employment"),
+                             ("36-009", "prices", "Prices"), ("36-010", "inventories", "Inventories")]:
+        api(iid, isms(code, title), snote)
+    api("36-012", f"{isms('new_orders', 'New Orders')} - {isms('inventories', 'Inventories')}", snote)
 
     # ---------------------------------------------------------- consensus (Forex Factory calendar)
     ff_url = "https://www.forexfactory.com/calendar"
@@ -1430,6 +1449,101 @@ def build_batch4() -> None:
     proxy("50-002", f'corr({sp}, {ust}, "52W")', "S&P 500 价格周回报与 " + unote)
 
 
+def build_batch5() -> None:
+    """Gaps filled on 2026-10-26: oil futures curves, OPEC spare capacity, crude volatility, India CPI."""
+    # ---------------------------------------------------------- 82 WTI / Brent curves (nth nearby)
+    furl = "https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html"
+    burl = "https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html"
+    def curve(root, n):
+        name = "NYMEX WTI" if root == "CL" else "NYMEX Brent last-day financial"
+        return series("FUTC", f"{root}:{n}", f"{name} contract {n} (nth nearby)", "D", "美元/桶", 1, furl if root == "CL" else burl)
+    def eia_c(n):
+        return eia(f"PET.RCLC{n}.D", f"NYMEX WTI futures contract {n}", "D", "美元/桶", lag=7)
+    cl_front = series("YAHOO", "CL=F", "NYMEX WTI front month (Yahoo continuous)", "D", "美元/桶", 1, "https://finance.yahoo.com/quote/CL%3DF")
+    bz_front = series("YAHOO", "BZ=F", "NYMEX Brent front month (Yahoo continuous)", "D", "美元/桶", 1, "https://finance.yahoo.com/quote/BZ%3DF")
+    wnote = ("NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；"
+             "远月历史只覆盖仍在挂牌的合约，之后逐周累积")
+    c = {1: f"newest({curve('CL', 1)}, {eia_c(1)}, {cl_front})", 2: f"newest({curve('CL', 2)}, {eia_c(2)})",
+         3: f"newest({curve('CL', 3)}, {eia_c(3)})", 6: curve("CL", 6), 12: curve("CL", 12)}
+    c1_spread = f"newest({curve('CL', 1)}, {eia_c(1)})"  # same contract roll on both legs
+    for iid, n in [("82-001", 1), ("82-002", 2), ("82-003", 3), ("82-004", 6), ("82-005", 12)]:
+        api(iid, c[n], wnote)
+    api("82-006", f"{c1_spread} - {c[2]}", wnote + "；同日价差")
+    api("82-007", f"{curve('CL', 1)} - {curve('CL', 6)}", wnote + "；同日价差")
+    api("82-008", f"{curve('CL', 1)} - {curve('CL', 12)}", wnote + "；同日价差")
+    bnote = ("NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，"
+             "按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约")
+    b = {n: curve("BZ", n) for n in (1, 2, 3, 6, 12)}
+    proxy("82-009", f"newest({b[1]}, {bz_front})", bnote)
+    for iid, n in [("82-010", 2), ("82-011", 3), ("82-012", 6), ("82-013", 12)]:
+        proxy(iid, b[n], bnote)
+    for iid, n in [("82-014", 2), ("82-015", 6), ("82-016", 12)]:
+        proxy(iid, f"{b[1]} - {b[n]}", bnote + "；同日价差")
+
+    # ---------------------------------------------------------- 30-012 / 30-014 PCE contributions (BEA T2.8.8 addenda)
+    bea_url = "https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey"
+    api("30-012", series("BEA", "NIPA:T20808:line=29", "Contribution of housing to PCE price change (T2.8.8)", "M", "百分点", 60, bea_url),
+        "BEA 官方表 2.8.8 月度贡献（住房，附表第 29 行）")
+    api("30-014", series("BEA", "NIPA:T20808:line=28", "Contribution of PCE services ex energy and housing (T2.8.8)", "M", "百分点", 60, bea_url),
+        "BEA 官方表 2.8.8 月度贡献（服务减能源和住房，附表第 28 行）")
+
+    # ---------------------------------------------------------- 105-001..018 FDI into the U.S. by source (BEA MNE)
+    di_url = "https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io"
+    di_note = "BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）"
+    for k, (code, name) in enumerate([("000", "All countries"), ("399", "Europe"), ("614", "Japan"), ("100", "Canada"),
+                                      ("628", "Taiwan"), ("626", "South Korea"), ("213", "Mexico"), ("202", "Brazil"), ("612", "India")]):
+        flow = series("BEADI", f"23:{code}", f"FDI financial inflows into the U.S. from {name}", "A", "百万美元", 560, di_url)
+        stock = series("BEADI", f"22:{code}", f"FDI position in the U.S., {name} (historical cost)", "A", "百万美元", 560, di_url)
+        api(f"105-{1 + 2 * k:03d}", flow, di_note + "；金融流入（不含当期成本调整）")
+        api(f"105-{2 + 2 * k:03d}", stock, di_note + "；年末头寸（历史成本）")
+
+    # ---------------------------------------------------------- 84-004 OPEC spare capacity (EIA STEO)
+    steo = series("EIA", "STEO.COPS_OPEC.M", "OPEC total spare crude oil production capacity (STEO)", "M", "百万桶/日", 40,
+                  "https://www.eia.gov/outlooks/steo/", params={"history_only": True})
+    api("84-004", steo, "EIA 短期能源展望（STEO）月度估计，只取已过去的月份（不含预测），随每期 STEO 修订")
+
+    # ---------------------------------------------------------- 85-002 crude implied volatility
+    proxy("85-002", cboe("OVX", "Cboe Crude Oil ETF Volatility Index"),
+          "Cboe OVX（以 USO 期权计算的 30 天隐含波动率），不是 WTI 期货平值期权隐波")
+
+    # ---------------------------------------------------------- 101-016 India CPI (OECD mirror of MoSPI)
+    india = series("OECD", "OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY", "India CPI all items, y/y (OECD)",
+                   "M", "%", 50, "https://data-explorer.oecd.org/")
+    api("101-016", india, "OECD 价格数据库转载印度统计与计划执行部（MoSPI）CPI 同比；比 MoSPI 首发晚约 1 个月")
+    api("102-035", f"prior({india})", "本次发布所列前值（本库逐次留存版本）")
+
+    # ---------------------------------------------------------- 101-006..010 China trade in USD (OECD mirror of GACC)
+    def chn(flow, title):
+        return series("OECD", f"OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.{flow}.C.M.USD_EXC.N.N", f"China {title}, USD bn, NSA (OECD IMTS)",
+                      "M", "十亿美元", 35, "https://data-explorer.oecd.org/")
+    exp, imp = chn("X", "exports"), chn("M", "imports")
+    cnote = "OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周"
+    prior_note = "本次发布所列前值（本库逐次留存版本）"
+    for a, pr, f, extra in [("101-006", "102-011", f"{exp} * 10", "；十亿美元×10=亿美元"),
+                            ("101-007", "102-014", f"{imp} * 10", "；十亿美元×10=亿美元"),
+                            ("101-009", "102-020", f"yoy({exp})", "；同比"),
+                            ("101-010", "102-023", f"yoy({imp})", "；同比")]:
+        api(a, f, cnote + extra)
+        api(pr, f"prior({f})", prior_note)
+    api("101-008", f"({exp} - {imp}) * 10", cnote + "；出口减进口，亿美元")
+
+    # ---------------------------------------------------------- 101-013 Japan real wages (MHLW Monthly Labour Survey)
+    jw = series("MHLW", "real_total_yoy", "Japan real total cash earnings y/y (5+ employees)", "M", "%", 40,
+                "https://www.mhlw.go.jp/toukei/list/30-1a.html")
+    jnote = "厚生劳动省每月勤劳统计速报 Excel（事业所规模 5 人以上，现金给与总额，以除去持家估算租金的 CPI 平减），同比"
+    api("101-013", jw, jnote)
+    api("102-032", f"prior({jw})", prior_note)
+
+    # ---------------------------------------------------------- 63-001 / 63-002 / 101-014 BoE Decision Maker Panel
+    durl = "https://www.bankofengland.co.uk/decision-maker-panel"
+    def dmp(code, title):
+        return series("DMP", code, f"BoE DMP {title} (three-month average)", "M", "%", 35, durl)
+    dnote = "英格兰银行 Decision Maker Panel 月度数据表，三个月平均（按调查月份）"
+    api("63-001", dmp("Wage growth|expected", "expected year-ahead wage growth"), dnote)
+    api("63-002", dmp("Price growth|expected", "expected year-ahead own-price growth"), dnote)
+    api("101-014", dmp("Wage growth|realised", "realised past-year wage growth"), dnote)
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1441,6 +1555,7 @@ def write() -> tuple[int, int]:
     build_factset()
     build_batch3()
     build_batch4()
+    build_batch5()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

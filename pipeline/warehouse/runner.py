@@ -16,7 +16,7 @@ from .catalog.build_catalog import load_catalog
 from .catalog.mapping import load_mapping, load_series
 from .db.store import Observation, Store
 from .engine.weekly import compute, last_completed_friday, week_cutoffs
-from .providers import breadth, factset, files, official, releases  # noqa: F401  (registers providers)
+from .providers import breadth, factset, files, futures, manual, official, releases  # noqa: F401  (registers providers)
 from .providers.base import REGISTRY, FetchResult, SeriesDef
 
 # A value older than this (by the fastest-moving input's frequency) is reported as
@@ -201,7 +201,7 @@ def fetch(
     return summaries
 
 
-COMPUTED_METHODS = ("api", "proxy")
+COMPUTED_METHODS = ("api", "proxy", "manual")  # manual: only rows that have a formula
 
 
 def formulas_for(methods: Sequence[str] = COMPUTED_METHODS) -> dict[str, str]:

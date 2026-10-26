@@ -151,10 +151,13 @@ ISM_ROWS = {
 }
 
 
-def parse_ism(text: str) -> dict[str, tuple[float, float]]:
+ISM_SERVICES_ROWS = {**ISM_ROWS, "pmi": r"Services PMI®?"}
+
+
+def parse_ism(text: str, rows: dict[str, str] = ISM_ROWS) -> dict[str, tuple[float, float]]:
     """'at a Glance' rows: label, current index, previous index, change."""
     out = {}
-    for key, label in ISM_ROWS.items():
+    for key, label in rows.items():
         m = re.search(label + r"\s+(\d{2}\.\d)\s+(\d{2}\.\d)\s+[+\-]?\d+\.\d", text)
         if m:
             out[key] = (float(m.group(1)), float(m.group(2)))
@@ -171,6 +174,7 @@ class Ism(Provider):
     batch = True
     supports_backfill = True
     URL = "https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/pmi/baby{ym}pmi.pdf"
+    ROWS = ISM_ROWS
 
     def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
         today = _today()
@@ -189,7 +193,7 @@ class Ism(Provider):
                 continue
             if r.status_code != 200 or r.content[:5] != b"%PDF-":
                 continue
-            parsed = parse_ism("\n".join(pdf_pages(r.content)[:3]))
+            parsed = parse_ism("\n".join(pdf_pages(r.content)[:3]), self.ROWS)
             prev_month = (data_month - timedelta(days=1)).replace(day=1)
             for key, (cur, prev) in parsed.items():
                 values[key][data_month] = cur
@@ -198,6 +202,172 @@ class Ism(Provider):
         for d in defs:
             obs = [Observation(k, v) for k, v in sorted(values.get(d.code, {}).items()) if k >= start]
             out.append(FetchResult(d.key, obs, "ok" if obs else "empty", f"{len(values.get(d.code, {}))} months"))
+        return out
+
+
+@register
+class IsmServices(Ism):
+    """ISM Services Report On Business PDF (same 'at a Glance' layout). code = pmi |
+    new_orders | employment | prices | inventories."""
+
+    name = "ISMS"
+    URL = "https://www.ismworld.org/globalassets/pub/research-and-surveys/rob/nmi/rain{ym}svcs.pdf"
+    ROWS = ISM_SERVICES_ROWS
+
+
+# --------------------------------------------------------------------------- Japan MHLW Monthly Labour Survey
+
+
+def mhlw_url(data_month: date) -> str:
+    """Preliminary release workbook for a data month (folders by Reiwa year: 2019 = r01)."""
+    reiwa = data_month.year - 2018
+    ym = f"{data_month.year % 100:02d}{data_month.month:02d}"
+    return f"https://www.mhlw.go.jp/toukei/itiran/roudou/monthly/r{reiwa:02d}/{ym}p/xls/{ym}p.xlsx"
+
+
+def parse_mhlw_real_wages(sheet: pd.DataFrame) -> dict[date, float]:
+    """Sheet 賃金指数, first block (establishments with 5+ employees): column 4 is the real
+    year-on-year change of total cash earnings (deflated by CPI excluding imputed rent).
+    Month rows read "2025年７月", then "８月" ... until the first note line."""
+    import unicodedata
+
+    out: dict[date, float] = {}
+    year = None
+    for _, row in sheet.iterrows():
+        cells = [unicodedata.normalize("NFKC", str(c)).strip() for c in row.tolist()]
+        label = cells[0] or (cells[1] if len(cells) > 1 else "")
+        if label.startswith("注"):
+            break
+        m = re.fullmatch(r"(\d{4})年\s*(\d{1,2})月", label)
+        if m:
+            year, month = int(m.group(1)), int(m.group(2))
+        else:
+            m = re.fullmatch(r"(\d{1,2})月?", label)
+            if not (m and year):
+                continue
+            month = int(m.group(1))
+        value = to_float(cells[4]) if len(cells) > 4 else None
+        if value is not None:
+            out[date(year, month, 1)] = value
+    return out
+
+
+@register
+class MhlwRealWages(Provider):
+    """MHLW Monthly Labour Survey preliminary workbook (xlsx). code = real_total_yoy. Each
+    workbook carries the latest 13 months, so a first load (BACKFILL=1) also reads one
+    workbook per earlier year."""
+
+    name = "MHLW"
+    batch = True
+    supports_backfill = True
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        today = _today()
+        month = date(today.year, today.month, 1)
+        values: dict[date, float] = {}
+        latest = None
+        for back in range(1, 5):  # the newest preliminary release (data month m is published early in m+2)
+            data_month = (month - timedelta(days=28 * back)).replace(day=1)
+            parsed = self._read(data_month)
+            if parsed:
+                latest = data_month
+                values.update(parsed)
+                break
+        if latest and self.env.get("BACKFILL"):
+            d = date(latest.year - 1, latest.month, 1)
+            while d >= start.replace(day=1) and d.year >= 2019:
+                for k, v in self._read(d).items():
+                    values.setdefault(k, v)  # newer workbooks carry revised values
+                d = date(d.year - 1, d.month, 1)
+        out = []
+        for d in defs:
+            obs = [Observation(k, v) for k, v in sorted(values.items()) if k >= start]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "error", "" if obs else "no MHLW workbook found"))
+        return out
+
+    def _read(self, data_month: date) -> dict[date, float]:
+        try:
+            r = self.session.get(mhlw_url(data_month), timeout=(15, 60), headers={"User-Agent": BROWSER_UA})
+        except Exception:  # noqa: BLE001
+            return {}
+        if r.status_code != 200 or r.content[:2] != b"PK":
+            return {}
+        sheets = pd.read_excel(io.BytesIO(r.content), sheet_name=None, header=None, dtype=str)
+        sheet = sheets.get("賃金指数")
+        return parse_mhlw_real_wages(sheet.fillna("")) if sheet is not None else {}
+
+
+# --------------------------------------------------------------------------- Bank of England Decision Maker Panel
+
+MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+               "november", "december"]
+
+
+def dmp_url(release_month: date) -> str:
+    return ("https://www.bankofengland.co.uk/-/media/boe/files/decision-maker-panel-survey/"
+            f"{release_month.year}/monthly-dmp-data-{MONTH_NAMES[release_month.month - 1]}-{release_month.year}.xlsx")
+
+
+def parse_dmp_sheet(sheet: pd.DataFrame, group: str) -> dict[date, float]:
+    """'Quarterly average' column of the Realised or Expected group (three-month average of
+    the mean). Rows are dated by survey month, e.g. "Sep-25"."""
+    rows = [[str(c).strip() for c in r] for r in sheet.fillna("").values.tolist()]
+    group_row = next((r for r in rows if any(c.lower().startswith("realised") for c in r)
+                      and any(c.lower().startswith("expected") for c in r)), None)
+    sub_row = next((r for r in rows if "Quarterly average" in r), None)
+    if group_row is None or sub_row is None:
+        raise ProviderError("DMP sheet layout changed: no Realised/Expected header or Quarterly average")
+    starts = sorted((i, c.lower().split()[0]) for i, c in enumerate(group_row) if c.lower().startswith(("realised", "expected")))
+    bounds = {name: (i, starts[k + 1][0] if k + 1 < len(starts) else len(sub_row)) for k, (i, name) in enumerate(starts)}
+    lo, hi = bounds[group]
+    col = next(i for i in range(lo, hi) if sub_row[i] == "Quarterly average")
+    out = {}
+    for r in rows:
+        try:
+            when = datetime.strptime(r[0], "%b-%y").date()
+        except ValueError:
+            continue
+        v = to_float(r[col]) if col < len(r) else None
+        if v is not None:
+            out[when] = v
+    return out
+
+
+@register
+class BoeDmp(Provider):
+    """Bank of England Decision Maker Panel monthly data workbook. code = "<sheet>|<group>",
+    e.g. "Price growth|expected" or "Wage growth|realised" (three-month averages)."""
+
+    name = "DMP"
+    batch = True
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        today = _today()
+        body = None
+        for back in range(0, 4):
+            month = (date(today.year, today.month, 1) - timedelta(days=28 * back)).replace(day=1)
+            try:
+                r = self.session.get(dmp_url(month), timeout=(15, 90), headers={"User-Agent": BROWSER_UA})
+            except Exception:  # noqa: BLE001
+                continue
+            if r.status_code == 200 and r.content[:2] == b"PK":
+                body = r.content
+                break
+        if body is None:
+            raise ProviderError("no DMP monthly workbook found for the last 4 months")
+        sheets = pd.read_excel(io.BytesIO(body), sheet_name=None, header=None, dtype=str)
+        by_name = {name.strip(): frame for name, frame in sheets.items()}
+        out = []
+        for d in defs:
+            sheet_name, group = d.code.split("|")
+            frame = by_name.get(sheet_name)
+            if frame is None:
+                out.append(FetchResult(d.key, [], "error", f"sheet {sheet_name!r} missing"))
+                continue
+            series = parse_dmp_sheet(frame, group)
+            obs = [Observation(k, v) for k, v in sorted(series.items()) if k >= start]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty"))
         return out
 
 

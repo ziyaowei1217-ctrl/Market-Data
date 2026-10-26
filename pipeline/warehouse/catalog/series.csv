@@ -39,7 +39,27 @@ BCB:13522,BCB,13522,IPCA 12-month accumulated,M,%,12,https://www3.bcb.gov.br/sgs
 BCB:432,BCB,432,Selic target,D,%,0,https://www3.bcb.gov.br/sgspub/,,False,cloud
 BEA:NIPA:T20808:line=13,BEA,NIPA:T20808:line=13,Contribution of services to PCE price change (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
 BEA:NIPA:T20808:line=2,BEA,NIPA:T20808:line=2,Contribution of goods to PCE price change (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
+BEA:NIPA:T20808:line=28,BEA,NIPA:T20808:line=28,Contribution of PCE services ex energy and housing (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
+BEA:NIPA:T20808:line=29,BEA,NIPA:T20808:line=29,Contribution of housing to PCE price change (T2.8.8),M,百分点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=survey,,False,cloud
 BEA:NIUnderlyingDetail:U20404:DHSGRG,BEA,NIUnderlyingDetail:U20404:DHSGRG,PCE housing price index (monthly),M,指数点,60,https://apps.bea.gov/iTable/?reqid=19&step=2&isuri=1&categories=underlying,,False,cloud
+BEADI:22:000,BEADI,22:000,"FDI position in the U.S., All countries (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:100,BEADI,22:100,"FDI position in the U.S., Canada (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:202,BEADI,22:202,"FDI position in the U.S., Brazil (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:213,BEADI,22:213,"FDI position in the U.S., Mexico (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:399,BEADI,22:399,"FDI position in the U.S., Europe (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:612,BEADI,22:612,"FDI position in the U.S., India (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:614,BEADI,22:614,"FDI position in the U.S., Japan (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:626,BEADI,22:626,"FDI position in the U.S., South Korea (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:22:628,BEADI,22:628,"FDI position in the U.S., Taiwan (historical cost)",A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:000,BEADI,23:000,FDI financial inflows into the U.S. from All countries,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:100,BEADI,23:100,FDI financial inflows into the U.S. from Canada,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:202,BEADI,23:202,FDI financial inflows into the U.S. from Brazil,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:213,BEADI,23:213,FDI financial inflows into the U.S. from Mexico,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:399,BEADI,23:399,FDI financial inflows into the U.S. from Europe,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:612,BEADI,23:612,FDI financial inflows into the U.S. from India,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:614,BEADI,23:614,FDI financial inflows into the U.S. from Japan,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:626,BEADI,23:626,FDI financial inflows into the U.S. from South Korea,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
+BEADI:23:628,BEADI,23:628,FDI financial inflows into the U.S. from Taiwan,A,百万美元,560,https://apps.bea.gov/iTable/?reqid=2&step=1&isuri=1&categories=io,,False,cloud
 BIS:WS_CBPOL/D.CL,BIS,WS_CBPOL/D.CL,Banco Central de Chile policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
 BIS:WS_CBPOL/D.JP,BIS,WS_CBPOL/D.JP,Bank of Japan policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
 BIS:WS_CBPOL/D.TR,BIS,WS_CBPOL/D.TR,CBRT one-week repo policy rate (BIS),D,%,3,https://data.bis.org/topics/CBPOL,,False,cloud
@@ -141,6 +161,9 @@ CFTC:gpe5-46if:13874A:asset_mgr_positions_short,CFTC,gpe5-46if:13874A:asset_mgr_
 CFTC:gpe5-46if:13874A:lev_money_positions_long,CFTC,gpe5-46if:13874A:lev_money_positions_long,E-mini S&P 500 Leveraged Funds long,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
 CFTC:gpe5-46if:13874A:lev_money_positions_short,CFTC,gpe5-46if:13874A:lev_money_positions_short,E-mini S&P 500 Leveraged Funds short,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
 CFTC:gpe5-46if:13874A:open_interest_all,CFTC,gpe5-46if:13874A:open_interest_all,E-mini S&P 500 open interest,W,张,3,https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm,,False,cloud
+DMP:Price growth|expected,DMP,Price growth|expected,BoE DMP expected year-ahead own-price growth (three-month average),M,%,35,https://www.bankofengland.co.uk/decision-maker-panel,,False,cloud
+DMP:Wage growth|expected,DMP,Wage growth|expected,BoE DMP expected year-ahead wage growth (three-month average),M,%,35,https://www.bankofengland.co.uk/decision-maker-panel,,False,cloud
+DMP:Wage growth|realised,DMP,Wage growth|realised,BoE DMP realised past-year wage growth (three-month average),M,%,35,https://www.bankofengland.co.uk/decision-maker-panel,,False,cloud
 ECB:EXR/D.CHF.EUR.SP00.A,ECB,EXR/D.CHF.EUR.SP00.A,CHF per EUR (ECB reference),D,瑞郎/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
 ECB:EXR/D.CNY.EUR.SP00.A,ECB,EXR/D.CNY.EUR.SP00.A,CNY per EUR (ECB reference),D,人民币/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
 ECB:EXR/D.GBP.EUR.SP00.A,ECB,EXR/D.GBP.EUR.SP00.A,GBP per EUR (ECB reference),D,英镑/欧元,1,https://data.ecb.europa.eu/data/datasets/EXR,,False,cloud
@@ -160,6 +183,7 @@ EIA:PET.WDIUPUS2.W,EIA,PET.WDIUPUS2.W,Distillate product supplied,W,千桶/日,5
 EIA:PET.WGFUPUS2.W,EIA,PET.WGFUPUS2.W,Gasoline product supplied,W,千桶/日,5,https://www.eia.gov/opendata/,,False,cloud
 EIA:PET.WGTSTUS1.W,EIA,PET.WGTSTUS1.W,Total motor gasoline stocks,W,千桶,5,https://www.eia.gov/opendata/,,False,cloud
 EIA:PET.WPULEUS3.W,EIA,PET.WPULEUS3.W,Refinery utilization,W,%,5,https://www.eia.gov/opendata/,,False,cloud
+EIA:STEO.COPS_OPEC.M,EIA,STEO.COPS_OPEC.M,OPEC total spare crude oil production capacity (STEO),M,百万桶/日,40,https://www.eia.gov/outlooks/steo/,"{""history_only"": true}",False,cloud
 EUROSTAT:demo_pjan:EE,EUROSTAT,demo_pjan:EE,EE population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""EE"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
 EUROSTAT:demo_pjan:EL,EUROSTAT,demo_pjan:EL,EL population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""EL"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
 EUROSTAT:demo_pjan:ES,EUROSTAT,demo_pjan:ES,ES population,A,人,120,https://ec.europa.eu/eurostat/databrowser/,"{""age"": ""TOTAL"", ""dataset"": ""demo_pjan"", ""geo"": ""ES"", ""sex"": ""T"", ""sinceTimePeriod"": ""2015"", ""unit"": ""NR""}",False,cloud
@@ -378,14 +402,33 @@ FRED:WALCL,FRED,WALCL,Fed total assets,W,百万美元,1,https://fred.stlouisfed.
 FRED:WRESBAL,FRED,WRESBAL,Reserve balances,W,百万美元,1,https://fred.stlouisfed.org/series/WRESBAL,,False,cloud
 FRED:WSHOMCB,FRED,WSHOMCB,Fed MBS holdings,W,百万美元,1,https://fred.stlouisfed.org/series/WSHOMCB,,False,cloud
 FRED:WTREGEN,FRED,WTREGEN,Treasury General Account,W,百万美元,1,https://fred.stlouisfed.org/series/WTREGEN,,False,cloud
+FUTC:BZ:1,FUTC,BZ:1,NYMEX Brent last-day financial contract 1 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html,,False,cloud
+FUTC:BZ:12,FUTC,BZ:12,NYMEX Brent last-day financial contract 12 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html,,False,cloud
+FUTC:BZ:2,FUTC,BZ:2,NYMEX Brent last-day financial contract 2 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html,,False,cloud
+FUTC:BZ:3,FUTC,BZ:3,NYMEX Brent last-day financial contract 3 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html,,False,cloud
+FUTC:BZ:6,FUTC,BZ:6,NYMEX Brent last-day financial contract 6 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/brent-crude-oil-last-day.html,,False,cloud
+FUTC:CL:1,FUTC,CL:1,NYMEX WTI contract 1 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html,,False,cloud
+FUTC:CL:12,FUTC,CL:12,NYMEX WTI contract 12 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html,,False,cloud
+FUTC:CL:2,FUTC,CL:2,NYMEX WTI contract 2 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html,,False,cloud
+FUTC:CL:3,FUTC,CL:3,NYMEX WTI contract 3 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html,,False,cloud
+FUTC:CL:6,FUTC,CL:6,NYMEX WTI contract 6 (nth nearby),D,美元/桶,1,https://www.cmegroup.com/markets/energy/crude-oil/light-sweet-crude.html,,False,cloud
 ISM:employment,ISM,employment,ISM Manufacturing Employment,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
 ISM:inventories,ISM,inventories,ISM Manufacturing Inventories,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
 ISM:new_orders,ISM,new_orders,ISM Manufacturing New Orders,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
 ISM:pmi,ISM,pmi,ISM Manufacturing PMI,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
 ISM:prices,ISM,prices,ISM Manufacturing Prices,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/,,False,cloud
+ISMS:employment,ISMS,employment,ISM Services Employment,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/,,False,cloud
+ISMS:inventories,ISMS,inventories,ISM Services Inventories,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/,,False,cloud
+ISMS:new_orders,ISMS,new_orders,ISM Services New Orders,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/,,False,cloud
+ISMS:pmi,ISMS,pmi,ISM Services PMI,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/,,False,cloud
+ISMS:prices,ISMS,prices,ISM Services Prices,M,指数点,3,https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/services/,,False,cloud
 JPCPI:ex_fresh_yoy,JPCPI,ex_fresh_yoy,Japan CPI ex fresh food y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPCPI:headline_yoy,JPCPI,headline_yoy,Japan CPI all items y/y,M,%,25,https://www.stat.go.jp/data/cpi/,,False,cloud
 JPX:TOPIX,JPX,TOPIX,"TOPIX (price, JPY)",D,点,0,https://www.jpx.co.jp/english/markets/indices/topix/,,False,cloud
+MANUAL:election:EE,MANUAL,election:EE,EE next national election date (YYYYMMDD),A,日期,0,https://github.com/ziyaowei1217-ctrl/Market-Data/blob/warehouse/pipeline/warehouse/catalog/manual/elections.csv,,False,cloud
+MANUAL:election:FI,MANUAL,election:FI,FI next national election date (YYYYMMDD),A,日期,0,https://github.com/ziyaowei1217-ctrl/Market-Data/blob/warehouse/pipeline/warehouse/catalog/manual/elections.csv,,False,cloud
+MANUAL:election:FR,MANUAL,election:FR,FR next national election date (YYYYMMDD),A,日期,0,https://github.com/ziyaowei1217-ctrl/Market-Data/blob/warehouse/pipeline/warehouse/catalog/manual/elections.csv,,False,cloud
+MHLW:real_total_yoy,MHLW,real_total_yoy,Japan real total cash earnings y/y (5+ employees),M,%,40,https://www.mhlw.go.jp/toukei/list/30-1a.html,,False,cloud
 MOFJP:10Y,MOFJP,10Y,JGB 10Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:2Y,MOFJP,2Y,JGB 2Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
 MOFJP:30Y,MOFJP,30Y,JGB 30Y yield (MOF),D,%,1,https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/,,False,cloud
@@ -437,6 +480,9 @@ NYFED:unsecured/effr:percentPercentile25,NYFED,unsecured/effr:percentPercentile2
 NYFED:unsecured/effr:percentPercentile75,NYFED,unsecured/effr:percentPercentile75,EFFR p75,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:unsecured/effr:percentRate,NYFED,unsecured/effr:percentRate,EFFR,D,%,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
 NYFED:unsecured/effr:volumeInBillions,NYFED,unsecured/effr:volumeInBillions,EFFR volume,D,十亿美元,1,https://www.newyorkfed.org/markets/reference-rates/sofr,,False,cloud
+"OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N",OECD,"OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N","China imports, USD bn, NSA (OECD IMTS)",M,十亿美元,35,https://data-explorer.oecd.org/,,False,cloud
+"OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N",OECD,"OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N","China exports, USD bn, NSA (OECD IMTS)",M,十亿美元,35,https://data-explorer.oecd.org/,,False,cloud
+"OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY",OECD,"OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY","India CPI all items, y/y (OECD)",M,%,50,https://data-explorer.oecd.org/,,False,cloud
 ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/d7g7/mm23""}",False,cloud
 ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
 ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
@@ -521,6 +567,8 @@ YAHOO:AGG:TR,YAHOO,AGG,iShares Core US Aggregate Bond ETF total return (tracks B
 YAHOO:AGGG.L:TR,YAHOO,AGGG.L,iShares Core Global Aggregate Bond (USD Dist) ETF total return (tracks Bloomberg Global Aggregate),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AGGG.L,"{""tr"": true}",False,cloud
 YAHOO:AMLP:TR,YAHOO,AMLP,Alerian MLP ETF ETF total return (tracks Alerian MLP Infrastructure),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/AMLP,"{""tr"": true}",False,cloud
 YAHOO:BTC-USD,YAHOO,BTC-USD,Bitcoin USD,D,点,1,https://finance.yahoo.com/quote/BTC-USD,,False,cloud
+YAHOO:BZ=F,YAHOO,BZ=F,NYMEX Brent front month (Yahoo continuous),D,美元/桶,1,https://finance.yahoo.com/quote/BZ%3DF,,False,cloud
+YAHOO:CL=F,YAHOO,CL=F,NYMEX WTI front month (Yahoo continuous),D,美元/桶,1,https://finance.yahoo.com/quote/CL%3DF,,False,cloud
 YAHOO:DX-Y.NYB,YAHOO,DX-Y.NYB,ICE US Dollar Index,D,点,1,https://finance.yahoo.com/quote/DX-Y.NYB,,False,cloud
 YAHOO:EMB:TR,YAHOO,EMB,iShares JPM USD EM Bond ETF total return (tracks J.P. Morgan EMBI Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMB,"{""tr"": true}",False,cloud
 YAHOO:EMLC:TR,YAHOO,EMLC,VanEck JPM EM Local Currency Bond ETF total return (tracks J.P. Morgan GBI-EM Global Core),D,指数(2020-10-01=100),1,https://finance.yahoo.com/quote/EMLC,"{""tr"": true}",False,cloud

@@ -21,7 +21,7 @@ const MAX_LATEST_ROWS = 400;
 
 const INSTRUCTIONS = `资本市场周报数据库（只读）。1959 个指标来自《全球资管周报｜数据采集清单》，每周六更新，周度截点为周五（week_cutoff）。
 用法：先 search_indicators 用中文关键词找指标（如 "美国10年国债"、"CPI"、"PMI"、"S&P 500"），不要猜 ID；再 get_weekly / get_latest 取数，get_series 取原始频率序列。
-- method：api = 官方/免费接口；proxy = 替代来源（coverage_note 以「代理：」开头写明替代品，引用或画图时必须注明）；report / pending / manual / excluded 目前没有数值，告诉用户 coverage_note 里的原因，不要拿相近指标冒充。
+- method：api = 官方/免费接口；proxy = 替代来源（coverage_note 以「代理：」开头写明替代品，引用或画图时必须注明）；manual = 人工维护的官方公告（如选举日期，数值写成 YYYYMMDD），有值时可用；pending / excluded 没有数值，告诉用户 coverage_note 里的原因，不要拿相近指标冒充。
 - status：只有 ok 的值可直接使用；stale 停更或过期，missing_input 原始缺失或尚未发布，insufficient_history 历史不够，no_vintage 缺少发布版本，provisional 议息结果尚未生效。
 - obs_date 是实际观察期：月度、季度数据在周度表里沿用最近一次发布值，要写明。
 - 画图：同一张图只放同一单位；缺口留空，不插值、不填 0；图注写来源与截至日期。
@@ -39,7 +39,7 @@ const TOOLS = [
       properties: {
         query: { type: "string", description: "Keywords separated by spaces, e.g. \"美国 10年 国债\", \"CPI 同比\", \"PMI\", \"12-007\"" },
         module: { type: "string", description: "Optional exact module name, e.g. 利率信用 (see list_modules)" },
-        method: { type: "string", enum: ["api", "proxy", "report", "pending", "manual", "excluded"], description: "Optional collection method filter" },
+        method: { type: "string", enum: ["api", "proxy", "manual", "pending", "excluded"], description: "Optional collection method filter" },
         limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
       },
       required: ["query"],

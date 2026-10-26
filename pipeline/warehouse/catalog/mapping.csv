@@ -398,9 +398,9 @@ indicator_id,method,phase,formula,coverage_note
 30-009,api,P1,pop({FRED:DSERRG3M086SBEA}),BEA 个人收入与支出（FRED 镜像）
 30-010,api,P1,{BEA:NIPA:T20808:line=13},BEA 官方表 2.8.8 月度贡献（服务）
 30-011,api,P1,pop({BEA:NIUnderlyingDetail:U20404:DHSGRG}),BEA 个人收入与支出（FRED 镜像）
-30-012,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-012,api,P1,{BEA:NIPA:T20808:line=29},BEA 官方表 2.8.8 月度贡献（住房，附表第 29 行）
 30-013,api,P1,pop({FRED:IA001260M}),BEA 个人收入与支出（FRED 镜像）
-30-014,pending,P2,,PCE 通胀贡献需 BEA 贡献表（NIPA API），待接入
+30-014,api,P1,{BEA:NIPA:T20808:line=28},BEA 官方表 2.8.8 月度贡献（服务减能源和住房，附表第 28 行）
 31-001,api,P1,{FRED:A191RL1Q225SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
 31-002,api,P1,{FRED:DPCERY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
 31-003,api,P1,{FRED:A007RY2Q224SBEA},BEA GDP（FRED 镜像），季环比折年率及贡献
@@ -429,13 +429,13 @@ indicator_id,method,phase,formula,coverage_note
 36-003,api,P1,{ISM:employment},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-004,api,P1,{ISM:prices},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-005,api,P1,{ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-006,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-007,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-008,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-009,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
-36-010,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-006,api,P1,{ISMS:pmi},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-007,api,P1,{ISMS:new_orders},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-008,api,P1,{ISMS:employment},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-009,api,P1,{ISMS:prices},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
+36-010,api,P1,{ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 36-011,api,P1,{ISM:new_orders} - {ISM:inventories},ISM 制造业报告 PDF（个人非商业使用条款）；每期同时给出上月值
-36-012,pending,P2,,ISM 数据无免费接口；可解析公开月报，待做
+36-012,api,P1,{ISMS:new_orders} - {ISMS:inventories},ISM 服务业报告 PDF（个人非商业使用条款）；每期同时给出上月值
 37-001,api,P1,{FRED:RSAFS},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
 37-002,api,P1,{FRED:RSFSXMV},Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
 37-003,api,P1,({FRED:RSXFS} - {FRED:RSMVPD} - {FRED:RSGASS} - {FRED:RSBMGESD}),Census 零售（FRED）；控制组=零售业−汽车−加油站−建材（不含餐饮）
@@ -463,38 +463,38 @@ indicator_id,method,phase,formula,coverage_note
 35-010,api,P1,{SPGPMI:JP:mfg},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
 35-011,api,P1,{SPGPMI:JP:serv},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
 35-012,api,P1,{SPGPMI:JP:comp},S&P Global 官网新闻稿标题数字（初值→终值逐次留存；官网只保留约一个月的新闻稿，历史从 2026-10 起累积；分项指数需授权）
-35-013,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-014,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-015,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-016,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-017,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-018,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-019,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-020,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-021,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-022,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-023,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-024,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-025,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-026,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-027,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-028,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-029,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-030,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-031,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-032,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-033,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-034,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-035,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-036,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-037,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-038,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-039,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-040,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-041,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-042,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-043,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
-35-044,pending,P2,,S&P Global PMI 历史需授权；可解析公开新闻稿，待做
+35-013,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-014,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-015,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-016,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-017,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-018,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-019,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-020,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-021,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-022,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-023,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-024,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-025,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-026,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-027,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-028,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-029,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-030,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-031,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-032,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-033,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-034,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-035,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-036,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-037,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-038,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-039,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-040,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-041,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-042,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-043,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
+35-044,pending,P2,,S&P Global PMI 分项指数只向订阅用户发布（公开新闻稿只有标题数字，已入库 35-001~012）；需授权
 40-001,api,P1,{EUROSTAT:prc_hicp_minr:EA:TOTAL},Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）
 40-002,api,P1,{EUROSTAT:prc_hicp_minr:EA:TOT_X_NRG_FOOD},Eurostat HICP（2026 年起 ECOICOP 第 2 版数据集 prc_hicp_minr）
 40-003,api,P1,{EUROSTAT:namq_10_gdp:qoq},Eurostat 季度国民账户
@@ -513,32 +513,32 @@ indicator_id,method,phase,formula,coverage_note
 43-004,api,P1,{NBS:cpi_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
 43-005,api,P1,{NBS:ppi_yoy},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
 43-006,api,P1,{NBS:mfg_pmi},国家统计局英文新闻稿（标题与首段数字解析；网站列表约保留到 2024 年初，更早历史待补）
-44-001,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-002,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-003,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-004,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-005,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-006,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-007,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-008,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-009,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-010,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-011,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-012,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-013,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-014,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-015,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-016,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-017,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-44-018,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-001,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-002,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-003,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-004,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-005,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-006,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-007,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
-45-008,pending,P2,,ICI 周度 Excel 发布链接每周变化，待写解析
+44-001,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-002,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-003,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-004,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-005,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-006,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-007,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-008,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-009,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-010,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-011,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-012,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-013,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-014,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-015,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-016,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-017,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+44-018,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-001,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-002,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-003,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-004,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-005,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-006,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-007,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+45-008,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
 47-001,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 13874A，周二持仓
 47-002,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 13874A，周二持仓
 47-003,api,P1,({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 13874A，周二持仓
@@ -716,8 +716,8 @@ indicator_id,method,phase,formula,coverage_note
 62-006,api,P1,"ann({FRED:OPHNFB}, 1)",季环比折年（BLS 口径）
 62-007,api,P1,yoy({FRED:ULCNFB}),BLS 单位劳动成本指数计算同比
 62-008,api,P1,"ann({FRED:ULCNFB}, 1)",季环比折年（BLS 口径）
-63-001,pending,P2,,BoE DMP 月度 Excel，待写解析
-63-002,pending,P2,,BoE DMP 月度 Excel，待写解析
+63-001,api,P1,{DMP:Wage growth|expected},英格兰银行 Decision Maker Panel 月度数据表，三个月平均（按调查月份）
+63-002,api,P1,{DMP:Price growth|expected},英格兰银行 Decision Maker Panel 月度数据表，三个月平均（按调查月份）
 63-003,api,P1,{SCE:Median one-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）
 63-004,api,P1,{SCE:75th Percentile one-year ahead expected inflation rate - 25th Percentile one-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）；75 分位减 25 分位
 63-005,api,P1,{SCE:Median three-year ahead expected inflation rate},纽约联储消费者预期调查（官方图表数据 Excel）
@@ -912,32 +912,32 @@ indicator_id,method,phase,formula,coverage_note
 81-008,excluded,excluded,,按需求排除：估值盈利、期权、政治、跨资产配置等板块不再采集（已能计算的指标保留）
 81-009,excluded,excluded,,按需求排除：估值盈利、期权、政治、跨资产配置等板块不再采集（已能计算的指标保留）
 81-010,excluded,excluded,,按需求排除：估值盈利、期权、政治、跨资产配置等板块不再采集（已能计算的指标保留）
-82-001,api,P1,{EIA:PET.RCLC1.D},EIA 公布的 NYMEX 第 n 近月合约结算价
-82-002,api,P1,{EIA:PET.RCLC2.D},EIA 公布的 NYMEX 第 n 近月合约结算价
-82-003,api,P1,{EIA:PET.RCLC3.D},EIA 公布的 NYMEX 第 n 近月合约结算价
-82-004,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-005,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-006,api,P1,{EIA:PET.RCLC1.D} - {EIA:PET.RCLC2.D},同日近月价差
-82-007,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-008,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-009,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-010,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-011,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-012,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-013,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-014,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-015,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
-82-016,pending,P2,,远月/Brent 期货曲线需 CME/ICE 授权
+82-001,api,P1,"newest({FUTC:CL:1}, {EIA:PET.RCLC1.D}, {YAHOO:CL=F})",NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积
+82-002,api,P1,"newest({FUTC:CL:2}, {EIA:PET.RCLC2.D})",NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积
+82-003,api,P1,"newest({FUTC:CL:3}, {EIA:PET.RCLC3.D})",NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积
+82-004,api,P1,{FUTC:CL:6},NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积
+82-005,api,P1,{FUTC:CL:12},NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积
+82-006,api,P1,"newest({FUTC:CL:1}, {EIA:PET.RCLC1.D}) - newest({FUTC:CL:2}, {EIA:PET.RCLC2.D})",NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积；同日价差
+82-007,api,P1,{FUTC:CL:1} - {FUTC:CL:6},NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积；同日价差
+82-008,api,P1,{FUTC:CL:1} - {FUTC:CL:12},NYMEX WTI 各月合约（Yahoo 延迟行情收盘价）按 CME 到期规则排第 n 近月；2024-04 前用 EIA 公布的结算价；远月历史只覆盖仍在挂牌的合约，之后逐周累积；同日价差
+82-009,proxy,P1,"newest({FUTC:BZ:1}, {YAHOO:BZ=F})",代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约
+82-010,proxy,P1,{FUTC:BZ:2},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约
+82-011,proxy,P1,{FUTC:BZ:3},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约
+82-012,proxy,P1,{FUTC:BZ:6},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约
+82-013,proxy,P1,{FUTC:BZ:12},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约
+82-014,proxy,P1,{FUTC:BZ:1} - {FUTC:BZ:2},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约；同日价差
+82-015,proxy,P1,{FUTC:BZ:1} - {FUTC:BZ:6},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约；同日价差
+82-016,proxy,P1,{FUTC:BZ:1} - {FUTC:BZ:12},代理：NYMEX Brent 最后交易日金融期货（BZ，到期按 ICE Brent 结算价现金结算）各月合约，Yahoo 延迟行情收盘价，按到期规则排第 n 近月；远月历史只覆盖仍在挂牌的合约；同日价差
 83-001,api,P1,{EIA:PET.EER_EPMRU_PF4_RGC_DPG.D} * 42 - {FRED:DCOILWTICO},美元/加仑×42 减 WTI 现货（地域不一致，非炼油利润）
 83-002,api,P1,{EIA:PET.EER_EPD2DXL0_PF4_RGC_DPG.D} * 42 - {FRED:DCOILWTICO},美元/加仑×42 减 WTI 现货（地域不一致，非炼油利润）
 84-001,manual,P2,,事件型能源供应数据：按官方公告人工维护
 84-002,manual,P2,,事件型能源供应数据：按官方公告人工维护
 84-003,manual,P2,,事件型能源供应数据：按官方公告人工维护
-84-004,manual,P2,,事件型能源供应数据：按官方公告人工维护
+84-004,api,P1,{EIA:STEO.COPS_OPEC.M},EIA 短期能源展望（STEO）月度估计，只取已过去的月份（不含预测），随每期 STEO 修订
 84-005,manual,P2,,事件型能源供应数据：按官方公告人工维护
 84-006,manual,P2,,事件型能源供应数据：按官方公告人工维护
 85-001,api,P1,{CBOE:OVX},Cboe 官方日收盘历史 CSV
-85-002,pending,P2,,原油期权隐波需 CME/ICE 授权
+85-002,proxy,P1,{CBOE:OVX},代理：Cboe OVX（以 USO 期权计算的 30 天隐含波动率），不是 WTI 期货平值期权隐波
 85-003,pending,P2,,原油期权隐波需 CME/ICE 授权
 85-004,pending,P2,,原油期权隐波需 CME/ICE 授权
 85-005,pending,P2,,原油期权隐波需 CME/ICE 授权
@@ -1535,21 +1535,21 @@ indicator_id,method,phase,formula,coverage_note
 100-034,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
 100-035,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
 100-036,excluded,excluded,,按需求不使用机构周报（原计划：取高盛 Market Monitor Weekly快照）
-101-001,pending,P2,,NFIB 无公开接口，月报 PDF 待解析
+101-001,pending,P2,,NFIB 网站拒绝云端服务器访问（HTTP 403），且无官方接口；暂缺
 101-002,api,P1,{BLS:WPSFD4},BLS PPI；环比季调、同比未季调
 101-003,api,P1,pop({BLS:WPSFD4}),BLS PPI；环比季调、同比未季调
 101-004,api,P1,yoy({BLS:WPUFD4}),BLS PPI；环比季调、同比未季调
 101-005,api,P1,pop({BLS:WPSFD49104}),BLS PPI；环比季调、同比未季调
-101-006,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
-101-007,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
-101-008,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
-101-009,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
-101-010,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+101-006,api,P1,"{OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N} * 10",OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周；十亿美元×10=亿美元
+101-007,api,P1,"{OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N} * 10",OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周；十亿美元×10=亿美元
+101-008,api,P1,"({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N} - {OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N}) * 10",OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周；出口减进口，亿美元
+101-009,api,P1,"yoy({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N})",OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周；同比
+101-010,api,P1,"yoy({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N})",OECD 国际商品贸易统计转载中国海关美元口径数据（未季调）；比海关首发晚约 3 周；同比
 101-012,api,P1,"(msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100",三个月对前三个月
-101-013,pending,P2,,厚生劳动省每月勤劳统计 Excel，待写解析
-101-014,pending,P2,,BoE DMP 月度 Excel，待写解析
+101-013,api,P1,{MHLW:real_total_yoy},厚生劳动省每月勤劳统计速报 Excel（事业所规模 5 人以上，现金给与总额，以除去持家估算租金的 CPI 平减），同比
+101-014,api,P1,{DMP:Wage growth|realised},英格兰银行 Decision Maker Panel 月度数据表，三个月平均（按调查月份）
 101-015,api,P1,"ma(diff({FRED:PAYEMS}), 12)",非农新增 12 个月移动平均
-101-016,pending,P2,,MoSPI 接口待接入
+101-016,api,P1,"{OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY}",OECD 价格数据库转载印度统计与计划执行部（MoSPI）CPI 同比；比 MoSPI 首发晚约 1 个月
 101-017,api,P1,{BCB:13522},巴西央行 SGS 13522（IBGE IPCA 12 个月累计）
 101-018,api,P1,yoy({STATCAN:41690973}),加拿大统计局 WDS 向量
 101-019,api,P1,pop({STATCAN:65201210}),加拿大统计局 WDS 向量
@@ -1570,19 +1570,19 @@ indicator_id,method,phase,formula,coverage_note
 102-008,api,P1,prior(pop({BLS:WPSFD49104})),本次发布所列前值（本库逐次留存版本）
 102-009,api,P1,"surprise(pop({BLS:WPSFD49104}), {FFCAL:USD|Core PPI m/m|forecast})",首次公布值（本库留存版本/ALFRED）减当次发布前的 Forex Factory 预期；从开始留存预期之日起可算
 102-010,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-011,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-011,api,P1,"prior({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N} * 10)",本次发布所列前值（本库逐次留存版本）
 102-012,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-013,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-014,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-014,api,P1,"prior({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N} * 10)",本次发布所列前值（本库逐次留存版本）
 102-015,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-016,api,P1,{FFCAL:CNY|Trade Balance|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-017,api,P1,{FFCAL:CNY|Trade Balance|previous},Forex Factory 日历所列前值（第三方）
 102-018,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-019,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-020,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-020,api,P1,"prior(yoy({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N}))",本次发布所列前值（本库逐次留存版本）
 102-021,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-022,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-023,pending,P2,,中国海关统计对境外 IP 不稳定，计划本地补抓
+102-023,api,P1,"prior(yoy({OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N}))",本次发布所列前值（本库逐次留存版本）
 102-024,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-025,api,P1,{FFCAL:GBP|GDP m/m|forecast},Forex Factory 经济日历的市场预期（第三方汇编的一致预期，非原调查机构中位数；本库从 2026-10 起逐周留存）
 102-026,api,P1,prior(pop({ONS:ECY2})),本次发布所列前值（本库逐次留存版本）
@@ -1591,10 +1591,10 @@ indicator_id,method,phase,formula,coverage_note
 102-029,api,P1,"prior((msum({ONS:ECY2}, 3) / lag(msum({ONS:ECY2}, 3), 3) - 1) * 100)",本次发布所列前值（本库逐次留存版本）
 102-030,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-031,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-032,pending,P2,,厚生劳动省每月勤劳统计 Excel，待写解析
+102-032,api,P1,prior({MHLW:real_total_yoy}),本次发布所列前值（本库逐次留存版本）
 102-033,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-034,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
-102-035,pending,P2,,MoSPI 接口待接入
+102-035,api,P1,"prior({OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY})",本次发布所列前值（本库逐次留存版本）
 102-036,pending,P2,,首次值已入库；事前调查中位数需授权日历或周报，接入后自动计算
 102-037,excluded,excluded,,按需求不使用机构周报（原计划：发布前调查中位数：取汇丰周报日历表公开项）
 102-038,api,P1,prior({BCB:13522}),本次发布所列前值（本库逐次留存版本）
@@ -1779,24 +1779,24 @@ indicator_id,method,phase,formula,coverage_note
 104-092,excluded,excluded,,按需求排除机构预测
 104-093,excluded,excluded,,按需求排除机构预测
 104-094,excluded,excluded,,按需求排除机构预测
-105-001,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-002,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-003,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-004,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-005,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-006,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-007,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-008,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-009,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-010,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-011,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-012,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-013,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-014,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-015,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-016,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-017,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
-105-018,pending,P2,,BEA 直接投资（MNE/ITA API，需 BEA_API_KEY），待接入
+105-001,api,P1,{BEADI:23:000},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-002,api,P1,{BEADI:22:000},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-003,api,P1,{BEADI:23:399},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-004,api,P1,{BEADI:22:399},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-005,api,P1,{BEADI:23:614},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-006,api,P1,{BEADI:22:614},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-007,api,P1,{BEADI:23:100},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-008,api,P1,{BEADI:22:100},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-009,api,P1,{BEADI:23:628},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-010,api,P1,{BEADI:22:628},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-011,api,P1,{BEADI:23:626},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-012,api,P1,{BEADI:22:626},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-013,api,P1,{BEADI:23:213},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-014,api,P1,{BEADI:22:213},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-015,api,P1,{BEADI:23:202},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-016,api,P1,{BEADI:22:202},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
+105-017,api,P1,{BEADI:23:612},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；金融流入（不含当期成本调整）
+105-018,api,P1,{BEADI:22:612},BEA 对美直接投资（MNE 数据集，按直接投资者所在地，百万美元；年度，次年 7 月发布并修订）；年末头寸（历史成本）
 105-019,api,P1,{FRED:IEAIDI},BEA 国际交易账户直接投资负债流入（FRED）
 105-020,api,P1,"msum({FRED:IEAIDI}, 4)",过去四季合计
 106-001,api,P1,{FRED:BOGZ1LM153061105Q} / 1000,美联储 Z.1 表 F3.2.s（FRED 镜像，季度）；市值口径分子 / 总额 FL893061105；百万→十亿美元
@@ -1832,56 +1832,56 @@ indicator_id,method,phase,formula,coverage_note
 107-011,api,P1,"hist_share(ann(qe({MSCI:892400:NETR:USD:EOM}), 40), 0)",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
 107-012,api,P1,"hist_share(ann(qe({MSCI:892400:NETR:USD:EOM}), 40), 10)",MSCI ACWI 净总回报月末序列（2000-12 起），滚动十年窗口自 2010-12 起
 107-013,pending,P2,,Preqin/MSCI 需授权
-108-001,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-001,manual,P1,,尚未正式公告选举日期（法定最晚约 2027-08）；公告后录入 catalog/manual/elections.csv
 108-002,api,P1,{EUROSTAT:nama_10_gdp:ES},Eurostat 年度数据
 108-003,api,P1,{EUROSTAT:demo_pjan:ES},Eurostat 年度数据
 108-004,api,P1,{EUROSTAT:nama_10_gdp:ES} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-005,api,P1,{EUROSTAT:demo_pjan:ES} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-006,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:ES},Eurostat 年度数据
 108-007,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:ES},Eurostat 年度数据
-108-008,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-008,manual,P1,{MANUAL:election:EE},人工维护（官方公告）：爱沙尼亚选举机关：议会选举 2027-03-07；数值为 YYYYMMDD
 108-009,api,P1,{EUROSTAT:nama_10_gdp:EE},Eurostat 年度数据
 108-010,api,P1,{EUROSTAT:demo_pjan:EE},Eurostat 年度数据
 108-011,api,P1,{EUROSTAT:nama_10_gdp:EE} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-012,api,P1,{EUROSTAT:demo_pjan:EE} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-013,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:EE},Eurostat 年度数据
 108-014,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:EE},Eurostat 年度数据
-108-015,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-015,manual,P1,{MANUAL:election:FR},人工维护（官方公告）：法国政府 2026-07-01 公布：总统选举首轮 2027-04-18、次轮 2027-05-02（取首轮）；数值为 YYYYMMDD
 108-016,api,P1,{EUROSTAT:nama_10_gdp:FR},Eurostat 年度数据
 108-017,api,P1,{EUROSTAT:demo_pjan:FR},Eurostat 年度数据
 108-018,api,P1,{EUROSTAT:nama_10_gdp:FR} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-019,api,P1,{EUROSTAT:demo_pjan:FR} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-020,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:FR},Eurostat 年度数据
 108-021,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:FR},Eurostat 年度数据
-108-022,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-022,manual,P1,{MANUAL:election:FI},人工维护（官方公告）：芬兰议会选举 2027-04-18（法定日期，赫尔辛基市选举页）；数值为 YYYYMMDD
 108-023,api,P1,{EUROSTAT:nama_10_gdp:FI},Eurostat 年度数据
 108-024,api,P1,{EUROSTAT:demo_pjan:FI},Eurostat 年度数据
 108-025,api,P1,{EUROSTAT:nama_10_gdp:FI} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-026,api,P1,{EUROSTAT:demo_pjan:FI} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-027,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:FI},Eurostat 年度数据
 108-028,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:FI},Eurostat 年度数据
-108-029,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-029,manual,P1,,尚未正式公告选举日期（法定最晚约 2027-07）；公告后录入 catalog/manual/elections.csv
 108-030,api,P1,{EUROSTAT:nama_10_gdp:EL},Eurostat 年度数据
 108-031,api,P1,{EUROSTAT:demo_pjan:EL},Eurostat 年度数据
 108-032,api,P1,{EUROSTAT:nama_10_gdp:EL} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-033,api,P1,{EUROSTAT:demo_pjan:EL} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-034,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:EL},Eurostat 年度数据
 108-035,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:EL},Eurostat 年度数据
-108-036,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-036,manual,P1,,尚未正式公告选举日期（法定最晚约 2027-09）；公告后录入 catalog/manual/elections.csv
 108-037,api,P1,{EUROSTAT:nama_10_gdp:SK},Eurostat 年度数据
 108-038,api,P1,{EUROSTAT:demo_pjan:SK},Eurostat 年度数据
 108-039,api,P1,{EUROSTAT:nama_10_gdp:SK} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-040,api,P1,{EUROSTAT:demo_pjan:SK} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-041,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:SK},Eurostat 年度数据
 108-042,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:SK},Eurostat 年度数据
-108-043,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-043,manual,P1,,尚未正式公告选举日期（法定最晚约 2027-11）；公告后录入 catalog/manual/elections.csv
 108-044,api,P1,{EUROSTAT:nama_10_gdp:PL},Eurostat 年度数据
 108-045,api,P1,{EUROSTAT:demo_pjan:PL},Eurostat 年度数据
 108-046,api,P1,{EUROSTAT:nama_10_gdp:PL} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-047,api,P1,{EUROSTAT:demo_pjan:PL} / {EUROSTAT:demo_pjan:EU27_2020} * 100,Eurostat 年度数据；占 EU27
 108-048,api,P1,{EUROSTAT:gov_10dd_edpt1:GD:PL},Eurostat 年度数据
 108-049,api,P1,{EUROSTAT:gov_10dd_edpt1:B9:PL},Eurostat 年度数据
-108-050,manual,P1,,选举日期：以本国选举机关公告为准，人工维护
+108-050,manual,P1,,尚未正式公告选举日期（法定最晚约 2027-12）；公告后录入 catalog/manual/elections.csv
 108-051,api,P1,{EUROSTAT:nama_10_gdp:IT},Eurostat 年度数据
 108-052,api,P1,{EUROSTAT:demo_pjan:IT},Eurostat 年度数据
 108-053,api,P1,{EUROSTAT:nama_10_gdp:IT} / {EUROSTAT:nama_10_gdp:EU27_2020} * 100,Eurostat 年度数据；占 EU27
