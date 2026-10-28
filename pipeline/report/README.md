@@ -1,6 +1,51 @@
-# Graph Generator
+# 市场一周（pipeline/report）
 
-二十种可复用的本地金融周报图表。使用 Python、Pandas 和 Matplotlib，运行时不需要网络、数据库或 API Key。
+把 Capital Weekly 数据库画成每周的《市场一周》PDF 周报。每周六数据库更新成功后，GitHub Actions 自动出刊，存进 Supabase 的私有存储，只有读者名单内的账号能下载；读者的 AI 助手也能通过数据库连接器直接拿到本期 PDF 和单图。
+
+同一套图表也可以离线使用：给本地 CSV（或 `--demo` 模拟数据）就能出图，不需要网络和账号。
+
+## 每周自动出刊
+
+```
+周六 13:17 UTC  warehouse 工作流取数 ──成功──▶ report 工作流
+                                              ├─ python -m pipeline.report build    从数据库取数、画图、排版
+                                              └─ python -m pipeline.report publish  上传到 Storage 的 reports 桶
+读者：python3 -m pipeline.report latest  或在 AI 助手里用连接器的 weekly_report 工具
+```
+
+**本期画什么**写在 `issue.json`：六个资产（名称、序列、是否代理）、五个美债期限、十四张图的顺序和样式（重点资产、基准、相关性对象、论点页）。改资产或图表只改这个文件；序列键必须在 `pipeline/warehouse/catalog/series.csv` 里，代理序列的 `note` 必须以「代理」结尾，测试会检查。
+
+**日期规则**（元数据 `date_rule: "asof"`）：周度截点为周五，与数据库一致。每个序列取截点当天或之前最近的一个观察值，最多往前找 6 天；节假日沿用前一交易日收盘（最多 3 个工作日），序列末端不往后补。所以 FRED 收益率只到周四时，图里用周四的值，并注明「截至10月22日」。离线 CSV 仍要求两个日期都存在（`exact`）。
+
+**数据说明**：用了代理序列、或者没更新到周五的序列，会写进周报最后的「数据说明」，周报里每张相关的图在来源行提示「代理与观察日见末页数据说明」；单独导出的 PNG/PDF 则把说明直接写在图下。离截点超过 6 天都没有数据的序列这一期不画，首页页脚和数据说明里写明「本期未列入：黄金（最新数据为10月9日）」。
+
+**自己出一期**（需要数据库连接串，或读者账号）：
+
+```bash
+pip install -r pipeline/report/requirements.txt
+export WAREHOUSE_DB_URL=...            # 或者 WAREHOUSE_EMAIL / WAREHOUSE_PASSWORD（读者账号，走 REST）
+python3 -m pipeline.report build --week 2026-10-23 --output-dir outputs/weekly
+```
+
+输出目录里有 `weekly-report.pdf`、每张图的 PNG/PDF，以及 `issue.json`（截点、页数、图表、未列入、数据说明）。
+
+**下载已发布的一期**（读者账号，密码不要写进仓库或聊天记录）：
+
+```bash
+export WAREHOUSE_EMAIL=you@example.com WAREHOUSE_PASSWORD=...
+python3 -m pipeline.report latest                      # 最新一期 → ./市场一周-2026-10-23.pdf
+python3 -m pipeline.report latest --week 2026-10-16    # 某一期
+```
+
+**存储与权限**：私有桶 `reports`，路径 `weekly/<周五>/…`，最后写 `weekly/latest.json`。`storage.sql` 只给读者名单开放读取，发布时自动执行（可重复执行）。本仓库是公开的，而周报含 MSCI 等授权数据，所以工作流**不上传 artifact、不在日志里打印数值**；周报只在读者名单内学习使用，不要转发到名单外。
+
+**一次性设置**（仓库所有者）：
+
+1. 在 GitHub → Settings → Secrets and variables → Actions 添加 `SUPABASE_SECRET_KEY`（Supabase → Project Settings → API Keys 里的 secret key，`sb_secret_` 开头）。没设时工作流照常出刊和检查，只是不上传。
+2. `report.yml` 由 `workflow_run` 触发，只认默认分支（main）上的那份，所以要把 warehouse 分支合进 main 才会每周自动跑；在 Actions 页面手动 Run workflow 可以随时补出某一期。
+3. 连接器的 `weekly_report` 工具需要重新部署一次：`supabase functions deploy warehouse-mcp --no-verify-jwt`。
+
+## 图表
 
 | 名称 / CLI 选项 | 输入与计算 | 展示内容 |
 | --- | --- | --- |
@@ -11,7 +56,7 @@
 | 表现热力图 `heatmap` | 指定基准日至截止日的累计涨跌幅 | 最多四个区间，缺失数据为 – |
 | 利率哑铃图 `comparison` | 两日各期限收益率 | 两端点、原始数值、变动 bp |
 
-每张图导出 170 × 112 mm 的 **300 dpi PNG 和矢量 PDF**。另外合成一份 A4 竖版的**周报**（`weekly-report.pdf`）：首页深绿报头 + 本周概览，第二页为本期论点，其余为三栏数据页，每张图下附要点；全套二十张约七页。中文字体已嵌入。图注标明单位、来源、观察截止日和数据更新时间。全部示例数据都是模拟数据。
+每张图导出 170 × 112 mm 的 **300 dpi PNG 和矢量 PDF**。另外合成一份 A4 竖版的**周报**（`weekly-report.pdf`）：首页深绿报头 + 本周概览，第二页为本期论点，其余为三栏数据页，每张图下附要点；数据库版十四张图约六页。中文字体已嵌入。图注标明单位、来源、观察截止日和数据更新时间。`examples/` 和 `--demo` 的数据都是模拟数据。
 
 ## 新增 Street 图库
 
@@ -32,24 +77,15 @@
 | `waterfall` | 财务变动桥接 / 瀑布图 | `waterfall.csv` |
 | `sensitivity` | 情景敏感性矩阵 | `sensitivity.csv` |
 
-每个选项导出同名 PNG/PDF，名称中的下划线转为连字符。论坛与专业资料选型依据见 `docs/street-chart-research.md`。这是本轮可复用模板清单，不是图表流行度排名，也不声称穷尽华尔街所有图表。
+每个选项导出同名 PNG/PDF，名称中的下划线转为连字符。K 线、资金流、估值带、Football Field、瀑布图和敏感性矩阵需要数据库里没有的表格（OHLC、基金流向、模型输出），只能用离线 CSV 出图。
 
-## 一键生成
+## 离线出图（CSV / 模拟数据）
 
-需要 Python 3.12+。首次安装：
-
-```bash
-cd "graph generator"
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python3 -m pipeline.report --demo --output-dir outputs
-```
-
-当前电脑的环境已安装，直接运行：
+在仓库根目录运行（Python 3.12+）：
 
 ```bash
-python3 -m pipeline.report --demo --output-dir ../outputs/full-suite
+pip install -r pipeline/report/requirements.txt
+python3 -m pipeline.report --demo --output-dir outputs/demo
 ```
 
 `--demo` 默认生成全部二十张图。选择部分图表：
@@ -133,6 +169,10 @@ date,2Y,10Y,30Y
 - `heatmap_starts` 仅画热力图时必需，最多四列，区间名称不超过六个字符。显式提供比较日期，截止日所有资产必须有数据。
 - 基准日期不在数据中或个别资产缺失时，该单元格标为 `–`（短横线）。程序不会自动回退到其他日期。
 - `YTD` 应使用上一年最后一个有效收盘观察日作为基准；区间标签由你指定，程序不会推断标签对应的日历规则。节假日需明确选择日期。
+- 可选 `date_rule`：默认 `"exact"`（上面三条规则）；`"asof"` 改为取每个日期当天或之前 6 天内最近的值，数据库出刊用的就是它。
+- 可选 `series_notes`：`{"黄金": "COMEX 期货近月代理"}`，每条不超过 40 字，自动附到画了该序列的图下。
+- 可选 `quoted`：哪些资产的水平值有意义（如金价、指数点位）。不在列表里的资产（如 ETF 总回报指数）在首页概览只显示周涨跌幅。默认全部资产。
+- 可选 `omitted`：本期未列入的序列说明（字符串列表），印在首页页脚和数据说明里。
 
 ## 输出与样式
 
@@ -145,9 +185,7 @@ date,2Y,10Y,30Y
 - `performance-heatmap`
 - `rate-comparison`
 
-`charts.py` 管理颜色、字号、毫米排版及导出；`extra_charts.py` 包含新增四个绘图面板；`data.py` 和 `rates.py` 分别负责价格与利率/区间计算；`street_data.py` 和 `street_charts.py` 管理 Street 扩展；`generate.py` 是命令行入口。
-
-以后可将 Supabase 查询结果转换为同样的宽表和元数据，继续使用这些模板。目前未连接 Supabase、FRED 或 MCP，未修改 Market-Data 项目。
+`charts.py` 管理颜色、字号、毫米排版及导出；`extra_charts.py` 是利率与热力图面板；`data.py` 和 `rates.py` 分别负责价格与利率/区间计算；`street_data.py` 和 `street_charts.py` 管理 Street 扩展；`weekly.py` 排周报版式；`source.py` 从数据库取数，`build.py` 出刊，`publish.py` 上传与下载；`cli.py` 是命令行入口。
 
 视觉参考：Python Graph Gallery 的[线末直接标注](https://python-graph-gallery.com/web-line-chart-with-labels-at-line-end/)。全部绘图与排版在本地重新实现。
 
@@ -170,17 +208,15 @@ date,2Y,10Y,30Y
   - **数据页**：三栏，栏间细线，图跨栏的位置断开；每张图按内容占 1–3 栏，自动排版、尽量填满每页。每张图下方紧跟一段要点（加粗小标题 + 一两句数字），再下面是来源。
   - **页眉**写报名（品牌绿）和日期、周次；**页脚**写数据更新时间、DEMO 标记和页码。
   - 设计系统的报告页是 US Letter，这里保留 A4 以便国内打印。
-- **字体**：标题用衬线体 Newsreader（英文与数字）+ Noto Serif SC（中文）；其余用 Public Sans（英文与数字）+ Noto Sans SC（中文）。Public Sans 已固化等宽数字（文件名带 TF），保证数字列对齐。全部字体随项目提供，均为 SIL Open Font License，许可证见 `assets/fonts/`。
+- **字体**：标题用衬线体 Newsreader（英文与数字）+ Noto Serif SC（中文）；其余用 Public Sans（英文与数字）+ Noto Sans SC（中文）。Public Sans 已固化等宽数字（文件名带 TF），保证数字列对齐。全部字体随项目提供，均为 SIL Open Font License，许可证见 `assets/fonts/`。中文字体按 GB2312 常用字子集化（6,763 个汉字），标题、要点或资产名里出现字体没有的字时会直接报错，不会印成方框。
 
 ## 验证
 
 ```bash
-python -m pip install -r requirements-dev.txt
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s pipeline/report/tests -t .
 ```
 
-覆盖归一化、缺失值、百分比/bp 计算、期限排序、非法输入、明确基准日期、PNG 分辨率、A4 页面尺寸及完整/选择性导出。交付前用 Poppler 渲染 PDF 检查排版和字体嵌入。
-
+覆盖归一化、缺失值、百分比/bp 计算、期限排序、非法输入、截点日期规则、最新版本取数、代理与观察日说明、未列入序列、存储权限与上传顺序、PNG 分辨率、A4 页面尺寸及完整/选择性导出。测试全部离线，用 SQLite 假数据库，不访问网络。交付前用 Poppler 渲染 PDF 检查排版和字体嵌入。
 
 ## Street 扩展数据规范
 

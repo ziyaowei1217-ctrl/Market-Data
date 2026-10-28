@@ -416,6 +416,8 @@ def delta(ax, xy, value, text_value, colors, reg, ha='left', offset=4.5, coords=
     """Delta: small triangle + signed number in the up/down colour; flat values stay ink."""
     up, down = colors
     size = size or reg.table
+    if str(text_value)[:1] not in '+−-':  # rounds to zero on the page: no arrow, no colour
+        value = 0
     color = up if value > 0 else down if value < 0 else INK
     parts = []
     if value != 0:

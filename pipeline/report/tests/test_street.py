@@ -97,3 +97,27 @@ class StreetExportTests(unittest.TestCase):
 
 
 if __name__=='__main__': unittest.main()
+
+
+class LabelPlacementTests(unittest.TestCase):
+    def test_risk_return_labels_do_not_collide_in_a_tight_cluster(self):
+        import matplotlib.pyplot as plt
+        from matplotlib.text import Annotation
+        from pipeline.report.charts import setup_theme, standalone, MM
+        from pipeline.report import street_charts  # noqa: F401
+        setup_theme()
+        data = pd.DataFrame({'return': [14.4, 15.0, 2.9, -1.3, -1.0, 2.3],
+                             'risk': [11.6, 12.5, 4.9, 4.0, 3.6, 27.0]},
+                            index=['全球股票', '美国股票', '美元指数', '美国综合债', '美国国债', '黄金'])
+        meta = {'source': '测试', 'as_of': '2026-10-23', 'updated_at': '2026-10-24 14:00 UTC', 'is_demo': False,
+                'highlight': ['美国股票', '黄金']}
+        fig = plt.figure(figsize=(114 * MM, 70 * MM))
+        standalone(fig, 'risk_return', data, meta, 2, 2, 110)
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        boxes = [a.get_window_extent(renderer) for ax in fig.axes for a in ax.texts if isinstance(a, Annotation)]
+        plt.close(fig)
+        self.assertEqual(len(boxes), 6)
+        for i in range(len(boxes)):
+            for j in range(i + 1, len(boxes)):
+                self.assertFalse(boxes[i].overlaps(boxes[j]), (i, j))

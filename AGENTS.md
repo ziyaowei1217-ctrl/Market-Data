@@ -51,6 +51,20 @@
 - Tests: `python3 -m unittest discover -s pipeline/warehouse/tests -t .` (no network).
 - See `pipeline/warehouse/README.md` for tables, formulas and operations.
 
+## Report subsystem (`pipeline/report/`)
+
+- Draws the weekly issue 市场一周 (A4 PDF plus single charts) from the warehouse; it reads
+  the warehouse only (observations, newest vintage) and never writes to it, to `output/`, or to
+  the five pipelines. `pipeline/report/issue.json` is its configuration (assets, tenors, charts).
+- Weekly cutoff is Friday; `date_rule = "asof"` uses each series' last value on or before the
+  cutoff within six days and names proxies and earlier observation dates in the issue's data notes.
+  Missing data stays blank; never interpolate or fill with zero.
+- `.github/workflows/report.yml` runs after the scheduled warehouse run and uploads to the private
+  Storage bucket `reports` (`storage.sql`: readers only). This repository is public and issues contain
+  licensed data: never upload issues as workflow artifacts or print data values to logs, and never
+  commit real-data fixtures.
+- Tests: `python3 -m unittest discover -s pipeline/report/tests -t .` (no network; SQLite fakes).
+
 ## Development workflow
 
 - Follow TDD for behavior changes and show the expected RED before implementation.

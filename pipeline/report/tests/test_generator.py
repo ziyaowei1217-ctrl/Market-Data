@@ -126,6 +126,17 @@ class StyleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '𠮷'):
             validate_style({}, pd.DataFrame({'𠮷野家': [1.0, 2.0]}), ['trends'])
 
+    def test_a_change_that_rounds_to_zero_is_drawn_flat(self):
+        import matplotlib.pyplot as plt
+        from pipeline.report.charts import delta, COMPACT, INK
+        fig, ax = plt.subplots()
+        flat = delta(ax, (0, 0), -0.03, '0.0%', ('green', 'red'), COMPACT)
+        down = delta(ax, (0, 0), -0.4, '−0.4%', ('green', 'red'), COMPACT)
+        plt.close(fig)
+        self.assertEqual(len(flat.offsetbox.get_children()), 1)
+        self.assertEqual(flat.offsetbox.get_children()[0]._text.get_color(), INK)
+        self.assertEqual(len(down.offsetbox.get_children()), 2)
+
     def test_market_colours_swap_only_for_cn(self):
         from pipeline.report.charts import market, TEAL, VERMILION
         self.assertEqual(market({})[:2], (TEAL, VERMILION))

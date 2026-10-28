@@ -262,8 +262,11 @@ DATE_RULE = ('周度截点为周五。各序列取截点前最近一个观察值
 def notes_lines(fig, meta):
     """[(name, wrapped note lines)], intro lines and closing lines of the data-notes block."""
     width = WIDTH - 30
-    rows = [(name, wrap_lines(fig, note, 'sans', COMPACT.table, width))
-            for name, note in (meta.get('series_notes') or {}).items()]
+    groups = {}  # one row per distinct note: '3M、2Y、5Y、10Y、30Y  截至10月22日'
+    for name, note in (meta.get('series_notes') or {}).items():
+        groups.setdefault(note, []).append(name)
+    rows = [(wrap_lines(fig, '、'.join(names), 'semibold', COMPACT.table, 27), wrap_lines(fig, note, 'sans', COMPACT.table, width))
+            for note, names in groups.items()]
     intro = wrap_lines(fig, DATE_RULE, 'sans', COMPACT.body, WIDTH) if meta.get('date_rule') == 'asof' else []
     tail = []
     if meta.get('omitted'):
@@ -276,7 +279,7 @@ def notes_height(fig, meta):
     if not (rows or tail):
         return 0
     reg = COMPACT
-    return (1.6 + BASELINE + len(intro) * reg.body_lead + 2 + sum(len(lines) for _, lines in rows) * reg.body_lead
+    return (1.6 + BASELINE + len(intro) * reg.body_lead + 2 + sum(max(len(a), len(b)) for a, b in rows) * reg.body_lead
             + (2 + len(tail) * reg.body_lead if tail else 0) + 2)
 
 
@@ -286,9 +289,9 @@ def draw_notes(fig, y, meta):
     rule(fig, MX, y, WIDTH)
     text(fig, MX, y + 1.6, '数据说明', reg.label, INK_MUTED, 'semibold')
     y = lines_at(fig, MX, y + 1.6 + BASELINE, intro, reg.body, reg.body_lead, INK) + 2
-    for name, lines in rows:
-        text(fig, MX, y, name, reg.table, INK, 'semibold')
-        y = lines_at(fig, MX + 30, y, lines, reg.table, reg.body_lead, INK)
+    for names, lines in rows:
+        y = max(lines_at(fig, MX, y, names, reg.table, reg.body_lead, INK, 'semibold'),
+                lines_at(fig, MX + 30, y, lines, reg.table, reg.body_lead, INK))
     if tail:
         y = lines_at(fig, MX, y + 2, tail, reg.body, reg.body_lead, INK)
     return y

@@ -1,5 +1,6 @@
 """Street-style charts in the Richard Wei Finance style; values come from validated inputs."""
 import numpy as np
+from matplotlib.transforms import Bbox
 import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
@@ -171,6 +172,50 @@ def story_risk_return(data, meta):
                  evidence_head='年化收益 / 波动率')
 
 
+LABEL_SPOTS = [(6, 0, 'left', 'center'), (6, 5, 'left', 'bottom'), (6, -5, 'left', 'top'), (0, 6, 'center', 'bottom'),
+               (0, -6, 'center', 'top'), (12, 11, 'left', 'bottom'), (12, -11, 'left', 'top'), (0, 15, 'center', 'bottom'),
+               (0, -15, 'center', 'top')]
+
+
+def place_labels(fig, ax, items, reg):
+    """Direct labels for scattered dots without overlaps: try spots around each dot (mirrored on the right half)."""
+    ax.get_xlim(), ax.get_ylim()  # settle autoscaled limits before measuring in display space
+    renderer = fig.canvas.get_renderer()
+    frame = ax.get_window_extent(renderer)
+    dots = [ax.transData.transform((x, y)) for _, x, y, _, _ in items]
+    pad = 2.5 * fig.dpi / 72
+    taken = [Bbox.from_extents(px - pad, py - pad, px + pad, py + pad) for px, py in dots]
+
+    def cost(box):
+        clash = sum(max(0, min(box.x1, o.x1) - max(box.x0, o.x0)) * max(0, min(box.y1, o.y1) - max(box.y0, o.y0))
+                    for o in taken)
+        outside = (max(0, frame.x0 - box.x0) + max(0, box.x1 - frame.x1)) * box.height
+        return clash + outside
+
+    for name, x, y, mirror, strong in items:
+        label = ax.annotate(name, (x, y), xytext=(0, 0), textcoords='offset points', fontsize=reg.body,
+                            color=INK if strong else INK_MUTED, fontproperties=font('semibold' if strong else 'sans'),
+                            annotation_clip=False)
+        best = None
+        for dx, dy, ha, va in LABEL_SPOTS:
+            if mirror:
+                dx, ha = -dx, {'left': 'right', 'right': 'left'}.get(ha, ha)
+            label.set_position((dx, dy))
+            label.set_ha(ha)
+            label.set_va(va)
+            box = label.get_window_extent(renderer)
+            score = cost(box)
+            if best is None or score < best[0]:
+                best = (score, dx, dy, ha, va, box)
+            if score == 0:
+                break
+        _, dx, dy, ha, va, box = best
+        label.set_position((dx, dy))
+        label.set_ha(ha)
+        label.set_va(va)
+        taken.append(box)
+
+
 @chart('risk_return')
 def plot_risk_return(fig, rect, data, meta, reg, s):
     chosen = highlights(meta, data.index)
@@ -188,15 +233,15 @@ def plot_risk_return(fig, rect, data, meta, reg, s):
     left = fit_left(fig, ax, rect, reg, top=title_h, bottom=bottom, right=2)
     baseline(ax, 0)
     midpoint = (data.risk.min() + data.risk.max()) / 2
-    for i, name in enumerate(sorted(data.index, key=lambda n: n in chosen)):
+    for name in sorted(data.index, key=lambda n: n in chosen):
         row = data.loc[name]
         strong = name in chosen
         ax.scatter(row.risk, row['return'], s=40 if strong else 24, color=series_color(name, chosen),
                    edgecolors=SURFACE, lw=1, zorder=5 if strong else 4)
-        right = row.risk > midpoint
-        ax.annotate(name, (row.risk, row['return']), xytext=(-6 if right else 6, 5 if i % 2 == 0 else -9),
-                    textcoords='offset points', ha='right' if right else 'left', fontsize=reg.body,
-                    color=INK if strong else INK_MUTED, fontproperties=font('semibold' if strong else 'sans'))
+    # Emphasised names choose their spot first; each label takes the first free position around its dot.
+    order = sorted(data.index, key=lambda n: n not in chosen)
+    place_labels(fig, ax, [(name, data.loc[name, 'risk'], data.loc[name, 'return'], data.loc[name, 'risk'] > midpoint,
+                            name in chosen) for name in order], reg)
     from .charts import text
     text(fig, x + left, y, '年化算术平均收益', reg.label, INK_MUTED, 'semibold')
     ax.set_xlabel('年化波动率', fontsize=reg.label, labelpad=3, color=INK_MUTED, fontproperties=font('semibold', reg.label))
