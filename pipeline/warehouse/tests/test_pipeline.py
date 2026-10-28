@@ -223,14 +223,41 @@ class MappingTests(unittest.TestCase):
                 if r["module"] in ("分机构年度增长预测", "长期资本市场假设"):
                     self.assertEqual(mapping[r["indicator_id"]]["method"], "excluded")
 
+    def test_dropped_modules_keep_only_computed_indicators(self):
+        """Valuation/earnings and options/politics boards were dropped on request (2026-10-26):
+        indicators there that already compute stay; the rest are excluded, not left as gaps."""
+        import csv
+        from pipeline.warehouse.catalog.build_catalog import INDICATORS_CSV
+        from pipeline.warehouse.catalog.mapping import load_mapping
+
+        dropped = {"股票估值", "盈利基本面", "估值历史区间", "盈利与估值补充", "期权与事件", "政治与政策",
+                   "跨资产配置", "机构专题辅助数据", "模版历史增长基准"}
+        mapping = load_mapping()
+        seen = 0
+        with INDICATORS_CSV.open(encoding="utf-8") as fh:
+            for r in csv.DictReader(fh):
+                if r["module"] in dropped:
+                    seen += 1
+                    self.assertIn(mapping[r["indicator_id"]]["method"], ("api", "proxy", "excluded"), r["indicator_id"])
+        self.assertEqual(seen, 216)
+
 
 if __name__ == "__main__":
     unittest.main()
 
 
-class ReportArchiveTests(unittest.TestCase):
+class InspectSecretTests(unittest.TestCase):
+    def test_placeholders_filled_for_request_and_masked_in_previews(self):
+        from pipeline.warehouse.inspect_sources import fill_secrets, mask_secrets
+
+        env = {"BEA_API_KEY": "abcdef123456", "PATH": "/usr/bin"}
+        self.assertEqual(fill_secrets("https://x/api?UserID={BEA_API_KEY}&y={PATH}", env), "https://x/api?UserID=abcdef123456&y={PATH}")
+        self.assertEqual(mask_secrets('{"USERID": "abcdef123456"}', env), '{"USERID": "***"}')
+
+
+class DocumentTextTests(unittest.TestCase):
     def test_html_text_keeps_table_cells_and_pdf_links(self):
-        from pipeline.warehouse.providers.reports import html_text
+        from pipeline.warehouse.providers.documents import html_text
 
         text, links = html_text(b"<html><script>x=1</script><table><tr><td>S&amp;P 500</td><td>1.2</td></tr></table>"
                                 b"<a href='/files/report.pdf'>pdf</a></html>")
@@ -238,21 +265,10 @@ class ReportArchiveTests(unittest.TestCase):
         self.assertEqual(links, ["/files/report.pdf"])
 
     def test_report_date(self):
-        from pipeline.warehouse.providers.reports import find_report_date
+        from pipeline.warehouse.providers.documents import find_report_date
 
         self.assertEqual(find_report_date("U.S. | October 19, 2026 ..."), date(2026, 10, 19))
         self.assertEqual(find_report_date("Investment Weekly 16 October 2026"), date(2026, 10, 16))
-
-    def test_download_tries_dated_candidates(self):
-        from pipeline.warehouse.providers import reports
-
-        body = b"<html>" + b"<p>Investment Weekly 16 October 2026</p>" * 40 + b"</html>"
-        session = FakeSession({"investment-weekly-16-october-2026": body})
-        got = reports.download(reports.SOURCES[3], session, today=date(2026, 10, 18), log=lambda *_: None)
-        self.assertEqual(got.report_date, date(2026, 10, 16))
-        store = SQLiteStore()
-        store.init_schema()
-        self.assertEqual(store.upsert_report_pages(got.source, got.report_date, got.url, got.pages), 1)
 
 
 class BreadthTests(unittest.TestCase):

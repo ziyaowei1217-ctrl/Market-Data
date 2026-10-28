@@ -32,3 +32,4 @@ tmp/
 *.inspect.ndjson
 *_preview.png
 *.log
+inspect_out/

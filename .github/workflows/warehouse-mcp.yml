@@ -1,0 +1,27 @@
+name: warehouse-mcp
+
+# Offline tests for the read-only MCP server (supabase/functions/warehouse-mcp).
+# Deploying is manual: supabase functions deploy warehouse-mcp --no-verify-jwt
+
+on:
+  push:
+    paths:
+      - "supabase/functions/warehouse-mcp/**"
+      - ".github/workflows/warehouse-mcp.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/warehouse-mcp/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --experimental-strip-types --no-warnings --test supabase/functions/warehouse-mcp/server.test.ts

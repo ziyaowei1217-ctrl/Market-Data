@@ -369,12 +369,49 @@ class Bea(Provider):
         return out
 
 
+@register
+class BeaDirectInvestment(Provider):
+    """BEA API dataset MNE, foreign direct investment in the U.S. by country (annual,
+    $ millions). code = "<SeriesID>:<country code>": 22 = position (historical cost,
+    year end), 23 = financial inflows without current-cost adjustment; 000 = all countries."""
+
+    name = "BEADI"
+    env_keys = ("BEA_API_KEY",)
+    batch = True
+    URL = "https://apps.bea.gov/api/data"
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        wanted = [tuple(d.code.split(":")) for d in defs]
+        payload = self.get_json(self.URL, {
+            "UserID": self.env["BEA_API_KEY"], "method": "GetData", "DataSetName": "MNE",
+            "DirectionOfInvestment": "inward", "Classification": "Country",
+            "SeriesID": ",".join(sorted({s for s, _ in wanted})), "Country": ",".join(sorted({c for _, c in wanted})),
+            "Year": ",".join(str(y) for y in range(start.year, _today().year + 1)), "ResultFormat": "JSON",
+        })
+        results = payload.get("BEAAPI", {}).get("Results", {})
+        if isinstance(results, list):
+            results = results[0] if results else {}
+        if "Error" in results:
+            raise ProviderError(f"BEA MNE: {str(results['Error'])[:200]}")
+        values: dict[tuple[str, str], dict[date, float]] = defaultdict(dict)
+        for r in results.get("Data", []):
+            v = to_float(r.get("DataValueUnformatted"))
+            if v is not None and str(r.get("Year", "")).isdigit():
+                values[(str(r.get("SeriesID")), str(r.get("RowCode")))][date(int(r["Year"]), 1, 1)] = v
+        out = []
+        for d, key in zip(defs, wanted):
+            obs = [Observation(k, v) for k, v in sorted(values.get(key, {}).items()) if k >= start]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty", "" if obs else "no data (or suppressed)"))
+        return out
+
+
 # --------------------------------------------------------------------------- EIA
 
 
 @register
 class Eia(Provider):
-    """EIA Open Data v2 via the legacy series-id route. code = e.g. PET.WCESTUS1.W."""
+    """EIA Open Data v2 via the legacy series-id route. code = e.g. PET.WCESTUS1.W.
+    params.history_only: drop periods from the current month on (STEO series carry forecasts)."""
 
     name = "EIA"
     env_keys = ("EIA_API_KEY",)
@@ -392,7 +429,25 @@ class Eia(Provider):
             value = to_float(row.get("value"))
             if obs_date and value is not None and obs_date >= start:
                 out.append(Observation(obs_date, value))
+        if d.params.get("history_only"):
+            this_month = _today().replace(day=1)
+            out = [o for o in out if o.obs_date < this_month]
         return sorted(out, key=lambda o: o.obs_date)
+
+
+@register
+class Oecd(Provider):
+    """OECD Data Explorer SDMX REST (no key). code = "<agency>,<dataflow>,<version>/<series key>"."""
+
+    name = "OECD"
+    URL = "https://sdmx.oecd.org/public/rest/data/{code}"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        frame = self.get_csv(self.URL.format(code=d.code), {"startPeriod": f"{start:%Y-%m}", "format": "csvfilewithlabels"})
+        if "TIME_PERIOD" not in frame.columns or "OBS_VALUE" not in frame.columns:
+            raise ProviderError(f"OECD: unexpected columns {list(frame.columns)[:8]}")
+        pairs = [(_period_to_date(str(p)), v) for p, v in zip(frame["TIME_PERIOD"], frame["OBS_VALUE"])]
+        return obs_from_pairs([(p, v) for p, v in pairs if p], start)
 
 
 def _period_to_date(period: str) -> date | None:

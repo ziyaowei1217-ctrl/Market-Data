@@ -1,11 +1,14 @@
-"""Download unfamiliar source files and store a text preview (private table),
-so parsers are written against real layouts rather than guesses.
+"""Development tool: download unfamiliar source files and write a text preview to a
+local folder, so parsers are written against real layouts rather than guesses.
+Nothing is written to the database (the warehouse keeps numbers only).
 
-    python3 -m pipeline.warehouse.inspect_sources        # uses catalog/inspect_urls.txt
+    python3 -m pipeline.warehouse.inspect_sources [--out inspect_out]   # uses catalog/inspect_urls.txt
 
 Line format: ``name url [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"]``.
 FOLLOW opens the first link whose text contains the words; FOLLOWAFTER opens the first
 link after the marker in the raw HTML; RAW stores raw HTML around the marker.
+``{BEA_API_KEY}``-style placeholders in a URL are filled from the environment for the
+request only: the stored URL keeps the placeholder and key values are masked in previews.
 """
 
 from __future__ import annotations
@@ -18,8 +21,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from .db.store import open_store
-from .providers.reports import BROWSER_UA, html_text, pdf_pages
+from .providers.base import USER_AGENT
+from .providers.documents import BROWSER_UA, html_text, pdf_pages
 
 URLS = Path(__file__).with_name("catalog") / "inspect_urls.txt"
 MAX_CHARS = 60_000
@@ -73,10 +76,31 @@ def anchors(html: str) -> list[tuple[str, str]]:
     return out
 
 
-def main() -> int:
+def fill_secrets(url: str, env) -> str:
+    """Replace {NAME} placeholders whose NAME is an *_API_KEY variable in ``env``."""
+    for k, v in env.items():
+        if k.endswith("_API_KEY") and v:
+            url = url.replace("{" + k + "}", v)
+    return url
+
+
+def mask_secrets(text: str, env) -> str:
+    for k, v in env.items():
+        if k.endswith("_API_KEY") and v and len(v) >= 6:
+            text = text.replace(v, "***")
+    return text
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
     import os
 
-    store = open_store(os.environ.get("WAREHOUSE_DB_URL"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=Path("inspect_out"))
+    parser.add_argument("--log-chars", type=int, default=0, help="also print the first N characters of each preview")
+    args = parser.parse_args(argv)
+    args.out.mkdir(parents=True, exist_ok=True)
+    annotated = 0
     session = requests.Session()
     today = datetime.now(timezone.utc).date()
     for line in URLS.read_text(encoding="utf-8").splitlines():
@@ -85,7 +109,7 @@ def main() -> int:
             continue
         name, rest = line.split(None, 1)
         url, mode, arg = rest.strip(), "", ""
-        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW "):
+        for keyword in (" FOLLOWAFTER ", " FOLLOW ", " RAW ", " LINKS ", " JSONKEYS ", " GREP "):
             if keyword in rest:
                 url, arg = (x.strip() for x in rest.split(keyword, 1))
                 mode, arg = keyword.strip(), arg.strip('"')
@@ -106,20 +130,62 @@ def main() -> int:
                 if hit is None:
                     raise RuntimeError(f"no link for {arg!r} on {url}")
                 url = urljoin(listing.url, hit)
-            r = session.get(url, timeout=(15, 120), headers={"User-Agent": BROWSER_UA, "Accept": "*/*"})
-            pages = [f"HTTP {r.status_code} {r.headers.get('Content-Type')} {len(r.content)} bytes\n{r.url}"]
+            ua = USER_AGENT if name.endswith("_botua") else BROWSER_UA  # some sites treat declared bots differently
+            r = session.get(fill_secrets(url, os.environ), timeout=(15, 120), headers={"User-Agent": ua, "Accept": "*/*"})
+            pages = [f"HTTP {r.status_code} {r.headers.get('Content-Type')} {len(r.content)} bytes\n{mask_secrets(r.url, os.environ)}"]
             if r.status_code == 200 and mode == "RAW":
                 raw = r.text
                 at = max(raw.find(arg.replace("&", "&amp;")), raw.find(arg))
                 pages.append(raw[max(0, at - 3000): at + 12000] if at >= 0 else "marker not found\n" + raw[:15000])
+            elif r.status_code == 200 and mode == "LINKS":  # only the links whose href or text contains arg
+                pages.append("\n".join(f"{h} | {x}" for h, x in anchors(r.text) if arg.lower() in (h + x).lower())[:MAX_CHARS])
+            elif r.status_code == 200 and mode == "JSONKEYS":  # distinct combinations of the named fields
+                pages.append(json_keys(r.json(), [f.strip() for f in arg.split(",")]))
+            elif r.status_code == 200 and mode == "GREP":  # matching lines of the preview (raw source for HTML)
+                import re
+
+                body = r.text if "html" in (r.headers.get("Content-Type") or "") else "\n".join(preview(r.content, url))
+                pages.append("\n".join(line.strip()[:600] for line in body.splitlines() if re.search(arg, line, flags=re.I))[:MAX_CHARS])
             elif r.status_code == 200:
                 pages += preview(r.content, url)
         except Exception as error:  # noqa: BLE001
             pages = [f"ERROR {type(error).__name__}: {error}"]
-        store.upsert_report_pages(f"INSPECT:{name}", today, url, pages)
-        print(f"{name}: {pages[0][:120]}")
-    store.close()
+        pages = [mask_secrets(p, os.environ) for p in pages]
+        target = args.out / f"{today:%Y%m%d}-{name}.txt"
+        target.write_text(f"{url}\n\n" + "\n\n==== page break ====\n\n".join(pages), encoding="utf-8")
+        print(f"{name}: {pages[0][:120]} -> {target}")
+        if args.log_chars:  # CI has no local folder to read back: show the start of each preview
+            text = "\n".join(p[:args.log_chars] for p in pages[:4])
+            if os.environ.get("GITHUB_ACTIONS"):
+                # annotations are readable through the REST API; GitHub keeps 10 per type per step
+                kind = ("notice", "warning", "error")[min(annotated // 10, 2)]
+                annotated += 1
+                print(f"::{kind} title=inspect {name}::{annotation_escape(text)}")
+            else:
+                print(text + f"\n==== end {name} ====")
     return 0
+
+
+def json_keys(payload, fields: list[str], width: int = 70) -> str:
+    """Distinct tuples of ``fields`` over every JSON object that has the first field."""
+    seen: dict[tuple, None] = {}
+
+    def walk(x):
+        if isinstance(x, dict):
+            if fields[0] in x:
+                seen.setdefault(tuple(str(x.get(f, ""))[:width] for f in fields), None)
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+
+    walk(payload)
+    return "\n".join(" | ".join(k) for k in seen)
+
+
+def annotation_escape(text: str) -> str:
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
 if __name__ == "__main__":

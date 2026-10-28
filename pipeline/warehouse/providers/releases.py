@@ -12,7 +12,7 @@ from urllib.parse import urljoin
 
 from ..db.store import Observation
 from .base import FetchResult, Provider, ProviderError, SeriesDef, register
-from .reports import BROWSER_UA, html_text
+from .documents import BROWSER_UA, html_text
 
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september",
           "october", "november", "december"]
@@ -349,7 +349,7 @@ class SpGlobalPmi(Provider):
     LIST = "https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en"
 
     def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
-        from .reports import pdf_pages
+        from .documents import pdf_pages
 
         listing = parse_spg_listing(self.get(self.LIST, headers={"User-Agent": BROWSER_UA}).decode("utf-8", errors="replace"))
         if not listing:

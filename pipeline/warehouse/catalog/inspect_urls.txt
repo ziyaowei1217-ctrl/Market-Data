@@ -1,2 +1,3 @@
-# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker"] — previews land in report_pages(source='INSPECT:<name>')
-spg_jp_serv      https://www.pmi.spglobal.com/Public/Release/PressReleases?language=en FOLLOWAFTER "S&P Global Japan Services PMI</span>"
+# name  url  [FOLLOW "link text" | FOLLOWAFTER "marker" | RAW "marker" | LINKS "substring" | JSONKEYS "field,field" | GREP "regex"]
+# {BEA_API_KEY} / {EIA_API_KEY} placeholders are filled from the job environment and masked in previews.
+# A name ending in _botua sends the project's declared user agent instead of a browser one.

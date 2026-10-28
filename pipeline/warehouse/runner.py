@@ -16,7 +16,7 @@ from .catalog.build_catalog import load_catalog
 from .catalog.mapping import load_mapping, load_series
 from .db.store import Observation, Store
 from .engine.weekly import compute, last_completed_friday, week_cutoffs
-from .providers import breadth, factset, files, official, releases  # noqa: F401  (registers providers)
+from .providers import breadth, factset, files, futures, manual, official, releases  # noqa: F401  (registers providers)
 from .providers.base import REGISTRY, FetchResult, SeriesDef
 
 # A value older than this (by the fastest-moving input's frequency) is reported as
@@ -74,6 +74,11 @@ SERIES_RESETS: dict[str, tuple[str, ...]] = {
     # the 50.0 no-change mark was read as the index; the NBS walk-back stopped at sidebar links
     "2026-10-26-spg-nbs-parsers": ("SPGPMI:JP:serv",) + tuple(f"NBS:{c}" for c in ("cpi_yoy", "ppi_yoy", "ip_yoy", "retail_yoy", "gdp_yoy", "mfg_pmi")),
     "2026-10-26-spg-final-parser": tuple(f"SPGPMI:{r}:{k}" for r in ("US", "EZ", "UK", "JP") for k in ("mfg", "serv", "comp")),
+    # the parser read the second block of sheet 賃金指数 (not the 5+ employees headline)
+    "2026-10-26-mhlw-first-block": ("MHLW:real_total_yoy",),
+    "2026-10-26-election-ee-date": ("MANUAL:election:EE",),  # announcement date moved earlier
+    "2026-10-26-mhlw-era-labels": ("MHLW:real_total_yoy",),  # reload so older (令和-labelled) workbooks are read
+    "2026-10-26-mhlw-january-rollover": ("MHLW:real_total_yoy",),  # "７年１月" was missed, shifting later months by a year
 }
 
 
@@ -201,7 +206,7 @@ def fetch(
     return summaries
 
 
-COMPUTED_METHODS = ("api", "proxy")
+COMPUTED_METHODS = ("api", "proxy", "manual")  # manual: only rows that have a formula
 
 
 def formulas_for(methods: Sequence[str] = COMPUTED_METHODS) -> dict[str, str]:
