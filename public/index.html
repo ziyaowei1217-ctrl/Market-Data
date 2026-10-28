@@ -1,0 +1,186 @@
+<title>资本市场周报数据台</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=PT+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="vendor/salt/index.css">
+<link rel="stylesheet" href="vendor/salt/theme-next.css">
+<link rel="stylesheet" href="vendor/perspective-viewer/css/themes.css">
+<style>
+  /* Layout: a market-data workstation — header strip with freshness, tabs, watchlist over charts.
+     Salt Next (J.P. Morgan) supplies components and tokens; these tokens cover the first paint and the chart rules. */
+  :root {
+    --cw-bg: #ffffff;
+    --cw-fg: #161616;
+    --cw-muted: #5e5e5e;
+    --cw-rule: #141414;
+    --cw-line: #e8e8e8;
+    --cw-up: #00766e;
+    --cw-down: #b93d0a;
+    --cw-accent: #1e3bd6;
+    --cw-warn: #8a5a00;
+    --cw-font: "Open Sans", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --cw-mono: "PT Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cw-bg: #121416; --cw-fg: #ececec; --cw-muted: #a3a6ab; --cw-rule: #ececec; --cw-line: #2c2f33;
+      --cw-up: #4cc2b6; --cw-down: #f2905f; --cw-accent: #8c9cff; --cw-warn: #e0b04a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --cw-bg: #121416; --cw-fg: #ececec; --cw-muted: #a3a6ab; --cw-rule: #ececec; --cw-line: #2c2f33;
+    --cw-up: #4cc2b6; --cw-down: #f2905f; --cw-accent: #8c9cff; --cw-warn: #e0b04a; color-scheme: dark;
+  }
+  .salt-theme.salt-theme {
+    --salt-typography-fontFamily-openSans: var(--cw-font);
+    --salt-typography-fontFamily-ptMono: var(--cw-mono);
+  }
+  body {
+    background: var(--salt-container-primary-background, var(--cw-bg));
+    color: var(--salt-content-primary-foreground, var(--cw-fg));
+    font-family: var(--salt-typography-fontFamily, var(--cw-font));
+  }
+  .cw-page {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 48px;
+    display: grid;
+    gap: 16px;
+  }
+  .cw-boot { padding-block: 48px; color: var(--cw-muted); font: 14px/1.6 var(--cw-font); }
+
+  .cw-head { display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: flex-end; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid var(--cw-rule); }
+  .cw-brand { display: grid; gap: 2px; min-width: 0; }
+  .cw-eyebrow { letter-spacing: .06em; text-transform: uppercase; }
+  .cw-title { margin: 0; text-wrap: balance; }
+  .cw-facts { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; align-items: flex-end; }
+  .cw-facts > div { display: grid; gap: 2px; }
+  .cw-facts dt { font-size: 12px; color: var(--salt-content-secondary-foreground, var(--cw-muted)); }
+  .cw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cw-facts .cw-refresh { align-self: center; display: flex; gap: 8px; align-items: center; }
+  .cw-account { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; }
+  .cw-login { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; box-sizing: border-box; padding-block: 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .cw-login-card { width: min(100%, 26rem); display: grid; gap: 16px; border-top: 2px solid var(--cw-rule); padding-top: 16px; }
+  .cw-login-form { display: grid; gap: 14px; }
+
+  .cw-panel { padding-top: 16px; }
+  .cw-toolbar { min-width: 0; }
+  .cw-search { flex: 1 1 26rem; max-width: 44rem; min-width: 0; display: grid; gap: 8px; }
+  .cw-combo { width: 100%; }
+  .cw-opt { display: grid; gap: 1px; padding-block: 2px; }
+  .cw-opt-name { font-weight: 600; }
+  .cw-opt-meta { font-size: 12px; color: var(--salt-content-secondary-foreground, var(--cw-muted)); }
+  .cw-range { flex-wrap: wrap; }
+  .cw-field { display: grid; gap: 4px; min-width: 0; }
+  .cw-grow { flex: 1 1 16rem; max-width: 28rem; }
+  .cw-dropdown { min-width: 16rem; max-width: 100%; }
+  .cw-hint { font-size: 13px; max-width: 46rem; }
+  .cw-loading { padding-block: 8px; }
+
+  .cw-table-wrap { overflow-x: auto; border-top: 2px solid var(--cw-rule); }
+  .cw-table { width: 100%; font-variant-numeric: tabular-nums; }
+  .cw-table .cw-num { text-align: right; white-space: nowrap; }
+  .cw-table .cw-strong { font-weight: 600; }
+  .cw-table .cw-act { width: 1%; text-align: right; }
+  .cw-ind { display: flex; gap: 10px; align-items: center; min-width: 12rem; }
+  .cw-swatch { width: 4px; align-self: stretch; min-height: 28px; flex: none; }
+  .cw-ind-text { display: grid; min-width: 0; }
+  .cw-ind-name { font-weight: 600; }
+  .cw-ind-id { font-size: 12px; color: var(--salt-content-secondary-foreground, var(--cw-muted)); }
+  .cw-up { color: var(--cw-up); }
+  .cw-down { color: var(--cw-down); }
+  .cw-flat, .cw-muted { color: var(--salt-content-secondary-foreground, var(--cw-muted)); }
+  .cw-chg-label { color: var(--salt-content-secondary-foreground, var(--cw-muted)); margin-right: 6px; font-size: 12px; }
+  .cw-tag { display: inline-block; font-size: 12px; line-height: 18px; padding: 0 6px; border: 1px solid var(--salt-separable-secondary-borderColor, var(--cw-line)); white-space: nowrap; }
+  .cw-tag-proxy { color: var(--cw-warn); border-color: currentColor; }
+  .cw-tag-manual { color: var(--cw-accent); border-color: currentColor; }
+  .cw-tag-pending, .cw-tag-excluded { color: var(--salt-content-secondary-foreground, var(--cw-muted)); border-style: dashed; }
+  .cw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .cw-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 40rem), 1fr)); gap: 24px 20px; }
+  .cw-card {
+    position: relative;
+    background: var(--salt-container-primary-background, var(--cw-bg));
+    border-top: 2px solid var(--cw-rule);
+    padding-top: 10px;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    min-width: 0;
+  }
+  .cw-overline { letter-spacing: .04em; }
+  .cw-chart-title { margin: 0; text-wrap: balance; }
+  .cw-period { font-size: 13px; }
+  .cw-legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .cw-leg { display: inline-flex; align-items: center; gap: 6px; }
+  .cw-leg-line { width: 16px; height: 2px; flex: none; }
+  .cw-leg-box { width: 10px; height: 10px; flex: none; }
+  .cw-notes { display: grid; gap: 2px; }
+  .cw-banner-compact { margin-block: 4px; }
+
+  perspective-viewer.cw-viewer { display: block; width: 100%; }
+  perspective-viewer.cw-viewer[theme] {
+    font-family: var(--cw-font);
+    --interface-monospace--font-family: var(--cw-font);
+    --plugin--background: var(--salt-container-primary-background, var(--cw-bg));
+    --d3fc-gridline--color: var(--cw-line);
+    --d3fc-axis--lines: var(--salt-separable-secondary-borderColor, var(--cw-line));
+    --d3fc-axis-ticks--color: var(--salt-content-secondary-foreground, var(--cw-muted));
+    font-variant-numeric: tabular-nums;
+  }
+  /* Perspective's own labels, in plain finance Chinese. */
+  perspective-viewer, perspective-dropdown {
+    --group-by-label--content: "分组"; --split-by-label--content: "拆分"; --sort-label--content: "排序"; --filter-label--content: "筛选";
+    --transpose-button--content: "互换"; --all-columns-label--content: "全部列"; --untitled--content: "未命名";
+    --plugin-name-datagrid--content: "表格"; --plugin-name-treemap--content: "矩形树图"; --plugin-name-sunburst--content: "旭日图"; --plugin-name-heatmap--content: "热力图";
+    --plugin-name-x-bar--content: "横向柱状图"; --plugin-name-y-bar--content: "柱状图"; --plugin-name-y-line--content: "折线图"; --plugin-name-x-y-line--content: "XY 折线图";
+    --plugin-name-x-y-scatter--content: "XY 散点图"; --plugin-name-y-scatter--content: "散点图"; --plugin-name-y-area--content: "面积图"; --plugin-name-ohlc--content: "OHLC"; --plugin-name-candlestick--content: "K 线图";
+    --column-selector-column-columns--content: "列"; --column-selector-column-x-axis--content: "X 轴"; --column-selector-column-y-axis--content: "Y 轴";
+    --column-selector-column-color--content: "颜色"; --column-selector-column-size--content: "大小"; --column-selector-column-symbol--content: "符号";
+    --column-selector-column-label--content: "标签"; --column-selector-column-tooltip--content: "提示"; --add-expression-button--content: "新建计算列";
+    --no-results--content: "无效列"; --datagrid-column-edit-button--content: "编辑"; --copy-button--content: "复制"; --export-button--content: "导出"; --reset-button--content: "重置";
+    --scroll-lock-toggle--content: "自由滚动"; --scroll-lock-alt-toggle--content: "对齐滚动";
+    --color-label--content: "颜色"; --format-label--content: "格式"; --timezone-label--content: "时区"; --date-style-label--content: "日期样式"; --time-style-label--content: "时间样式";
+    --foreground-label--content: "前景"; --background-label--content: "背景"; --series-label--content: "序列"; --color-range-label--content: "颜色范围"; --style-label--content: "样式";
+    --fractional-digits-label--content: "小数位"; --significant-digits-label--content: "有效数字"; --use-grouping-label--content: "千分位"; --sign-display-label--content: "正负号";
+    --style-tab-label--content: "样式"; --attributes-tab-label--content: "属性";
+  }
+  .cw-viewer-chart { height: 320px; }
+  .cw-grid-card { padding-top: 0; }
+  .cw-viewer-grid { height: min(70vh, 620px); min-height: 360px; }
+  .cw-viewer-coverage { height: 940px; }
+  .cw-overlay { position: absolute; inset: 0 auto auto 0; padding: 12px; z-index: 2; }
+
+  .cw-facts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: 16px; border-top: 2px solid var(--cw-rule); padding-top: 12px; }
+  .cw-fact { display: grid; gap: 2px; align-content: start; }
+  .cw-fact-num { font-variant-numeric: tabular-nums; }
+
+  .cw-foot { display: grid; gap: 4px; border-top: 1px solid var(--cw-line); padding-top: 12px; }
+  .cw-toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    max-width: min(36rem, calc(100% - 32px));
+    padding: 8px 14px;
+    background: var(--cw-fg);
+    color: var(--cw-bg);
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .18);
+  }
+  @media (max-width: 640px) {
+    .cw-hide-sm { display: none; }
+    .cw-facts { gap: 8px 18px; }
+    .cw-viewer-chart { height: 260px; }
+    .cw-dropdown { min-width: 0; width: 100%; }
+    .cw-chg-label { display: none; }
+    .cw-ind { min-width: 9rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+<div id="app"><div class="cw-page"><p class="cw-boot">正在打开资本市场周报数据台…</p></div></div>
+<script src="app.js"></script>

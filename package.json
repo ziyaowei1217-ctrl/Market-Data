@@ -1,0 +1,25 @@
+{
+  "name": "capital-weekly-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "资本市场周报数据台：J.P. Morgan Salt 界面 + FINOS Perspective 表格图表，数据来自 Supabase 周报数据库",
+  "scripts": {
+    "build": "node build.mjs web",
+    "build:artifact": "node build.mjs artifact"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@finos/perspective": "3.8.0",
+    "@finos/perspective-viewer": "3.8.0",
+    "@finos/perspective-viewer-d3fc": "3.8.0",
+    "@finos/perspective-viewer-datagrid": "3.8.0",
+    "@salt-ds/core": "1.72.0",
+    "@salt-ds/icons": "1.18.3",
+    "@salt-ds/theme": "1.47.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
