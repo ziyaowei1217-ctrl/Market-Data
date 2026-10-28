@@ -2,10 +2,9 @@ name: report
 
 # Weekly issue: after Saturday's scheduled warehouse run succeeds, draw 市场一周 from the
 # warehouse and upload it to the private Storage bucket "reports" (readers only).
-# Secrets (Settings → Secrets and variables → Actions):
-#   WAREHOUSE_DB_URL     Supabase session-pooler connection string (required, shared with warehouse)
-#   SUPABASE_SECRET_KEY  Supabase → Settings → API Keys → secret key (sb_secret_…); without it a
-#                        manual run builds and checks the issue only, and a weekly run fails
+# Secret: WAREHOUSE_DB_URL (shared with the warehouse workflow). Uploading needs nothing else:
+# publish writes a one-time ticket to the database and the report-upload Edge Function trades
+# it for signed upload links.
 # This repository is public: never upload the issue as a workflow artifact, and never print data
 # values to the log. Issues contain licensed data (MSCI) that is for the reader list only.
 # workflow_run only fires from the default branch's copy of this file.
@@ -69,15 +68,6 @@ jobs:
       - name: Publish to Storage
         env:
           WAREHOUSE_DB_URL: ${{ secrets.WAREHOUSE_DB_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            if [ "$EVENT" = "workflow_run" ]; then
-              echo "::error::SUPABASE_SECRET_KEY is not set: this week's issue was built but not published"; exit 1
-            fi
-            echo "::warning::SUPABASE_SECRET_KEY is not set; the issue was built but not uploaded"
-            exit 0
-          fi
           python -m pipeline.report publish outputs/weekly | tee -a "$GITHUB_STEP_SUMMARY"

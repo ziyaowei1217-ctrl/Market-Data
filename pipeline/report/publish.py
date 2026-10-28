@@ -3,74 +3,108 @@
 Layout of the private bucket "reports" (see storage.sql):
     weekly/2026-10-23/weekly-report.pdf, issue.json, <chart>.png / <chart>.pdf
     weekly/latest.json      issue.json of the newest issue plus its "path"; written last
+
+Publishing needs only the warehouse connection string: it inserts a one-time ticket into
+public.report_upload_tokens, and the report-upload Edge Function trades it for signed upload links.
 """
+import hashlib
 import json
 import os
 from pathlib import Path
+import secrets
 
 BUCKET = 'reports'
 STORAGE_SQL = Path(__file__).with_name('storage.sql')
 TYPES = {'.pdf': 'application/pdf', '.png': 'image/png', '.json': 'application/json'}
 
 
-def ensure_bucket(db_url):
-    """Create the private bucket and its readers-only policy (idempotent)."""
-    import psycopg
-    with psycopg.connect(db_url, autocommit=True, prepare_threshold=None) as conn:
-        conn.execute(STORAGE_SQL.read_text(encoding='utf-8'))
+UPLOAD_FUNCTION = 'functions/v1/report-upload'
 
 
-def _post(url, body, headers):
+def new_ticket():
+    """A random upload token and the sha256 hex digest stored for it."""
+    token = secrets.token_hex(32)
+    return token, hashlib.sha256(token.encode()).hexdigest()
+
+
+class Storage:
+    """Database side of publishing: bucket and policy, one-time upload tickets, the newest issue so far."""
+
+    def __init__(self, db_url):
+        import psycopg
+        self.conn = psycopg.connect(db_url, autocommit=True, prepare_threshold=None)
+
+    def prepare(self):
+        self.conn.execute(STORAGE_SQL.read_text(encoding='utf-8'))
+
+    def ticket(self):
+        token, digest = new_ticket()
+        self.conn.execute('insert into public.report_upload_tokens (token_hash) values (%s)', [digest])
+        return token, digest
+
+    def drop(self, digest):
+        self.conn.execute('delete from public.report_upload_tokens where token_hash = %s', [digest])
+
+    def newest(self):
+        """The latest issue date already in the bucket (from weekly/<date>/issue.json), or None."""
+        row = self.conn.execute(
+            "select max(substring(name from '^weekly/([0-9]{4}-[0-9]{2}-[0-9]{2})/issue[.]json$')) "
+            "from storage.objects where bucket_id = %s", [BUCKET]).fetchone()
+        return row[0] if row else None
+
+    def close(self):
+        self.conn.close()
+
+
+def _sign(url, token):
+    """Ask the report-upload function for signed upload links: {path: url}."""
     import requests
-    response = requests.post(url, data=body, headers=headers, timeout=120)
+
+    def sign(paths):
+        response = requests.post(f'{url}/{UPLOAD_FUNCTION}', json={'token': token, 'paths': list(paths)}, timeout=60)
+        if response.status_code != 200:
+            raise OSError(f'无法取得上传链接（{response.status_code}）')
+        return {item['path']: item['url'] for item in response.json()['uploads']}
+    return sign
+
+
+def _put(url, body, headers):
+    import requests
+    from pipeline.warehouse.client import PUBLISHABLE_KEY  # identifies the project at the gateway; grants nothing
+    response = requests.put(url, data=body, headers={**headers, 'apikey': PUBLISHABLE_KEY}, timeout=120)
     if response.status_code >= 300:
-        raise OSError(f'上传失败 {response.status_code}：{url.rsplit("/", 1)[-1]}')
+        raise OSError(f'上传失败 {response.status_code}：{url.split("?")[0].rsplit("/", 1)[-1]}')
 
 
-def _auth(key):
-    # A secret key (sb_secret_…) goes in apikey only: the API gateway swaps it for a service-role token.
-    # A legacy service_role JWT is also sent as the bearer token.
-    return {'apikey': key, 'Authorization': f'Bearer {key}'} if key.startswith('eyJ') else {'apikey': key}
+def _headers(content_type, cache='max-age=3600'):
+    return {'Content-Type': content_type, 'x-upsert': 'true', 'cache-control': cache}
 
 
-def _headers(key, content_type, cache='max-age=3600'):
-    return {**_auth(key), 'Content-Type': content_type, 'x-upsert': 'true', 'cache-control': cache}
+def publish(folder, sign, put=None, newest=None):
+    """Upload the files a build listed in issue.json; point latest.json at it unless a newer issue is out.
 
-
-def _current(url, headers):
-    """The published latest.json, or None when there is none yet."""
-    import requests
-    response = requests.get(url, headers=headers, timeout=60)
-    if response.status_code in (400, 404):
-        return None
-    response.raise_for_status()
-    return response.content
-
-
-def publish(folder, url, key, put=None, get=None):
-    """Upload the files a build listed in issue.json, then point latest.json at it unless a newer issue is out.
-
-    Returns the object paths written; latest.json goes last, once the issue is complete."""
-    put, get = put or _post, get or _current
+    `sign(paths)` returns a signed upload link per path. Returns the object paths written;
+    latest.json goes last, once the issue is complete."""
+    put = put or _put
     folder = Path(folder)
     summary = json.loads((folder / 'issue.json').read_text(encoding='utf-8'))
     prefix = f"weekly/{summary['as_of']}"
     names = list(dict.fromkeys(list(summary.get('files', [])) + ['issue.json']))
-    paths = []
     for name in names:
         path = folder / name
         if Path(name).name != name or path.suffix not in TYPES or not path.is_file():
             raise ValueError(f'issue.json 列出的文件不存在或类型不对：{name}')
-        target = f'{prefix}/{name}'
-        put(f'{url}/storage/v1/object/{BUCKET}/{target}', path.read_bytes(), _headers(key, TYPES[path.suffix]))
-        paths.append(target)
-    current = get(f'{url}/storage/v1/object/{BUCKET}/weekly/latest.json', _auth(key))
-    if current and json.loads(current).get('as_of', '') > summary['as_of']:
-        return paths  # a backfilled older week: the newer issue stays latest
+    move_latest = not newest or summary['as_of'] >= newest   # a backfilled older week leaves latest alone
+    targets = [f'{prefix}/{name}' for name in names]
+    links = sign(targets + (['weekly/latest.json'] if move_latest else []))
+    for name, target in zip(names, targets):
+        path = folder / name
+        put(links[target], path.read_bytes(), _headers(TYPES[path.suffix]))
+    if not move_latest:
+        return targets
     latest = json.dumps({**summary, 'path': prefix}, ensure_ascii=False, indent=2).encode('utf-8')
-    put(f'{url}/storage/v1/object/{BUCKET}/weekly/latest.json', latest,
-        _headers(key, 'application/json', cache='max-age=60'))
-    return paths + ['weekly/latest.json']
+    put(links['weekly/latest.json'], latest, _headers('application/json', cache='max-age=60'))
+    return targets + ['weekly/latest.json']
 
 
 def _get(url, headers):
@@ -108,14 +142,22 @@ def main(argv=None):
                                      description='把 build 生成的一期上传到 Supabase Storage（仅读者可下载）。')
     parser.add_argument('folder', type=Path, nargs='?', default=Path('outputs/weekly'))
     args = parser.parse_args(argv)
-    key = os.environ.get('SUPABASE_SECRET_KEY')
-    if not key:
-        parser.error('请设置 SUPABASE_SECRET_KEY（Supabase → Settings → API Keys 的 secret key）。')
+    db_url = os.environ.get('WAREHOUSE_DB_URL')
+    if not db_url:
+        parser.error('请设置 WAREHOUSE_DB_URL（数据库连接串）。')
     from pipeline.warehouse.client import SUPABASE_URL
+    url = os.environ.get('WAREHOUSE_REST_URL', SUPABASE_URL)
     try:
-        if os.environ.get('WAREHOUSE_DB_URL'):
-            ensure_bucket(os.environ['WAREHOUSE_DB_URL'])
-        paths = publish(args.folder, os.environ.get('WAREHOUSE_REST_URL', SUPABASE_URL), key)
+        store = Storage(db_url)
+        try:
+            store.prepare()
+            token, digest = store.ticket()
+            try:
+                paths = publish(args.folder, _sign(url, token), newest=store.newest())
+            finally:
+                store.drop(digest)
+        finally:
+            store.close()
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(2, f'无法发布：{exc}\n')
     note = '' if paths[-1] == 'weekly/latest.json' else '；库里已有更新的一期，latest 未改'

@@ -39,11 +39,12 @@ python3 -m pipeline.report latest --week 2026-10-16    # 某一期
 
 **存储与权限**：私有桶 `reports`，路径 `weekly/<周五>/…`，最后写 `weekly/latest.json`。`storage.sql` 只给读者名单开放读取，发布时自动执行（可重复执行）。本仓库是公开的，而周报含 MSCI 等授权数据，所以工作流**不上传 artifact、不在日志里打印数值**；周报只在读者名单内学习使用，不要转发到名单外。
 
-**一次性设置**（仓库所有者）：
+**上传不需要额外的密钥**：发布时用已有的 `WAREHOUSE_DB_URL` 往 `public.report_upload_tokens` 写一张 30 分钟有效的一次性票据（只存哈希，API 用户看不到这张表），Edge Function `report-upload` 核对票据后给出签名上传链接，用完即删。Supabase 的服务密钥始终留在 Supabase 里。
 
-1. 在 GitHub → Settings → Secrets and variables → Actions 添加 `SUPABASE_SECRET_KEY`（Supabase → Project Settings → API Keys 里的 secret key，`sb_secret_` 开头）。没设时，手动运行只出刊和检查、不上传；每周自动运行会直接报错，提醒你补上。
-2. `report.yml` 由 `workflow_run` 触发，只认默认分支（main）上的那份，所以要把 warehouse 分支合进 main 才会每周自动跑；在 Actions 页面手动 Run workflow 可以随时补出某一期；补的是旧的一期时，`latest.json` 仍指向更新的那期。不填日期时取最近一个已收盘的周五（周五当天取上周五）。
-3. 连接器的 `weekly_report` 工具需要重新部署一次：`supabase functions deploy warehouse-mcp --no-verify-jwt`。
+**运行条件**：
+
+- `report.yml` 由 `workflow_run` 触发，只认默认分支（main）上的那份，所以 warehouse 分支要合进 main 才会每周自动跑。在 Actions 页面手动 Run workflow 可以随时补出某一期；补的是旧的一期时，`latest.json` 仍指向更新的那期。不填日期时取最近一个已收盘的周五（周五当天取上周五）。
+- 两个 Edge Function 都以 `--no-verify-jwt` 部署，改了代码要重新部署：`supabase functions deploy report-upload --no-verify-jwt`、`supabase functions deploy warehouse-mcp --no-verify-jwt`。
 
 ## 图表
 
