@@ -1,0 +1,7 @@
+label,value,kind
+期初利润,100,total
+销量,25,change
+价格,18,change
+原料成本,-12,change
+运营费用,-8,change
+期末利润,123,total

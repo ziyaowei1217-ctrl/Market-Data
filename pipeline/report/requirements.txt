@@ -1,0 +1,3 @@
+-r ../warehouse/requirements.txt
+matplotlib>=3.8,<4
+pypdf>=5,<7
