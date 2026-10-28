@@ -10,7 +10,7 @@ import { CloseIcon, SearchIcon, RefreshIcon } from "@salt-ds/icons";
 import { call, describeError, fetchMeta, fetchWeekly, getMcp, rowsOf } from "./data.js";
 import { loadPerspective, polishChart, SCHEMAS, trueMinus } from "./psp.js";
 import { noteHealth } from "./health.js";
-import { confirmSession, discardSession, getSession, onSession, signIn, signOut } from "./auth.js";
+import { confirmSession, discardSession, getSession, onSession, requestReset, setPassword, signIn, signOut, signUp, takeSessionFromLink } from "./auth.js";
 import {
   cleanQuery, conclusion, decimals, fmtChange, fmtDay, fmtLocal, fmtValue, isChangeSeries,
   isoDay, METHOD_LABEL, num, STATUS_LABEL, summarize, toDate,
@@ -769,63 +769,133 @@ function Shell({ mode, account, onSignOut }) {
 }
 
 // ---------- website sign-in ----------
-function Login() {
+const LINK_NOTE = "点邮件里的链接完成验证，然后回到这个网址登录。";
+
+function Login({ notice }) {
+  const [mode, setMode] = useState("login"); // login | signup | reset
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [info, setInfo] = useState(notice || "");
+  const go = (m) => { setMode(m); setErr(""); setInfo(""); };
+
+  const checkReader = async () => {
+    try {
+      await call("data_status", {}, { fresh: true });
+      confirmSession();
+    } catch (x) {
+      await discardSession();
+      setErr(x.code === "not_reader" ? "这个账号还不在读者名单上。把你的邮箱发给管理员，加入名单后再登录。" : x.message || "登录后读取数据失败。");
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password) { setErr("请填写邮箱和密码。"); return; }
-    setBusy(true);
     setErr("");
+    setInfo("");
+    if (!email.trim()) { setErr("请填写邮箱。"); return; }
+    if (mode !== "reset" && !password) { setErr("请填写密码。"); return; }
+    if (mode === "signup" && password.length < 6) { setErr("密码至少 6 位。"); return; }
+    setBusy(true);
     try {
-      await signIn(email, password);
-      try {
-        await call("data_status", {}, { fresh: true });
-        confirmSession();
-      } catch (x) {
-        await discardSession();
-        setErr(x.code === "not_reader" ? "这个账号还不在读者名单上。把你的邮箱发给管理员，加入名单后再登录。" : x.message || "登录后读取数据失败。");
+      if (mode === "login") {
+        await signIn(email, password);
+        await checkReader();
+      } else if (mode === "signup") {
+        const r = await signUp(email, password);
+        if (r.signedIn) { confirmSession(r.session); }
+        else { setMode("login"); setPw(""); setInfo(`验证邮件已发到 ${email.trim()}。${LINK_NOTE}`); }
+      } else {
+        await requestReset(email);
+        setMode("login");
+        setInfo(`重设密码的邮件已发到 ${email.trim()}，点邮件里的链接设置新密码。`);
       }
     } catch (x) {
-      setErr(x.message || "登录失败。");
+      setErr(x.message || "操作失败。");
     } finally {
       setBusy(false);
     }
   };
+
+  const title = mode === "signup" ? "注册账号" : mode === "reset" ? "重设密码" : "登录";
   return (
     <div className="cw-login">
       <div className="cw-login-card">
         <Text styleAs="label" color="secondary" className="cw-eyebrow">Capital Weekly · 周报数据库</Text>
         <H1 className="cw-title">资本市场周报数据台</H1>
-        <Text color="secondary">用读者名单上的邮箱和密码登录。账号由管理员开通，忘记密码也请找管理员重置。</Text>
+        <Text color="secondary">
+          {mode === "signup"
+            ? "用你的邮箱注册并自己设一个密码（至少 6 位）。注册后要点验证邮件里的链接；只有读者名单上的邮箱能看到数据。"
+            : mode === "reset"
+              ? "填你注册用的邮箱，我们会发一封重设密码的邮件。"
+              : "用读者名单上的邮箱登录。第一次用请先注册。"}
+        </Text>
         <form className="cw-login-form" onSubmit={submit} noValidate>
+          <H2 className="cw-login-h">{title}</H2>
           <FormField>
             <FormFieldLabel>邮箱</FormFieldLabel>
             <Input bordered value={email} onChange={(e) => setEmail(e.target.value)} inputProps={{ id: "email", name: "email", type: "email", autoComplete: "username", inputMode: "email" }} />
           </FormField>
-          <FormField>
-            <FormFieldLabel>密码</FormFieldLabel>
-            <Input bordered value={password} onChange={(e) => setPassword(e.target.value)} inputProps={{ id: "password", name: "password", type: "password", autoComplete: "current-password" }} />
-          </FormField>
-          {err ? (
-            <Banner status="error">
-              <BannerContent><Text>{err}</Text></BannerContent>
-            </Banner>
+          {mode !== "reset" ? (
+            <FormField>
+              <FormFieldLabel>{mode === "signup" ? "设置密码" : "密码"}</FormFieldLabel>
+              <Input bordered value={password} onChange={(e) => setPw(e.target.value)} inputProps={{ id: "password", name: "password", type: "password", autoComplete: mode === "signup" ? "new-password" : "current-password" }} />
+            </FormField>
           ) : null}
-          <Button type="submit" sentiment="accented" appearance="solid" disabled={busy}>{busy ? "正在登录…" : "登录"}</Button>
+          {err ? <Banner status="error"><BannerContent><Text>{err}</Text></BannerContent></Banner> : null}
+          {info ? <Banner status="success"><BannerContent><Text>{info}</Text></BannerContent></Banner> : null}
+          <Button type="submit" sentiment="accented" appearance="solid" disabled={busy}>
+            {busy ? "请稍候…" : mode === "signup" ? "注册" : mode === "reset" ? "发送重设邮件" : "登录"}
+          </Button>
         </form>
+        <div className="cw-login-links">
+          {mode !== "login" ? <Button appearance="transparent" sentiment="neutral" onClick={() => go("login")}>返回登录</Button> : null}
+          {mode !== "signup" ? <Button appearance="transparent" sentiment="neutral" onClick={() => go("signup")}>第一次用？注册账号</Button> : null}
+          {mode === "login" ? <Button appearance="transparent" sentiment="neutral" onClick={() => go("reset")}>忘记密码</Button> : null}
+        </div>
         <Text styleAs="label" color="secondary">MSCI、ISM、S&amp;P Global 等数据仅供名单内同学学习使用。</Text>
       </div>
     </div>
   );
 }
 
+function NewPassword({ onDone }) {
+  const [password, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const submit = async (e) => {
+    e.preventDefault();
+    if (password.length < 6) { setErr("密码至少 6 位。"); return; }
+    setBusy(true);
+    setErr("");
+    try { await setPassword(password); onDone(); } catch (x) { setErr(x.message || "修改失败。"); } finally { setBusy(false); }
+  };
+  return (
+    <div className="cw-login">
+      <div className="cw-login-card">
+        <Text styleAs="label" color="secondary" className="cw-eyebrow">Capital Weekly · 周报数据库</Text>
+        <H1 className="cw-title">设置新密码</H1>
+        <form className="cw-login-form" onSubmit={submit} noValidate>
+          <FormField>
+            <FormFieldLabel>新密码（至少 6 位）</FormFieldLabel>
+            <Input bordered value={password} onChange={(e) => setPw(e.target.value)} inputProps={{ id: "new-password", name: "new-password", type: "password", autoComplete: "new-password" }} />
+          </FormField>
+          {err ? <Banner status="error"><BannerContent><Text>{err}</Text></BannerContent></Banner> : null}
+          <Button type="submit" sentiment="accented" appearance="solid" disabled={busy}>{busy ? "请稍候…" : "保存新密码"}</Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AuthGate({ mode }) {
+  const [link] = useState(() => takeSessionFromLink());
   const [session, setSession] = useState(getSession);
+  const [needPassword, setNeedPassword] = useState(() => !!(link && link.type === "recovery"));
   useEffect(() => onSession(setSession), []);
-  if (!session) return <Login />;
+  if (!session) return <Login notice={link && link.error ? `链接无效或已过期：${link.error}` : ""} />;
+  if (needPassword) return <NewPassword onDone={() => setNeedPassword(false)} />;
   return <Shell mode={mode} account={session.email} onSignOut={() => signOut()} />;
 }
 
