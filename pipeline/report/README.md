@@ -41,8 +41,8 @@ python3 -m pipeline.report latest --week 2026-10-16    # 某一期
 
 **一次性设置**（仓库所有者）：
 
-1. 在 GitHub → Settings → Secrets and variables → Actions 添加 `SUPABASE_SECRET_KEY`（Supabase → Project Settings → API Keys 里的 secret key，`sb_secret_` 开头）。没设时工作流照常出刊和检查，只是不上传。
-2. `report.yml` 由 `workflow_run` 触发，只认默认分支（main）上的那份，所以要把 warehouse 分支合进 main 才会每周自动跑；在 Actions 页面手动 Run workflow 可以随时补出某一期。
+1. 在 GitHub → Settings → Secrets and variables → Actions 添加 `SUPABASE_SECRET_KEY`（Supabase → Project Settings → API Keys 里的 secret key，`sb_secret_` 开头）。没设时，手动运行只出刊和检查、不上传；每周自动运行会直接报错，提醒你补上。
+2. `report.yml` 由 `workflow_run` 触发，只认默认分支（main）上的那份，所以要把 warehouse 分支合进 main 才会每周自动跑；在 Actions 页面手动 Run workflow 可以随时补出某一期；补的是旧的一期时，`latest.json` 仍指向更新的那期。不填日期时取最近一个已收盘的周五（周五当天取上周五）。
 3. 连接器的 `weekly_report` 工具需要重新部署一次：`supabase functions deploy warehouse-mcp --no-verify-jwt`。
 
 ## 图表

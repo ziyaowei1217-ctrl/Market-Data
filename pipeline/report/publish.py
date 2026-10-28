@@ -27,23 +27,46 @@ def _post(url, body, headers):
         raise OSError(f'上传失败 {response.status_code}：{url.rsplit("/", 1)[-1]}')
 
 
+def _auth(key):
+    # A secret key (sb_secret_…) goes in apikey only: the API gateway swaps it for a service-role token.
+    # A legacy service_role JWT is also sent as the bearer token.
+    return {'apikey': key, 'Authorization': f'Bearer {key}'} if key.startswith('eyJ') else {'apikey': key}
+
+
 def _headers(key, content_type, cache='max-age=3600'):
-    # A secret key (sb_secret_…) goes in apikey only; the API gateway swaps it for a service-role token.
-    return {'apikey': key, 'Content-Type': content_type, 'x-upsert': 'true', 'cache-control': cache}
+    return {**_auth(key), 'Content-Type': content_type, 'x-upsert': 'true', 'cache-control': cache}
 
 
-def publish(folder, url, key, put=None):
-    """Upload a built issue folder; returns the object paths. latest.json goes last, once the issue is complete."""
-    put = put or _post
+def _current(url, headers):
+    """The published latest.json, or None when there is none yet."""
+    import requests
+    response = requests.get(url, headers=headers, timeout=60)
+    if response.status_code in (400, 404):
+        return None
+    response.raise_for_status()
+    return response.content
+
+
+def publish(folder, url, key, put=None, get=None):
+    """Upload the files a build listed in issue.json, then point latest.json at it unless a newer issue is out.
+
+    Returns the object paths written; latest.json goes last, once the issue is complete."""
+    put, get = put or _post, get or _current
     folder = Path(folder)
     summary = json.loads((folder / 'issue.json').read_text(encoding='utf-8'))
     prefix = f"weekly/{summary['as_of']}"
-    files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix in TYPES)
+    names = list(dict.fromkeys(list(summary.get('files', [])) + ['issue.json']))
     paths = []
-    for path in files:
-        target = f'{prefix}/{path.name}'
+    for name in names:
+        path = folder / name
+        if Path(name).name != name or path.suffix not in TYPES or not path.is_file():
+            raise ValueError(f'issue.json 列出的文件不存在或类型不对：{name}')
+        target = f'{prefix}/{name}'
         put(f'{url}/storage/v1/object/{BUCKET}/{target}', path.read_bytes(), _headers(key, TYPES[path.suffix]))
         paths.append(target)
+    current = get(f'{url}/storage/v1/object/{BUCKET}/weekly/latest.json', _auth(key))
+    if current and json.loads(current).get('as_of', '') > summary['as_of']:
+        return paths  # a backfilled older week: the newer issue stays latest
     latest = json.dumps({**summary, 'path': prefix}, ensure_ascii=False, indent=2).encode('utf-8')
     put(f'{url}/storage/v1/object/{BUCKET}/weekly/latest.json', latest,
         _headers(key, 'application/json', cache='max-age=60'))
@@ -95,7 +118,8 @@ def main(argv=None):
         paths = publish(args.folder, os.environ.get('WAREHOUSE_REST_URL', SUPABASE_URL), key)
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(2, f'无法发布：{exc}\n')
-    print(f'已上传 {len(paths)} 个文件到 {BUCKET}/{paths[0].rsplit("/", 1)[0]}')
+    note = '' if paths[-1] == 'weekly/latest.json' else '；库里已有更新的一期，latest 未改'
+    print(f'已上传 {len(paths)} 个文件到 {BUCKET}/{paths[0].rsplit("/", 1)[0]}{note}')
 
 
 def latest_main(argv=None):

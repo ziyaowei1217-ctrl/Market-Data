@@ -8,15 +8,21 @@ REPO = Path(__file__).resolve().parents[3]
 REPORT = REPO / 'pipeline' / 'report'
 
 
-def built_issue(folder):
+def built_issue(folder, as_of='2026-10-23'):
     folder = Path(folder)
     (folder / 'weekly-report.pdf').write_bytes(b'%PDF-1.4 issue')
     (folder / 'weekly-returns.png').write_bytes(b'png')
     (folder / 'weekly-returns.pdf').write_bytes(b'%PDF-1.4 chart')
-    (folder / 'issue.json').write_text(json.dumps({'as_of': '2026-10-23', 'pages': 6, 'charts': ['returns'],
-                                                   'files': ['weekly-report.pdf', 'weekly-returns.png']}),
+    (folder / 'yield-curve.png').write_bytes(b'stale chart from an earlier build in the same folder')
+    (folder / 'issue.json').write_text(json.dumps({'as_of': as_of, 'pages': 6, 'charts': ['returns'],
+                                                   'files': ['weekly-report.pdf', 'weekly-returns.png',
+                                                             'weekly-returns.pdf']}),
                                        encoding='utf-8')
     return folder
+
+
+def no_latest(url, headers):
+    return None
 
 
 class PublishTests(unittest.TestCase):
@@ -25,12 +31,13 @@ class PublishTests(unittest.TestCase):
         calls = []
         with tempfile.TemporaryDirectory() as folder:
             paths = publish(built_issue(folder), 'https://x.supabase.co', 'sb_secret_test',
-                            put=lambda url, body, headers: calls.append((url, body, headers)))
+                            put=lambda url, body, headers: calls.append((url, body, headers)), get=no_latest)
         urls = [url for url, _, _ in calls]
         base = 'https://x.supabase.co/storage/v1/object/reports/'
         self.assertEqual(urls[-1], base + 'weekly/latest.json')
         self.assertEqual(set(urls[:-1]), {base + 'weekly/2026-10-23/' + name for name in
                                           ('weekly-report.pdf', 'issue.json', 'weekly-returns.png', 'weekly-returns.pdf')})
+        self.assertEqual(len(urls), 5)
         self.assertIn('weekly/2026-10-23/weekly-report.pdf', paths)
         for url, body, headers in calls:
             self.assertEqual(headers['apikey'], 'sb_secret_test')
@@ -41,6 +48,23 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(types['weekly-returns.png'], 'image/png')
         latest = json.loads(calls[-1][1])
         self.assertEqual((latest['as_of'], latest['path']), ('2026-10-23', 'weekly/2026-10-23'))
+        self.assertNotIn(base + 'weekly/2026-10-23/yield-curve.png', urls)  # not part of this build
+
+    def test_backfilling_an_older_week_leaves_latest_alone(self):
+        from pipeline.report.publish import publish
+        calls = []
+        current = json.dumps({'as_of': '2026-10-23', 'path': 'weekly/2026-10-23'}).encode()
+        with tempfile.TemporaryDirectory() as folder:
+            paths = publish(built_issue(folder, as_of='2026-10-16'), 'https://x.supabase.co', 'sb_secret_test',
+                            put=lambda url, body, headers: calls.append(url), get=lambda url, headers: current)
+        self.assertFalse(any(url.endswith('weekly/latest.json') for url in calls))
+        self.assertNotIn('weekly/latest.json', paths)
+        self.assertTrue(all('/weekly/2026-10-16/' in url for url in calls))
+
+    def test_legacy_service_role_keys_also_go_as_a_bearer_token(self):
+        from pipeline.report.publish import _headers
+        self.assertNotIn('Authorization', _headers('sb_secret_x', 'application/pdf'))
+        self.assertEqual(_headers('eyJhbGciOi.x.y', 'application/pdf')['Authorization'], 'Bearer eyJhbGciOi.x.y')
 
     def test_reader_downloads_the_latest_issue_with_their_own_session(self):
         from pipeline.report.publish import fetch_issue
@@ -98,6 +122,22 @@ class StorageAccessTests(unittest.TestCase):
         self.assertIn('python -m pipeline.report publish', workflow)
         self.assertNotIn('upload-artifact', workflow)
         self.assertNotIn('upload-pages-artifact', workflow)
+
+    def test_workflow_steps_fail_loudly_and_see_only_the_secrets_they_use(self):
+        workflow = (REPO / '.github' / 'workflows' / 'report.yml').read_text(encoding='utf-8')
+        steps = workflow.split('\n      - ')[1:]
+        for step in steps:
+            if '| tee' in step:
+                self.assertIn('set -euo pipefail', step, step.splitlines()[0])
+            uses = [name for name in ('WAREHOUSE_DB_URL', 'SUPABASE_SECRET_KEY') if f'secrets.{name}' in step]
+            first = step.splitlines()[0]
+            if 'pip install' in step or 'unittest' in step:
+                self.assertEqual(uses, [], first)
+        job_env = workflow.split('    steps:')[0]
+        self.assertNotIn('secrets.', job_env)
+        publish = next(step for step in steps if 'pipeline.report publish' in step)
+        self.assertIn("workflow_run", publish)
+        self.assertIn('exit 1', publish)
 
 
 if __name__ == '__main__':

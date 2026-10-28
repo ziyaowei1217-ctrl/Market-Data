@@ -24,6 +24,11 @@ def friday_cutoff(day):
     return day - timedelta(days=(day.weekday() - 4) % 7)
 
 
+def default_cutoff(today):
+    """The last Friday whose close is in: on a Friday itself, the week before."""
+    return friday_cutoff(today - timedelta(days=1))
+
+
 def month_day(value):
     value = pd.Timestamp(value)
     return f'{value.month}月{value.day}日'
@@ -51,9 +56,10 @@ def latest_vintage(frame):
     if frame is None or frame.empty:
         return pd.Series(dtype=float)
     frame = frame.sort_values(['obs_date', 'realtime_start'], kind='mergesort')
-    last = frame.groupby('obs_date', sort=True)['value'].last()
-    last.index = pd.to_datetime(last.index).normalize()
-    return pd.to_numeric(last, errors='coerce').dropna()
+    last = frame.drop_duplicates('obs_date', keep='last')  # a newer null vintage withdraws the value
+    values = pd.Series(pd.to_numeric(last['value'], errors='coerce').to_numpy(),
+                       index=pd.to_datetime(last['obs_date']).dt.normalize())
+    return values.dropna()
 
 
 class StoreFetcher:

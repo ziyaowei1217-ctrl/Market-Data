@@ -118,6 +118,19 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(friday_cutoff(date(2026, 10, 23)), date(2026, 10, 23))
         self.assertEqual(friday_cutoff(date(2026, 10, 26)), date(2026, 10, 23))
 
+    def test_default_cutoff_is_the_last_finished_friday(self):
+        from pipeline.report.source import default_cutoff
+        self.assertEqual(default_cutoff(date(2026, 10, 24)), date(2026, 10, 23))   # Saturday
+        self.assertEqual(default_cutoff(date(2026, 10, 30)), date(2026, 10, 23))   # Friday, before the close
+        self.assertEqual(default_cutoff(date(2026, 10, 26)), date(2026, 10, 23))   # Monday
+
+    def test_a_withdrawn_value_stays_withdrawn(self):
+        from pipeline.report.source import latest_vintage
+        frame = pd.DataFrame({'obs_date': pd.to_datetime(['2026-10-22', '2026-10-22', '2026-10-23']),
+                              'realtime_start': pd.to_datetime(['2026-10-23', '2026-10-26', '2026-10-24']),
+                              'value': [100.0, np.nan, 101.0]})
+        self.assertEqual(latest_vintage(frame).to_dict(), {pd.Timestamp('2026-10-23'): 101.0})
+
     def test_bundled_config_names_catalog_series_and_flags_every_proxy(self):
         from pipeline.report.source import load_config
         from pipeline.warehouse.catalog.mapping import load_mapping, load_series

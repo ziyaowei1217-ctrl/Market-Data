@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from .charts import export_report
-from .source import CONFIG, RestFetcher, StoreFetcher, build_inputs, drawable, friday_cutoff, load_config
+from .source import CONFIG, RestFetcher, StoreFetcher, build_inputs, default_cutoff, drawable, load_config
 
 
 def build_issue_from_warehouse(fetcher, output, cutoff, config_path=CONFIG, now=None):
@@ -36,13 +36,13 @@ def choose_fetcher(db):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='python3 -m pipeline.report build', description='从数据库生成本周周报 PDF。')
-    parser.add_argument('--week', type=date.fromisoformat, help='周度截点（周五，YYYY-MM-DD）；默认最近一个周五')
+    parser.add_argument('--week', type=date.fromisoformat, help='周度截点（周五，YYYY-MM-DD）；默认最近一个已收盘的周五')
     parser.add_argument('--db', help='数据库连接串（默认读 WAREHOUSE_DB_URL）；都没有时用读者账号 '
                                      'WAREHOUSE_EMAIL / WAREHOUSE_PASSWORD 走 REST')
     parser.add_argument('--config', type=Path, default=CONFIG, help='资产、期限与图表配置（默认 pipeline/report/issue.json）')
     parser.add_argument('--output-dir', type=Path, default=Path('outputs/weekly'))
     args = parser.parse_args(argv)
-    cutoff = args.week or friday_cutoff(datetime.now(timezone.utc).date())
+    cutoff = args.week or default_cutoff(datetime.now(timezone.utc).date())
     if cutoff.weekday() != 4:
         parser.error(f'{cutoff} 不是周五；周报以周五为截点。')
     fetcher = choose_fetcher(args.db)

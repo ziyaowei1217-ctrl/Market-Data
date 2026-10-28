@@ -183,3 +183,16 @@ test("weekly_report for a week without an issue is a tool error", async () => {
   const bad = await rpc(h, { jsonrpc: "2.0", id: 12, method: "tools/call", params: { name: "weekly_report", arguments: { week: "last week" } } });
   assert.match(bad.body.result.content[0].text, /YYYY-MM-DD/);
 });
+
+test("weekly_report refuses to sign paths that do not look like an issue", async () => {
+  const base = await fakeDb([]);
+  const odd = async (input: any, init: any = {}) => {
+    if (String(input).endsWith("/storage/v1/object/reports/weekly/latest.json")) {
+      return new Response(JSON.stringify({ as_of: "2026-10-23", path: "../private", files: ["weekly-report.pdf"] }), { status: 200 });
+    }
+    return base(input, init);
+  };
+  const h = makeHandler(ENV, odd as any);
+  const r = await rpc(h, { jsonrpc: "2.0", id: 13, method: "tools/call", params: { name: "weekly_report", arguments: {} } });
+  assert.equal(r.body.result.isError, true);
+});

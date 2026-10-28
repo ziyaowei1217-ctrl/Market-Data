@@ -398,8 +398,12 @@ export async function callTool(w: Warehouse, name: string, args: Json): Promise<
       }
       if (!r.ok) throw new Error(`storage request failed (${r.status})`);
       const issue = await r.json();
-      const folder = issue.path ?? `weekly/${issue.as_of}`;
-      const pngs: string[] = (issue.files ?? []).filter((f: string) => f.endsWith(".png"));
+      const folder = String(issue.path ?? `weekly/${issue.as_of}`);
+      // Only ever sign files inside one issue folder of the reports bucket.
+      if (!/^weekly\/\d{4}-\d{2}-\d{2}$/.test(folder)) throw new Error("unexpected issue path in storage");
+      const pngs: string[] = (Array.isArray(issue.files) ? issue.files : [])
+        .map(String)
+        .filter((f: string) => /^[a-z0-9][a-z0-9-]*\.png$/.test(f));
       const s = await w.storage("object/sign/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
