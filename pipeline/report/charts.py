@@ -25,7 +25,7 @@ from matplotlib.ticker import MaxNLocator, FuncFormatter
 import numpy as np
 import pandas as pd
 
-from .data import normalize, weekly_returns
+from .data import normalize, weekly_returns, tolerance, values_at
 
 MM = 1 / 25.4
 PX = .75  # design-system px -> pt
@@ -568,7 +568,7 @@ def line_panel(fig, rect, reg, frame, chosen, value_fmt, ylim, yfmt=None, base=N
 
 # ── The chart block: header, plot, takeaway, source ───────────────────────────
 def source_text(meta, story, reg):
-    note = story.get('note')
+    note = (story.get('note') or '') + (SERIES_POINTER if story.get('series_note') else '')
     if reg.compact:
         text_value = f"来源：{meta['source']}。截至{cn_date(meta['as_of'], True)}。"
         return text_value + (f'注：{note}' if note else '')
@@ -591,8 +591,8 @@ def compose(fig, key, story, meta, reg, width, takeaway):
         parts['source'] = wrap_lines(fig, source_text(meta, story, reg), 'sans', reg.source, width)
     else:
         lines = []
-        if story.get('note'):
-            lines += wrap_lines(fig, story['note'], 'sans', reg.source, width)
+        if full_note(story):
+            lines += wrap_lines(fig, full_note(story), 'sans', reg.source, width)
         lines += wrap_lines(fig, f"来源：{meta['source']}", 'sans', reg.source, width)
         tail = '  ·  DEMO 模拟数据，非真实行情' if meta['is_demo'] else ''
         lines += wrap_lines(fig, f"观察截止 {cn_date(meta['as_of'])}  ·  数据更新 {meta['updated_at']}{tail}",
@@ -631,9 +631,58 @@ def draw_block(fig, key, data, meta, x, y, width, plot_h, reg, story, parts, hei
     return y + header_h + plot_h + take_h + source_h
 
 
+RATE_CHARTS = {'curve', 'spread', 'comparison'}
+TABLE_CHARTS = {'candlestick', 'waterfall', 'football', 'sensitivity', 'flows', 'valuation'}
+
+
+def chart_series(key, meta, assets, tenors):
+    """The asset or tenor names a chart draws, for attaching series notes."""
+    assets = [] if assets is None else list(assets)
+    tenors = [] if tenors is None else list(tenors)
+    if key in TABLE_CHARTS:
+        return []
+    if key == 'spread':
+        return [t for t in ('2Y', '10Y') if t in tenors]
+    if key in RATE_CHARTS:
+        return tenors
+    if key in ('distribution', 'calendar'):
+        return [meta.get('focus_asset', assets[0])] if assets else []
+    if key == 'rolling_correlation':
+        return list(meta.get('correlation_pair', assets[:2]))
+    return assets
+
+
+def chart_notes(selected, meta, assets, tenors):
+    """meta['series_notes'] ({name: note}, e.g. proxies and lagging dates) → {chart: 'name：note。…'}."""
+    notes = meta.get('series_notes') or {}
+    result = {}
+    for key in selected:
+        groups = {}  # note → names, in drawing order; '3M、2Y、10Y：截至10月22日'
+        for name in chart_series(key, meta, assets, tenors):
+            if notes.get(name):
+                groups.setdefault(notes[name], []).append(name)
+        if groups:
+            result[key] = '；'.join(f"{'、'.join(names)}：{note}" for note, names in groups.items()) + '。'
+    return result
+
+
+SERIES_POINTER = '代理与观察日见末页数据说明。'
+
+
+def story_for(key, data, meta):
+    """A chart's story plus this issue's series notes for it (proxies, earlier observation dates)."""
+    story = STORIES[key](data, meta)
+    extra = (meta.get('chart_notes') or {}).get(key)
+    return {**story, 'series_note': extra} if extra else story
+
+
+def full_note(story):
+    return (story.get('note') or '') + (story.get('series_note') or '')
+
+
 def standalone(fig, key, data, meta, x, y, width, height=None):
     """One chart as its own figure: header, plot, source (no takeaway)."""
-    story = STORIES[key](data, meta)
+    story = story_for(key, data, meta)
     parts = compose(fig, key, story, meta, REGULAR, width, takeaway=False)
     heights = block_heights(parts, REGULAR)
     if height is None:
@@ -684,7 +733,7 @@ def plot_trends(fig, rect, frame, meta, reg, story):
 # ── Weekly returns ranking ────────────────────────────────────────────────────
 @chart('returns')
 def story_returns(frame, meta):
-    changes = weekly_returns(frame, meta['week_start'], meta['week_end']).sort_values(ascending=False)
+    changes = weekly_returns(frame, meta['week_start'], meta['week_end'], tolerance(meta)).sort_values(ascending=False)
     top, bottom = changes.index[0], changes.index[-1]
     ups, downs = int((changes > 0).sum()), int((changes < 0).sum())
     return dict(
@@ -700,7 +749,7 @@ def story_returns(frame, meta):
 @chart('returns')
 def plot_returns(fig, rect, frame, meta, reg, story):
     """Bars from one zero line; the values sit in a right-aligned column, like a table."""
-    changes = weekly_returns(frame, meta['week_start'], meta['week_end']).sort_values(ascending=False)
+    changes = weekly_returns(frame, meta['week_start'], meta['week_end'], tolerance(meta)).sort_values(ascending=False)
     chosen = highlights(meta, frame.columns)
     up, down, *_ = market(meta)
     labels = [change(v) for v in changes]
@@ -757,6 +806,13 @@ def validate_style(meta, frame, selected):
             or any(not isinstance(t, str) or not 1 <= len(t.strip()) <= 120 for t in v.values())
             for v in takeaways.values()):
         raise ValueError('takeaways 须为 {图表名: {"heading": 短句, "text": 1–120 字}}。')
+    tolerance(meta)
+    for key in ('quoted', 'omitted'):
+        if key in meta and (not isinstance(meta[key], list) or any(not isinstance(v, str) for v in meta[key])):
+            raise ValueError(f'{key} 须为字符串列表。')
+    notes = meta.get('series_notes', {})
+    if not isinstance(notes, dict) or any(not isinstance(v, str) or len(v) > 40 for v in notes.values()):
+        raise ValueError('series_notes 须为 {序列名: 不超过 40 字的说明}。')
     thesis = meta.get('thesis')
     if thesis is not None and thesis is not False and not isinstance(thesis, str):
         raise ValueError('thesis 须为图表名（如 "trends"），或设为 false 关闭论点页。')
@@ -788,16 +844,18 @@ def export_report(frame, meta, output, yields=None, selected=None, bundle=None):
         if data is None:
             raise ValueError(f'{key} 缺少数据；资产图需 --csv，利率图需 --yields。')
         if key in ('curve', 'comparison'):
-            curve_snapshot(data, meta['week_start'], meta['week_end'])
+            curve_snapshot(data, meta['week_start'], meta['week_end'], tolerance(meta))
         elif key == 'spread':
             spread_bp(data)
         elif key == 'heatmap':
-            horizon_returns(data, meta.get('heatmap_starts'), meta['as_of'])
+            horizon_returns(data, meta.get('heatmap_starts'), meta['as_of'], tolerance(meta))
         elif key == 'trends':
             normalize(data)
         elif key == 'returns':
-            weekly_returns(data, meta['week_start'], meta['week_end'])
+            weekly_returns(data, meta['week_start'], meta['week_end'], tolerance(meta))
     validate_style(meta, frame, selected)
+    meta = {**meta, 'chart_notes': chart_notes(selected, meta, None if frame is None else frame.columns,
+                                               None if yields is None else yields.columns)}
     setup_theme()
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)

@@ -41,10 +41,48 @@ def normalize(frame):
     return result
 
 
-def weekly_returns(frame, start, end):
+ASOF_DAYS = 6
+
+
+def tolerance(meta):
+    """'exact' (default): the dates must exist. 'asof': last value on/before the date, within 6 days."""
+    rule = meta.get('date_rule', 'exact')
+    if rule not in ('exact', 'asof'):
+        raise ValueError('date_rule 只能是 "exact" 或 "asof"。')
+    return ASOF_DAYS if rule == 'asof' else 0
+
+
+def values_at(frame, date, days):
+    """Each column's last valid value on/before date and no older than `days`; NaN where there is none."""
+    date = pd.Timestamp(date)
+    window = frame.loc[date - pd.Timedelta(days=days):date]
+    if window.empty:
+        return pd.Series(np.nan, index=frame.columns)
+    return window.ffill().iloc[-1]
+
+
+def obs_dates(frame, date, days):
+    """The observation date behind each column's value_at; NaT where there is none."""
+    date = pd.Timestamp(date)
+    window = frame.loc[date - pd.Timedelta(days=days):date]
+    return pd.Series({name: window[name].last_valid_index() for name in frame.columns}, dtype='datetime64[ns]')
+
+
+def require_values(values, date, days):
+    missing = [str(name) for name in values.index[values.isna()]]
+    if missing:
+        raise ValueError(f"{'、'.join(missing)} 在 {pd.Timestamp(date):%Y-%m-%d} 前 {days} 天内没有数据。")
+    return values
+
+
+def weekly_returns(frame, start, end, days=0):
     start, end = pd.Timestamp(start), pd.Timestamp(end)
     if end - start != pd.Timedelta(days=7):
         raise ValueError('周涨跌幅起止日期必须相隔 7 天。')
+    if days:
+        before = require_values(values_at(frame, start, days), start, days)
+        after = require_values(values_at(frame, end, days), end, days)
+        return (after / before - 1) * 100
     if start not in frame.index or end not in frame.index:
         raise ValueError('周涨跌幅起止日期必须在 CSV 中存在；不会自动补值。')
     if frame.loc[[start, end]].isna().any().any():

@@ -6,6 +6,8 @@ import json
 import numpy as np
 import pandas as pd
 
+from .data import values_at, require_values
+
 TENORS = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y']
 
 
@@ -38,8 +40,12 @@ def load_yields(path, cutoff):
     return validate_yields(frame.set_index('date'), cutoff)
 
 
-def curve_snapshot(frame, start, end):
+def curve_snapshot(frame, start, end, days=0):
     dates = [pd.Timestamp(start), pd.Timestamp(end)]
+    if days:
+        if dates[1] - dates[0] != pd.Timedelta(days=7):
+            raise ValueError('周度收益率对比日期必须相隔 7 天。')
+        return tuple(require_values(values_at(frame, date, days), date, days) for date in dates)
     if dates[0] >= dates[1] or any(date not in frame.index for date in dates):
         raise ValueError('对比日期必须按先后排列并存在于收益率 CSV。')
     if dates[1] - dates[0] != pd.Timedelta(days=7):
@@ -58,12 +64,16 @@ def spread_bp(frame):
     return result
 
 
-def horizon_returns(frame, starts, end):
+def horizon_returns(frame, starts, end, days=0):
     if not isinstance(starts, dict) or not 1 <= len(starts) <= 4:
         raise ValueError('heatmap_starts 须为含 1–4 个比较区间的字典。')
     end = pd.Timestamp(end)
-    if end not in frame.index or frame.loc[end].isna().any():
+    if days:
+        last = require_values(values_at(frame, end, days), end, days)
+    elif end not in frame.index or frame.loc[end].isna().any():
         raise ValueError('热力图截止日必须存在且所有资产有数据。')
+    else:
+        last = frame.loc[end]
     result = {}
     for label, date in starts.items():
         if not isinstance(label, str) or not label.strip() or len(label) > 6:
@@ -71,8 +81,11 @@ def horizon_returns(frame, starts, end):
         date = pd.Timestamp(date)
         if pd.isna(date) or date.tz is not None or date != date.normalize() or date >= end:
             raise ValueError('热力图基准日必须是早于截止日的有效日频日期。')
-        base = frame.loc[date] if date in frame.index else pd.Series(np.nan, index=frame.columns)
-        result[label] = (frame.loc[end] / base - 1) * 100
+        if days:
+            base = values_at(frame, date, days)
+        else:
+            base = frame.loc[date] if date in frame.index else pd.Series(np.nan, index=frame.columns)
+        result[label] = (last / base - 1) * 100
     return pd.DataFrame(result)
 
 

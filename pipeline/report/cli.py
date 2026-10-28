@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local financial chart generator: CSV → PNG and vector PDF."""
 import argparse
+import sys
 from pathlib import Path
 import tempfile
 
@@ -13,7 +14,10 @@ CHARTS = ['trends', 'returns', 'curve', 'spread', 'heatmap', 'comparison'] + STR
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if sys.argv[1:2] == ['build']:
+        from .build import main as build
+        return build(sys.argv[2:])
+    parser = argparse.ArgumentParser(description=__doc__ + '  从数据库出刊：python3 -m pipeline.report build --help')
     parser.add_argument('--demo', action='store_true', help='使用固定种子的模拟数据')
     parser.add_argument('--csv', type=Path, help='资产价格/指数宽表：date + 1–6 个资产列')
     parser.add_argument('--yields', type=Path, help='收益率宽表：date + 1M/2Y/10Y 等期限；4.25 表示 4.25%')

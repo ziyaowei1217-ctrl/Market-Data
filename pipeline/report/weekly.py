@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
 
-from .charts import (STORIES, PLOTS, COMPACT, REGULAR, BASELINE, MM, BRAND, SURFACE, INK, INK_MUTED, LINE,
+from .charts import (STORIES, PLOTS, story_for, full_note, COMPACT, REGULAR, BASELINE, MM, BRAND, SURFACE, INK, INK_MUTED, LINE,
                     LINE_SUBTLE, LINE_STRONG, PX, compose, block_heights, draw_block, text, lines_at, rule,
                     vrule, fill, wrap_lines, text_width, delta, market, highlights, level, change, bp,
                     cn_date, cn_range)
@@ -93,6 +93,8 @@ def running_head(fig, meta):
 def footer(fig, meta, page, pages):
     rule(fig, MX, 281, WIDTH, LINE)
     tail = '  ·  DEMO 模拟数据，非真实行情' if meta['is_demo'] else ''
+    if page == 1 and meta.get('omitted'):
+        tail += f"  ·  本期未列入：{'、'.join(meta['omitted'])}"
     text(fig, MX, 283.3, f"数据更新 {meta['updated_at']}{tail}", COMPACT.label, INK_MUTED)
     text(fig, MX + WIDTH, 283.3, f'{page} / {pages}', COMPACT.label, INK_MUTED, ha='right')
 
@@ -107,14 +109,21 @@ def nameplate(fig, meta):
     text(fig, MX + WIDTH, 30.5, marker, COMPACT.label, SURFACE, ha='right')
 
 
+def quoted(meta, name):
+    """Whether an asset's level is a market quote; meta['quoted'] lists them (default: every asset)."""
+    names = meta.get('quoted')
+    return names is None or name in names
+
+
 def kpi_tiles(frame, yields, meta):
     """Overview first: the focus asset, the week's leader, and the 10Y yield (or the laggard)."""
     tiles = []
     up_down = market(meta)[:2]
     start, end = meta['week_start'], meta['week_end']
     try:
-        from .data import weekly_returns
-        changes = weekly_returns(frame, start, end)
+        from .data import weekly_returns, tolerance, values_at
+        changes = weekly_returns(frame, start, end, tolerance(meta))
+        last = values_at(frame, end, tolerance(meta))
         chosen = highlights(meta, frame.columns)
     except Exception:
         changes, chosen = None, []
@@ -124,12 +133,16 @@ def kpi_tiles(frame, yields, meta):
             if name not in names:
                 names.append(name)
         for name in names:
-            tiles.append(dict(label=f'{name}  ·  本周', figure=level(frame.loc[pd.Timestamp(end), name]),
-                              value=changes[name], delta=change(changes[name]), period=f'较{cn_date(start, True)}'))
+            tile = dict(label=f'{name}  ·  本周', figure=level(last[name]), value=changes[name],
+                        delta=change(changes[name]), period=f'较{cn_date(start, True)}')
+            if not quoted(meta, name):  # a total-return index level means nothing to a reader
+                tile.update(figure=change(changes[name]), value=None, delta=None)
+            tiles.append(tile)
     if yields is not None and '10Y' in getattr(yields, 'columns', []):
         try:
             from .rates import curve_snapshot
-            before, after = curve_snapshot(yields, start, end)
+            from .data import tolerance
+            before, after = curve_snapshot(yields, start, end, tolerance(meta))
             move = (after['10Y'] - before['10Y']) * 100
             tile = dict(label='10Y 收益率  ·  本周', figure=f"{after['10Y']:.2f}%", value=round(move),
                         delta=bp(move), period=f'较{cn_date(start, True)}')
@@ -150,8 +163,10 @@ def draw_kpis(fig, y, tiles, colors):
         ax.set_axis_off()
         ax.set_xlim(0, PAGE_W)
         ax.set_ylim(PAGE_H, 0)
-        delta(ax, (x, y + 17.6), tile['value'], tile['delta'], colors, reg, ha='left', offset=0)
-        dw = text_width(fig, tile['delta'], 'semibold', reg.table) + 4.5
+        dw = 0
+        if tile['delta'] is not None:
+            delta(ax, (x, y + 17.6), tile['value'], tile['delta'], colors, reg, ha='left', offset=0)
+            dw = text_width(fig, tile['delta'], 'semibold', reg.table) + 4.5
         text(fig, x + dw, y + 15.9, tile['period'], reg.label, INK_MUTED)
     return y + 22 + ROW_GAP if tiles else y
 
@@ -163,7 +178,7 @@ def measure_rows(fig, rows, datasets, meta):
         blocks, col = [], 0
         for key, span in row:
             width = span_w(span)
-            story = STORIES[key](datasets[key], meta)
+            story = story_for(key, datasets[key], meta)
             parts = compose(fig, key, story, meta, COMPACT, width, takeaway=True)
             blocks.append(dict(key=key, col=col, span=span, width=width, story=story, parts=parts,
                                heights=block_heights(parts, COMPACT)))
@@ -193,7 +208,7 @@ def draw_row(fig, y, row, datasets, meta):
 # ── Thesis page ───────────────────────────────────────────────────────────────
 def draw_thesis(fig, key, data, meta):
     reg = COMPACT
-    story = STORIES[key](data, meta)
+    story = story_for(key, data, meta)
     message = (meta.get('titles') or {}).get(key) or story['message']
     custom = (meta.get('takeaways') or {}).get(key) or {}
     y = TOP + 2
@@ -209,7 +224,8 @@ def draw_thesis(fig, key, data, meta):
     rule(fig, MX, y, chart_w)
     unit = wrap_lines(fig, story['unit'], 'sans', reg.body, chart_w)
     yy = lines_at(fig, MX, y + 1.6, unit, reg.body, reg.body_lead, INK_MUTED) + 2
-    source = wrap_lines(fig, f"来源：{meta['source']}。截至{cn_date(meta['as_of'])}。" + (f"注：{story['note']}" if story.get('note') else ''),
+    note = full_note(story)
+    source = wrap_lines(fig, f"来源：{meta['source']}。截至{cn_date(meta['as_of'])}。" + (f"注：{note}" if note else ''),
                         'sans', reg.source, chart_w)
     plot_h = BOTTOM - 4 - yy - len(source) * reg.source_lead - 4
     PLOTS[key](fig, (MX, yy, chart_w, plot_h), data, meta, REGULAR, story)
@@ -238,6 +254,46 @@ def draw_thesis(fig, key, data, meta):
             ey += BASELINE
 
 
+# ── Data notes: one place for proxies, observation dates and the date rule ───
+DATE_RULE = ('周度截点为周五。各序列取截点前最近一个观察值（不早于 6 天）；节假日沿用前一交易日收盘，'
+             '序列末端不外推。缺失保持空白，不插值。')
+
+
+def notes_lines(fig, meta):
+    """[(name, wrapped note lines)], intro lines and closing lines of the data-notes block."""
+    width = WIDTH - 30
+    rows = [(name, wrap_lines(fig, note, 'sans', COMPACT.table, width))
+            for name, note in (meta.get('series_notes') or {}).items()]
+    intro = wrap_lines(fig, DATE_RULE, 'sans', COMPACT.body, WIDTH) if meta.get('date_rule') == 'asof' else []
+    tail = []
+    if meta.get('omitted'):
+        tail = wrap_lines(fig, f"本期未列入：{'、'.join(meta['omitted'])}。", 'sans', COMPACT.body, WIDTH)
+    return rows, intro, tail
+
+
+def notes_height(fig, meta):
+    rows, intro, tail = notes_lines(fig, meta)
+    if not (rows or tail):
+        return 0
+    reg = COMPACT
+    return (1.6 + BASELINE + len(intro) * reg.body_lead + 2 + sum(len(lines) for _, lines in rows) * reg.body_lead
+            + (2 + len(tail) * reg.body_lead if tail else 0) + 2)
+
+
+def draw_notes(fig, y, meta):
+    reg = COMPACT
+    rows, intro, tail = notes_lines(fig, meta)
+    rule(fig, MX, y, WIDTH)
+    text(fig, MX, y + 1.6, '数据说明', reg.label, INK_MUTED, 'semibold')
+    y = lines_at(fig, MX, y + 1.6 + BASELINE, intro, reg.body, reg.body_lead, INK) + 2
+    for name, lines in rows:
+        text(fig, MX, y, name, reg.table, INK, 'semibold')
+        y = lines_at(fig, MX + 30, y, lines, reg.table, reg.body_lead, INK)
+    if tail:
+        y = lines_at(fig, MX, y + 2, tail, reg.body, reg.body_lead, INK)
+    return y
+
+
 # ── The issue ─────────────────────────────────────────────────────────────────
 def choose_thesis(selected, meta):
     thesis = meta.get('thesis')
@@ -257,7 +313,7 @@ def build_issue(path, selected, datasets, frame, yields, meta):
 
     # Lay rows onto pages: page 1 under the nameplate and tiles, the thesis page second.
     first_top = 48 + (22 + ROW_GAP if tiles else 0)
-    pages, remaining, start = [], list(measured), first_top
+    pages, ends, remaining, start = [], [], list(measured), first_top
     while remaining:
         # Fill each page in reading order; if the next row doesn't fit, pull up a later one that does.
         page, y, i = [], start, 0
@@ -269,16 +325,23 @@ def build_issue(path, selected, datasets, frame, yields, meta):
             else:
                 i += 1
         pages.append(page)
+        ends.append(y)
         start = TOP + 2
-    pages = pages or [[]]
-    plan = [('front', pages[0])]
+    pages, ends = pages or [[]], ends or [first_top]
+    scratch = plt.figure(figsize=(PAGE_W * MM, PAGE_H * MM))
+    notes_h = notes_height(scratch, meta)
+    plt.close(scratch)
+    if notes_h and ends[-1] + notes_h > BOTTOM:
+        pages.append([])
+    notes_page = len(pages) - 1 if notes_h else None
+    plan = [('front', pages[0], notes_page == 0)]
     if thesis:
-        plan.append(('thesis', None))
-    plan += [('data', rows_) for rows_ in pages[1:]]
+        plan.append(('thesis', None, False))
+    plan += [('data', rows_, notes_page == i) for i, rows_ in enumerate(pages[1:], start=1)]
 
-    with PdfPages(path, metadata={'Title': '市场一周 | Graph Generator', 'Author': 'Graph Generator',
+    with PdfPages(path, metadata={'Title': '市场一周', 'Author': 'Capital Weekly',
                   'Subject': 'Simulated data template preview' if meta['is_demo'] else 'Weekly market commentary'}) as pdf:
-        for number, (kind, page_rows) in enumerate(plan, start=1):
+        for number, (kind, page_rows, notes) in enumerate(plan, start=1):
             fig = plt.figure(figsize=(PAGE_W * MM, PAGE_H * MM))
             if kind == 'front':
                 nameplate(fig, meta)
@@ -291,6 +354,8 @@ def build_issue(path, selected, datasets, frame, yields, meta):
             else:
                 for row in page_rows:
                     y = draw_row(fig, y, row, datasets, meta)
+            if notes:
+                draw_notes(fig, y, meta)
             footer(fig, meta, number, len(plan))
             pdf.savefig(fig)
             plt.close(fig)

@@ -11,6 +11,7 @@ from .charts import (chart, standalone, plot_axes, fit_left, legend_top, axes_at
                     level, change, bp, plain, font, text_width, cn_date, cn_range, date_axis,
                     ACCENT, AC, PY, INK, INK_MUTED, LINE, SURFACE, RANGE_2, LINE_SUBTLE, PX)
 from .rates import curve_snapshot, spread_bp, horizon_returns
+from .data import tolerance
 
 __all__ = ['date_axis', 'yield_panel', 'spread_panel', 'heatmap_panel', 'comparison_panel']
 
@@ -18,7 +19,7 @@ __all__ = ['date_axis', 'yield_panel', 'spread_panel', 'heatmap_panel', 'compari
 # ── Yield curve ───────────────────────────────────────────────────────────────
 @chart('curve')
 def story_curve(frame, meta):
-    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'])
+    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'], tolerance(meta))
     moves = (after - before) * 100
     if {'2Y', '10Y'}.issubset(after.index):
         slope = ((after['10Y'] - after['2Y']) - (before['10Y'] - before['2Y'])) * 100
@@ -38,7 +39,7 @@ def story_curve(frame, meta):
 
 @chart('curve')
 def plot_curve(fig, rect, frame, meta, reg, story):
-    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'])
+    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'], tolerance(meta))
     handles = [Line2D([], [], color=PY, lw=1.1, marker='o', ms=3.4, mec=SURFACE, label=f"上周（{cn_date(meta['week_start'], True)}）"),
                Line2D([], [], color=AC, lw=1.5, marker='o', ms=4, mec=SURFACE, label=f"本周（{cn_date(meta['week_end'], True)}）")]
     top = legend_top(fig, rect, handles, reg)
@@ -70,7 +71,8 @@ def story_spread(frame, meta):
     valid = spread.dropna()
     last, date = valid.iloc[-1], valid.index[-1]
     week = pd.Timestamp(meta['week_start'])
-    diff, ref = (last - valid[week], '一周前') if week in valid.index else (last - valid.iloc[0], '样本起点')
+    prior = valid.loc[week - pd.Timedelta(days=tolerance(meta)):week]
+    diff, ref = (last - prior.iloc[-1], '一周前') if len(prior) else (last - valid.iloc[0], '样本起点')
     inverted = int((valid < 0).sum())
     return dict(label='期限利差',
                 message=f"10Y−2Y 利差为 {bp(last, False)}，较{ref}{'走阔' if diff > 0 else '收窄'} {abs(diff):.0f} bp",
@@ -113,7 +115,7 @@ def plot_spread(fig, rect, frame, meta, reg, story):
 @chart('heatmap')
 def story_heatmap(frame, meta):
     starts = meta.get('heatmap_starts')
-    returns = horizon_returns(frame, starts, meta['as_of'])
+    returns = horizon_returns(frame, starts, meta['as_of'], tolerance(meta))
     last = returns.columns[-1]
     col = returns[last].dropna()
     first = returns.columns[0]
@@ -139,7 +141,7 @@ def move_word(value):
 
 @chart('heatmap')
 def plot_heatmap(fig, rect, frame, meta, reg, story):
-    returns = horizon_returns(frame, meta.get('heatmap_starts'), meta['as_of'])
+    returns = horizon_returns(frame, meta.get('heatmap_starts'), meta['as_of'], tolerance(meta))
     values = returns.to_numpy()
     finite = values[np.isfinite(values)]
     extent = max(np.abs(finite).max(), .1) if len(finite) else 1.
@@ -152,7 +154,7 @@ def plot_heatmap(fig, rect, frame, meta, reg, story):
 # ── Weekly rate moves (dumbbell + table) ──────────────────────────────────────
 @chart('comparison')
 def story_comparison(frame, meta):
-    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'])
+    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'], tolerance(meta))
     moves = (after - before) * 100
     big = moves.abs().idxmax()
     rising = int((moves > 0).sum())
@@ -171,7 +173,7 @@ def story_comparison(frame, meta):
 
 @chart('comparison')
 def plot_comparison(fig, rect, frame, meta, reg, story):
-    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'])
+    before, after = curve_snapshot(frame, meta['week_start'], meta['week_end'], tolerance(meta))
     moves = (after - before) * 100
     up, down, *_ = market(meta)
     handles = [Line2D([], [], ls='none', marker='o', color=PY, mec=SURFACE, ms=5, label='上周'),
