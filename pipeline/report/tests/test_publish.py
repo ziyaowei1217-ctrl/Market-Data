@@ -67,6 +67,17 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(seen, ['https://x.supabase.co/storage/v1/object/authenticated/reports/weekly/2026-10-16/weekly-report.pdf'])
 
 
+class CommandLineTests(unittest.TestCase):
+    def test_every_command_prints_help(self):
+        import subprocess, sys
+        for command in ([], ['build'], ['publish'], ['latest']):
+            with self.subTest(command=command):
+                run = subprocess.run([sys.executable, '-m', 'pipeline.report', *command, '--help'],
+                                     capture_output=True, text=True, cwd=REPO)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                self.assertIn('python3 -m pipeline.report', run.stdout)
+
+
 class StorageAccessTests(unittest.TestCase):
     """The repository is public: issues contain licensed data and must reach readers only."""
 
