@@ -14,10 +14,17 @@ CHARTS = ['trends', 'returns', 'curve', 'spread', 'heatmap', 'comparison'] + STR
 
 
 def main():
-    if sys.argv[1:2] == ['build']:
+    command = sys.argv[1:2]
+    if command == ['build']:
         from .build import main as build
         return build(sys.argv[2:])
-    parser = argparse.ArgumentParser(description=__doc__ + '  从数据库出刊：python3 -m pipeline.report build --help')
+    if command == ['publish']:
+        from .publish import main as publish
+        return publish(sys.argv[2:])
+    if command == ['latest']:
+        from .publish import latest_main
+        return latest_main(sys.argv[2:])
+    parser = argparse.ArgumentParser(description=__doc__ + '  从数据库出刊：build；上传：publish；读者下载：latest（各自 --help）。')
     parser.add_argument('--demo', action='store_true', help='使用固定种子的模拟数据')
     parser.add_argument('--csv', type=Path, help='资产价格/指数宽表：date + 1–6 个资产列')
     parser.add_argument('--yields', type=Path, help='收益率宽表：date + 1M/2Y/10Y 等期限；4.25 表示 4.25%')
