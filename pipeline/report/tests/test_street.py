@@ -106,8 +106,9 @@ class LabelPlacementTests(unittest.TestCase):
         from pipeline.report.charts import setup_theme, standalone, MM
         from pipeline.report import street_charts  # noqa: F401
         setup_theme()
-        data = pd.DataFrame({'return': [14.4, 15.0, 2.9, -1.3, -1.0, 2.3],
-                             'risk': [11.6, 12.5, 4.9, 4.0, 3.6, 27.0]},
+        # Synthetic figures: two pairs of near-identical dots and one outlier.
+        data = pd.DataFrame({'return': [9.0, 9.6, 1.5, -2.0, -1.6, 3.0],
+                             'risk': [10.0, 10.8, 5.2, 4.4, 4.0, 24.0]},
                             index=['全球股票', '美国股票', '美元指数', '美国综合债', '美国国债', '黄金'])
         meta = {'source': '测试', 'as_of': '2026-10-23', 'updated_at': '2026-10-24 14:00 UTC', 'is_demo': False,
                 'highlight': ['美国股票', '黄金']}
