@@ -1,0 +1,2650 @@
+/* css/foundations/alpha.css */
+.salt-theme {
+  --salt-color-white-5a: rgba(var(--salt-color-white-rgb), 0.05);
+  --salt-color-white-10a: rgba(var(--salt-color-white-rgb), 0.1);
+  --salt-color-white-15a: rgba(var(--salt-color-white-rgb), 0.15);
+  --salt-color-white-20a: rgba(var(--salt-color-white-rgb), 0.2);
+  --salt-color-white-30a: rgba(var(--salt-color-white-rgb), 0.3);
+  --salt-color-white-40a: rgba(var(--salt-color-white-rgb), 0.4);
+  --salt-color-white-50a: rgba(var(--salt-color-white-rgb), 0.5);
+  --salt-color-white-65a: rgba(var(--salt-color-white-rgb), 0.65);
+  --salt-color-white-80a: rgba(var(--salt-color-white-rgb), 0.8);
+  --salt-color-black-5a: rgba(var(--salt-color-black-rgb), 0.05);
+  --salt-color-black-10a: rgba(var(--salt-color-black-rgb), 0.1);
+  --salt-color-black-15a: rgba(var(--salt-color-black-rgb), 0.15);
+  --salt-color-black-20a: rgba(var(--salt-color-black-rgb), 0.2);
+  --salt-color-black-30a: rgba(var(--salt-color-black-rgb), 0.3);
+  --salt-color-black-40a: rgba(var(--salt-color-black-rgb), 0.4);
+  --salt-color-black-50a: rgba(var(--salt-color-black-rgb), 0.5);
+  --salt-color-black-65a: rgba(var(--salt-color-black-rgb), 0.65);
+  --salt-color-black-80a: rgba(var(--salt-color-black-rgb), 0.8);
+}
+
+/* css/foundations/animation.css */
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high,
+.salt-density-mobile {
+  --salt-animation-opacity-start: 0;
+  --salt-animation-opacity-end: 1;
+  --salt-animation-scale-start: 0;
+  --salt-animation-scale-end: 1;
+  --salt-animation-transform-start: 100%;
+  --salt-animation-transform-end: 0;
+  --salt-animation-duration: var(--salt-duration-perceptible);
+  --salt-animation-timing-function: ease-in-out;
+  --salt-animation-slide-in-top: slide-in-top var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-slide-in-left: slide-in-left var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-slide-in-right: slide-in-right var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-slide-in-bottom: slide-in-bottom var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-slide-out-top: slide-out-top var(--salt-animation-duration) var(--salt-animation-timing-function) both;
+  --salt-animation-slide-out-left: slide-out-left var(--salt-animation-duration) var(--salt-animation-timing-function) both;
+  --salt-animation-slide-out-right: slide-out-right var(--salt-animation-duration) var(--salt-animation-timing-function) both;
+  --salt-animation-slide-out-bottom: slide-out-bottom var(--salt-animation-duration) var(--salt-animation-timing-function) both;
+  --salt-animation-fade-in-back: fade-in-back var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-fade-in-forward: fade-in-forward var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-fade-in-center: fade-in-center var(--salt-animation-duration) var(--salt-animation-timing-function);
+  --salt-animation-fade-out-back: fade-out-back var(--salt-animation-duration) ease-in-out both;
+}
+@keyframes slide-in-top {
+  0% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateY(var(--salt-animation-transform-start));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateY(var(--salt-animation-transform-end));
+  }
+}
+@keyframes slide-out-top {
+  0% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateY(var(--salt-animation-transform-end));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateY(var(--salt-animation-transform-start));
+  }
+}
+@keyframes slide-in-left {
+  0% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateX(calc(-1 * var(--salt-animation-transform-start)));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateX(var(--salt-animation-transform-end));
+  }
+}
+@keyframes slide-out-left {
+  0% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateX(var(--salt-animation-transform-end));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateX(calc(-1 * var(--salt-animation-transform-start)));
+  }
+}
+@keyframes slide-in-right {
+  0% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateX(var(--salt-animation-transform-start));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateX(var(--salt-animation-transform-end));
+  }
+}
+@keyframes slide-out-right {
+  0% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateX(var(--salt-animation-transform-end));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateX(var(--salt-animation-transform-start));
+  }
+}
+@keyframes slide-in-bottom {
+  0% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateY(calc(-1 * var(--salt-animation-transform-start)));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateY(var(--salt-animation-transform-end));
+  }
+}
+@keyframes slide-out-bottom {
+  0% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: translateY(var(--salt-animation-transform-end));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-start);
+    transform: translateY(calc(-1 * var(--salt-animation-transform-start)));
+  }
+}
+@keyframes fade-in-back {
+  0% {
+    --salt-animation-scale-start: 1.4;
+    opacity: var(--salt-animation-opacity-start);
+    transform: scale(var(--salt-animation-scale-start));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: scale(var(--salt-animation-scale-end));
+  }
+}
+@keyframes fade-in-forward {
+  0% {
+    --salt-animation-scale-start: 0.6;
+    opacity: var(--salt-animation-opacity-start);
+    transform: scale(var(--salt-animation-scale-start));
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+    transform: scale(var(--salt-animation-scale-end));
+  }
+}
+@keyframes fade-in-center {
+  0% {
+    opacity: var(--salt-animation-opacity-start);
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-end);
+  }
+}
+@keyframes fade-out-back {
+  0% {
+    opacity: var(--salt-animation-opacity-end);
+  }
+  100% {
+    opacity: var(--salt-animation-opacity-start);
+  }
+}
+
+/* css/foundations/borderStyle.css */
+.salt-theme {
+  --salt-borderStyle-solid: solid;
+  --salt-borderStyle-dashed: dashed;
+  --salt-borderStyle-dotted: dotted;
+}
+
+/* css/foundations/color.css */
+.salt-theme {
+  --salt-color-black-rgb:
+    0,
+    0,
+    0;
+  --salt-color-white-rgb:
+    255,
+    255,
+    255;
+  --salt-color-black: rgb(var(--salt-color-black-rgb));
+  --salt-color-white: rgb(var(--salt-color-white-rgb));
+  --salt-color-transparent: transparent;
+}
+
+/* css/foundations/cursor.css */
+.salt-theme {
+  --salt-cursor-active: pointer;
+  --salt-cursor-disabled: not-allowed;
+  --salt-cursor-drag-ew: ew-resize;
+  --salt-cursor-drag-ns: ns-resize;
+  --salt-cursor-grab: grab;
+  --salt-cursor-grab-active: grabbing;
+  --salt-cursor-hover: pointer;
+  --salt-cursor-pending: progress;
+  --salt-cursor-readonly: text;
+  --salt-cursor-text: text;
+}
+
+/* css/foundations/curve.css */
+.salt-density-high {
+  --salt-curve-0: 0px;
+  --salt-curve-50: 1px;
+  --salt-curve-100: 2px;
+  --salt-curve-150: 3px;
+  --salt-curve-200: 4px;
+  --salt-curve-250: 5px;
+  --salt-curve-300: 6px;
+  --salt-curve-999: 999px;
+}
+.salt-density-medium {
+  --salt-curve-0: 0px;
+  --salt-curve-50: 2px;
+  --salt-curve-100: 4px;
+  --salt-curve-150: 6px;
+  --salt-curve-200: 8px;
+  --salt-curve-250: 10px;
+  --salt-curve-300: 12px;
+  --salt-curve-999: 999px;
+}
+.salt-density-low {
+  --salt-curve-0: 0px;
+  --salt-curve-50: 3px;
+  --salt-curve-100: 6px;
+  --salt-curve-150: 9px;
+  --salt-curve-200: 12px;
+  --salt-curve-250: 15px;
+  --salt-curve-300: 18px;
+  --salt-curve-999: 999px;
+}
+.salt-density-mobile,
+.salt-density-touch {
+  --salt-curve-0: 0px;
+  --salt-curve-50: 4px;
+  --salt-curve-100: 8px;
+  --salt-curve-150: 12px;
+  --salt-curve-200: 16px;
+  --salt-curve-250: 20px;
+  --salt-curve-300: 24px;
+  --salt-curve-999: 999px;
+}
+
+/* css/foundations/duration.css */
+.salt-theme {
+  --salt-duration-instant: 0ms;
+  --salt-duration-perceptible: 300ms;
+  --salt-duration-notable: 1000ms;
+  --salt-duration-cutoff: 10000ms;
+}
+
+/* css/foundations/size.css */
+.salt-density-high {
+  --salt-size-adornment: 6px;
+  --salt-size-bar: 2px;
+  --salt-size-base: 20px;
+  --salt-size-icon: 10px;
+  --salt-size-indicator: 2px;
+  --salt-size-selectable: 12px;
+  --salt-size-bar-strong: 4px;
+}
+.salt-density-medium {
+  --salt-size-adornment: 8px;
+  --salt-size-bar: 4px;
+  --salt-size-base: 28px;
+  --salt-size-icon: 12px;
+  --salt-size-indicator: 3px;
+  --salt-size-selectable: 14px;
+  --salt-size-bar-strong: 8px;
+}
+.salt-density-low {
+  --salt-size-adornment: 10px;
+  --salt-size-bar: 6px;
+  --salt-size-base: 36px;
+  --salt-size-icon: 14px;
+  --salt-size-indicator: 4px;
+  --salt-size-selectable: 16px;
+  --salt-size-bar-strong: 12px;
+}
+.salt-density-mobile,
+.salt-density-touch {
+  --salt-size-adornment: 12px;
+  --salt-size-bar: 8px;
+  --salt-size-base: 44px;
+  --salt-size-icon: 16px;
+  --salt-size-indicator: 5px;
+  --salt-size-selectable: 18px;
+  --salt-size-bar-strong: 16px;
+}
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high,
+.salt-density-mobile {
+  --salt-size-fixed-100: 1px;
+  --salt-size-fixed-200: 2px;
+  --salt-size-fixed-300: 3px;
+  --salt-size-fixed-400: 4px;
+  --salt-size-fixed-500: 5px;
+  --salt-size-fixed-600: 6px;
+  --salt-size-fixed-700: 7px;
+  --salt-size-fixed-800: 8px;
+  --salt-size-fixed-900: 9px;
+}
+
+/* css/foundations/spacing.css */
+.salt-density-touch {
+  --salt-spacing-100: 16px;
+}
+.salt-density-low {
+  --salt-spacing-100: 12px;
+}
+.salt-density-medium {
+  --salt-spacing-100: 8px;
+}
+.salt-density-high {
+  --salt-spacing-100: 4px;
+}
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high {
+  --salt-spacing-25: calc(0.25 * var(--salt-spacing-100));
+  --salt-spacing-50: calc(0.5 * var(--salt-spacing-100));
+  --salt-spacing-75: calc(0.75 * var(--salt-spacing-100));
+  --salt-spacing-150: calc(1.5 * var(--salt-spacing-100));
+  --salt-spacing-200: calc(2 * var(--salt-spacing-100));
+  --salt-spacing-250: calc(2.5 * var(--salt-spacing-100));
+  --salt-spacing-300: calc(3 * var(--salt-spacing-100));
+  --salt-spacing-350: calc(3.5 * var(--salt-spacing-100));
+  --salt-spacing-400: calc(4 * var(--salt-spacing-100));
+  --salt-spacing-450: calc(4.5 * var(--salt-spacing-100));
+  --salt-spacing-500: calc(5 * var(--salt-spacing-100));
+  --salt-spacing-550: calc(5.5 * var(--salt-spacing-100));
+  --salt-spacing-600: calc(6 * var(--salt-spacing-100));
+  --salt-spacing-650: calc(6.5 * var(--salt-spacing-100));
+  --salt-spacing-700: calc(7 * var(--salt-spacing-100));
+  --salt-spacing-750: calc(7.5 * var(--salt-spacing-100));
+  --salt-spacing-800: calc(8 * var(--salt-spacing-100));
+  --salt-spacing-850: calc(8.5 * var(--salt-spacing-100));
+  --salt-spacing-900: calc(9 * var(--salt-spacing-100));
+  --salt-spacing-950: calc(9.5 * var(--salt-spacing-100));
+}
+.salt-density-mobile {
+  --salt-spacing-25: 4px;
+  --salt-spacing-50: 8px;
+  --salt-spacing-75: 12px;
+  --salt-spacing-100: 16px;
+  --salt-spacing-150: 18px;
+  --salt-spacing-200: 20px;
+  --salt-spacing-250: 22px;
+  --salt-spacing-300: 24px;
+  --salt-spacing-350: 26px;
+  --salt-spacing-400: 28px;
+  --salt-spacing-450: 30px;
+  --salt-spacing-500: 32px;
+  --salt-spacing-550: 34px;
+  --salt-spacing-600: 36px;
+  --salt-spacing-650: 38px;
+  --salt-spacing-700: 40px;
+  --salt-spacing-750: 42px;
+  --salt-spacing-800: 44px;
+  --salt-spacing-850: 46px;
+  --salt-spacing-900: 48px;
+  --salt-spacing-950: 50px;
+}
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high,
+.salt-density-mobile {
+  --salt-spacing-fixed-100: 1px;
+  --salt-spacing-fixed-200: 2px;
+  --salt-spacing-fixed-300: 3px;
+  --salt-spacing-fixed-400: 4px;
+  --salt-spacing-fixed-500: 5px;
+  --salt-spacing-fixed-600: 6px;
+  --salt-spacing-fixed-700: 7px;
+  --salt-spacing-fixed-800: 8px;
+  --salt-spacing-fixed-900: 9px;
+  --salt-spacing-fixed-1000: 10px;
+  --salt-spacing-fixed-1100: 11px;
+  --salt-spacing-fixed-1200: 12px;
+}
+
+/* css/foundations/typography.css */
+.salt-theme {
+  --salt-typography-fontFamily-openSans: "Open Sans";
+  --salt-typography-fontFamily-amplitude: "Amplitude";
+  --salt-typography-fontFamily-ptMono: "PT Mono";
+  --salt-typography-fontWeight-light: 300;
+  --salt-typography-fontWeight-regular: 400;
+  --salt-typography-fontWeight-medium: 500;
+  --salt-typography-fontWeight-semiBold: 600;
+  --salt-typography-fontWeight-bold: 700;
+  --salt-typography-fontWeight-extraBold: 800;
+  --salt-typography-textDecoration-none: none;
+  --salt-typography-textDecoration-underline: underline;
+  --salt-typography-fontStyle-normal: normal;
+  --salt-typography-fontStyle-italic: italic;
+}
+
+/* css/foundations/zindex.css */
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high,
+.salt-density-mobile {
+  --salt-zIndex-default: 1;
+  --salt-zIndex-popout: 1000;
+  --salt-zIndex-appHeader: 1100;
+  --salt-zIndex-drawer: 1200;
+  --salt-zIndex-modal: 1300;
+  --salt-zIndex-notification: 1400;
+  --salt-zIndex-dragObject: 1420;
+  --salt-zIndex-contextMenu: 1450;
+  --salt-zIndex-flyover: 1500;
+}
+
+/* css/foundations/index.css */
+
+/* css/next/foundations/alpha.css */
+.salt-theme.salt-theme-next {
+  --salt-color-blue-200-40a: rgba(var(--salt-color-blue-200-rgb), 0.4);
+  --salt-color-blue-300-40a: rgba(var(--salt-color-blue-300-rgb), 0.4);
+  --salt-color-blue-400-40a: rgba(var(--salt-color-blue-400-rgb), 0.4);
+  --salt-color-blue-500-40a: rgba(var(--salt-color-blue-500-rgb), 0.4);
+  --salt-color-blue-600-40a: rgba(var(--salt-color-blue-600-rgb), 0.4);
+  --salt-color-blue-700-40a: rgba(var(--salt-color-blue-700-rgb), 0.4);
+  --salt-color-blue-800-40a: rgba(var(--salt-color-blue-800-rgb), 0.4);
+  --salt-color-gray-300-10a: rgba(var(--salt-color-gray-300-rgb), 0.1);
+  --salt-color-gray-300-40a: rgba(var(--salt-color-gray-300-rgb), 0.4);
+  --salt-color-gray-500-10a: rgba(var(--salt-color-gray-500-rgb), 0.1);
+  --salt-color-gray-500-40a: rgba(var(--salt-color-gray-500-rgb), 0.4);
+  --salt-color-gray-600-40a: rgba(var(--salt-color-gray-600-rgb), 0.4);
+  --salt-color-gray-700-10a: rgba(var(--salt-color-gray-700-rgb), 0.1);
+  --salt-color-gray-700-40a: rgba(var(--salt-color-gray-700-rgb), 0.4);
+  --salt-color-green-400-40a: rgba(var(--salt-color-green-400-rgb), 0.4);
+  --salt-color-green-500-40a: rgba(var(--salt-color-green-500-rgb), 0.4);
+  --salt-color-green-600-40a: rgba(var(--salt-color-green-600-rgb), 0.4);
+  --salt-color-orange-400-40a: rgba(var(--salt-color-orange-400-rgb), 0.4);
+  --salt-color-orange-500-40a: rgba(var(--salt-color-orange-500-rgb), 0.4);
+  --salt-color-orange-600-40a: rgba(var(--salt-color-orange-600-rgb), 0.4);
+  --salt-color-red-400-40a: rgba(var(--salt-color-red-400-rgb), 0.4);
+  --salt-color-red-500-40a: rgba(var(--salt-color-red-500-rgb), 0.4);
+  --salt-color-red-600-40a: rgba(var(--salt-color-red-600-rgb), 0.4);
+  --salt-color-teal-200-40a: rgba(var(--salt-color-teal-200-rgb), 0.4);
+  --salt-color-teal-300-40a: rgba(var(--salt-color-teal-300-rgb), 0.4);
+  --salt-color-teal-400-40a: rgba(var(--salt-color-teal-400-rgb), 0.4);
+  --salt-color-teal-500-40a: rgba(var(--salt-color-teal-500-rgb), 0.4);
+  --salt-color-teal-600-40a: rgba(var(--salt-color-teal-600-rgb), 0.4);
+  --salt-color-teal-700-40a: rgba(var(--salt-color-teal-700-rgb), 0.4);
+  --salt-color-teal-800-40a: rgba(var(--salt-color-teal-800-rgb), 0.4);
+  --salt-color-background-snow-40a: rgba(var(--salt-color-background-snow-rgb), 0.4);
+  --salt-color-background-marble-40a: rgba(var(--salt-color-background-marble-rgb), 0.4);
+  --salt-color-background-limestone-40a: rgba(var(--salt-color-background-limestone-rgb), 0.4);
+  --salt-color-background-granite-40a: rgba(var(--salt-color-background-granite-rgb), 0.4);
+  --salt-color-background-jet-40a: rgba(var(--salt-color-background-jet-rgb), 0.4);
+  --salt-color-background-leather-40a: rgba(var(--salt-color-background-leather-rgb), 0.4);
+}
+
+/* css/next/foundations/color.css */
+.salt-theme.salt-theme-next {
+  --salt-color-gray-100-rgb:
+    230,
+    233,
+    235;
+  --salt-color-gray-200-rgb:
+    211,
+    213,
+    216;
+  --salt-color-gray-300-rgb:
+    177,
+    181,
+    185;
+  --salt-color-gray-400-rgb:
+    145,
+    149,
+    154;
+  --salt-color-gray-500-rgb:
+    114,
+    119,
+    125;
+  --salt-color-gray-600-rgb:
+    95,
+    100,
+    106;
+  --salt-color-gray-700-rgb:
+    76,
+    81,
+    87;
+  --salt-color-gray-800-rgb:
+    58,
+    63,
+    68;
+  --salt-color-gray-900-rgb:
+    41,
+    46,
+    51;
+  --salt-color-blue-100-rgb:
+    234,
+    246,
+    255;
+  --salt-color-blue-200-rgb:
+    199,
+    222,
+    255;
+  --salt-color-blue-300-rgb:
+    154,
+    189,
+    245;
+  --salt-color-blue-400-rgb:
+    102,
+    156,
+    232;
+  --salt-color-blue-500-rgb:
+    0,
+    120,
+    207;
+  --salt-color-blue-600-rgb:
+    0,
+    94,
+    166;
+  --salt-color-blue-700-rgb:
+    0,
+    69,
+    126;
+  --salt-color-blue-800-rgb:
+    0,
+    45,
+    89;
+  --salt-color-blue-900-rgb:
+    0,
+    23,
+    54;
+  --salt-color-brown-100-rgb:
+    243,
+    238,
+    232;
+  --salt-color-brown-200-rgb:
+    237,
+    229,
+    216;
+  --salt-color-brown-300-rgb:
+    215,
+    186,
+    157;
+  --salt-color-brown-400-rgb:
+    184,
+    138,
+    103;
+  --salt-color-brown-500-rgb:
+    153,
+    108,
+    72;
+  --salt-color-brown-600-rgb:
+    125,
+    83,
+    47;
+  --salt-color-brown-700-rgb:
+    103,
+    63,
+    27;
+  --salt-color-brown-800-rgb:
+    66,
+    36,
+    7;
+  --salt-color-brown-900-rgb:
+    46,
+    25,
+    5;
+  --salt-color-green-100-rgb:
+    234,
+    245,
+    242;
+  --salt-color-green-200-rgb:
+    184,
+    229,
+    209;
+  --salt-color-green-300-rgb:
+    137,
+    204,
+    173;
+  --salt-color-green-400-rgb:
+    83,
+    176,
+    135;
+  --salt-color-green-500-rgb:
+    0,
+    135,
+    93;
+  --salt-color-green-600-rgb:
+    0,
+    107,
+    72;
+  --salt-color-green-700-rgb:
+    0,
+    86,
+    55;
+  --salt-color-green-800-rgb:
+    0,
+    63,
+    37;
+  --salt-color-green-900-rgb:
+    0,
+    41,
+    21;
+  --salt-color-teal-100-rgb:
+    219,
+    245,
+    247;
+  --salt-color-teal-200-rgb:
+    175,
+    224,
+    237;
+  --salt-color-teal-300-rgb:
+    131,
+    192,
+    214;
+  --salt-color-teal-400-rgb:
+    76,
+    161,
+    194;
+  --salt-color-teal-500-rgb:
+    27,
+    127,
+    158;
+  --salt-color-teal-600-rgb:
+    18,
+    100,
+    126;
+  --salt-color-teal-700-rgb:
+    9,
+    74,
+    96;
+  --salt-color-teal-800-rgb:
+    3,
+    49,
+    66;
+  --salt-color-teal-900-rgb:
+    0,
+    37,
+    56;
+  --salt-color-orange-100-rgb:
+    255,
+    236,
+    217;
+  --salt-color-orange-200-rgb:
+    255,
+    198,
+    161;
+  --salt-color-orange-300-rgb:
+    247,
+    160,
+    106;
+  --salt-color-orange-400-rgb:
+    235,
+    123,
+    57;
+  --salt-color-orange-500-rgb:
+    199,
+    83,
+    0;
+  --salt-color-orange-600-rgb:
+    158,
+    66,
+    0;
+  --salt-color-orange-700-rgb:
+    129,
+    54,
+    0;
+  --salt-color-orange-800-rgb:
+    97,
+    41,
+    0;
+  --salt-color-orange-900-rgb:
+    66,
+    32,
+    0;
+  --salt-color-red-100-rgb:
+    255,
+    236,
+    234;
+  --salt-color-red-200-rgb:
+    255,
+    193,
+    186;
+  --salt-color-red-300-rgb:
+    255,
+    147,
+    138;
+  --salt-color-red-400-rgb:
+    255,
+    93,
+    87;
+  --salt-color-red-500-rgb:
+    229,
+    33,
+    53;
+  --salt-color-red-600-rgb:
+    186,
+    23,
+    41;
+  --salt-color-red-700-rgb:
+    145,
+    13,
+    30;
+  --salt-color-red-800-rgb:
+    105,
+    4,
+    19;
+  --salt-color-red-900-rgb:
+    69,
+    0,
+    2;
+  --salt-color-purple-100-rgb:
+    246,
+    240,
+    250;
+  --salt-color-purple-200-rgb:
+    240,
+    214,
+    245;
+  --salt-color-purple-300-rgb:
+    218,
+    175,
+    224;
+  --salt-color-purple-400-rgb:
+    195,
+    136,
+    204;
+  --salt-color-purple-500-rgb:
+    162,
+    91,
+    173;
+  --salt-color-purple-600-rgb:
+    133,
+    67,
+    143;
+  --salt-color-purple-700-rgb:
+    104,
+    45,
+    113;
+  --salt-color-purple-800-rgb:
+    73,
+    21,
+    82;
+  --salt-color-purple-900-rgb:
+    51,
+    0,
+    59;
+  --salt-color-background-snow-rgb:
+    255,
+    255,
+    255;
+  --salt-color-background-marble-rgb:
+    245,
+    247,
+    248;
+  --salt-color-background-limestone-rgb:
+    250,
+    248,
+    242;
+  --salt-color-background-titanium-rgb:
+    226,
+    228,
+    229;
+  --salt-color-background-jet-rgb:
+    16,
+    24,
+    32;
+  --salt-color-background-granite-rgb:
+    26,
+    34,
+    41;
+  --salt-color-background-leather-rgb:
+    38,
+    41,
+    43;
+  --salt-color-jpmBrown-rgb:
+    58,
+    34,
+    6;
+  --salt-color-gray-100: rgb(var(--salt-color-gray-100-rgb));
+  --salt-color-gray-200: rgb(var(--salt-color-gray-200-rgb));
+  --salt-color-gray-300: rgb(var(--salt-color-gray-300-rgb));
+  --salt-color-gray-400: rgb(var(--salt-color-gray-400-rgb));
+  --salt-color-gray-500: rgb(var(--salt-color-gray-500-rgb));
+  --salt-color-gray-600: rgb(var(--salt-color-gray-600-rgb));
+  --salt-color-gray-700: rgb(var(--salt-color-gray-700-rgb));
+  --salt-color-gray-800: rgb(var(--salt-color-gray-800-rgb));
+  --salt-color-gray-900: rgb(var(--salt-color-gray-900-rgb));
+  --salt-color-blue-100: rgb(var(--salt-color-blue-100-rgb));
+  --salt-color-blue-200: rgb(var(--salt-color-blue-200-rgb));
+  --salt-color-blue-300: rgb(var(--salt-color-blue-300-rgb));
+  --salt-color-blue-400: rgb(var(--salt-color-blue-400-rgb));
+  --salt-color-blue-500: rgb(var(--salt-color-blue-500-rgb));
+  --salt-color-blue-600: rgb(var(--salt-color-blue-600-rgb));
+  --salt-color-blue-700: rgb(var(--salt-color-blue-700-rgb));
+  --salt-color-blue-800: rgb(var(--salt-color-blue-800-rgb));
+  --salt-color-blue-900: rgb(var(--salt-color-blue-900-rgb));
+  --salt-color-brown-100: rgb(var(--salt-color-brown-100-rgb));
+  --salt-color-brown-200: rgb(var(--salt-color-brown-200-rgb));
+  --salt-color-brown-300: rgb(var(--salt-color-brown-300-rgb));
+  --salt-color-brown-400: rgb(var(--salt-color-brown-400-rgb));
+  --salt-color-brown-500: rgb(var(--salt-color-brown-500-rgb));
+  --salt-color-brown-600: rgb(var(--salt-color-brown-600-rgb));
+  --salt-color-brown-700: rgb(var(--salt-color-brown-700-rgb));
+  --salt-color-brown-800: rgb(var(--salt-color-brown-800-rgb));
+  --salt-color-brown-900: rgb(var(--salt-color-brown-900-rgb));
+  --salt-color-green-100: rgb(var(--salt-color-green-100-rgb));
+  --salt-color-green-200: rgb(var(--salt-color-green-200-rgb));
+  --salt-color-green-300: rgb(var(--salt-color-green-300-rgb));
+  --salt-color-green-400: rgb(var(--salt-color-green-400-rgb));
+  --salt-color-green-500: rgb(var(--salt-color-green-500-rgb));
+  --salt-color-green-600: rgb(var(--salt-color-green-600-rgb));
+  --salt-color-green-700: rgb(var(--salt-color-green-700-rgb));
+  --salt-color-green-800: rgb(var(--salt-color-green-800-rgb));
+  --salt-color-green-900: rgb(var(--salt-color-green-900-rgb));
+  --salt-color-teal-100: rgb(var(--salt-color-teal-100-rgb));
+  --salt-color-teal-200: rgb(var(--salt-color-teal-200-rgb));
+  --salt-color-teal-300: rgb(var(--salt-color-teal-300-rgb));
+  --salt-color-teal-400: rgb(var(--salt-color-teal-400-rgb));
+  --salt-color-teal-500: rgb(var(--salt-color-teal-500-rgb));
+  --salt-color-teal-600: rgb(var(--salt-color-teal-600-rgb));
+  --salt-color-teal-700: rgb(var(--salt-color-teal-700-rgb));
+  --salt-color-teal-800: rgb(var(--salt-color-teal-800-rgb));
+  --salt-color-teal-900: rgb(var(--salt-color-teal-900-rgb));
+  --salt-color-orange-100: rgb(var(--salt-color-orange-100-rgb));
+  --salt-color-orange-200: rgb(var(--salt-color-orange-200-rgb));
+  --salt-color-orange-300: rgb(var(--salt-color-orange-300-rgb));
+  --salt-color-orange-400: rgb(var(--salt-color-orange-400-rgb));
+  --salt-color-orange-500: rgb(var(--salt-color-orange-500-rgb));
+  --salt-color-orange-600: rgb(var(--salt-color-orange-600-rgb));
+  --salt-color-orange-700: rgb(var(--salt-color-orange-700-rgb));
+  --salt-color-orange-800: rgb(var(--salt-color-orange-800-rgb));
+  --salt-color-orange-900: rgb(var(--salt-color-orange-900-rgb));
+  --salt-color-red-100: rgb(var(--salt-color-red-100-rgb));
+  --salt-color-red-200: rgb(var(--salt-color-red-200-rgb));
+  --salt-color-red-300: rgb(var(--salt-color-red-300-rgb));
+  --salt-color-red-400: rgb(var(--salt-color-red-400-rgb));
+  --salt-color-red-500: rgb(var(--salt-color-red-500-rgb));
+  --salt-color-red-600: rgb(var(--salt-color-red-600-rgb));
+  --salt-color-red-700: rgb(var(--salt-color-red-700-rgb));
+  --salt-color-red-800: rgb(var(--salt-color-red-800-rgb));
+  --salt-color-red-900: rgb(var(--salt-color-red-900-rgb));
+  --salt-color-purple-100: rgb(var(--salt-color-purple-100-rgb));
+  --salt-color-purple-200: rgb(var(--salt-color-purple-200-rgb));
+  --salt-color-purple-300: rgb(var(--salt-color-purple-300-rgb));
+  --salt-color-purple-400: rgb(var(--salt-color-purple-400-rgb));
+  --salt-color-purple-500: rgb(var(--salt-color-purple-500-rgb));
+  --salt-color-purple-600: rgb(var(--salt-color-purple-600-rgb));
+  --salt-color-purple-700: rgb(var(--salt-color-purple-700-rgb));
+  --salt-color-purple-800: rgb(var(--salt-color-purple-800-rgb));
+  --salt-color-purple-900: rgb(var(--salt-color-purple-900-rgb));
+  --salt-color-background-snow: rgb(var(--salt-color-background-snow-rgb));
+  --salt-color-background-marble: rgb(var(--salt-color-background-marble-rgb));
+  --salt-color-background-limestone: rgb(var(--salt-color-background-limestone-rgb));
+  --salt-color-background-titanium: rgb(var(--salt-color-background-titanium-rgb));
+  --salt-color-background-jet: rgb(var(--salt-color-background-jet-rgb));
+  --salt-color-background-granite: rgb(var(--salt-color-background-granite-rgb));
+  --salt-color-background-leather: rgb(var(--salt-color-background-leather-rgb));
+  --salt-color-jpmBrown: rgb(var(--salt-color-jpmBrown-rgb));
+  --salt-color-cobalt-100: rgb(237, 244, 255);
+  --salt-color-cobalt-200: rgb(198, 211, 239);
+  --salt-color-cobalt-300: rgb(159, 179, 223);
+  --salt-color-cobalt-400: rgb(118, 148, 207);
+  --salt-color-cobalt-500: rgb(70, 118, 191);
+  --salt-color-cobalt-600: rgb(53, 95, 161);
+  --salt-color-cobalt-700: rgb(36, 72, 133);
+  --salt-color-cobalt-800: rgb(19, 51, 105);
+  --salt-color-cobalt-900: rgb(0, 31, 79);
+  --salt-color-cider-100: rgb(255, 235, 217);
+  --salt-color-cider-200: rgb(255, 201, 158);
+  --salt-color-cider-300: rgb(242, 172, 116);
+  --salt-color-cider-400: rgb(219, 138, 72);
+  --salt-color-cider-500: rgb(171, 101, 40);
+  --salt-color-cider-600: rgb(143, 82, 31);
+  --salt-color-cider-700: rgb(116, 64, 21);
+  --salt-color-cider-800: rgb(90, 47, 13);
+  --salt-color-cider-900: rgb(66, 31, 0);
+  --salt-color-plum-100: rgb(245, 224, 255);
+  --salt-color-plum-200: rgb(230, 185, 250);
+  --salt-color-plum-300: rgb(209, 148, 235);
+  --salt-color-plum-400: rgb(188, 115, 222);
+  --salt-color-plum-500: rgb(159, 85, 194);
+  --salt-color-plum-600: rgb(131, 67, 161);
+  --salt-color-plum-700: rgb(105, 50, 130);
+  --salt-color-plum-800: rgb(79, 34, 100);
+  --salt-color-plum-900: rgb(55, 18, 71);
+  --salt-color-aqua-100: rgb(220, 247, 247);
+  --salt-color-aqua-200: rgb(177, 229, 229);
+  --salt-color-aqua-300: rgb(135, 200, 201);
+  --salt-color-aqua-400: rgb(90, 171, 173);
+  --salt-color-aqua-500: rgb(42, 130, 133);
+  --salt-color-aqua-600: rgb(31, 109, 111);
+  --salt-color-aqua-700: rgb(19, 88, 90);
+  --salt-color-aqua-800: rgb(8, 68, 70);
+  --salt-color-aqua-900: rgb(0, 49, 51);
+  --salt-color-slate-100: rgb(225, 232, 247);
+  --salt-color-slate-200: rgb(194, 202, 221);
+  --salt-color-slate-300: rgb(164, 173, 196);
+  --salt-color-slate-400: rgb(134, 145, 172);
+  --salt-color-slate-500: rgb(105, 118, 148);
+  --salt-color-slate-600: rgb(84, 95, 122);
+  --salt-color-slate-700: rgb(64, 73, 97);
+  --salt-color-slate-800: rgb(44, 53, 74);
+  --salt-color-slate-900: rgb(26, 33, 51);
+  --salt-color-rose-100: rgb(255, 227, 249);
+  --salt-color-rose-200: rgb(250, 190, 237);
+  --salt-color-rose-300: rgb(229, 154, 212);
+  --salt-color-rose-400: rgb(209, 117, 189);
+  --salt-color-rose-500: rgb(176, 84, 157);
+  --salt-color-rose-600: rgb(146, 67, 130);
+  --salt-color-rose-700: rgb(118, 50, 104);
+  --salt-color-rose-800: rgb(90, 32, 78);
+  --salt-color-rose-900: rgb(64, 16, 54);
+  --salt-color-olive-100: rgb(234, 240, 223);
+  --salt-color-olive-200: rgb(210, 222, 184);
+  --salt-color-olive-300: rgb(180, 194, 149);
+  --salt-color-olive-400: rgb(149, 166, 113);
+  --salt-color-olive-500: rgb(109, 124, 77);
+  --salt-color-olive-600: rgb(88, 103, 58);
+  --salt-color-olive-700: rgb(68, 83, 39);
+  --salt-color-olive-800: rgb(49, 64, 21);
+  --salt-color-olive-900: rgb(31, 46, 0);
+  --salt-color-salmon-100: rgb(255, 232, 233);
+  --salt-color-salmon-200: rgb(255, 194, 194);
+  --salt-color-salmon-300: rgb(240, 155, 153);
+  --salt-color-salmon-400: rgb(222, 120, 120);
+  --salt-color-salmon-500: rgb(189, 85, 88);
+  --salt-color-salmon-600: rgb(154, 64, 67);
+  --salt-color-salmon-700: rgb(121, 44, 48);
+  --salt-color-salmon-800: rgb(89, 25, 29);
+  --salt-color-salmon-900: rgb(59, 6, 8);
+  --salt-color-indigo-100: rgb(231, 227, 255);
+  --salt-color-indigo-200: rgb(208, 194, 252);
+  --salt-color-indigo-300: rgb(180, 162, 242);
+  --salt-color-indigo-400: rgb(149, 129, 229);
+  --salt-color-indigo-500: rgb(118, 101, 207);
+  --salt-color-indigo-600: rgb(98, 85, 170);
+  --salt-color-indigo-700: rgb(77, 66, 135);
+  --salt-color-indigo-800: rgb(57, 49, 102);
+  --salt-color-indigo-900: rgb(38, 32, 71);
+  --salt-color-jade-100: rgb(225, 245, 230);
+  --salt-color-jade-200: rgb(179, 229, 187);
+  --salt-color-jade-300: rgb(137, 201, 146);
+  --salt-color-jade-400: rgb(92, 173, 106);
+  --salt-color-jade-500: rgb(45, 133, 67);
+  --salt-color-jade-600: rgb(33, 111, 53);
+  --salt-color-jade-700: rgb(21, 90, 39);
+  --salt-color-jade-800: rgb(8, 70, 26);
+  --salt-color-jade-900: rgb(0, 51, 13);
+  --salt-color-citrine-100: rgb(255, 249, 217);
+  --salt-color-citrine-200: rgb(240, 225, 165);
+  --salt-color-citrine-300: rgb(209, 189, 115);
+  --salt-color-citrine-400: rgb(178, 156, 66);
+  --salt-color-citrine-500: rgb(135, 116, 16);
+  --salt-color-citrine-600: rgb(114, 98, 12);
+  --salt-color-citrine-700: rgb(94, 80, 9);
+  --salt-color-citrine-800: rgb(74, 63, 6);
+  --salt-color-citrine-900: rgb(51, 43, 0);
+  --salt-color-autumn-100: rgb(255, 233, 217);
+  --salt-color-autumn-200: rgb(255, 197, 161);
+  --salt-color-autumn-300: rgb(242, 163, 114);
+  --salt-color-autumn-400: rgb(222, 126, 64);
+  --salt-color-autumn-500: rgb(189, 90, 19);
+  --salt-color-autumn-600: rgb(153, 73, 18);
+  --salt-color-autumn-700: rgb(119, 55, 14);
+  --salt-color-autumn-800: rgb(86, 39, 10);
+  --salt-color-autumn-900: rgb(56, 23, 0);
+  --salt-color-lavender-100: rgb(250, 235, 250);
+  --salt-color-lavender-200: rgb(237, 199, 237);
+  --salt-color-lavender-300: rgb(212, 167, 212);
+  --salt-color-lavender-400: rgb(186, 134, 186);
+  --salt-color-lavender-500: rgb(148, 102, 148);
+  --salt-color-lavender-600: rgb(126, 80, 126);
+  --salt-color-lavender-700: rgb(105, 58, 105);
+  --salt-color-lavender-800: rgb(84, 37, 84);
+  --salt-color-lavender-900: rgb(64, 15, 64);
+  --salt-color-ocean-100: rgb(227, 251, 255);
+  --salt-color-ocean-200: rgb(180, 229, 240);
+  --salt-color-ocean-300: rgb(131, 197, 212);
+  --salt-color-ocean-400: rgb(80, 167, 186);
+  --salt-color-ocean-500: rgb(0, 128, 148);
+  --salt-color-ocean-600: rgb(0, 106, 122);
+  --salt-color-ocean-700: rgb(0, 84, 97);
+  --salt-color-ocean-800: rgb(0, 64, 74);
+  --salt-color-ocean-900: rgb(0, 44, 51);
+  --salt-color-smoke-100: rgb(242, 245, 250);
+  --salt-color-smoke-200: rgb(208, 211, 216);
+  --salt-color-smoke-300: rgb(176, 179, 184);
+  --salt-color-smoke-400: rgb(144, 147, 152);
+  --salt-color-smoke-500: rgb(114, 117, 122);
+  --salt-color-smoke-600: rgb(93, 96, 101);
+  --salt-color-smoke-700: rgb(73, 76, 81);
+  --salt-color-smoke-800: rgb(53, 56, 61);
+  --salt-color-smoke-900: rgb(35, 38, 43);
+  --salt-color-fuchsia-100: rgb(255, 232, 247);
+  --salt-color-fuchsia-200: rgb(255, 191, 229);
+  --salt-color-fuchsia-300: rgb(240, 151, 203);
+  --salt-color-fuchsia-400: rgb(222, 109, 178);
+  --salt-color-fuchsia-500: rgb(194, 71, 149);
+  --salt-color-fuchsia-600: rgb(167, 54, 125);
+  --salt-color-fuchsia-700: rgb(140, 37, 101);
+  --salt-color-fuchsia-800: rgb(114, 19, 79);
+  --salt-color-fuchsia-900: rgb(89, 0, 57);
+  --salt-color-lime-100: rgb(239, 245, 220);
+  --salt-color-lime-200: rgb(215, 227, 168);
+  --salt-color-lime-300: rgb(182, 196, 120);
+  --salt-color-lime-400: rgb(146, 166, 71);
+  --salt-color-lime-500: rgb(102, 125, 21);
+  --salt-color-lime-600: rgb(85, 106, 16);
+  --salt-color-lime-700: rgb(69, 87, 11);
+  --salt-color-lime-800: rgb(53, 68, 6);
+  --salt-color-lime-900: rgb(36, 46, 0);
+  --salt-color-fur-100: rgb(255, 244, 235);
+  --salt-color-fur-200: rgb(245, 214, 191);
+  --salt-color-fur-300: rgb(219, 178, 147);
+  --salt-color-fur-400: rgb(194, 144, 107);
+  --salt-color-fur-500: rgb(153, 106, 69);
+  --salt-color-fur-600: rgb(130, 85, 52);
+  --salt-color-fur-700: rgb(107, 65, 36);
+  --salt-color-fur-800: rgb(85, 46, 20);
+  --salt-color-fur-900: rgb(64, 28, 0);
+  --salt-color-violet-100: rgb(237, 239, 255);
+  --salt-color-violet-200: rgb(202, 203, 252);
+  --salt-color-violet-300: rgb(167, 169, 235);
+  --salt-color-violet-400: rgb(134, 139, 219);
+  --salt-color-violet-500: rgb(99, 110, 191);
+  --salt-color-violet-600: rgb(81, 90, 159);
+  --salt-color-violet-700: rgb(63, 71, 128);
+  --salt-color-violet-800: rgb(47, 53, 99);
+  --salt-color-violet-900: rgb(31, 36, 71);
+  --salt-color-forest-100: rgb(237, 250, 245);
+  --salt-color-forest-200: rgb(188, 232, 211);
+  --salt-color-forest-300: rgb(141, 204, 174);
+  --salt-color-forest-400: rgb(91, 176, 136);
+  --salt-color-forest-500: rgb(35, 133, 94);
+  --salt-color-forest-600: rgb(25, 111, 77);
+  --salt-color-forest-700: rgb(15, 90, 61);
+  --salt-color-forest-800: rgb(6, 70, 46);
+  --salt-color-forest-900: rgb(0, 51, 31);
+}
+
+/* css/next/palette/accent.css */
+.salt-theme.salt-theme-next[data-mode=light][data-accent=blue] {
+  --salt-palette-accent: var(--salt-color-blue-500);
+  --salt-palette-accent-strong: var(--salt-color-blue-600);
+  --salt-palette-accent-stronger: var(--salt-color-blue-700);
+  --salt-palette-accent-strongest: var(--salt-color-blue-800);
+  --salt-palette-accent-weak: var(--salt-color-blue-400);
+  --salt-palette-accent-weaker: var(--salt-color-blue-200);
+  --salt-palette-accent-weakest: var(--salt-color-blue-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark][data-accent=blue] {
+  --salt-palette-accent: var(--salt-color-blue-500);
+  --salt-palette-accent-strong: var(--salt-color-blue-400);
+  --salt-palette-accent-stronger: var(--salt-color-blue-300);
+  --salt-palette-accent-strongest: var(--salt-color-blue-200);
+  --salt-palette-accent-weak: var(--salt-color-blue-600);
+  --salt-palette-accent-weaker: var(--salt-color-blue-800);
+  --salt-palette-accent-weakest: var(--salt-color-blue-900);
+}
+.salt-theme.salt-theme-next[data-mode=light][data-accent=teal] {
+  --salt-palette-accent: var(--salt-color-teal-500);
+  --salt-palette-accent-strong: var(--salt-color-teal-600);
+  --salt-palette-accent-stronger: var(--salt-color-teal-700);
+  --salt-palette-accent-strongest: var(--salt-color-teal-800);
+  --salt-palette-accent-weak: var(--salt-color-teal-400);
+  --salt-palette-accent-weaker: var(--salt-color-teal-200);
+  --salt-palette-accent-weakest: var(--salt-color-teal-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark][data-accent=teal] {
+  --salt-palette-accent: var(--salt-color-teal-500);
+  --salt-palette-accent-strong: var(--salt-color-teal-400);
+  --salt-palette-accent-stronger: var(--salt-color-teal-300);
+  --salt-palette-accent-strongest: var(--salt-color-teal-200);
+  --salt-palette-accent-weak: var(--salt-color-teal-600);
+  --salt-palette-accent-weaker: var(--salt-color-teal-800);
+  --salt-palette-accent-weakest: var(--salt-color-teal-900);
+}
+
+/* css/next/palette/alpha.css */
+.salt-theme-next[data-mode=light] {
+  --salt-palette-alpha-highest: var(--salt-color-white-80a);
+  --salt-palette-alpha-higher: var(--salt-color-white-65a);
+  --salt-palette-alpha-high: var(--salt-color-white-50a);
+  --salt-palette-alpha-mediumHigh: var(--salt-color-white-40a);
+  --salt-palette-alpha-medium: var(--salt-color-white-30a);
+  --salt-palette-alpha-mediumLow: var(--salt-color-white-20a);
+  --salt-palette-alpha-low: var(--salt-color-white-15a);
+  --salt-palette-alpha-lower: var(--salt-color-white-10a);
+  --salt-palette-alpha-lowest: var(--salt-color-white-5a);
+  --salt-palette-alpha-contrast-highest: var(--salt-color-black-80a);
+  --salt-palette-alpha-contrast-higher: var(--salt-color-black-65a);
+  --salt-palette-alpha-contrast-high: var(--salt-color-black-50a);
+  --salt-palette-alpha-contrast-mediumHigh: var(--salt-color-black-40a);
+  --salt-palette-alpha-contrast-medium: var(--salt-color-black-30a);
+  --salt-palette-alpha-contrast-mediumLow: var(--salt-color-black-20a);
+  --salt-palette-alpha-contrast-low: var(--salt-color-black-15a);
+  --salt-palette-alpha-contrast-lower: var(--salt-color-black-10a);
+  --salt-palette-alpha-contrast-lowest: var(--salt-color-black-5a);
+  --salt-palette-alpha-dark-highest: var(--salt-color-black-80a);
+  --salt-palette-alpha-dark-higher: var(--salt-color-black-65a);
+  --salt-palette-alpha-dark-high: var(--salt-color-black-50a);
+  --salt-palette-alpha-dark-mediumHigh: var(--salt-color-black-40a);
+  --salt-palette-alpha-dark-medium: var(--salt-color-black-30a);
+  --salt-palette-alpha-dark-mediumLow: var(--salt-color-black-20a);
+  --salt-palette-alpha-dark-low: var(--salt-color-black-15a);
+  --salt-palette-alpha-dark-lower: var(--salt-color-black-10a);
+  --salt-palette-alpha-dark-lowest: var(--salt-color-black-5a);
+  --salt-palette-alpha-light-highest: var(--salt-color-white-80a);
+  --salt-palette-alpha-light-higher: var(--salt-color-white-65a);
+  --salt-palette-alpha-light-high: var(--salt-color-white-50a);
+  --salt-palette-alpha-light-mediumHigh: var(--salt-color-white-40a);
+  --salt-palette-alpha-light-medium: var(--salt-color-white-30a);
+  --salt-palette-alpha-light-mediumLow: var(--salt-color-white-20a);
+  --salt-palette-alpha-light-low: var(--salt-color-white-15a);
+  --salt-palette-alpha-light-lower: var(--salt-color-white-10a);
+  --salt-palette-alpha-light-lowest: var(--salt-color-white-5a);
+}
+.salt-theme-next[data-mode=dark] {
+  --salt-palette-alpha-highest: var(--salt-color-black-80a);
+  --salt-palette-alpha-higher: var(--salt-color-black-65a);
+  --salt-palette-alpha-high: var(--salt-color-black-50a);
+  --salt-palette-alpha-mediumHigh: var(--salt-color-black-40a);
+  --salt-palette-alpha-medium: var(--salt-color-black-30a);
+  --salt-palette-alpha-mediumLow: var(--salt-color-black-20a);
+  --salt-palette-alpha-low: var(--salt-color-black-15a);
+  --salt-palette-alpha-lower: var(--salt-color-black-10a);
+  --salt-palette-alpha-lowest: var(--salt-color-black-5a);
+  --salt-palette-alpha-contrast-highest: var(--salt-color-white-80a);
+  --salt-palette-alpha-contrast-higher: var(--salt-color-white-65a);
+  --salt-palette-alpha-contrast-high: var(--salt-color-white-50a);
+  --salt-palette-alpha-contrast-mediumHigh: var(--salt-color-white-40a);
+  --salt-palette-alpha-contrast-medium: var(--salt-color-white-30a);
+  --salt-palette-alpha-contrast-mediumLow: var(--salt-color-white-20a);
+  --salt-palette-alpha-contrast-low: var(--salt-color-white-15a);
+  --salt-palette-alpha-contrast-lower: var(--salt-color-white-10a);
+  --salt-palette-alpha-contrast-lowest: var(--salt-color-white-5a);
+  --salt-palette-alpha-dark-highest: var(--salt-color-black-80a);
+  --salt-palette-alpha-dark-higher: var(--salt-color-black-65a);
+  --salt-palette-alpha-dark-high: var(--salt-color-black-50a);
+  --salt-palette-alpha-dark-mediumHigh: var(--salt-color-black-40a);
+  --salt-palette-alpha-dark-medium: var(--salt-color-black-30a);
+  --salt-palette-alpha-dark-mediumLow: var(--salt-color-black-20a);
+  --salt-palette-alpha-dark-low: var(--salt-color-black-15a);
+  --salt-palette-alpha-dark-lower: var(--salt-color-black-10a);
+  --salt-palette-alpha-dark-lowest: var(--salt-color-black-5a);
+  --salt-palette-alpha-light-highest: var(--salt-color-white-80a);
+  --salt-palette-alpha-light-higher: var(--salt-color-white-65a);
+  --salt-palette-alpha-light-high: var(--salt-color-white-50a);
+  --salt-palette-alpha-light-mediumHigh: var(--salt-color-white-40a);
+  --salt-palette-alpha-light-medium: var(--salt-color-white-30a);
+  --salt-palette-alpha-light-mediumLow: var(--salt-color-white-20a);
+  --salt-palette-alpha-light-low: var(--salt-color-white-15a);
+  --salt-palette-alpha-light-lower: var(--salt-color-white-10a);
+  --salt-palette-alpha-light-lowest: var(--salt-color-white-5a);
+}
+
+/* css/next/palette/background.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-background-primary: var(--salt-color-background-snow);
+  --salt-palette-background-primary-disabled: var(--salt-color-background-snow-40a);
+  --salt-palette-background-secondary: var(--salt-color-background-marble);
+  --salt-palette-background-secondary-disabled: var(--salt-color-background-marble-40a);
+  --salt-palette-background-tertiary: var(--salt-color-background-limestone);
+  --salt-palette-background-tertiary-disabled: var(--salt-color-background-limestone-40a);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-background-primary: var(--salt-color-background-jet);
+  --salt-palette-background-primary-disabled: var(--salt-color-background-jet-40a);
+  --salt-palette-background-secondary: var(--salt-color-background-granite);
+  --salt-palette-background-secondary-disabled: var(--salt-color-background-granite-40a);
+  --salt-palette-background-tertiary: var(--salt-color-background-leather);
+  --salt-palette-background-tertiary-disabled: var(--salt-color-background-leather-40a);
+}
+
+/* css/next/palette/brand.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-brand-strong: var(--salt-color-jpmBrown);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-brand-strong: var(--salt-color-brown-400);
+}
+
+/* css/next/palette/categorical.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-categorical-1: var(--salt-color-cobalt-500);
+  --salt-palette-categorical-1-strong: var(--salt-color-cobalt-600);
+  --salt-palette-categorical-1-weakest: var(--salt-color-cobalt-100);
+  --salt-palette-categorical-2: var(--salt-color-cider-500);
+  --salt-palette-categorical-2-strong: var(--salt-color-cider-600);
+  --salt-palette-categorical-2-weakest: var(--salt-color-cider-100);
+  --salt-palette-categorical-3: var(--salt-color-plum-500);
+  --salt-palette-categorical-3-strong: var(--salt-color-plum-600);
+  --salt-palette-categorical-3-weakest: var(--salt-color-plum-100);
+  --salt-palette-categorical-4: var(--salt-color-aqua-500);
+  --salt-palette-categorical-4-strong: var(--salt-color-aqua-600);
+  --salt-palette-categorical-4-weakest: var(--salt-color-aqua-100);
+  --salt-palette-categorical-5: var(--salt-color-slate-500);
+  --salt-palette-categorical-5-strong: var(--salt-color-slate-600);
+  --salt-palette-categorical-5-weakest: var(--salt-color-slate-100);
+  --salt-palette-categorical-6: var(--salt-color-rose-500);
+  --salt-palette-categorical-6-strong: var(--salt-color-rose-600);
+  --salt-palette-categorical-6-weakest: var(--salt-color-rose-100);
+  --salt-palette-categorical-7: var(--salt-color-olive-500);
+  --salt-palette-categorical-7-strong: var(--salt-color-olive-600);
+  --salt-palette-categorical-7-weakest: var(--salt-color-olive-100);
+  --salt-palette-categorical-8: var(--salt-color-salmon-500);
+  --salt-palette-categorical-8-strong: var(--salt-color-salmon-600);
+  --salt-palette-categorical-8-weakest: var(--salt-color-salmon-100);
+  --salt-palette-categorical-9: var(--salt-color-indigo-500);
+  --salt-palette-categorical-9-strong: var(--salt-color-indigo-600);
+  --salt-palette-categorical-9-weakest: var(--salt-color-indigo-100);
+  --salt-palette-categorical-10: var(--salt-color-jade-500);
+  --salt-palette-categorical-10-strong: var(--salt-color-jade-600);
+  --salt-palette-categorical-10-weakest: var(--salt-color-jade-100);
+  --salt-palette-categorical-11: var(--salt-color-citrine-500);
+  --salt-palette-categorical-11-strong: var(--salt-color-citrine-600);
+  --salt-palette-categorical-11-weakest: var(--salt-color-citrine-100);
+  --salt-palette-categorical-12: var(--salt-color-autumn-500);
+  --salt-palette-categorical-12-strong: var(--salt-color-autumn-600);
+  --salt-palette-categorical-12-weakest: var(--salt-color-autumn-100);
+  --salt-palette-categorical-13: var(--salt-color-lavender-500);
+  --salt-palette-categorical-13-strong: var(--salt-color-lavender-600);
+  --salt-palette-categorical-13-weakest: var(--salt-color-lavender-100);
+  --salt-palette-categorical-14: var(--salt-color-ocean-500);
+  --salt-palette-categorical-14-strong: var(--salt-color-ocean-600);
+  --salt-palette-categorical-14-weakest: var(--salt-color-ocean-100);
+  --salt-palette-categorical-15: var(--salt-color-smoke-500);
+  --salt-palette-categorical-15-strong: var(--salt-color-smoke-600);
+  --salt-palette-categorical-15-weakest: var(--salt-color-smoke-100);
+  --salt-palette-categorical-16: var(--salt-color-fuchsia-500);
+  --salt-palette-categorical-16-strong: var(--salt-color-fuchsia-600);
+  --salt-palette-categorical-16-weakest: var(--salt-color-fuchsia-100);
+  --salt-palette-categorical-17: var(--salt-color-lime-500);
+  --salt-palette-categorical-17-strong: var(--salt-color-lime-600);
+  --salt-palette-categorical-17-weakest: var(--salt-color-lime-100);
+  --salt-palette-categorical-18: var(--salt-color-fur-500);
+  --salt-palette-categorical-18-strong: var(--salt-color-fur-600);
+  --salt-palette-categorical-18-weakest: var(--salt-color-fur-100);
+  --salt-palette-categorical-19: var(--salt-color-violet-500);
+  --salt-palette-categorical-19-strong: var(--salt-color-violet-600);
+  --salt-palette-categorical-19-weakest: var(--salt-color-violet-100);
+  --salt-palette-categorical-20: var(--salt-color-forest-500);
+  --salt-palette-categorical-20-strong: var(--salt-color-forest-600);
+  --salt-palette-categorical-20-weakest: var(--salt-color-forest-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-categorical-1: var(--salt-color-cobalt-500);
+  --salt-palette-categorical-1-strong: var(--salt-color-cobalt-400);
+  --salt-palette-categorical-1-weakest: var(--salt-color-cobalt-900);
+  --salt-palette-categorical-2: var(--salt-color-cider-500);
+  --salt-palette-categorical-2-strong: var(--salt-color-cider-400);
+  --salt-palette-categorical-2-weakest: var(--salt-color-cider-900);
+  --salt-palette-categorical-3: var(--salt-color-plum-500);
+  --salt-palette-categorical-3-strong: var(--salt-color-plum-400);
+  --salt-palette-categorical-3-weakest: var(--salt-color-plum-900);
+  --salt-palette-categorical-4: var(--salt-color-aqua-500);
+  --salt-palette-categorical-4-strong: var(--salt-color-aqua-400);
+  --salt-palette-categorical-4-weakest: var(--salt-color-aqua-900);
+  --salt-palette-categorical-5: var(--salt-color-slate-500);
+  --salt-palette-categorical-5-strong: var(--salt-color-slate-400);
+  --salt-palette-categorical-5-weakest: var(--salt-color-slate-900);
+  --salt-palette-categorical-6: var(--salt-color-rose-500);
+  --salt-palette-categorical-6-strong: var(--salt-color-rose-400);
+  --salt-palette-categorical-6-weakest: var(--salt-color-rose-900);
+  --salt-palette-categorical-7: var(--salt-color-olive-500);
+  --salt-palette-categorical-7-strong: var(--salt-color-olive-400);
+  --salt-palette-categorical-7-weakest: var(--salt-color-olive-900);
+  --salt-palette-categorical-8: var(--salt-color-salmon-500);
+  --salt-palette-categorical-8-strong: var(--salt-color-salmon-400);
+  --salt-palette-categorical-8-weakest: var(--salt-color-salmon-900);
+  --salt-palette-categorical-9: var(--salt-color-indigo-500);
+  --salt-palette-categorical-9-strong: var(--salt-color-indigo-400);
+  --salt-palette-categorical-9-weakest: var(--salt-color-indigo-900);
+  --salt-palette-categorical-10: var(--salt-color-jade-500);
+  --salt-palette-categorical-10-strong: var(--salt-color-jade-400);
+  --salt-palette-categorical-10-weakest: var(--salt-color-jade-900);
+  --salt-palette-categorical-11: var(--salt-color-citrine-500);
+  --salt-palette-categorical-11-strong: var(--salt-color-citrine-400);
+  --salt-palette-categorical-11-weakest: var(--salt-color-citrine-900);
+  --salt-palette-categorical-12: var(--salt-color-autumn-500);
+  --salt-palette-categorical-12-strong: var(--salt-color-autumn-400);
+  --salt-palette-categorical-12-weakest: var(--salt-color-autumn-900);
+  --salt-palette-categorical-13: var(--salt-color-lavender-500);
+  --salt-palette-categorical-13-strong: var(--salt-color-lavender-400);
+  --salt-palette-categorical-13-weakest: var(--salt-color-lavender-900);
+  --salt-palette-categorical-14: var(--salt-color-ocean-500);
+  --salt-palette-categorical-14-strong: var(--salt-color-ocean-400);
+  --salt-palette-categorical-14-weakest: var(--salt-color-ocean-900);
+  --salt-palette-categorical-15: var(--salt-color-smoke-500);
+  --salt-palette-categorical-15-strong: var(--salt-color-smoke-400);
+  --salt-palette-categorical-15-weakest: var(--salt-color-smoke-900);
+  --salt-palette-categorical-16: var(--salt-color-fuchsia-500);
+  --salt-palette-categorical-16-strong: var(--salt-color-fuchsia-400);
+  --salt-palette-categorical-16-weakest: var(--salt-color-fuchsia-900);
+  --salt-palette-categorical-17: var(--salt-color-lime-500);
+  --salt-palette-categorical-17-strong: var(--salt-color-lime-400);
+  --salt-palette-categorical-17-weakest: var(--salt-color-lime-900);
+  --salt-palette-categorical-18: var(--salt-color-fur-500);
+  --salt-palette-categorical-18-strong: var(--salt-color-fur-400);
+  --salt-palette-categorical-18-weakest: var(--salt-color-fur-900);
+  --salt-palette-categorical-19: var(--salt-color-violet-500);
+  --salt-palette-categorical-19-strong: var(--salt-color-violet-400);
+  --salt-palette-categorical-19-weakest: var(--salt-color-violet-900);
+  --salt-palette-categorical-20: var(--salt-color-forest-500);
+  --salt-palette-categorical-20-strong: var(--salt-color-forest-400);
+  --salt-palette-categorical-20-weakest: var(--salt-color-forest-900);
+}
+
+/* css/next/palette/corner.css */
+.salt-theme-next[data-corner=rounded] {
+  --salt-palette-corner-weaker: var(--salt-curve-50);
+  --salt-palette-corner-weak: var(--salt-curve-100);
+  --salt-palette-corner: var(--salt-curve-150);
+  --salt-palette-corner-strong: var(--salt-curve-200);
+  --salt-palette-corner-stronger: var(--salt-curve-250);
+  --salt-palette-corner-strongest: var(--salt-curve-999);
+}
+.salt-theme-next[data-corner=sharp] {
+  --salt-palette-corner-weaker: var(--salt-curve-0);
+  --salt-palette-corner-weak: var(--salt-curve-0);
+  --salt-palette-corner: var(--salt-curve-0);
+  --salt-palette-corner-strong: var(--salt-curve-0);
+  --salt-palette-corner-stronger: var(--salt-curve-0);
+  --salt-palette-corner-strongest: var(--salt-curve-999);
+}
+
+/* css/next/palette/foreground.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-foreground-primary: var(--salt-color-black);
+  --salt-palette-foreground-primary-disabled: var(--salt-color-black-40a);
+  --salt-palette-foreground-primary-alt: var(--salt-color-white);
+  --salt-palette-foreground-secondary: var(--salt-color-gray-700);
+  --salt-palette-foreground-secondary-disabled: var(--salt-color-gray-700-40a);
+  --salt-palette-foreground-visited: var(--salt-color-purple-800);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-foreground-primary: var(--salt-color-white);
+  --salt-palette-foreground-primary-disabled: var(--salt-color-white-40a);
+  --salt-palette-foreground-primary-alt: var(--salt-color-white);
+  --salt-palette-foreground-secondary: var(--salt-color-gray-300);
+  --salt-palette-foreground-secondary-disabled: var(--salt-color-gray-300-40a);
+  --salt-palette-foreground-visited: var(--salt-color-purple-200);
+}
+
+/* css/next/palette/info.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-info: var(--salt-color-blue-500);
+  --salt-palette-info-strong: var(--salt-color-blue-600);
+  --salt-palette-info-weakest: var(--salt-color-blue-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-info: var(--salt-color-blue-500);
+  --salt-palette-info-strong: var(--salt-color-blue-400);
+  --salt-palette-info-weakest: var(--salt-color-blue-900);
+}
+
+/* css/next/palette/negative.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-negative-stronger: var(--salt-color-red-700);
+  --salt-palette-negative-strong: var(--salt-color-red-600);
+  --salt-palette-negative: var(--salt-color-red-500);
+  --salt-palette-negative-weaker: var(--salt-color-red-200);
+  --salt-palette-negative-weakest: var(--salt-color-red-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-negative-stronger: var(--salt-color-red-300);
+  --salt-palette-negative-strong: var(--salt-color-red-400);
+  --salt-palette-negative: var(--salt-color-red-500);
+  --salt-palette-negative-weaker: var(--salt-color-red-800);
+  --salt-palette-negative-weakest: var(--salt-color-red-900);
+}
+
+/* css/next/palette/neutral.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-neutral: var(--salt-color-gray-500);
+  --salt-palette-neutral-disabled: var(--salt-color-gray-500-40a);
+  --salt-palette-neutral-readonly: var(--salt-color-gray-500-10a);
+  --salt-palette-neutral-strong: var(--salt-color-gray-600);
+  --salt-palette-neutral-stronger: var(--salt-color-gray-700);
+  --salt-palette-neutral-strongest: var(--salt-color-gray-800);
+  --salt-palette-neutral-weak: var(--salt-color-gray-400);
+  --salt-palette-neutral-weaker: var(--salt-color-gray-200);
+  --salt-palette-neutral-weakest: var(--salt-color-gray-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-neutral: var(--salt-color-gray-500);
+  --salt-palette-neutral-disabled: var(--salt-color-gray-500-40a);
+  --salt-palette-neutral-readonly: var(--salt-color-gray-500-10a);
+  --salt-palette-neutral-strong: var(--salt-color-gray-400);
+  --salt-palette-neutral-stronger: var(--salt-color-gray-200);
+  --salt-palette-neutral-strongest: var(--salt-color-gray-100);
+  --salt-palette-neutral-weak: var(--salt-color-gray-600);
+  --salt-palette-neutral-weaker: var(--salt-color-gray-800);
+  --salt-palette-neutral-weakest: var(--salt-color-gray-900);
+}
+
+/* css/next/palette/positive.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-positive-stronger: var(--salt-color-green-700);
+  --salt-palette-positive-strong: var(--salt-color-green-600);
+  --salt-palette-positive: var(--salt-color-green-500);
+  --salt-palette-positive-weaker: var(--salt-color-green-200);
+  --salt-palette-positive-weakest: var(--salt-color-green-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-positive-stronger: var(--salt-color-green-300);
+  --salt-palette-positive-strong: var(--salt-color-green-400);
+  --salt-palette-positive: var(--salt-color-green-500);
+  --salt-palette-positive-weaker: var(--salt-color-green-800);
+  --salt-palette-positive-weakest: var(--salt-color-green-900);
+}
+
+/* css/next/palette/shadow.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-shadow-lowest: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --salt-shadow-lower: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  --salt-shadow-low: 0 4px 8px 0 rgba(0, 0, 0, 0.15);
+  --salt-shadow-mediumLow: 0 6px 10px 0 rgba(0, 0, 0, 0.2);
+  --salt-shadow-medium: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-shadow-lowest: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --salt-shadow-lower: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
+  --salt-shadow-low: 0 4px 8px 0 rgba(0, 0, 0, 0.55);
+  --salt-shadow-mediumLow: 0 6px 10px 0 rgba(0, 0, 0, 0.55);
+  --salt-shadow-medium: 0 12px 40px 0 rgba(0, 0, 0, 0.65);
+}
+
+/* css/next/palette/warning.css */
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-warning-stronger: var(--salt-color-orange-700);
+  --salt-palette-warning-strong: var(--salt-color-orange-600);
+  --salt-palette-warning: var(--salt-color-orange-500);
+  --salt-palette-warning-weaker: var(--salt-color-orange-200);
+  --salt-palette-warning-weakest: var(--salt-color-orange-100);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-warning-stronger: var(--salt-color-orange-300);
+  --salt-palette-warning-strong: var(--salt-color-orange-400);
+  --salt-palette-warning: var(--salt-color-orange-500);
+  --salt-palette-warning-weaker: var(--salt-color-orange-800);
+  --salt-palette-warning-weakest: var(--salt-color-orange-900);
+}
+
+/* css/next/characteristics/actionable.css */
+.salt-theme.salt-theme-next {
+  --salt-actionable-accented-bold-background-active: var(--salt-palette-accent-weaker);
+  --salt-actionable-accented-bold-background-hover: linear-gradient(var(--salt-palette-alpha-dark-low), var(--salt-palette-alpha-dark-low)) var(--salt-palette-accent);
+  --salt-actionable-accented-bold-background: var(--salt-palette-accent);
+  --salt-actionable-accented-bold-borderColor-active: var(--salt-palette-accent);
+  --salt-actionable-accented-bold-borderColor-hover: var(--salt-palette-alpha-contrast-medium);
+  --salt-actionable-accented-bold-borderColor: var(--salt-palette-accent);
+  --salt-actionable-accented-bold-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-accented-bold-foreground-hover: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-accented-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-accented-background-active: var(--salt-palette-accent-weaker);
+  --salt-actionable-accented-background-hover: var(--salt-palette-accent-weakest);
+  --salt-actionable-accented-background: var(--salt-color-transparent);
+  --salt-actionable-accented-borderColor-active: var(--salt-palette-accent);
+  --salt-actionable-accented-borderColor-hover: var(--salt-palette-accent);
+  --salt-actionable-accented-borderColor: var(--salt-palette-accent);
+  --salt-actionable-accented-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-accented-foreground-hover: var(--salt-palette-accent-stronger);
+  --salt-actionable-accented-foreground: var(--salt-palette-accent-strong);
+  --salt-actionable-accented-background-selected: var(--salt-palette-accent);
+  --salt-actionable-accented-borderColor-selected: var(--salt-palette-accent);
+  --salt-actionable-accented-foreground-selected: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-accented-subtle-background-active: var(--salt-palette-alpha-contrast-low);
+  --salt-actionable-accented-subtle-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-accented-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-accented-subtle-foreground-hover: var(--salt-palette-accent-stronger);
+  --salt-actionable-accented-subtle-foreground: var(--salt-palette-accent-strong);
+  --salt-actionable-bold-background-active: var(--salt-palette-neutral-weaker);
+  --salt-actionable-bold-background-hover: linear-gradient(var(--salt-palette-alpha-dark-low), var(--salt-palette-alpha-dark-low)) var(--salt-palette-neutral);
+  --salt-actionable-bold-background: var(--salt-palette-neutral);
+  --salt-actionable-bold-borderColor-active: var(--salt-palette-neutral);
+  --salt-actionable-bold-borderColor-hover: var(--salt-palette-alpha-contrast-medium);
+  --salt-actionable-bold-borderColor: var(--salt-palette-neutral);
+  --salt-actionable-bold-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-bold-foreground-hover: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-background-active: var(--salt-palette-neutral-weaker);
+  --salt-actionable-background-hover: var(--salt-palette-neutral-weakest);
+  --salt-actionable-background: var(--salt-color-transparent);
+  --salt-actionable-borderColor-active: var(--salt-palette-neutral);
+  --salt-actionable-borderColor-hover: var(--salt-palette-neutral);
+  --salt-actionable-borderColor: var(--salt-palette-neutral);
+  --salt-actionable-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-foreground-hover: var(--salt-palette-foreground-primary);
+  --salt-actionable-foreground: var(--salt-palette-foreground-primary);
+  --salt-actionable-background-selected: var(--salt-palette-neutral);
+  --salt-actionable-borderColor-selected: var(--salt-palette-neutral);
+  --salt-actionable-foreground-selected: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-subtle-background-active: var(--salt-palette-alpha-contrast-low);
+  --salt-actionable-subtle-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-subtle-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-subtle-foreground-hover: var(--salt-palette-foreground-primary);
+  --salt-actionable-subtle-foreground: var(--salt-palette-foreground-primary);
+  --salt-actionable-negative-bold-background-active: var(--salt-palette-negative-weaker);
+  --salt-actionable-negative-bold-background-hover: linear-gradient(var(--salt-palette-alpha-dark-low), var(--salt-palette-alpha-dark-low)) var(--salt-palette-negative);
+  --salt-actionable-negative-bold-background: var(--salt-palette-negative);
+  --salt-actionable-negative-bold-borderColor-active: var(--salt-palette-negative);
+  --salt-actionable-negative-bold-borderColor-hover: var(--salt-palette-alpha-contrast-medium);
+  --salt-actionable-negative-bold-borderColor: var(--salt-palette-negative);
+  --salt-actionable-negative-bold-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-negative-bold-foreground-hover: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-negative-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-negative-background-active: var(--salt-palette-negative-weaker);
+  --salt-actionable-negative-background-hover: var(--salt-palette-negative-weakest);
+  --salt-actionable-negative-background: var(--salt-color-transparent);
+  --salt-actionable-negative-borderColor-active: var(--salt-palette-negative);
+  --salt-actionable-negative-borderColor-hover: var(--salt-palette-negative);
+  --salt-actionable-negative-borderColor: var(--salt-palette-negative);
+  --salt-actionable-negative-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-negative-foreground-hover: var(--salt-palette-negative-stronger);
+  --salt-actionable-negative-foreground: var(--salt-palette-negative-strong);
+  --salt-actionable-negative-background-selected: var(--salt-palette-negative);
+  --salt-actionable-negative-borderColor-selected: var(--salt-palette-negative);
+  --salt-actionable-negative-foreground-selected: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-negative-subtle-background-active: var(--salt-palette-alpha-contrast-low);
+  --salt-actionable-negative-subtle-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-negative-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-negative-subtle-foreground-hover: var(--salt-palette-negative-stronger);
+  --salt-actionable-negative-subtle-foreground: var(--salt-palette-negative-strong);
+  --salt-actionable-positive-bold-background-active: var(--salt-palette-positive-weaker);
+  --salt-actionable-positive-bold-background-hover: linear-gradient(var(--salt-palette-alpha-dark-low), var(--salt-palette-alpha-dark-low)) var(--salt-palette-positive);
+  --salt-actionable-positive-bold-background: var(--salt-palette-positive);
+  --salt-actionable-positive-bold-borderColor-active: var(--salt-palette-positive);
+  --salt-actionable-positive-bold-borderColor-hover: var(--salt-palette-alpha-contrast-medium);
+  --salt-actionable-positive-bold-borderColor: var(--salt-palette-positive);
+  --salt-actionable-positive-bold-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-positive-bold-foreground-hover: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-positive-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-positive-background-active: var(--salt-palette-positive-weaker);
+  --salt-actionable-positive-background-hover: var(--salt-palette-positive-weakest);
+  --salt-actionable-positive-background: var(--salt-color-transparent);
+  --salt-actionable-positive-borderColor-active: var(--salt-palette-positive);
+  --salt-actionable-positive-borderColor-hover: var(--salt-palette-positive);
+  --salt-actionable-positive-borderColor: var(--salt-palette-positive);
+  --salt-actionable-positive-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-positive-foreground-hover: var(--salt-palette-positive-stronger);
+  --salt-actionable-positive-foreground: var(--salt-palette-positive-strong);
+  --salt-actionable-positive-background-selected: var(--salt-palette-positive);
+  --salt-actionable-positive-borderColor-selected: var(--salt-palette-positive);
+  --salt-actionable-positive-foreground-selected: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-positive-subtle-background-active: var(--salt-palette-alpha-contrast-low);
+  --salt-actionable-positive-subtle-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-positive-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-positive-subtle-foreground-hover: var(--salt-palette-positive-stronger);
+  --salt-actionable-positive-subtle-foreground: var(--salt-palette-positive-strong);
+  --salt-actionable-caution-bold-background-active: var(--salt-palette-warning-weaker);
+  --salt-actionable-caution-bold-background-hover: linear-gradient(var(--salt-palette-alpha-dark-low), var(--salt-palette-alpha-dark-low)) var(--salt-palette-warning);
+  --salt-actionable-caution-bold-background: var(--salt-palette-warning);
+  --salt-actionable-caution-bold-borderColor-active: var(--salt-palette-warning);
+  --salt-actionable-caution-bold-borderColor-hover: var(--salt-palette-alpha-contrast-medium);
+  --salt-actionable-caution-bold-borderColor: var(--salt-palette-warning);
+  --salt-actionable-caution-bold-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-caution-bold-foreground-hover: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-caution-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-caution-background-active: var(--salt-palette-warning-weaker);
+  --salt-actionable-caution-background-hover: var(--salt-palette-warning-weakest);
+  --salt-actionable-caution-background: var(--salt-color-transparent);
+  --salt-actionable-caution-borderColor-active: var(--salt-palette-warning);
+  --salt-actionable-caution-borderColor-hover: var(--salt-palette-warning);
+  --salt-actionable-caution-borderColor: var(--salt-palette-warning);
+  --salt-actionable-caution-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-caution-foreground-hover: var(--salt-palette-warning-stronger);
+  --salt-actionable-caution-foreground: var(--salt-palette-warning-strong);
+  --salt-actionable-caution-background-selected: var(--salt-palette-warning);
+  --salt-actionable-caution-borderColor-selected: var(--salt-palette-warning);
+  --salt-actionable-caution-foreground-selected: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-caution-subtle-background-active: var(--salt-palette-alpha-contrast-low);
+  --salt-actionable-caution-subtle-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-caution-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-foreground-active: var(--salt-palette-foreground-primary);
+  --salt-actionable-caution-subtle-foreground-hover: var(--salt-palette-warning-stronger);
+  --salt-actionable-caution-subtle-foreground: var(--salt-palette-warning-strong);
+  --salt-actionable-onSolid-subtle-background: var(--salt-color-transparent);
+  --salt-actionable-onSolid-subtle-background-active: var(--salt-palette-alpha-dark-low);
+  --salt-actionable-onSolid-subtle-background-hover: var(--salt-palette-alpha-dark-lower);
+  --salt-actionable-onSolid-subtle-borderColor: var(--salt-color-transparent);
+  --salt-actionable-onSolid-subtle-borderColor-active: var(--salt-color-transparent);
+  --salt-actionable-onSolid-subtle-borderColor-hover: var(--salt-color-transparent);
+  --salt-actionable-onSolid-subtle-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-onSolid-subtle-foreground-active: var(--salt-palette-foreground-primary-alt);
+  --salt-actionable-onSolid-subtle-foreground-hover: var(--salt-palette-foreground-primary-alt);
+}
+
+/* css/next/characteristics/category.css */
+.salt-theme.salt-theme-next {
+  --salt-category-1-foreground: var(--salt-palette-categorical-1-strong);
+  --salt-category-1-background: var(--salt-palette-categorical-1-weakest);
+  --salt-category-1-borderColor: var(--salt-palette-categorical-1);
+  --salt-category-1-bold-background: var(--salt-palette-categorical-1);
+  --salt-category-1-dataviz: var(--salt-palette-categorical-1);
+  --salt-category-2-foreground: var(--salt-palette-categorical-2-strong);
+  --salt-category-2-background: var(--salt-palette-categorical-2-weakest);
+  --salt-category-2-borderColor: var(--salt-palette-categorical-2);
+  --salt-category-2-bold-background: var(--salt-palette-categorical-2);
+  --salt-category-2-dataviz: var(--salt-palette-categorical-2);
+  --salt-category-3-foreground: var(--salt-palette-categorical-3-strong);
+  --salt-category-3-background: var(--salt-palette-categorical-3-weakest);
+  --salt-category-3-borderColor: var(--salt-palette-categorical-3);
+  --salt-category-3-bold-background: var(--salt-palette-categorical-3);
+  --salt-category-3-dataviz: var(--salt-palette-categorical-3);
+  --salt-category-4-foreground: var(--salt-palette-categorical-4-strong);
+  --salt-category-4-background: var(--salt-palette-categorical-4-weakest);
+  --salt-category-4-borderColor: var(--salt-palette-categorical-4);
+  --salt-category-4-bold-background: var(--salt-palette-categorical-4);
+  --salt-category-4-dataviz: var(--salt-palette-categorical-4);
+  --salt-category-5-foreground: var(--salt-palette-categorical-5-strong);
+  --salt-category-5-background: var(--salt-palette-categorical-5-weakest);
+  --salt-category-5-borderColor: var(--salt-palette-categorical-5);
+  --salt-category-5-bold-background: var(--salt-palette-categorical-5);
+  --salt-category-5-dataviz: var(--salt-palette-categorical-5);
+  --salt-category-6-foreground: var(--salt-palette-categorical-6-strong);
+  --salt-category-6-background: var(--salt-palette-categorical-6-weakest);
+  --salt-category-6-borderColor: var(--salt-palette-categorical-6);
+  --salt-category-6-bold-background: var(--salt-palette-categorical-6);
+  --salt-category-6-dataviz: var(--salt-palette-categorical-6);
+  --salt-category-7-foreground: var(--salt-palette-categorical-7-strong);
+  --salt-category-7-background: var(--salt-palette-categorical-7-weakest);
+  --salt-category-7-borderColor: var(--salt-palette-categorical-7);
+  --salt-category-7-bold-background: var(--salt-palette-categorical-7);
+  --salt-category-7-dataviz: var(--salt-palette-categorical-7);
+  --salt-category-8-foreground: var(--salt-palette-categorical-8-strong);
+  --salt-category-8-background: var(--salt-palette-categorical-8-weakest);
+  --salt-category-8-borderColor: var(--salt-palette-categorical-8);
+  --salt-category-8-bold-background: var(--salt-palette-categorical-8);
+  --salt-category-8-dataviz: var(--salt-palette-categorical-8);
+  --salt-category-9-foreground: var(--salt-palette-categorical-9-strong);
+  --salt-category-9-background: var(--salt-palette-categorical-9-weakest);
+  --salt-category-9-borderColor: var(--salt-palette-categorical-9);
+  --salt-category-9-bold-background: var(--salt-palette-categorical-9);
+  --salt-category-9-dataviz: var(--salt-palette-categorical-9);
+  --salt-category-10-foreground: var(--salt-palette-categorical-10-strong);
+  --salt-category-10-background: var(--salt-palette-categorical-10-weakest);
+  --salt-category-10-borderColor: var(--salt-palette-categorical-10);
+  --salt-category-10-bold-background: var(--salt-palette-categorical-10);
+  --salt-category-10-dataviz: var(--salt-palette-categorical-10);
+  --salt-category-11-foreground: var(--salt-palette-categorical-11-strong);
+  --salt-category-11-background: var(--salt-palette-categorical-11-weakest);
+  --salt-category-11-borderColor: var(--salt-palette-categorical-11);
+  --salt-category-11-bold-background: var(--salt-palette-categorical-11);
+  --salt-category-11-dataviz: var(--salt-palette-categorical-11);
+  --salt-category-12-foreground: var(--salt-palette-categorical-12-strong);
+  --salt-category-12-background: var(--salt-palette-categorical-12-weakest);
+  --salt-category-12-borderColor: var(--salt-palette-categorical-12);
+  --salt-category-12-bold-background: var(--salt-palette-categorical-12);
+  --salt-category-12-dataviz: var(--salt-palette-categorical-12);
+  --salt-category-13-foreground: var(--salt-palette-categorical-13-strong);
+  --salt-category-13-background: var(--salt-palette-categorical-13-weakest);
+  --salt-category-13-borderColor: var(--salt-palette-categorical-13);
+  --salt-category-13-bold-background: var(--salt-palette-categorical-13);
+  --salt-category-13-dataviz: var(--salt-palette-categorical-13);
+  --salt-category-14-foreground: var(--salt-palette-categorical-14-strong);
+  --salt-category-14-background: var(--salt-palette-categorical-14-weakest);
+  --salt-category-14-borderColor: var(--salt-palette-categorical-14);
+  --salt-category-14-bold-background: var(--salt-palette-categorical-14);
+  --salt-category-14-dataviz: var(--salt-palette-categorical-14);
+  --salt-category-15-foreground: var(--salt-palette-categorical-15-strong);
+  --salt-category-15-background: var(--salt-palette-categorical-15-weakest);
+  --salt-category-15-borderColor: var(--salt-palette-categorical-15);
+  --salt-category-15-bold-background: var(--salt-palette-categorical-15);
+  --salt-category-15-dataviz: var(--salt-palette-categorical-15);
+  --salt-category-16-foreground: var(--salt-palette-categorical-16-strong);
+  --salt-category-16-background: var(--salt-palette-categorical-16-weakest);
+  --salt-category-16-borderColor: var(--salt-palette-categorical-16);
+  --salt-category-16-bold-background: var(--salt-palette-categorical-16);
+  --salt-category-16-dataviz: var(--salt-palette-categorical-16);
+  --salt-category-17-foreground: var(--salt-palette-categorical-17-strong);
+  --salt-category-17-background: var(--salt-palette-categorical-17-weakest);
+  --salt-category-17-borderColor: var(--salt-palette-categorical-17);
+  --salt-category-17-bold-background: var(--salt-palette-categorical-17);
+  --salt-category-17-dataviz: var(--salt-palette-categorical-17);
+  --salt-category-18-foreground: var(--salt-palette-categorical-18-strong);
+  --salt-category-18-background: var(--salt-palette-categorical-18-weakest);
+  --salt-category-18-borderColor: var(--salt-palette-categorical-18);
+  --salt-category-18-bold-background: var(--salt-palette-categorical-18);
+  --salt-category-18-dataviz: var(--salt-palette-categorical-18);
+  --salt-category-19-foreground: var(--salt-palette-categorical-19-strong);
+  --salt-category-19-background: var(--salt-palette-categorical-19-weakest);
+  --salt-category-19-borderColor: var(--salt-palette-categorical-19);
+  --salt-category-19-bold-background: var(--salt-palette-categorical-19);
+  --salt-category-19-dataviz: var(--salt-palette-categorical-19);
+  --salt-category-20-foreground: var(--salt-palette-categorical-20-strong);
+  --salt-category-20-background: var(--salt-palette-categorical-20-weakest);
+  --salt-category-20-borderColor: var(--salt-palette-categorical-20);
+  --salt-category-20-bold-background: var(--salt-palette-categorical-20);
+  --salt-category-20-dataviz: var(--salt-palette-categorical-20);
+}
+
+/* css/next/characteristics/container.css */
+.salt-theme.salt-theme-next {
+  --salt-container-primary-background: var(--salt-palette-background-primary);
+  --salt-container-primary-background-disabled: var(--salt-palette-background-primary-disabled);
+  --salt-container-secondary-background: var(--salt-palette-background-secondary);
+  --salt-container-secondary-background-disabled: var(--salt-palette-background-secondary-disabled);
+  --salt-container-tertiary-background: var(--salt-palette-background-tertiary);
+  --salt-container-tertiary-background-disabled: var(--salt-palette-background-tertiary-disabled);
+  --salt-container-ghost-background: var(--salt-palette-alpha-medium);
+  --salt-container-bold-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-container-bold-borderColor-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-container-borderColor: var(--salt-palette-alpha-contrast-mediumLow);
+  --salt-container-subtle-borderColor: var(--salt-palette-alpha-contrast-lower);
+  --salt-container-ghost-bold-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-container-ghost-borderColor: var(--salt-palette-alpha-contrast-mediumLow);
+  --salt-container-ghost-subtle-borderColor: var(--salt-palette-alpha-contrast-lower);
+}
+
+/* css/next/characteristics/content.css */
+.salt-theme.salt-theme-next {
+  --salt-content-primary-foreground: var(--salt-palette-foreground-primary);
+  --salt-content-primary-foreground-disabled: var(--salt-palette-foreground-primary-disabled);
+  --salt-content-secondary-foreground: var(--salt-palette-foreground-secondary);
+  --salt-content-secondary-foreground-disabled: var(--salt-palette-foreground-secondary-disabled);
+  --salt-content-accent-foreground: var(--salt-palette-accent-strong);
+  --salt-content-attention-foreground: var(--salt-palette-negative-strong);
+  --salt-content-brand-foreground: var(--salt-palette-brand-strong);
+  --salt-content-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-content-foreground-visited: var(--salt-palette-foreground-visited);
+}
+
+/* css/next/characteristics/editable.css */
+.salt-theme.salt-theme-next {
+  --salt-editable-borderColor: var(--salt-palette-neutral);
+  --salt-editable-borderColor-active: var(--salt-palette-accent-stronger);
+  --salt-editable-borderColor-disabled: var(--salt-palette-neutral-disabled);
+  --salt-editable-borderColor-hover: var(--salt-palette-accent);
+  --salt-editable-borderColor-readonly: var(--salt-palette-neutral-readonly);
+  --salt-editable-background-readonly: var(--salt-color-transparent);
+  --salt-editable-primary-background: var(--salt-palette-background-primary);
+  --salt-editable-primary-background-disabled: var(--salt-palette-background-primary-disabled);
+  --salt-editable-secondary-background: var(--salt-palette-background-secondary);
+  --salt-editable-secondary-background-disabled: var(--salt-palette-background-secondary-disabled);
+  --salt-editable-tertiary-background: var(--salt-palette-background-tertiary);
+  --salt-editable-tertiary-background-disabled: var(--salt-palette-background-tertiary-disabled);
+}
+
+/* css/next/characteristics/focused.css */
+.salt-theme.salt-theme-next {
+  --salt-focused-outlineColor: var(--salt-palette-accent-stronger);
+  --salt-focused-onSolid-outlineColor: var(--salt-palette-alpha-light-highest);
+  --salt-focused-outlineStyle: var(--salt-borderStyle-dotted);
+  --salt-focused-outlineWidth: var(--salt-size-fixed-200);
+  --salt-focused-outlineInset: 0px;
+  --salt-focused-outlineOffset: 0px;
+  --salt-focused-outline: var(--salt-focused-outlineWidth) var(--salt-focused-outlineStyle) var(--salt-focused-outlineColor);
+}
+
+/* css/next/characteristics/layout.css */
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high,
+.salt-density-touch {
+  --salt-layout-page-margin: var(--salt-spacing-300);
+  --salt-layout-gap: var(--salt-spacing-300);
+}
+.salt-density-mobile {
+  --salt-layout-page-margin: var(--salt-spacing-100);
+  --salt-layout-gap: var(--salt-spacing-100);
+}
+
+/* css/next/characteristics/navigable.css */
+.salt-theme.salt-theme-next {
+  --salt-navigable-indicator-hover: var(--salt-palette-neutral);
+  --salt-navigable-accent-indicator-active: var(--salt-palette-accent);
+  --salt-navigable-accent-background-active: var(--salt-palette-accent-weakest);
+  --salt-navigable-accent-borderColor-active: var(--salt-palette-accent);
+}
+
+/* css/next/characteristics/overlayable.css */
+.salt-theme.salt-theme-next {
+  --salt-overlayable-shadow-scroll: var(--salt-shadow-lowest);
+  --salt-overlayable-shadow-region: var(--salt-shadow-lower);
+  --salt-overlayable-shadow: var(--salt-shadow-lower);
+  --salt-overlayable-shadow-hover: var(--salt-shadow-low);
+  --salt-overlayable-shadow-popout: var(--salt-shadow-mediumLow);
+  --salt-overlayable-shadow-drag: var(--salt-shadow-mediumLow);
+  --salt-overlayable-shadow-modal: var(--salt-shadow-medium);
+  --salt-overlayable-background: var(--salt-palette-alpha-higher);
+  --salt-overlayable-background-hover: var(--salt-palette-alpha-contrast-lowest);
+  --salt-overlayable-background-highlight: var(--salt-palette-alpha-contrast-medium);
+  --salt-overlayable-background-rangeSelection: var(--salt-palette-alpha-contrast-mediumLow);
+}
+
+/* css/next/characteristics/selectable.css */
+.salt-theme.salt-theme-next {
+  --salt-selectable-borderColor: var(--salt-palette-neutral);
+  --salt-selectable-borderColor-hover: var(--salt-palette-accent);
+  --salt-selectable-borderColor-selected: var(--salt-palette-accent);
+  --salt-selectable-borderColor-readonly: var(--salt-palette-neutral);
+  --salt-selectable-foreground: var(--salt-palette-neutral-strong);
+  --salt-selectable-foreground-hover: var(--salt-palette-accent);
+  --salt-selectable-foreground-selected: var(--salt-palette-accent);
+  --salt-selectable-background: var(--salt-color-transparent);
+  --salt-selectable-background-hover: var(--salt-palette-accent-weakest);
+  --salt-selectable-background-selected: var(--salt-palette-accent-weaker);
+}
+
+/* css/next/characteristics/sentiment.css */
+.salt-theme-next.salt-theme {
+  --salt-sentiment-negative-foreground-informative: var(--salt-palette-negative-strong);
+  --salt-sentiment-positive-foreground-informative: var(--salt-palette-positive-strong);
+  --salt-sentiment-negative-foreground-decorative: var(--salt-palette-negative);
+  --salt-sentiment-positive-foreground-decorative: var(--salt-palette-positive);
+  --salt-sentiment-neutral-track: var(--salt-palette-alpha-contrast-high);
+  --salt-sentiment-caution-dataviz: var(--salt-palette-warning);
+  --salt-sentiment-negative-dataviz: var(--salt-palette-negative);
+  --salt-sentiment-positive-dataviz: var(--salt-palette-positive);
+  --salt-sentiment-neutral-dataviz: var(--salt-palette-neutral);
+  --salt-sentiment-accent-dataviz: var(--salt-palette-accent);
+  --salt-sentiment-neutral-background: var(--salt-palette-neutral);
+  --salt-sentiment-accent-background: var(--salt-palette-accent);
+  --salt-sentiment-accent-borderColor: var(--salt-palette-accent);
+}
+
+/* css/next/characteristics/separable.css */
+.salt-theme.salt-theme-next {
+  --salt-separable-primary-borderColor: var(--salt-palette-alpha-contrast-mediumHigh);
+  --salt-separable-secondary-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-separable-tertiary-borderColor: var(--salt-palette-alpha-contrast-mediumLow);
+  --salt-separable-foreground: var(--salt-palette-foreground-primary);
+  --salt-separable-foreground-hover: var(--salt-palette-foreground-primary);
+  --salt-separable-foreground-active: var(--salt-palette-foreground-primary-alt);
+  --salt-separable-background-hover: var(--salt-palette-alpha-contrast-lower);
+  --salt-separable-background-active: var(--salt-palette-accent);
+}
+
+/* css/next/characteristics/status.css */
+.salt-theme.salt-theme-next {
+  --salt-status-info-foreground-decorative: var(--salt-palette-info);
+  --salt-status-success-foreground-decorative: var(--salt-palette-positive);
+  --salt-status-warning-foreground-decorative: var(--salt-palette-warning);
+  --salt-status-error-foreground-decorative: var(--salt-palette-negative);
+  --salt-status-info-foreground-informative: var(--salt-palette-info-strong);
+  --salt-status-success-foreground-informative: var(--salt-palette-positive-strong);
+  --salt-status-warning-foreground-informative: var(--salt-palette-warning-strong);
+  --salt-status-error-foreground-informative: var(--salt-palette-negative-strong);
+  --salt-status-info-borderColor: var(--salt-palette-info);
+  --salt-status-success-borderColor: var(--salt-palette-positive);
+  --salt-status-warning-borderColor: var(--salt-palette-warning);
+  --salt-status-error-borderColor: var(--salt-palette-negative);
+  --salt-status-info-background: var(--salt-palette-info-weakest);
+  --salt-status-success-background: var(--salt-palette-positive-weakest);
+  --salt-status-warning-background: var(--salt-palette-warning-weakest);
+  --salt-status-error-background: var(--salt-palette-negative-weakest);
+  --salt-status-info-bold-background: var(--salt-palette-info);
+  --salt-status-error-bold-background: var(--salt-palette-negative);
+  --salt-status-warning-bold-background: var(--salt-palette-warning);
+  --salt-status-success-bold-background: var(--salt-palette-positive);
+  --salt-status-success-background-selected: var(--salt-palette-positive-weaker);
+  --salt-status-warning-background-selected: var(--salt-palette-warning-weaker);
+  --salt-status-error-background-selected: var(--salt-palette-negative-weaker);
+}
+
+/* css/next/characteristics/target.css */
+.salt-theme.salt-theme-next {
+  --salt-target-background-hover: var(--salt-palette-accent-weakest);
+  --salt-target-borderColor-hover: var(--salt-palette-accent);
+}
+
+/* css/next/characteristics/text.css */
+.salt-theme.salt-theme-next {
+  --salt-text-letterSpacing: 0;
+  --salt-text-textAlign: left;
+  --salt-text-textAlign-embedded: center;
+  --salt-text-fontFamily: var(--salt-typography-fontFamily-openSans);
+  --salt-text-fontWeight: var(--salt-typography-fontWeight-regular);
+  --salt-text-fontWeight-small: var(--salt-typography-fontWeight-light);
+  --salt-text-fontWeight-strong: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-notation-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-notation-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-notation-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-text-label-fontWeight: var(--salt-typography-fontWeight-regular);
+  --salt-text-label-fontWeight-small: var(--salt-typography-fontWeight-light);
+  --salt-text-label-fontWeight-strong: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-code-fontFamily: var(--salt-typography-fontFamily-ptMono);
+}
+.salt-theme-next.salt-theme[data-action-font="Open Sans"] {
+  --salt-text-action-letterSpacing: 0.6px;
+  --salt-text-action-textTransform: uppercase;
+  --salt-text-action-textAlign: center;
+  --salt-text-action-fontFamily: var(--salt-typography-fontFamily-openSans);
+  --salt-text-action-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-action-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-action-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-theme[data-action-font=Amplitude] {
+  --salt-text-action-letterSpacing: 0.6px;
+  --salt-text-action-textTransform: uppercase;
+  --salt-text-action-textAlign: center;
+  --salt-text-action-fontFamily: var(--salt-typography-fontFamily-amplitude);
+  --salt-text-action-fontWeight: var(--salt-typography-fontWeight-medium);
+  --salt-text-action-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-action-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-theme[data-heading-font="Open Sans"] {
+  --salt-text-heading-fontFamily: var(--salt-typography-fontFamily-openSans);
+  --salt-text-heading-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-heading-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-heading-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-text-display-fontFamily: var(--salt-typography-fontFamily-openSans);
+  --salt-text-display-letterSpacing: 0;
+  --salt-text-display-textTransform: none;
+  --salt-text-display-fontStyle: var(--salt-typography-fontStyle-normal);
+  --salt-text-display-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-text-display-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-display-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-theme[data-heading-font=Amplitude] {
+  --salt-text-heading-fontFamily: var(--salt-typography-fontFamily-amplitude);
+  --salt-text-heading-fontWeight: var(--salt-typography-fontWeight-medium);
+  --salt-text-heading-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-heading-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-text-display-fontFamily: var(--salt-typography-fontFamily-amplitude);
+  --salt-text-display-letterSpacing: 0;
+  --salt-text-display-textTransform: none;
+  --salt-text-display-fontStyle: var(--salt-typography-fontStyle-normal);
+  --salt-text-display-fontWeight: var(--salt-typography-fontWeight-medium);
+  --salt-text-display-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-text-display-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-density-touch {
+  --salt-text-h1-fontSize: 42px;
+  --salt-text-h1-lineHeight: 54px;
+  --salt-text-h2-fontSize: 32px;
+  --salt-text-h2-lineHeight: 42px;
+  --salt-text-h3-fontSize: 24px;
+  --salt-text-h3-lineHeight: 32px;
+  --salt-text-h4-fontSize: 16px;
+  --salt-text-h4-lineHeight: 20px;
+  --salt-text-label-fontSize: 14px;
+  --salt-text-label-lineHeight: 18px;
+  --salt-text-fontSize: 16px;
+  --salt-text-lineHeight: 20px;
+  --salt-text-minHeight: 20px;
+  --salt-text-display1-fontSize: 102px;
+  --salt-text-display1-lineHeight: 133px;
+  --salt-text-display2-fontSize: 84px;
+  --salt-text-display2-lineHeight: 109px;
+  --salt-text-display3-fontSize: 68px;
+  --salt-text-display3-lineHeight: 88px;
+  --salt-text-display4-fontSize: 54px;
+  --salt-text-display4-lineHeight: 70px;
+  --salt-text-notation-fontSize: 14px;
+  --salt-text-notation-lineHeight: 18px;
+}
+.salt-theme-next.salt-density-low {
+  --salt-text-h1-fontSize: 32px;
+  --salt-text-h1-lineHeight: 42px;
+  --salt-text-h2-fontSize: 24px;
+  --salt-text-h2-lineHeight: 32px;
+  --salt-text-h3-fontSize: 18px;
+  --salt-text-h3-lineHeight: 24px;
+  --salt-text-h4-fontSize: 14px;
+  --salt-text-h4-lineHeight: 18px;
+  --salt-text-label-fontSize: 12px;
+  --salt-text-label-lineHeight: 16px;
+  --salt-text-fontSize: 14px;
+  --salt-text-lineHeight: 18px;
+  --salt-text-minHeight: 18px;
+  --salt-text-display1-fontSize: 84px;
+  --salt-text-display1-lineHeight: 109px;
+  --salt-text-display2-fontSize: 68px;
+  --salt-text-display2-lineHeight: 88px;
+  --salt-text-display3-fontSize: 54px;
+  --salt-text-display3-lineHeight: 70px;
+  --salt-text-display4-fontSize: 42px;
+  --salt-text-display4-lineHeight: 55px;
+  --salt-text-notation-fontSize: 12px;
+  --salt-text-notation-lineHeight: 16px;
+}
+.salt-theme-next.salt-density-medium {
+  --salt-text-h1-fontSize: 24px;
+  --salt-text-h1-lineHeight: 32px;
+  --salt-text-h2-fontSize: 18px;
+  --salt-text-h2-lineHeight: 24px;
+  --salt-text-h3-fontSize: 14px;
+  --salt-text-h3-lineHeight: 18px;
+  --salt-text-h4-fontSize: 12px;
+  --salt-text-h4-lineHeight: 16px;
+  --salt-text-label-fontSize: 11px;
+  --salt-text-label-lineHeight: 14px;
+  --salt-text-fontSize: 12px;
+  --salt-text-lineHeight: 16px;
+  --salt-text-minHeight: 16px;
+  --salt-text-display1-fontSize: 68px;
+  --salt-text-display1-lineHeight: 88px;
+  --salt-text-display2-fontSize: 54px;
+  --salt-text-display2-lineHeight: 70px;
+  --salt-text-display3-fontSize: 42px;
+  --salt-text-display3-lineHeight: 55px;
+  --salt-text-display4-fontSize: 32px;
+  --salt-text-display4-lineHeight: 42px;
+  --salt-text-notation-fontSize: 10px;
+  --salt-text-notation-lineHeight: 13px;
+}
+.salt-theme-next.salt-density-high {
+  --salt-text-h1-fontSize: 18px;
+  --salt-text-h1-lineHeight: 24px;
+  --salt-text-h2-fontSize: 14px;
+  --salt-text-h2-lineHeight: 18px;
+  --salt-text-h3-fontSize: 12px;
+  --salt-text-h3-lineHeight: 16px;
+  --salt-text-h4-fontSize: 11px;
+  --salt-text-h4-lineHeight: 14px;
+  --salt-text-label-fontSize: 10px;
+  --salt-text-label-lineHeight: 13px;
+  --salt-text-fontSize: 11px;
+  --salt-text-lineHeight: 14px;
+  --salt-text-minHeight: 14px;
+  --salt-text-display1-fontSize: 54px;
+  --salt-text-display1-lineHeight: 70px;
+  --salt-text-display2-fontSize: 42px;
+  --salt-text-display2-lineHeight: 55px;
+  --salt-text-display3-fontSize: 32px;
+  --salt-text-display3-lineHeight: 42px;
+  --salt-text-display4-fontSize: 24px;
+  --salt-text-display4-lineHeight: 32px;
+  --salt-text-notation-fontSize: 8px;
+  --salt-text-notation-lineHeight: 10px;
+}
+.salt-density-mobile {
+  --salt-text-h1-fontSize: 24px;
+  --salt-text-h1-lineHeight: 31px;
+  --salt-text-h2-fontSize: 22px;
+  --salt-text-h2-lineHeight: 29px;
+  --salt-text-h3-fontSize: 20px;
+  --salt-text-h3-lineHeight: 26px;
+  --salt-text-h4-fontSize: 16px;
+  --salt-text-h4-lineHeight: 21px;
+  --salt-text-label-fontSize: 14px;
+  --salt-text-label-lineHeight: 18px;
+  --salt-text-fontSize: 16px;
+  --salt-text-lineHeight: 21px;
+  --salt-text-minHeight: 21px;
+  --salt-text-display1-fontSize: 40px;
+  --salt-text-display1-lineHeight: 52px;
+  --salt-text-display2-fontSize: 36px;
+  --salt-text-display2-lineHeight: 47px;
+  --salt-text-display3-fontSize: 32px;
+  --salt-text-display3-lineHeight: 42px;
+  --salt-text-display4-fontSize: 28px;
+  --salt-text-display4-lineHeight: 36px;
+  --salt-text-notation-fontSize: 12px;
+  --salt-text-notation-lineHeight: 16px;
+}
+
+/* css/deprecated/foundations.css */
+.salt-theme {
+  --salt-delay-instant: 100ms;
+  --salt-delay-perceptible: 300ms;
+  --salt-delay-notable: 1000ms;
+  --salt-delay-cutoff: 10000ms;
+  --salt-size-icon-base: var(--salt-icon-size-base);
+  --salt-opacity-1: 0.15;
+  --salt-opacity-2: 0.25;
+  --salt-opacity-3: 0.4;
+  --salt-opacity-4: 0.7;
+  --salt-opacity-8: 0.08;
+  --salt-opacity-0: 0;
+  --salt-opacity-15: 0.15;
+  --salt-opacity-25: 0.25;
+  --salt-opacity-40: 0.4;
+  --salt-opacity-45: 0.45;
+  --salt-opacity-70: 0.7;
+  --salt-shadow-0: none;
+  --salt-shadow-1: 0 1px 3px 0 var(--salt-shadow-1-color);
+  --salt-shadow-2: 0 2px 4px 0 var(--salt-shadow-2-color);
+  --salt-shadow-3: 0 4px 8px 0 var(--salt-shadow-3-color);
+  --salt-shadow-4: 0 6px 10px 0 var(--salt-shadow-4-color);
+  --salt-shadow-5: 0 12px 40px 0 var(--salt-shadow-5-color);
+  --salt-shadow-100: 0 1px 3px 0 var(--salt-shadow-100-color);
+  --salt-shadow-200: 0 2px 4px 0 var(--salt-shadow-200-color);
+  --salt-shadow-300: 0 4px 8px 0 var(--salt-shadow-300-color);
+  --salt-shadow-400: 0 6px 10px 0 var(--salt-shadow-400-color);
+  --salt-shadow-500: 0 12px 40px 0 var(--salt-shadow-500-color);
+  --salt-typography-fontFamily: var(--salt-typography-fontFamily-openSans);
+  --salt-typography-fontFamily-code: var(--salt-typography-fontFamily-ptMono);
+  --salt-typography-textDecoration-italic: var(--salt-typography-fontStyle-italic);
+  --salt-color-black-15a: rgba(var(--salt-color-black-rgb), 0.15);
+  --salt-color-black-45a: rgba(var(--salt-color-black-rgb), 0.45);
+  --salt-color-black-60a: rgba(var(--salt-color-black-rgb), 0.6);
+  --salt-color-black-70a: rgba(var(--salt-color-black-rgb), 0.7);
+  --salt-color-black-90a: rgba(var(--salt-color-black-rgb), 0.9);
+  --salt-color-white-15a: rgba(var(--salt-color-white-rgb), 0.15);
+  --salt-color-white-45a: rgba(var(--salt-color-white-rgb), 0.45);
+  --salt-color-white-60a: rgba(var(--salt-color-white-rgb), 0.6);
+  --salt-color-white-70a: rgba(var(--salt-color-white-rgb), 0.7);
+  --salt-color-white-90a: rgba(var(--salt-color-white-rgb), 0.9);
+}
+.salt-theme[data-mode=light] {
+  --salt-shadow-1-color: rgba(0, 0, 0, 0.1);
+  --salt-shadow-2-color: rgba(0, 0, 0, 0.1);
+  --salt-shadow-3-color: rgba(0, 0, 0, 0.15);
+  --salt-shadow-4-color: rgba(0, 0, 0, 0.2);
+  --salt-shadow-5-color: rgba(0, 0, 0, 0.3);
+  --salt-shadow-100-color: rgba(0, 0, 0, 0.1);
+  --salt-shadow-200-color: rgba(0, 0, 0, 0.1);
+  --salt-shadow-300-color: rgba(0, 0, 0, 0.15);
+  --salt-shadow-400-color: rgba(0, 0, 0, 0.2);
+  --salt-shadow-500-color: rgba(0, 0, 0, 0.3);
+}
+.salt-theme[data-mode=dark] {
+  --salt-shadow-1-color: rgba(0, 0, 0, 0.5);
+  --salt-shadow-2-color: rgba(0, 0, 0, 0.5);
+  --salt-shadow-3-color: rgba(0, 0, 0, 0.55);
+  --salt-shadow-4-color: rgba(0, 0, 0, 0.55);
+  --salt-shadow-5-color: rgba(0, 0, 0, 0.65);
+  --salt-shadow-100-color: rgba(0, 0, 0, 0.5);
+  --salt-shadow-200-color: rgba(0, 0, 0, 0.5);
+  --salt-shadow-300-color: rgba(0, 0, 0, 0.55);
+  --salt-shadow-400-color: rgba(0, 0, 0, 0.55);
+  --salt-shadow-500-color: rgba(0, 0, 0, 0.65);
+}
+.salt-density-touch,
+.salt-density-low,
+.salt-density-medium,
+.salt-density-high {
+  --salt-size-selection: var(--salt-size-selectable);
+  --salt-size-brandBar: 4px;
+  --salt-size-graphic-small: 12px;
+  --salt-size-graphic-medium: 24px;
+  --salt-size-graphic-large: 48px;
+  --salt-size-divider-height: var(--salt-size-separator-height);
+  --salt-size-divider-strokeWidth: var(--salt-size-separator-strokeWidth);
+  --salt-size-detail: var(--salt-size-compact);
+  --salt-size-basis-unit: 4px;
+  --salt-size-adornmentGap: calc(0.75 * var(--salt-size-unit));
+  --salt-size-container-spacing: calc(3 * var(--salt-size-unit));
+  --salt-size-separator-strokeWidth: 1px;
+  --salt-size-separator-height: calc(var(--salt-size-compact) + 1.5 * var(--salt-size-basis-unit));
+  --salt-size-sharktooth-height: 5px;
+  --salt-size-sharktooth-width: 10px;
+  --salt-size-stackable: calc(var(--salt-size-base) + var(--salt-size-unit));
+  --salt-size-border: 1px;
+  --salt-size-bar-small: 2px;
+  --salt-size-border-strong: 2px;
+  --salt-zIndex-docked: 1050;
+}
+.salt-density-high {
+  --salt-size-unit: calc(var(--salt-size-basis-unit) * 1);
+  --salt-size-compact: calc(var(--salt-size-basis-unit) * 1.5);
+  --salt-size-accent: calc(var(--salt-size-basis-unit) * 0.5);
+  --salt-icon-size-base: 10px;
+  --salt-icon-size-status-adornment: 6px;
+}
+.salt-density-medium {
+  --salt-size-unit: calc(var(--salt-size-basis-unit) * 2);
+  --salt-size-compact: calc(var(--salt-size-basis-unit) * 2);
+  --salt-size-accent: calc(var(--salt-size-basis-unit) * 1);
+  --salt-icon-size-base: 12px;
+  --salt-icon-size-status-adornment: 8px;
+}
+.salt-density-low {
+  --salt-size-unit: calc(var(--salt-size-basis-unit) * 3);
+  --salt-size-compact: calc(var(--salt-size-basis-unit) * 2.5);
+  --salt-size-accent: calc(var(--salt-size-basis-unit) * 1.5);
+  --salt-icon-size-base: 14px;
+  --salt-icon-size-status-adornment: 10px;
+}
+.salt-density-touch {
+  --salt-size-unit: calc(var(--salt-size-basis-unit) * 4);
+  --salt-size-compact: calc(var(--salt-size-basis-unit) * 3);
+  --salt-size-accent: calc(var(--salt-size-basis-unit) * 2);
+  --salt-icon-size-base: 16px;
+  --salt-icon-size-status-adornment: 12px;
+}
+
+/* css/deprecated/characteristics.css */
+.salt-theme {
+  --salt-container-borderStyle: solid;
+  --salt-editable-borderStyle: solid;
+  --salt-editable-borderStyle-hover: solid;
+  --salt-editable-borderStyle-active: solid;
+  --salt-editable-borderStyle-disabled: solid;
+  --salt-editable-borderStyle-readonly: solid;
+  --salt-editable-cursor-hover: text;
+  --salt-editable-cursor-active: text;
+  --salt-editable-cursor-disabled: not-allowed;
+  --salt-editable-cursor-readonly: text;
+  --salt-editable-borderWidth-active: 2px;
+  --salt-editable-help-fontStyle: italic;
+  --salt-measured-borderStyle: solid;
+  --salt-measured-borderStyle-active: solid;
+  --salt-measured-borderStyle-complete: solid;
+  --salt-measured-borderStyle-incomplete: dotted;
+  --salt-measured-borderWidth: 2px;
+  --salt-measured-borderWidth-active: 2px;
+  --salt-measured-borderWidth-complete: 2px;
+  --salt-measured-borderWidth-incomplete: 2px;
+  --salt-measured-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-measured-textAlign: center;
+  --salt-selectable-borderStyle: solid;
+  --salt-selectable-borderStyle-hover: solid;
+  --salt-selectable-borderStyle-selected: solid;
+  --salt-selectable-borderStyle-blurSelected: solid;
+  --salt-selectable-cursor-hover: pointer;
+  --salt-selectable-cursor-selected: pointer;
+  --salt-selectable-cursor-blurSelected: pointer;
+  --salt-selectable-cursor-disabled: not-allowed;
+  --salt-selectable-cursor-readonly: not-allowed;
+  --salt-separable-borderStyle: solid;
+  --salt-draggable-horizontal-cursor-hover: row-resize;
+  --salt-draggable-horizontal-cursor-active: row-resize;
+  --salt-draggable-vertical-cursor-hover: col-resize;
+  --salt-draggable-vertical-cursor-active: col-resize;
+  --salt-draggable-grab-cursor-hover: grab;
+  --salt-draggable-grab-cursor-active: grabbing;
+  --salt-actionable-cursor-hover: pointer;
+  --salt-actionable-cursor-active: pointer;
+  --salt-actionable-cursor-disabled: not-allowed;
+  --salt-actionable-letterSpacing: 0.6px;
+  --salt-actionable-textTransform: uppercase;
+  --salt-actionable-textAlign: center;
+  --salt-actionable-primary-fontWeight: var(--salt-typography-fontWeight-bold);
+  --salt-actionable-cta-fontWeight: var(--salt-typography-fontWeight-bold);
+  --salt-actionable-secondary-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-target-cursor-disabled: not-allowed;
+  --salt-target-borderStyle: dashed;
+  --salt-target-borderStyle-hover: solid;
+  --salt-target-borderStyle-disabled: dashed;
+  --salt-text-link-textDecoration: underline;
+  --salt-text-link-textDecoration-hover: none;
+  --salt-text-link-textDecoration-selected: underline;
+  --salt-text-textDecoration: var(--salt-typography-textDecoration-none);
+  --salt-text-textTransform: none;
+  --salt-text-h1-fontFamily: var(--salt-text-heading-fontFamily);
+  --salt-text-h1-fontWeight: var(--salt-text-heading-fontWeight);
+  --salt-text-h1-fontWeight-small: var(--salt-text-heading-fontWeight-small);
+  --salt-text-h1-fontWeight-strong: var(--salt-text-heading-fontWeight-strong);
+  --salt-text-h2-fontFamily: var(--salt-text-heading-fontFamily);
+  --salt-text-h2-fontWeight: var(--salt-text-heading-fontWeight);
+  --salt-text-h2-fontWeight-small: var(--salt-text-heading-fontWeight-small);
+  --salt-text-h2-fontWeight-strong: var(--salt-text-heading-fontWeight-strong);
+  --salt-text-h3-fontFamily: var(--salt-text-heading-fontFamily);
+  --salt-text-h3-fontWeight: var(--salt-text-heading-fontWeight);
+  --salt-text-h3-fontWeight-small: var(--salt-text-heading-fontWeight-small);
+  --salt-text-h3-fontWeight-strong: var(--salt-text-heading-fontWeight-strong);
+  --salt-text-h4-fontFamily: var(--salt-text-heading-fontFamily);
+  --salt-text-h4-fontWeight: var(--salt-text-heading-fontWeight);
+  --salt-text-h4-fontWeight-small: var(--salt-text-heading-fontWeight-small);
+  --salt-text-h4-fontWeight-strong: var(--salt-text-heading-fontWeight-strong);
+  --salt-text-display1-fontFamily: var(--salt-text-display-fontFamily);
+  --salt-text-display1-fontWeight: var(--salt-text-display-fontWeight);
+  --salt-text-display1-fontWeight-small: var(--salt-text-display-fontWeight-small);
+  --salt-text-display1-fontWeight-strong: var(--salt-text-display-fontWeight-strong);
+  --salt-text-display2-fontFamily: var(--salt-text-display-fontFamily);
+  --salt-text-display2-fontWeight: var(--salt-text-display-fontWeight);
+  --salt-text-display2-fontWeight-small: var(--salt-text-display-fontWeight-small);
+  --salt-text-display2-fontWeight-strong: var(--salt-text-display-fontWeight-strong);
+  --salt-text-display3-fontFamily: var(--salt-text-display-fontFamily);
+  --salt-text-display3-fontWeight: var(--salt-text-display-fontWeight);
+  --salt-text-display3-fontWeight-small: var(--salt-text-display-fontWeight-small);
+  --salt-text-display3-fontWeight-strong: var(--salt-text-display-fontWeight-strong);
+  --salt-text-display4-fontFamily: var(--salt-text-display-fontFamily);
+  --salt-text-display4-fontWeight: var(--salt-text-display-fontWeight);
+  --salt-text-display4-fontWeight-small: var(--salt-text-display-fontWeight-small);
+  --salt-text-display4-fontWeight-strong: var(--salt-text-display-fontWeight-strong);
+  --salt-text-label-fontFamily: var(--salt-text-fontFamily);
+  --salt-text-notation-fontFamily: var(--salt-text-fontFamily);
+  --salt-navigable-cursor-active: pointer;
+  --salt-navigable-cursor-hover: pointer;
+  --salt-navigable-cursor-disabled: not-allowed;
+  --salt-navigable-cursor-edit: text;
+  --salt-navigable-textDecoration: var(--salt-typography-textDecoration-underline);
+  --salt-navigable-textDecoration-hover: var(--salt-typography-textDecoration-none);
+  --salt-navigable-textDecoration-selected: var(--salt-typography-textDecoration-underline);
+  --salt-navigable-fontWeight: var(--salt-typography-fontWeight-regular);
+  --salt-navigable-fontWeight-hover: var(--salt-typography-fontWeight-regular);
+  --salt-navigable-fontWeight-active: var(--salt-typography-fontWeight-semiBold);
+  --salt-navigable-fontWeight-edit: var(--salt-typography-fontWeight-regular);
+  --salt-accent-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-accent-background: var(--salt-palette-accent);
+  --salt-accent-background-disabled: var(--salt-palette-accent-disabled);
+  --salt-accent-borderColor: var(--salt-palette-accent);
+  --salt-track-borderStyle: solid;
+  --salt-track-borderStyle-active: solid;
+  --salt-track-borderStyle-complete: solid;
+  --salt-track-borderStyle-incomplete: dotted;
+  --salt-track-borderWidth: 2px;
+  --salt-track-borderWidth-active: 2px;
+  --salt-track-borderWidth-complete: 2px;
+  --salt-track-borderWidth-incomplete: 2px;
+  --salt-track-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-track-textAlign: center;
+  --salt-taggable-cursor-hover: pointer;
+  --salt-taggable-cursor-active: pointer;
+  --salt-taggable-cursor-disabled: not-allowed;
+  --salt-overlayable-shadow-scroll-color: var(--salt-shadow-1-color);
+  --salt-overlayable-shadow-borderRegion: var(--salt-shadow-2);
+}
+.salt-density-high {
+  --salt-accent-fontSize: 8px;
+  --salt-accent-lineHeight: 11px;
+}
+.salt-density-medium {
+  --salt-accent-fontSize: 10px;
+  --salt-accent-lineHeight: 13px;
+}
+.salt-density-low {
+  --salt-accent-fontSize: 12px;
+  --salt-accent-lineHeight: 16px;
+}
+.salt-density-touch {
+  --salt-accent-fontSize: 14px;
+  --salt-accent-lineHeight: 18px;
+}
+
+/* css/next/deprecated/characteristics.css */
+.salt-theme.salt-theme-next {
+  --salt-navigable-indicator-active: var(--salt-palette-accent);
+  --salt-navigable-background-hover: var(--salt-palette-alpha-contrast-lowest);
+  --salt-selectable-background-blurSelected: var(--salt-palette-neutral-weakest);
+  --salt-selectable-borderColor-disabled: var(--salt-palette-neutral-disabled);
+  --salt-selectable-foreground-disabled: var(--salt-palette-neutral-strong-disabled);
+  --salt-status-static-foreground: var(--salt-palette-foreground-secondary);
+  --salt-status-negative-foreground: var(--salt-palette-negative);
+  --salt-status-positive-foreground: var(--salt-palette-positive);
+  --salt-track-borderColor: var(--salt-palette-alpha-contrast-high);
+  --salt-track-borderColor-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-actionable-accented-bold-background-disabled: var(--salt-palette-accent-disabled);
+  --salt-actionable-accented-bold-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-accented-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-actionable-accented-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-accented-borderColor-disabled: var(--salt-palette-accent-disabled);
+  --salt-actionable-accented-foreground-disabled: var(--salt-palette-accent-strong-disabled);
+  --salt-actionable-accented-subtle-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-accented-subtle-foreground-disabled: var(--salt-palette-accent-strong-disabled);
+  --salt-actionable-bold-background-disabled: var(--salt-palette-neutral-disabled);
+  --salt-actionable-bold-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-actionable-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-borderColor-disabled: var(--salt-palette-neutral-disabled);
+  --salt-actionable-foreground-disabled: var(--salt-palette-foreground-primary-disabled);
+  --salt-actionable-subtle-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-subtle-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-subtle-foreground-disabled: var(--salt-palette-foreground-primary-disabled);
+  --salt-actionable-negative-bold-background-disabled: var(--salt-palette-negative-disabled);
+  --salt-actionable-negative-bold-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-negative-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-actionable-negative-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-negative-borderColor-disabled: var(--salt-palette-negative-disabled);
+  --salt-actionable-negative-foreground-disabled: var(--salt-palette-negative-strong-disabled);
+  --salt-actionable-negative-subtle-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-negative-subtle-foreground-disabled: var(--salt-palette-negative-strong-disabled);
+  --salt-actionable-positive-bold-background-disabled: var(--salt-palette-positive-disabled);
+  --salt-actionable-positive-bold-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-positive-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-actionable-positive-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-positive-borderColor-disabled: var(--salt-palette-positive-disabled);
+  --salt-actionable-positive-foreground-disabled: var(--salt-palette-positive-strong-disabled);
+  --salt-actionable-positive-subtle-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-positive-subtle-foreground-disabled: var(--salt-palette-positive-strong-disabled);
+  --salt-actionable-caution-bold-background-disabled: var(--salt-palette-warning-disabled);
+  --salt-actionable-caution-bold-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-caution-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-actionable-caution-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-caution-borderColor-disabled: var(--salt-palette-warning-disabled);
+  --salt-actionable-caution-foreground-disabled: var(--salt-palette-warning-strong-disabled);
+  --salt-actionable-caution-subtle-background-disabled: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-borderColor-disabled: var(--salt-color-transparent);
+  --salt-actionable-caution-subtle-foreground-disabled: var(--salt-palette-warning-strong-disabled);
+  --salt-separable-background: var(--salt-color-transparent);
+  --salt-category-1-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-2-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-3-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-4-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-5-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-6-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-7-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-8-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-9-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-10-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-11-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-12-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-13-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-14-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-15-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-16-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-17-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-18-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-19-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-20-bold-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-category-1-subtle-foreground: var(--salt-palette-categorical-1-strong);
+  --salt-category-1-subtle-background: var(--salt-palette-categorical-1-weakest);
+  --salt-category-1-subtle-borderColor: var(--salt-palette-categorical-1);
+  --salt-category-2-subtle-foreground: var(--salt-palette-categorical-2-strong);
+  --salt-category-2-subtle-background: var(--salt-palette-categorical-2-weakest);
+  --salt-category-2-subtle-borderColor: var(--salt-palette-categorical-2);
+  --salt-category-3-subtle-foreground: var(--salt-palette-categorical-3-strong);
+  --salt-category-3-subtle-background: var(--salt-palette-categorical-3-weakest);
+  --salt-category-3-subtle-borderColor: var(--salt-palette-categorical-3);
+  --salt-category-4-subtle-foreground: var(--salt-palette-categorical-4-strong);
+  --salt-category-4-subtle-background: var(--salt-palette-categorical-4-weakest);
+  --salt-category-4-subtle-borderColor: var(--salt-palette-categorical-4);
+  --salt-category-5-subtle-foreground: var(--salt-palette-categorical-5-strong);
+  --salt-category-5-subtle-background: var(--salt-palette-categorical-5-weakest);
+  --salt-category-5-subtle-borderColor: var(--salt-palette-categorical-5);
+  --salt-category-6-subtle-foreground: var(--salt-palette-categorical-6-strong);
+  --salt-category-6-subtle-background: var(--salt-palette-categorical-6-weakest);
+  --salt-category-6-subtle-borderColor: var(--salt-palette-categorical-6);
+  --salt-category-7-subtle-foreground: var(--salt-palette-categorical-7-strong);
+  --salt-category-7-subtle-background: var(--salt-palette-categorical-7-weakest);
+  --salt-category-7-subtle-borderColor: var(--salt-palette-categorical-7);
+  --salt-category-8-subtle-foreground: var(--salt-palette-categorical-8-strong);
+  --salt-category-8-subtle-background: var(--salt-palette-categorical-8-weakest);
+  --salt-category-8-subtle-borderColor: var(--salt-palette-categorical-8);
+  --salt-category-9-subtle-foreground: var(--salt-palette-categorical-9-strong);
+  --salt-category-9-subtle-background: var(--salt-palette-categorical-9-weakest);
+  --salt-category-9-subtle-borderColor: var(--salt-palette-categorical-9);
+  --salt-category-10-subtle-foreground: var(--salt-palette-categorical-10-strong);
+  --salt-category-10-subtle-background: var(--salt-palette-categorical-10-weakest);
+  --salt-category-10-subtle-borderColor: var(--salt-palette-categorical-10);
+  --salt-category-11-subtle-foreground: var(--salt-palette-categorical-11-strong);
+  --salt-category-11-subtle-background: var(--salt-palette-categorical-11-weakest);
+  --salt-category-11-subtle-borderColor: var(--salt-palette-categorical-11);
+  --salt-category-12-subtle-foreground: var(--salt-palette-categorical-12-strong);
+  --salt-category-12-subtle-background: var(--salt-palette-categorical-12-weakest);
+  --salt-category-12-subtle-borderColor: var(--salt-palette-categorical-12);
+  --salt-category-13-subtle-foreground: var(--salt-palette-categorical-13-strong);
+  --salt-category-13-subtle-background: var(--salt-palette-categorical-13-weakest);
+  --salt-category-13-subtle-borderColor: var(--salt-palette-categorical-13);
+  --salt-category-14-subtle-foreground: var(--salt-palette-categorical-14-strong);
+  --salt-category-14-subtle-background: var(--salt-palette-categorical-14-weakest);
+  --salt-category-14-subtle-borderColor: var(--salt-palette-categorical-14);
+  --salt-category-15-subtle-foreground: var(--salt-palette-categorical-15-strong);
+  --salt-category-15-subtle-background: var(--salt-palette-categorical-15-weakest);
+  --salt-category-15-subtle-borderColor: var(--salt-palette-categorical-15);
+  --salt-category-16-subtle-foreground: var(--salt-palette-categorical-16-strong);
+  --salt-category-16-subtle-background: var(--salt-palette-categorical-16-weakest);
+  --salt-category-16-subtle-borderColor: var(--salt-palette-categorical-16);
+  --salt-category-17-subtle-foreground: var(--salt-palette-categorical-17-strong);
+  --salt-category-17-subtle-background: var(--salt-palette-categorical-17-weakest);
+  --salt-category-17-subtle-borderColor: var(--salt-palette-categorical-17);
+  --salt-category-18-subtle-foreground: var(--salt-palette-categorical-18-strong);
+  --salt-category-18-subtle-background: var(--salt-palette-categorical-18-weakest);
+  --salt-category-18-subtle-borderColor: var(--salt-palette-categorical-18);
+  --salt-category-19-subtle-foreground: var(--salt-palette-categorical-19-strong);
+  --salt-category-19-subtle-background: var(--salt-palette-categorical-19-weakest);
+  --salt-category-19-subtle-borderColor: var(--salt-palette-categorical-19);
+  --salt-category-20-subtle-foreground: var(--salt-palette-categorical-20-strong);
+  --salt-category-20-subtle-background: var(--salt-palette-categorical-20-weakest);
+  --salt-category-20-subtle-borderColor: var(--salt-palette-categorical-20);
+  --salt-accent-foreground: var(--salt-palette-foreground-primary-alt);
+  --salt-accent-borderColor-disabled: var(--salt-palette-accent-disabled);
+  --salt-accent-background: var(--salt-palette-accent);
+  --salt-accent-background-disabled: var(--salt-palette-accent-disabled);
+  --salt-accent-borderColor: var(--salt-palette-accent);
+  --salt-content-foreground-highlight: var(--salt-palette-accent-weaker);
+  --salt-content-foreground-active: var(--salt-palette-accent-stronger);
+  --salt-content-foreground-hover: var(--salt-palette-accent-strong);
+  --salt-editable-primary-background-active: var(--salt-palette-background-primary);
+  --salt-editable-primary-background-hover: var(--salt-palette-background-primary);
+  --salt-editable-primary-background-readonly: var(--salt-color-transparent);
+  --salt-editable-secondary-background-active: var(--salt-palette-background-secondary);
+  --salt-editable-secondary-background-hover: var(--salt-palette-background-secondary);
+  --salt-editable-secondary-background-readonly: var(--salt-color-transparent);
+  --salt-sentiment-neutral-track-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-container-primary-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-container-primary-borderColor-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-container-secondary-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-container-secondary-borderColor-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-container-tertiary-borderColor: var(--salt-palette-alpha-contrast-medium);
+  --salt-container-tertiary-borderColor-disabled: var(--salt-palette-alpha-contrast-lower);
+  --salt-content-bold-foreground-disabled: var(--salt-palette-foreground-primary-alt-disabled);
+  --salt-selectable-borderColor-selectedDisabled: var(--salt-palette-accent-disabled);
+  --salt-selectable-foreground-selectedDisabled: var(--salt-palette-accent-disabled);
+  --salt-selectable-background-disabled: var(--salt-color-transparent);
+  --salt-selectable-background-selectedDisabled: var(--salt-palette-accent-weaker-disabled);
+}
+.salt-theme-next.salt-theme {
+  --salt-sentiment-accent-background-disabled: var(--salt-palette-accent-disabled);
+}
+
+/* css/next/deprecated/foundations.css */
+.salt-theme.salt-theme-next {
+  --salt-color-background-gradientlight-rgb: var(--salt-color-background-titanium-rgb);
+  --salt-color-background-gradientlight: var(--salt-color-background-titanium);
+  --salt-color-gray-400-40a: rgba(var(--salt-color-gray-400-rgb), 0.4);
+  --salt-color-logo-brown-rgb: var(--salt-color-jpmBrown-rgb);
+  --salt-color-logo-brown: var(--salt-color-jpmBrown);
+}
+
+/* css/next/deprecated/palette.css */
+.salt-theme-next.salt-theme[data-mode=light] {
+  --salt-palette-foreground-active: var(--salt-color-blue-700);
+  --salt-palette-foreground-hover: var(--salt-color-blue-600);
+  --salt-palette-warning-weak: var(--salt-color-orange-100);
+  --salt-palette-positive-weak: var(--salt-color-green-100);
+  --salt-palette-info-weak: var(--salt-color-blue-100);
+  --salt-palette-negative-weak: var(--salt-color-red-100);
+  --salt-palette-warning-action-active: var(--salt-color-orange-800);
+  --salt-palette-neutral-action-active: var(--salt-color-gray-800);
+  --salt-palette-positive-action-active: var(--salt-color-green-800);
+  --salt-palette-negative-action-active: var(--salt-color-red-800);
+  --salt-palette-warning-action-hover: var(--salt-color-orange-600);
+  --salt-palette-neutral-action-hover: var(--salt-color-gray-600);
+  --salt-palette-positive-action-hover: var(--salt-color-green-600);
+  --salt-palette-negative-action-hover: var(--salt-color-red-600);
+  --salt-palette-negative-disabled: var(--salt-color-red-500-40a);
+  --salt-palette-negative-strong-disabled: var(--salt-color-red-600-40a);
+  --salt-palette-positive-disabled: var(--salt-color-green-500-40a);
+  --salt-palette-positive-strong-disabled: var(--salt-color-green-600-40a);
+  --salt-palette-warning-disabled: var(--salt-color-orange-500-40a);
+  --salt-palette-warning-strong-disabled: var(--salt-color-orange-600-40a);
+  --salt-palette-neutral-weaker-disabled: var(--salt-color-gray-300-40a);
+  --salt-palette-neutral-weaker-readonly: var(--salt-color-gray-300-10a);
+  --salt-palette-neutral-weak-disabled: var(--salt-color-gray-400-40a);
+  --salt-palette-neutral-strong-disabled: var(--salt-color-gray-600-40a);
+}
+.salt-theme-next.salt-theme[data-mode=dark] {
+  --salt-palette-foreground-active: var(--salt-color-blue-300);
+  --salt-palette-foreground-hover: var(--salt-color-blue-400);
+  --salt-palette-warning-weak: var(--salt-color-orange-900);
+  --salt-palette-positive-weak: var(--salt-color-green-900);
+  --salt-palette-info-weak: var(--salt-color-blue-900);
+  --salt-palette-negative-weak: var(--salt-color-red-900);
+  --salt-palette-warning-action-active: var(--salt-color-orange-800);
+  --salt-palette-neutral-action-active: var(--salt-color-gray-800);
+  --salt-palette-positive-action-active: var(--salt-color-green-800);
+  --salt-palette-negative-action-active: var(--salt-color-red-800);
+  --salt-palette-warning-action-hover: var(--salt-color-orange-600);
+  --salt-palette-neutral-action-hover: var(--salt-color-gray-600);
+  --salt-palette-positive-action-hover: var(--salt-color-green-600);
+  --salt-palette-negative-action-hover: var(--salt-color-red-600);
+  --salt-palette-negative-disabled: var(--salt-color-red-500-40a);
+  --salt-palette-negative-strong-disabled: var(--salt-color-red-400-40a);
+  --salt-palette-positive-disabled: var(--salt-color-green-500-40a);
+  --salt-palette-positive-strong-disabled: var(--salt-color-green-400-40a);
+  --salt-palette-warning-disabled: var(--salt-color-orange-500-40a);
+  --salt-palette-warning-strong-disabled: var(--salt-color-orange-400-40a);
+  --salt-palette-neutral-weaker-disabled: var(--salt-color-gray-700-40a);
+  --salt-palette-neutral-weaker-readonly: var(--salt-color-gray-700-10a);
+  --salt-palette-neutral-weak-disabled: var(--salt-color-gray-600-40a);
+  --salt-palette-neutral-strong-disabled: var(--salt-color-gray-400-40a);
+}
+.salt-theme-next.salt-theme {
+  --salt-palette-alpha-none: transparent;
+}
+.salt-theme.salt-theme-next[data-mode=light][data-accent=blue] {
+  --salt-palette-accent-action-active: var(--salt-color-blue-800);
+  --salt-palette-accent-action-hover: var(--salt-color-blue-600);
+  --salt-palette-accent-strong-disabled: var(--salt-color-blue-600-40a);
+  --salt-palette-accent-stronger-disabled: var(--salt-color-blue-700-40a);
+  --salt-palette-accent-disabled: var(--salt-color-blue-500-40a);
+  --salt-palette-accent-weaker-disabled: var(--salt-color-blue-200-40a);
+}
+.salt-theme.salt-theme-next[data-mode=dark][data-accent=blue] {
+  --salt-palette-accent-action-active: var(--salt-color-blue-800);
+  --salt-palette-accent-action-hover: var(--salt-color-blue-600);
+  --salt-palette-accent-strong-disabled: var(--salt-color-blue-400-40a);
+  --salt-palette-accent-stronger-disabled: var(--salt-color-blue-300-40a);
+  --salt-palette-accent-disabled: var(--salt-color-blue-500-40a);
+  --salt-palette-accent-weaker-disabled: var(--salt-color-blue-800-40a);
+}
+.salt-theme.salt-theme-next[data-mode=light][data-accent=teal] {
+  --salt-palette-accent-action-active: var(--salt-color-teal-800);
+  --salt-palette-accent-action-hover: var(--salt-color-teal-600);
+  --salt-palette-accent-strong-disabled: var(--salt-color-teal-600-40a);
+  --salt-palette-accent-stronger-disabled: var(--salt-color-teal-700-40a);
+  --salt-palette-accent-disabled: var(--salt-color-teal-500-40a);
+  --salt-palette-accent-weaker-disabled: var(--salt-color-teal-200-40a);
+}
+.salt-theme.salt-theme-next[data-mode=dark][data-accent=teal] {
+  --salt-palette-accent-action-active: var(--salt-color-teal-800);
+  --salt-palette-accent-action-hover: var(--salt-color-teal-600);
+  --salt-palette-accent-strong-disabled: var(--salt-color-teal-400-40a);
+  --salt-palette-accent-stronger-disabled: var(--salt-color-teal-300-40a);
+  --salt-palette-accent-disabled: var(--salt-color-teal-500-40a);
+  --salt-palette-accent-weaker-disabled: var(--salt-color-teal-800-40a);
+}
+.salt-theme-next.salt-theme[data-heading-font="Open Sans"] {
+  --salt-palette-text-fontFamily-heading: var(--salt-typography-fontFamily-openSans);
+  --salt-palette-text-display-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-display-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-display-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-palette-text-heading-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-heading-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-heading-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-palette-text-body-fontWeight: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-body-fontWeight-small: var(--salt-typography-fontWeight-light);
+  --salt-palette-text-body-fontWeight-strong: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-notation-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-notation-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-notation-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-theme[data-heading-font=Amplitude] {
+  --salt-palette-text-fontFamily-heading: var(--salt-typography-fontFamily-amplitude);
+  --salt-palette-text-display-fontWeight: var(--salt-typography-fontWeight-medium);
+  --salt-palette-text-display-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-palette-text-display-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-heading-fontWeight: var(--salt-typography-fontWeight-medium);
+  --salt-palette-text-heading-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-heading-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+  --salt-palette-text-body-fontWeight: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-body-fontWeight-small: var(--salt-typography-fontWeight-light);
+  --salt-palette-text-body-fontWeight-strong: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-notation-fontWeight: var(--salt-typography-fontWeight-semiBold);
+  --salt-palette-text-notation-fontWeight-small: var(--salt-typography-fontWeight-regular);
+  --salt-palette-text-notation-fontWeight-strong: var(--salt-typography-fontWeight-bold);
+}
+.salt-theme-next.salt-theme[data-action-font="Open Sans"] {
+  --salt-palette-text-fontFamily-action: var(--salt-typography-fontFamily-openSans);
+  --salt-palette-text-action-fontWeight: var(--salt-typography-fontWeight-semiBold);
+}
+.salt-theme-next.salt-theme[data-action-font=Amplitude] {
+  --salt-palette-text-fontFamily-action: var(--salt-typography-fontFamily-amplitude);
+  --salt-palette-text-action-fontWeight: var(--salt-typography-fontWeight-medium);
+}
+.salt-theme.salt-theme-next[data-mode=light] {
+  --salt-palette-foreground-primary-alt-disabled: var(--salt-color-white-40a);
+}
+.salt-theme.salt-theme-next[data-mode=dark] {
+  --salt-palette-foreground-primary-alt-disabled: var(--salt-color-white-40a);
+}
+
+/* css/theme-next.css */
