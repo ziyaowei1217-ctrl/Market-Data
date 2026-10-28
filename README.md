@@ -21,8 +21,9 @@ MSCI、ISM、S&P Global 等数据仅供读者名单内部学习使用，不要�
 
 ## 部署
 
-推送到 `main` 后，GitHub Actions（`.github/workflows/pages.yml`）自动构建并发布到 GitHub Pages。
-第一次需要在仓库 Settings → Pages → Build and deployment → Source 选 **GitHub Actions**。
+源码在 `market-data` 仓库的 `site` 分支，打包好的网站在 `gh-pages` 分支（与数据管线的分支互不影响）。
+推送到 `site` 后，GitHub Actions（`.github/workflows/pages.yml`）自动构建并更新 `gh-pages`，
+GitHub Pages 从 `gh-pages` 发布，网址：https://ziyaowei1217-ctrl.github.io/market-data/
 
 ## 本地构建
 
