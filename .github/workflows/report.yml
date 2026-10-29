@@ -47,6 +47,8 @@ jobs:
             pipeline/report/requirements.txt
             pipeline/warehouse/requirements.txt
       - run: pip install -r pipeline/report/requirements.txt
+      - name: Chromium for the issue layout
+        run: python -m playwright install --with-deps chromium
       - name: Unit tests
         run: python -m unittest discover -s pipeline/report/tests -t .
       - name: Build issue

@@ -83,11 +83,11 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             root = Path(folder)
             pdf = PdfReader(root / 'weekly-report.pdf')
-            self.assertEqual(len(pdf.pages), 1)
-            page = pdf.pages[0]
-            self.assertAlmostEqual(float(page.mediabox.width), 210 / 25.4 * 72, places=1)
-            self.assertAlmostEqual(float(page.mediabox.height), 297 / 25.4 * 72, places=1)
-            self.assertIn('DEMO', page.extract_text())
+            self.assertGreaterEqual(len(pdf.pages), 4)
+            for page in pdf.pages:
+                self.assertAlmostEqual(float(page.mediabox.width), 210 / 25.4 * 72, delta=0.5)
+                self.assertAlmostEqual(float(page.mediabox.height), 297 / 25.4 * 72, delta=0.5)
+                self.assertIn('模拟数据', page.extract_text())
             for name in ['cross-asset-trends.png', 'weekly-returns.png']:
                 with Image.open(root / name) as im:
                     self.assertGreaterEqual(im.width, 2000)
@@ -143,24 +143,6 @@ class StyleTests(unittest.TestCase):
         self.assertEqual(market({'market_colors': 'cn'})[:2], (VERMILION, TEAL))
         with self.assertRaises(ValueError):
             market({'market_colors': 'red'})
-
-
-class WeeklyLayoutTests(unittest.TestCase):
-    def test_pack_fills_three_columns_and_keeps_every_chart(self):
-        from pipeline.report.weekly import pack, COLS
-        keys = ['returns', 'curve', 'spread', 'heatmap', 'calendar', 'football', 'distribution']
-        rows = pack(keys)
-        placed = [key for row in rows for key, _ in row]
-        self.assertEqual(sorted(placed), sorted(keys))
-        for row in rows:
-            self.assertEqual(sum(span for _, span in row), COLS)
-
-    def test_thesis_page_only_for_a_full_issue(self):
-        from pipeline.report.weekly import choose_thesis
-        self.assertIsNone(choose_thesis(['trends', 'returns'], {}))
-        self.assertEqual(choose_thesis(['trends', 'returns', 'curve', 'spread'], {}), 'trends')
-        self.assertEqual(choose_thesis(['trends', 'returns', 'curve', 'spread'], {'thesis': 'curve'}), 'curve')
-        self.assertIsNone(choose_thesis(['trends', 'returns', 'curve', 'spread'], {'thesis': False}))
 
 
 if __name__ == '__main__':

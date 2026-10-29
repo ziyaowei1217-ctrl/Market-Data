@@ -82,16 +82,14 @@ class StreetExportTests(unittest.TestCase):
             self.assertEqual(run.returncode,0,run.stderr)
             root=Path(folder)
             pages=PdfReader(root/'weekly-report.pdf').pages
-            # Weekly Commentary: front page + thesis page + three-column data pages, denser than one chart per half page.
-            self.assertLess(len(pages),10)
+            # 市场一周 in the design system: cover, dashboard, risk, fixed income, sources.
+            self.assertTrue(4<=len(pages)<=7)
             texts=[page.extract_text() for page in pages]
             for page_text in texts:
-                self.assertIn('DEMO',page_text)
-            self.assertIn('本期论点',texts[1])
-            from pipeline.report.street_charts import LABELS
-            joined=''.join(texts).replace('\n','').replace(' ','')
-            for label in list(LABELS.values())+['本周资产表现','国债收益率曲线','期限利差','跨周期表现','利率周度变动']:
-                self.assertIn(label.replace(' ',''),joined)
+                self.assertIn('模拟数据',page_text)
+            joined=''.join(texts)
+            for title in ['市场仪表盘','风险与相关','固定收益','来源与方法']:
+                self.assertIn(title,joined)
             self.assertEqual(len(list(root.glob('*.png'))),20)
             self.assertEqual(len(list(root.glob('*.pdf'))),21)
 

@@ -1,12 +1,11 @@
-"""Chart system for the weekly market report, built on the Richard Wei Finance design system.
+"""Single-chart toolkit for the weekly market report, styled with the Richard Wei Finance design system.
 
-Every chart is a *story* (finding, units, takeaway, evidence) plus a *plot* that fits any
-box: a full-width standalone export, or one, two or three columns of the Weekly
-Commentary. About 90% of every chart is ink, grey and white; cobalt marks the one series
-or item a chart is about; IBCS notation gives actual values a solid dark fill and
-comparison periods a lighter grey; up/down uses teal/vermilion (红涨绿跌 with
-`market_colors: "cn"`), always with a sign and a triangle. Brand green appears only in
-the issue's nameplate and running heads, never in a chart.
+The weekly issue itself is drawn with the design system's own components (see issue.py and
+render.py); these matplotlib charts serve the offline CSV toolkit and use the same tokens:
+charcoal ink on white, thin rules, one deep-crimson subject per chart, the first comparison in
+gray and a third series in ink. Up/down uses teal/vermilion (红涨绿跌 with
+`market_colors: "cn"`), always with a sign and a triangle; the crimson subject marks the
+subject, never a direction.
 """
 from pathlib import Path
 import re
@@ -30,25 +29,25 @@ from .data import normalize, weekly_returns, tolerance, values_at
 MM = 1 / 25.4
 PX = .75  # design-system px -> pt
 
-# ── Tokens (light theme; the system has one theme) ────────────────────────────
-BRAND = '#102820'                     # identity only: nameplate, running-head series name
+# ── Tokens (Richard Wei Finance, tokens.css) ─────────────────────────────────
+BRAND = '#8d303a'                     # 深绯: identity and the subject of a chart, always small
 SURFACE = '#ffffff'
-SUNKEN = '#f4f4f3'
-LINE_SUBTLE = '#e8e8e8'
-LINE = '#d4d4d4'
-LINE_STRONG = '#141414'
-INK = '#141414'
-INK_MUTED = '#5e5e5e'
-ACCENT = '#1e3bd6'
-ACCENT_SOFT = '#e9edfd'
-TEAL, TEAL_SOFT = '#00766e', '#e0f1ef'
-VERMILION, VERMILION_SOFT = '#b93d0a', '#fbeae2'
-GOOD, BAD = TEAL, VERMILION           # IBCS variances: never swap by market
-AC = '#333333'                         # scenario: actual
-PY = '#8a8a8a'                         # scenario: prior period
-RANGE_1, RANGE_2 = '#c9c9c9', '#e1e1e1'
+SUNKEN = '#f7f5f0'                    # stone: range bands, neutral panels
+LINE_SUBTLE = '#e8e6e2'               # chart gridlines
+LINE = '#cac8c2'                      # light separators, never a data mark
+LINE_STRONG = '#7f7c75'               # structural rules and chart baselines
+INK = '#312f2a'
+INK_MUTED = '#56534d'
+ACCENT = BRAND                        # chart-subject: the one series or bar a chart is about
+ACCENT_SOFT = '#eff4fc'               # 霁蓝 ground of a highlighted table row
+TEAL, TEAL_SOFT = '#0e7a6d', '#e8f5f2'
+VERMILION, VERMILION_SOFT = '#9d1c00', '#fcefeb'
+GOOD, BAD = TEAL, VERMILION           # favorable / unfavorable: never swap by market
+AC = INK                               # chart-compare: a third series, thinner and labelled
+PY = '#8d8a83'                         # chart-context: the first comparison
+RANGE_1, RANGE_2 = '#a9a59f', SUNKEN   # chart-context-light; stone band
 CONTEXT = PY
-GREYS = LinearSegmentedColormap.from_list('greys', [SUNKEN, RANGE_2, RANGE_1, PY, AC])
+GREYS = LinearSegmentedColormap.from_list('greys', [SUNKEN, LINE_SUBTLE, RANGE_1, PY, AC])
 MISSING_TEXT = '–'
 BASELINE = 18 * PX * 25.4 / 72        # the weekly's 18px baseline in mm
 
@@ -73,9 +72,9 @@ class Register:
 REGULAR, COMPACT = Register(False), Register(True)
 
 FONT_DIR = Path(__file__).parent / 'assets' / 'fonts'
-FONT_FILES = ['PublicSansTF-Regular.ttf', 'PublicSansTF-SemiBold.ttf', 'Newsreader-Medium.ttf',
-              'Newsreader-Regular.ttf', 'NotoSansSC-Regular.ttf', 'NotoSansSC-SemiBold.ttf',
-              'NotoSerifSC-Medium.ttf']
+FONT_FILES = ['PublicSansTF-Regular.ttf', 'PublicSansTF-Bold.ttf', 'Newsreader-Regular.ttf',
+              'Newsreader-Bold.ttf', 'NotoSansSC-Regular.ttf', 'NotoSansSC-Bold.ttf',
+              'NotoSerifSC-Regular.ttf', 'NotoSerifSC-Bold.ttf']
 SANS = ['Public Sans TF', 'Noto Sans SC']
 SERIF = ['Newsreader', 'Noto Serif SC']
 
@@ -90,7 +89,8 @@ def coverage():
         from matplotlib.ft2font import FT2Font
         cmap = {name: set(FT2Font(str(FONT_DIR / name)).get_charmap()) for name in FONT_FILES}
         latin = cmap['PublicSansTF-Regular.ttf'] & cmap['Newsreader-Regular.ttf']
-        cjk = cmap['NotoSansSC-Regular.ttf'] & cmap['NotoSansSC-SemiBold.ttf'] & cmap['NotoSerifSC-Medium.ttf']
+        cjk = (cmap['NotoSansSC-Regular.ttf'] & cmap['NotoSansSC-Bold.ttf']
+               & cmap['NotoSerifSC-Regular.ttf'] & cmap['NotoSerifSC-Bold.ttf'])
         _COVERAGE = latin | cjk
     return _COVERAGE
 
@@ -111,11 +111,11 @@ def missing_glyphs(*values):
 
 
 def font(role='sans', size=None):
-    """sans 400 · semibold (sans 600) · serif (500, headlines) · figure (serif 400, big numbers)."""
+    """sans 400 · semibold (sans 700, labels and values) · serif (700, titles) · figure (serif 400, key figures)."""
     if role in ('serif', 'figure'):
-        prop = FontProperties(family=SERIF, weight=500 if role == 'serif' else 400)
+        prop = FontProperties(family=SERIF, weight=700 if role == 'serif' else 400)
     else:
-        prop = FontProperties(family=SANS, weight=600 if role == 'semibold' else 400)
+        prop = FontProperties(family=SANS, weight=700 if role == 'semibold' else 400)
     if size:
         prop.set_size(size)
     return prop
@@ -764,7 +764,7 @@ def plot_returns(fig, rect, frame, meta, reg, story):
     pad = (hi - lo) * .05
     ax.set_xlim(lo - pad, hi + pad)
     ax.set_ylim(len(values) - .5, -.5)
-    colors = [ACCENT if name == chosen[0] else AC for name in changes.index]
+    colors = [ACCENT if name == chosen[0] else CONTEXT for name in changes.index]  # BarChart: subject vs gray
     ax.barh(range(len(values)), values, height=.56, color=colors, zorder=2)
     plot_w = rect[2] - left - right
     edge = 1 + right / plot_w
@@ -830,7 +830,6 @@ def export_report(frame, meta, output, yields=None, selected=None, bundle=None):
     from . import street_charts  # noqa: F401  (registers Street charts)
     from .rates import curve_snapshot, spread_bp, horizon_returns
     from .street_data import STREET, prepare
-    from .weekly import build_issue
 
     sources = {'trends': frame, 'returns': frame, 'heatmap': frame,
                'curve': yields, 'spread': yields, 'comparison': yields}
@@ -870,6 +869,15 @@ def export_report(frame, meta, output, yields=None, selected=None, bundle=None):
             fig.savefig(path, dpi=300)
             paths.append(path)
         plt.close(fig)
-    report = output / 'weekly-report.pdf'
-    build_issue(report, selected, datasets, frame, yields, meta)
-    return [report] + paths
+    # The issue itself (市场一周) is drawn with the design system's components; it needs at least two
+    # assets and their weekly change. Without them the single charts above are the whole output.
+    if frame is None or len(frame.columns) < 2:
+        return paths
+    from .build import write_issue
+    try:
+        write_issue(frame, yields, meta, output, charts=False)
+    except ValueError as exc:
+        import sys
+        print(f'未生成周报：{exc}', file=sys.stderr)
+        return paths
+    return [output / 'weekly-report.pdf'] + paths

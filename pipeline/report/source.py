@@ -46,8 +46,6 @@ def load_config(path=CONFIG):
     for item in assets + yields:
         if item.get('proxy') and not str(item.get('note', '')).endswith('代理'):
             raise ValueError(f"issue.json: 代理序列 {item['series']} 的 note 须以「代理」结尾。")
-    if not isinstance(config.get('charts'), list) or not config['charts']:
-        raise ValueError('issue.json: charts 不能为空。')
     return config
 
 
@@ -160,6 +158,7 @@ def build_inputs(config, fetcher, cutoff, now=None):
     meta = dict(
         style,
         source=config['source'],
+        **({'rates_source': config['rates_source']} if config.get('rates_source') else {}),
         updated_at=now.strftime('%Y-%m-%d %H:%M UTC'),
         as_of=f'{cutoff:%Y-%m-%d}', week_start=f'{week_start:%Y-%m-%d}', week_end=f'{cutoff:%Y-%m-%d}',
         is_demo=False,
@@ -169,21 +168,8 @@ def build_inputs(config, fetcher, cutoff, now=None):
                         '3M': f'{cutoff - pd.DateOffset(months=3):%Y-%m-%d}',
                         'YTD': f'{year_end:%Y-%m-%d}'},
         quoted=[a['name'] for a in config['assets'] if a.get('quoted') and a['name'] in kept],
+        series_sources={a['name']: a['source'] for a in config['assets'] if a.get('source') and a['name'] in kept},
         series_notes=notes,
         omitted=omitted,
     )
     return levels, yields, meta
-
-
-def drawable(charts, levels, yields):
-    """Charts this issue can draw: rate charts need yields (spread needs 2Y and 10Y)."""
-    from .charts import RATE_CHARTS
-    tenors = [] if yields is None else list(yields.columns)
-    result = []
-    for key in charts:
-        if key in RATE_CHARTS and (yields is None or (key == 'spread' and not {'2Y', '10Y'} <= set(tenors))):
-            continue
-        if key == 'rolling_correlation' and len(levels.columns) < 2:
-            continue
-        result.append(key)
-    return result

@@ -58,6 +58,11 @@
   pipelines. Its only database objects are in `pipeline/report/storage.sql` (the `reports` bucket,
   its readers-only policy, and one-time upload tickets). `pipeline/report/issue.json` is its
   configuration (assets, tenors, charts).
+- The issue is laid out with the Richard Wei Finance design system's own components, vendored in
+  `pipeline/report/ds/` (with marked local patches; see its README), by `issue.py` (content) and
+  `render.py` (headless Chromium via Playwright). Keep its rules: one crimson subject per chart,
+  findings as band titles, a dated source under every chart, the risk warning on pages with returns,
+  facts only (no views or forecasts).
 - Weekly cutoff is Friday; `date_rule = "asof"` uses each series' last value on or before the
   cutoff within six days and names proxies and earlier observation dates in the issue's data notes.
   Missing data stays blank; never interpolate or fill with zero.

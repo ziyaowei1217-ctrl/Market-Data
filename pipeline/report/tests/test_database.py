@@ -190,16 +190,20 @@ class SourceTests(unittest.TestCase):
                                  capture_output=True, text=True, cwd=REPO)
             self.assertEqual(run.returncode, 0, run.stderr)
             pdf = PdfReader(out / 'weekly-report.pdf')
-            text = ''.join(page.extract_text() for page in pdf.pages)
+            text = ''.join(page.extract_text() for page in pdf.pages).replace(' ', '')
             self.assertNotIn('DEMO', text)
             self.assertIn('代理', text)
-            last = pdf.pages[-1].extract_text()
-            self.assertIn('数据说明', last)
-            self.assertIn('SPY 总回报代理，截至10月22日', last)
+            last = pdf.pages[-1].extract_text().replace('\n', '').replace(' ', '')
+            self.assertIn('来源与方法', last)
+            self.assertIn('SPY总回报代理', last)
+            self.assertIn('最新观察10月22日', last)
             self.assertIn('10月23日', text)
             summary = json.loads((out / 'issue.json').read_text(encoding='utf-8'))
             self.assertEqual(summary['as_of'], '2026-10-23')
             self.assertEqual(summary['pages'], len(pdf.pages))
+            for name in summary['files']:
+                self.assertTrue((out / name).is_file(), name)
+            self.assertIn('asset-returns.png', summary['files'])
 
 
 if __name__ == '__main__':

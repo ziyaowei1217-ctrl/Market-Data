@@ -1,0 +1,169 @@
+/* Richard Wei Finance — generated from tokens.json */
+:root, [data-theme="light"] {
+  --brand: #8d303a; /* 深绯, deep crimson: the brand. 深绯 is the robe color the Tang court gave officials of the fourth rank ("四品服深绯"); it sits in the deep, low-chroma red private banks use (Pictet #A04044 and EFG #8C3F3E within 6 in CIEDE2000). On the page it marks identity and the subject, always small: the series name in the running head, the short tick on the cover's header rule, the second line of the cover title, kicker labels, contents page numbers, the subject series of a chart with its end label, numbered markers and the base-case numeral. Never body text, a heading, a fill larger than a marker, or a direction: up and down use the signals. 8.0:1 on surface, 7.4:1 on surface-sunken. */
+  --on-brand: #ffffff; /* Text on a brand marker: the numerals in the round markers of a map or list. 8.0:1. */
+  --surface: #ffffff; /* The page: every A4 page, chart and table sits on white. Every text token is checked on it. */
+  --surface-sunken: #f7f5f0; /* Stone paper: the ground of scenario cards, the neutral slot of the positioning scale, and a column band in a dashboard table. Flat, never with a shadow or a border. Text tokens are checked on it too. */
+  --line-subtle: #e8e6e2; /* Chart gridlines, 0.5px: visible enough to read a value across, quieter than any series. */
+  --line: #cac8c2; /* Light separators, 0.5pt: between blocks in the cover's side column, above a group row in a table, between calendar rows (dashed), and the outline of a positioning slot. Decorative: never a data mark. */
+  --line-strong: #7f7c75; /* Structural rules, 0.75pt: the header rule, the full-width rule that opens every band, the rule under a chart or table title, table header rules and chart baselines. 4.2:1 on surface. */
+  --ink: #312f2a; /* Text and numbers: a charcoal, not black, as private banks set their text (UBS #1C1C1C, J.P. Morgan #292E33). Page and section titles, body, table figures, and a chart's third series. 13.4:1 on surface, 12.3:1 on surface-sunken. */
+  --ink-muted: #56534d; /* Secondary text: the date and section in the running head, chart qualifiers, axis labels, source notes, the cover lede and contents entries. 7.66:1 on surface, 7.03:1 on surface-sunken, since it is set at 7–9pt. */
+  --accent: #234993; /* 霁蓝, the cobalt of Ming porcelain for the Altar of Heaven ("圆丘青色", 大明会典). Kept for what a PDF or screen needs beyond the page's own colors: hyperlinks in the contents and sources, and keyboard focus. Not a chart color. 8.6:1 on surface. */
+  --accent-soft: #eff4fc; /* Pale 霁蓝 ground of a highlighted table row; the row's text turns bold ink, never blue. Ink reads 12.1:1 on it. */
+  --signal-teal: #0e7a6d; /* Bluish-green signal (Okabe-Ito, darkened for text): reached only through up, down, good and bad, on numbers with a sign and a triangle. 5.2:1 on surface. */
+  --signal-teal-soft: #e8f5f2; /* Ground behind teal text in a chip, and the overweight side of the positioning scale. */
+  --signal-vermilion: #9d1c00; /* Vermilion signal (Okabe-Ito, darkened for text): reached only through up, down, good and bad. An orange-red 15° of hue and 14.6 in CIEDE2000 from the crimson brand. 8.1:1 on surface. */
+  --signal-vermilion-soft: #fcefeb; /* Ground behind vermilion text in a chip, and the underweight side of the positioning scale. */
+  --up: var(--signal-teal); /* A price or level that rose. Inside [data-market="cn"] it re-maps to signal-vermilion (红涨). Always with a sign and a triangle. */
+  --down: var(--signal-vermilion); /* A price or level that fell. Inside [data-market="cn"] it re-maps to signal-teal (绿跌). Always with a sign and a triangle. */
+  --up-soft: var(--signal-teal-soft); /* Ground behind up text; swaps under [data-market="cn"]. */
+  --down-soft: var(--signal-vermilion-soft); /* Ground behind down text; swaps under [data-market="cn"]. */
+  --good: var(--signal-teal); /* Favorable difference against plan or a prior period. Never swaps with market convention. */
+  --bad: var(--signal-vermilion); /* Unfavorable difference. Never swaps with market convention. */
+  --chart-subject: var(--brand); /* The series the chart is about, drawn 1.5px with its end value in bold brand: the reference's red line or bar. One per chart. It is the subject, not a direction: a red line on a Chinese page means 'this one', and rises and falls are read from the axis. */
+  --chart-context: #8d8a83; /* The first comparison series, and the bars of a second period (year to date beside month to date). Gray rather than ink because red and near-black are hard to tell apart for protanopes (CIEDE2000 7.3 simulated), while red and this gray stay 26 apart. 3.5:1 on surface. */
+  --chart-compare: var(--ink); /* A second comparison series when a chart needs three: drawn 1px, labelled directly, so width and the label, not only hue, separate it from the brand line. */
+  --chart-context-light: #a9a59f; /* A third comparison series or a background band (a ±1 standard deviation range). 2.5:1 on surface: a background mark, never a value that must be read alone. */
+  --chart-grid: var(--line-subtle); /* Horizontal gridlines at the value ticks. */
+  --chart-axis: var(--line-strong); /* The baseline of a chart and the zero line when values cross zero. */
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px #234993; /* Keyboard focus on a link in the PDF viewer or browser: a white gap, then 2px of 霁蓝. */
+}
+:root {
+  --space-1: 4px; /* Inside a delta: triangle to number; slot gap on the positioning scale is 2px. */
+  --space-2: 8px; /* Between paragraphs (6pt); chart title rule to chart; between side items. */
+  --space-3: 12px; /* Inside a side block; card padding steps. */
+  --space-4: 16px; /* Scenario card padding; numbered note label to text (0.19in is 18px). */
+  --space-6: 24px; /* Column gutter (0.25in). */
+  --space-8: 32px; /* Default gap between bands before the page fills. */
+  --radius-none: 0px; /* Every rule, fill, chart and table: square corners. */
+  --radius-full: 9999px; /* The round numbered markers on a map or list, and the current-position dot nowhere else. */
+  --rule: 1px; /* 0.75pt: header rule, band rules, title rules, table header rules, chart baselines. */
+  --rule-light: 0.67px; /* 0.5pt: side-column separators, group rows, calendar rows, slot outlines. */
+  --grid: 0.5px; /* Chart gridlines. */
+  --series-subject: 1.5px; /* The subject series of a line chart. */
+  --series: 1px; /* Every other line series. */
+  --cover-tick: 4px; /* The brand tick on the cover's header rule: 3pt thick, 57pt (76px) long. */
+  --page-width: 794px; /* A4, 210mm, at 96px to the inch. */
+  --page-height: 1123px; /* A4, 297mm. */
+  --margin-x: 49px; /* Side margins (0.51in), leaving a 696px (7.25in) text block. */
+  --header-top: 22px; /* Top of the running head's text (0.23in). */
+  --header-rule: 41px; /* The header rule (0.43in), full width, line-strong. */
+  --title-top: 56px; /* Top of the page-title area (0.58in). */
+  --title-height: 62px; /* The page-title area: two lines of 31px; the title sits on its bottom. */
+  --body-top: 150px; /* Where the first band's rule sits on every page after the cover (1.567in). */
+  --body-bottom: 1042px; /* Where content ends on every page (10.85in): pages fill to this line. */
+  --folio-top: 1079px; /* Top of the page number (11.24in): left on even pages, right on odd. */
+  --col-text: 325px; /* Narrative band, text column (3.39in). */
+  --col-chart: 348px; /* Narrative band, chart column (3.62in); 23px gutter. */
+  --col-half: 336px; /* Two equal columns (3.5in) with a 24px gutter. */
+  --col-third: 216px; /* Three columns (2.25in) with 24px gutters; the cover's side column. */
+  --col-fifth: 130px; /* Five columns (1.35in) with 11.5px gutters: the five drivers. */
+  --band-title-offset: 10px; /* From a band's rule to its section title (0.10in). */
+  --band-body-offset: 36px; /* From a band's rule to its first line of body text (0.38in). */
+  --band-gap-min: 23px; /* Smallest gap between bands when a page fills (0.24in). */
+  --band-gap-max: 67px; /* Largest gap between bands when a page fills (0.70in): beyond it, let a chart grow instead. */
+  --font-serif: Newsreader, "Noto Serif SC", "Songti SC", Georgia, serif;
+  --font-sans: "Public Sans", "Noto Sans SC", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  --text-type-cover-title: 400 42.67px/48px var(--font-serif); /* Page 1 only: two lines, the first a regular ink lead-in, the second bold brand, the main line. 32/36pt. */
+  --text-type-page-title: 700 24px/31px var(--font-serif); /* The title of every page after the cover: one line or two, broken by sense, set in a fixed two-line area and aligned to its bottom. 18/23pt, ink. */
+  --text-type-section-title: 700 14.67px/19px var(--font-serif); /* The title of a band, a side block on the cover and a numbered note: states the finding ("Japan: Revisions support a modest overweight"). 11/14.4pt, ink. */
+  --text-type-key-figure: 400 16px/20px var(--font-serif); /* A key figure set apart: 63%, +15.0%. 12pt. */
+  --text-type-cover-lede: 400 14.67px/20px var(--font-serif); /* The cover's standfirst under the title: the week's view in two or three sentences, ink-muted. 11pt. */
+  --text-type-body: 400 12.67px/16px var(--font-sans); /* Running text: paragraphs separated by 6pt (8px), never by blank lines or indents; a paragraph may open with a bold run-in lead ("Investment implications."). 9.5/12pt. */
+  --text-type-chart-title: 700 11.67px/15px var(--font-sans); /* Chart and table titles: the measure in bold, then a regular ink-muted qualifier with period and unit, on one line over a line-strong rule. 8.75pt. */
+  --text-type-small: 400 10px/14.33px var(--font-sans); /* Table cells, chart labels and annotations, source notes. 7.5/10.75pt. */
+  --text-type-table-head: 700 10px/14.33px var(--font-sans); /* Table column heads: written in sentence case, set uppercase by CSS with 0.66pt tracking. 7.5pt. */
+  --text-type-label: 700 9.33px/12px var(--font-sans); /* The running head and kicker labels ("This week's view"): sentence case, set uppercase by CSS with 0.66pt tracking. Chinese drops the case and tracking. 7pt. */
+  --text-type-folio: 700 10.67px/14px var(--font-sans); /* The page number: two digits, 01 to 13. 8pt. */
+  --text-type-fine: 400 8px/9.6px var(--font-sans); /* The source list and legal text on the Sources & methodology page only. 6/7.2pt. Risk warnings never use it. */
+}
+.type-cover-title {
+  font-family: var(--font-serif);
+  font-size: 42.67px;
+  line-height: 48px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 72;
+}
+.type-page-title {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 31px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 72;
+}
+.type-section-title {
+  font-family: var(--font-serif);
+  font-size: 14.67px;
+  line-height: 19px;
+  font-weight: 700;
+  letter-spacing: 0;
+  font-variation-settings: 'opsz' 16;
+}
+.type-key-figure {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-variation-settings: 'opsz' 72;
+}
+.type-cover-lede {
+  font-family: var(--font-serif);
+  font-size: 14.67px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-variation-settings: 'opsz' 16;
+}
+.type-body {
+  font-family: var(--font-sans);
+  font-size: 12.67px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.type-chart-title {
+  font-family: var(--font-sans);
+  font-size: 11.67px;
+  line-height: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.type-small {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 14.33px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.type-table-head {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 14.33px;
+  font-weight: 700;
+  letter-spacing: 0.088em;
+}
+.type-label {
+  font-family: var(--font-sans);
+  font-size: 9.33px;
+  line-height: 12px;
+  font-weight: 700;
+  letter-spacing: 0.094em;
+}
+.type-folio {
+  font-family: var(--font-sans);
+  font-size: 10.67px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.type-fine {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  line-height: 9.6px;
+  font-weight: 400;
+  letter-spacing: 0;
+}

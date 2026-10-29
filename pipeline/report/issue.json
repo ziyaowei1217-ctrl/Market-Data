@@ -1,13 +1,20 @@
 {
-  "source": "Capital Weekly 数据库：FRED、MSCI、Yahoo Finance",
-  "history_days": 366,
+  "source": "Capital Weekly 数据库（FRED、MSCI、Yahoo Finance）",
+  "rates_source": "FRED（美国财政部常数期限收益率）",
+  "history_days": 500,
   "assets": [
-    {"name": "美国股票", "series": "YAHOO:SPY:TR", "proxy": true, "note": "SPY 总回报代理"},
-    {"name": "全球股票", "series": "MSCI:892400:NETR:USD", "indicator": "02-001", "quoted": true},
-    {"name": "美国国债", "series": "YAHOO:GOVT:TR", "proxy": true, "note": "GOVT 总回报代理"},
-    {"name": "美国综合债", "series": "YAHOO:AGG:TR", "indicator": "19-001", "proxy": true, "note": "AGG 总回报代理"},
-    {"name": "黄金", "series": "YAHOO:GC=F", "indicator": "27-002", "quoted": true, "note": "COMEX 期货近月代理"},
-    {"name": "美元指数", "series": "YAHOO:DX-Y.NYB", "indicator": "24-001", "quoted": true}
+    {"name": "美国股票", "series": "YAHOO:SPY:TR", "proxy": true, "note": "SPY 总回报代理",
+     "source": "Yahoo Finance：SPY ETF 总回报（股息再投资），代表 S&P 500"},
+    {"name": "全球股票", "series": "MSCI:892400:NETR:USD", "indicator": "02-001", "quoted": true,
+     "source": "MSCI：ACWI 净总回报指数（美元）"},
+    {"name": "美国国债", "series": "YAHOO:GOVT:TR", "proxy": true, "note": "GOVT 总回报代理",
+     "source": "Yahoo Finance：GOVT ETF 总回报，跟踪 ICE US Treasury Core"},
+    {"name": "美国综合债", "series": "YAHOO:AGG:TR", "indicator": "19-001", "proxy": true, "note": "AGG 总回报代理",
+     "source": "Yahoo Finance：AGG ETF 总回报，跟踪 Bloomberg US Aggregate"},
+    {"name": "黄金", "series": "YAHOO:GC=F", "indicator": "27-002", "quoted": true, "note": "COMEX 期货近月代理",
+     "source": "Yahoo Finance：COMEX 黄金期货近月连续合约，代替 LBMA 金价"},
+    {"name": "美元指数", "series": "YAHOO:DX-Y.NYB", "indicator": "24-001", "quoted": true,
+     "source": "Yahoo Finance：ICE 美元指数（DXY）"}
   ],
   "yields": [
     {"tenor": "3M", "series": "FRED:DGS3MO", "indicator": "12-001"},
@@ -16,14 +23,14 @@
     {"tenor": "10Y", "series": "FRED:DGS10", "indicator": "12-007"},
     {"tenor": "30Y", "series": "FRED:DGS30", "indicator": "12-009"}
   ],
-  "charts": ["trends", "returns", "heatmap", "curve", "spread", "comparison", "drawdown", "volatility",
-             "relative", "rolling_correlation", "correlation", "risk_return", "distribution", "calendar"],
   "style": {
     "focus_asset": "美国股票",
     "highlight": ["美国股票", "黄金"],
-    "benchmark": "全球股票",
     "correlation_pair": ["美国股票", "美国国债"],
-    "market_colors": "global",
-    "thesis": "trends"
+    "panels": [
+      {"title": "股票与黄金", "assets": ["美国股票", "全球股票", "黄金"]},
+      {"title": "债券与美元", "assets": ["美国国债", "美国综合债", "美元指数"]}
+    ],
+    "market_colors": "cn"
   }
 }

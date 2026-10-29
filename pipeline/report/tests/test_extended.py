@@ -67,33 +67,33 @@ class ExtendedExportTests(unittest.TestCase):
             good = subprocess.run(command + ['heatmap'], capture_output=True, text=True, cwd=REPO)
             self.assertEqual(good.returncode, 0, good.stderr)
             from pypdf import PdfReader
-            text = PdfReader(root / 'out' / 'weekly-report.pdf').pages[0].extract_text()
+            text = PdfReader(root / 'out' / 'performance-heatmap.pdf').pages[0].extract_text()
             self.assertIn('+20.0%', text)   # percent changes: one decimal
             self.assertIn('–', text)        # missing values: en dash
             bad = subprocess.run(command + ['returns'], capture_output=True, text=True, cwd=REPO)
             self.assertNotEqual(bad.returncode, 0)
 
-    def test_all_demo_charts_and_three_page_report(self):
+    def test_all_demo_charts_and_the_issue(self):
         from pypdf import PdfReader
         from PIL import Image
         with tempfile.TemporaryDirectory() as folder:
             run = subprocess.run([sys.executable, '-m', 'pipeline.report', '--demo', '--charts', 'trends', 'returns', 'curve', 'spread', 'heatmap', 'comparison', '--output-dir', folder], capture_output=True, text=True, cwd=REPO)
             self.assertEqual(run.returncode, 0, run.stderr)
             root = Path(folder)
-            self.assertEqual(len(PdfReader(root / 'weekly-report.pdf').pages), 3)
+            self.assertGreaterEqual(len(PdfReader(root / 'weekly-report.pdf').pages), 4)
             for name in ['cross-asset-trends', 'weekly-returns', 'yield-curve', 'yield-spread', 'performance-heatmap', 'rate-comparison']:
                 self.assertEqual(len(PdfReader(root / (name + '.pdf')).pages), 1)
                 with Image.open(root / (name + '.png')) as im:
                     self.assertGreaterEqual(im.width, 2000)
             for page in PdfReader(root / 'weekly-report.pdf').pages:
-                self.assertIn('DEMO', page.extract_text())
+                self.assertIn('模拟数据', page.extract_text())
 
     def test_single_chart_selection(self):
         from pypdf import PdfReader
         with tempfile.TemporaryDirectory() as folder:
             run = subprocess.run([sys.executable, '-m', 'pipeline.report', '--demo', '--charts', 'spread', '--output-dir', folder], capture_output=True, text=True, cwd=REPO)
             self.assertEqual(run.returncode, 0, run.stderr)
-            self.assertEqual(len(PdfReader(Path(folder) / 'weekly-report.pdf').pages), 1)
+            self.assertTrue((Path(folder) / 'weekly-report.pdf').exists())
             self.assertTrue((Path(folder) / 'yield-spread.png').exists())
             self.assertFalse((Path(folder) / 'cross-asset-trends.png').exists())
 
