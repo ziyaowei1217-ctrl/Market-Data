@@ -51,6 +51,31 @@
 - Tests: `python3 -m unittest discover -s pipeline/warehouse/tests -t .` (no network).
 - See `pipeline/warehouse/README.md` for tables, formulas and operations.
 
+## Report subsystem (`pipeline/report/`)
+
+- Draws the weekly issue 市场一周 (A4 PDF plus single charts) from the warehouse; it reads
+  warehouse data only (observations, newest vintage) and never writes it, `output/`, or the five
+  pipelines. Its only database objects are in `pipeline/report/storage.sql` (the `reports` bucket,
+  its readers-only policy, and one-time upload tickets). `pipeline/report/issue.json` is its
+  configuration (assets, tenors, charts).
+- The issue is laid out with the Richard Wei Finance design system's own components, vendored in
+  `pipeline/report/ds/` (with marked local patches; see its README), by `issue.py` (content) and
+  `render.py` (headless Chromium via Playwright). Keep its rules: one crimson subject per chart,
+  findings as band titles, a dated source under every chart, the risk warning on pages with returns,
+  facts only (no views or forecasts).
+- Weekly cutoff is Friday; `date_rule = "asof"` uses each series' last value on or before the
+  cutoff within six days and names proxies and earlier observation dates in the issue's data notes.
+  Missing data stays blank; never interpolate or fill with zero.
+- `.github/workflows/report.yml` runs after the scheduled warehouse run and uploads to the private
+  Storage bucket `reports` (`storage.sql`: readers only) through signed links from the
+  `supabase/functions/report-upload/` Edge Function (deployed with `--no-verify-jwt`; it trusts only
+  tickets the workflow wrote over `WAREHOUSE_DB_URL`). Tests:
+  `node --experimental-strip-types --test supabase/functions/report-upload/server.test.ts`.
+  This repository is public and issues contain
+  licensed data: never upload issues as workflow artifacts or print data values to logs, and never
+  commit real-data fixtures.
+- Tests: `python3 -m unittest discover -s pipeline/report/tests -t .` (no network; SQLite fakes).
+
 ## Development workflow
 
 - Follow TDD for behavior changes and show the expected RED before implementation.

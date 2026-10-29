@@ -13,7 +13,7 @@
 export type Env = { supabaseUrl: string; secretKey: string };
 type Json = any;
 
-const SERVER_INFO = { name: "capital-weekly-warehouse", version: "1.0.0" };
+const SERVER_INFO = { name: "capital-weekly-warehouse", version: "1.1.0" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_WEEKLY_ROWS = 5000;
 const MAX_SERIES_ROWS = 6000;
@@ -25,7 +25,8 @@ const INSTRUCTIONS = `资本市场周报数据库（只读）。1959 个指标�
 - status：只有 ok 的值可直接使用；stale 停更或过期，missing_input 原始缺失或尚未发布，insufficient_history 历史不够，no_vintage 缺少发布版本，provisional 议息结果尚未生效。
 - obs_date 是实际观察期：月度、季度数据在周度表里沿用最近一次发布值，要写明。
 - 画图：同一张图只放同一单位；缺口留空，不插值、不填 0；图注写来源与截至日期。
-- MSCI、ISM、S&P Global 等数据仅供读者名单内部学习使用，不要导出整表转给名单外的人。`;
+- MSCI、ISM、S&P Global 等数据仅供读者名单内部学习使用，不要导出整表转给名单外的人。
+- weekly_report：本库每周自动出的《市场一周》PDF 与单图 PNG 的一小时下载链接；链接同样只在读者名单内使用。`;
 
 // ----------------------------------------------------------------------------- tools
 
@@ -118,7 +119,20 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: false },
   },
+  {
+    name: "weekly_report",
+    description:
+      "The 市场一周 weekly issue drawn from this database: one-hour download links to the PDF and to each chart as a PNG, with the cutoff, chart list and series notes (proxies, earlier observation dates). Latest issue by default.",
+    inputSchema: {
+      type: "object",
+      properties: { week: { type: "string", description: "Friday cutoff YYYY-MM-DD (optional; default the latest issue)" } },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
 ];
+
+const REPORT_LINK_SECONDS = 3600;
 
 class ToolError extends Error {}
 
@@ -184,6 +198,14 @@ export class Warehouse {
       offset += batch.length;
     }
     return { rows: out.slice(0, maxRows), truncated: true };
+  }
+
+  /** A Storage API request with the service key (the reports bucket is private). */
+  async storage(path: string, init: RequestInit = {}): Promise<Response> {
+    return this.fetchImpl(`${this.env.supabaseUrl}/storage/v1/${path}`, {
+      ...init,
+      headers: { ...this.headers(), ...((init.headers as Record<string, string>) ?? {}) },
+    });
   }
 
   async readerForKey(key: string): Promise<string | null> {
@@ -366,6 +388,43 @@ export async function callTool(w: Warehouse, name: string, args: Json): Promise<
         latest_week_status_counts: statusCounts,
         series_total: series.rows.length,
         series_with_problems: problems.slice(0, 40).map((r) => ({ series_key: r.series_key, status: r.last_status, message: short(r.last_message, 100) })),
+      };
+    }
+    case "weekly_report": {
+      const week = checkDate(args.week, "week");
+      const r = await w.storage(`object/reports/${week ? `weekly/${week}/issue.json` : "weekly/latest.json"}`);
+      if (r.status === 400 || r.status === 404) {
+        throw new ToolError(week ? `no issue for ${week}: issues are dated by their Friday cutoff` : "no issue has been published yet");
+      }
+      if (!r.ok) throw new Error(`storage request failed (${r.status})`);
+      const issue = await r.json();
+      const folder = String(issue.path ?? `weekly/${issue.as_of}`);
+      // Only ever sign files inside one issue folder of the reports bucket.
+      if (!/^weekly\/\d{4}-\d{2}-\d{2}$/.test(folder)) throw new Error("unexpected issue path in storage");
+      const pngs: string[] = (Array.isArray(issue.files) ? issue.files : [])
+        .map(String)
+        .filter((f: string) => /^[a-z0-9][a-z0-9-]*\.png$/.test(f));
+      const s = await w.storage("object/sign/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresIn: REPORT_LINK_SECONDS, paths: ["weekly-report.pdf", ...pngs].map((f) => `${folder}/${f}`) }),
+      });
+      if (!s.ok) throw new Error(`storage signing failed (${s.status})`);
+      const link = new Map<string, string>();
+      for (const row of await s.json()) {
+        if (row.signedURL) link.set(String(row.path).split("/").pop()!, `${w.env.supabaseUrl}/storage/v1${row.signedURL}`);
+      }
+      return {
+        as_of: issue.as_of,
+        week_start: issue.week_start ?? null,
+        pages: issue.pages ?? null,
+        charts: issue.charts ?? [],
+        omitted: issue.omitted ?? [],
+        series_notes: issue.series_notes ?? {},
+        pdf_url: link.get("weekly-report.pdf") ?? null,
+        chart_png_urls: Object.fromEntries(pngs.filter((f) => link.has(f)).map((f) => [f.replace(/\.png$/, ""), link.get(f)!])),
+        expires_in_seconds: REPORT_LINK_SECONDS,
+        usage: "Links expire in one hour. The issue contains MSCI and other licensed data: for readers' internal study only; do not forward, repost or attach it outside the reader list. Name proxies (series_notes) when quoting charts.",
       };
     }
     default:

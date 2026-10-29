@@ -1,0 +1,37 @@
+{
+  "source": "模拟数据 · 固定种子24 / 625 / 823",
+  "updated_at": "2026-10-23T20:00:00Z",
+  "as_of": "2026-10-23",
+  "week_start": "2026-10-16",
+  "week_end": "2026-10-23",
+  "is_demo": true,
+  "heatmap_starts": {
+    "1W": "2026-10-16",
+    "1M": "2026-09-23",
+    "3M": "2026-07-23",
+    "YTD": "2025-12-31"
+  },
+  "focus_asset": "美国股票",
+  "benchmark": "美国股票",
+  "highlight": [
+    "美国股票",
+    "黄金"
+  ],
+  "market_colors": "global",
+  "titles": {},
+  "takeaways": {},
+  "thesis": "trends",
+  "correlation_pair": [
+    "美国股票",
+    "美国国债"
+  ],
+  "annualization": 252,
+  "chart_units": {
+    "candlestick": "USD / 股；成交量：股",
+    "waterfall": "USD mn",
+    "football": "USD / 股",
+    "sensitivity": "USD / 股；列为 WACC",
+    "flows": "USD bn",
+    "valuation": "远期 P/E（倍）"
+  }
+}

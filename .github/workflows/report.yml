@@ -1,0 +1,75 @@
+name: report
+
+# Weekly issue: after Saturday's scheduled warehouse run succeeds, draw 市场一周 from the
+# warehouse and upload it to the private Storage bucket "reports" (readers only).
+# Secret: WAREHOUSE_DB_URL (shared with the warehouse workflow). Uploading needs nothing else:
+# publish writes a one-time ticket to the database and the report-upload Edge Function trades
+# it for signed upload links.
+# This repository is public: never upload the issue as a workflow artifact, and never print data
+# values to the log. Issues contain licensed data (MSCI) that is for the reader list only.
+# workflow_run only fires from the default branch's copy of this file.
+
+on:
+  workflow_run:
+    workflows: [warehouse]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "Friday cutoff YYYY-MM-DD; empty = the latest Friday"
+        default: ""
+
+concurrency:
+  group: report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  issue:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'schedule')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Secrets are given only to the steps that use them (not to pip install or the tests).
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Same rule as the warehouse workflow: always run the warehouse branch's code.
+          ref: warehouse
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pipeline/report/requirements.txt
+            pipeline/warehouse/requirements.txt
+      - run: pip install -r pipeline/report/requirements.txt
+      - name: Chromium for the issue layout
+        run: python -m playwright install --with-deps chromium
+      - name: Unit tests
+        run: python -m unittest discover -s pipeline/report/tests -t .
+      - name: Build issue
+        env:
+          WAREHOUSE_DB_URL: ${{ secrets.WAREHOUSE_DB_URL }}
+          WEEK: ${{ github.event.inputs.week }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WAREHOUSE_DB_URL" ]; then
+            echo "::error::WAREHOUSE_DB_URL secret is not set"; exit 1
+          fi
+          args=(--output-dir outputs/weekly)
+          if [ -n "${WEEK:-}" ]; then args+=(--week "$WEEK"); fi
+          python -m pipeline.report build "${args[@]}" | tee build.log
+          {
+            echo "### 市场一周"
+            sed 's/^/- /' build.log
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish to Storage
+        env:
+          WAREHOUSE_DB_URL: ${{ secrets.WAREHOUSE_DB_URL }}
+        run: |
+          set -euo pipefail
+          python -m pipeline.report publish outputs/weekly | tee -a "$GITHUB_STEP_SUMMARY"

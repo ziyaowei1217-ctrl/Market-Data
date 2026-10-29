@@ -6,15 +6,29 @@ import { makeHandler, sha256Hex } from "./index.ts";
 const KEY = "cw_" + "ab".repeat(24);
 const ENV = { supabaseUrl: "https://db.example", secretKey: "sb_secret_test" };
 
-type Call = { path: string; params: URLSearchParams; method: string; headers: any };
+type Call = { path: string; params: URLSearchParams; method: string; headers: any; body?: any };
 
 async function fakeDb(calls: Call[]) {
   const keyHash = await sha256Hex(KEY);
   return async (input: any, init: any = {}) => {
     const url = new URL(String(input));
     const path = url.pathname.replace("/rest/v1/", "");
-    calls.push({ path, params: url.searchParams, method: init.method ?? "GET", headers: init.headers });
+    calls.push({ path, params: url.searchParams, method: init.method ?? "GET", headers: init.headers, body: init.body });
     const p = url.searchParams;
+    if (path === "/storage/v1/object/reports/weekly/latest.json") {
+      return new Response(JSON.stringify({
+        as_of: "2026-10-23", week_start: "2026-10-16", path: "weekly/2026-10-23", pages: 6, charts: ["trends", "returns"],
+        omitted: [], series_notes: { "黄金": "COMEX 期货近月代理" },
+        files: ["weekly-report.pdf", "cross-asset-trends.png", "cross-asset-trends.pdf", "weekly-returns.png", "weekly-returns.pdf"],
+      }), { status: 200 });
+    }
+    if (path.startsWith("/storage/v1/object/reports/")) {
+      return new Response(JSON.stringify({ statusCode: "404", error: "not_found", message: "Object not found" }), { status: 400 });
+    }
+    if (path === "/storage/v1/object/sign/reports") {
+      const { paths } = JSON.parse(init.body);
+      return new Response(JSON.stringify(paths.map((x: string) => ({ error: null, path: x, signedURL: `/object/sign/reports/${x}?token=t` }))), { status: 200 });
+    }
     let rows: any[] = [];
     if (path === "reader_keys" && (init.method ?? "GET") === "GET") {
       rows = p.get("key_hash") === `eq.${keyHash}` ? [{ email: "me@example.com" }] : [];
@@ -72,7 +86,7 @@ test("initialize negotiates a known protocol version and lists tools", async () 
   assert.equal(note.status, 202);
   const list = await rpc(h, { jsonrpc: "2.0", id: 2, method: "tools/list" });
   const names = list.body.result.tools.map((t: any) => t.name);
-  assert.deepEqual(names, ["search_indicators", "list_modules", "describe_indicator", "get_weekly", "get_latest", "get_series", "data_status"]);
+  assert.deepEqual(names, ["search_indicators", "list_modules", "describe_indicator", "get_weekly", "get_latest", "get_series", "data_status", "weekly_report"]);
 });
 
 test("search builds an AND of keyword filters and strips filter syntax", async () => {
@@ -142,4 +156,43 @@ test("unknown methods return JSON-RPC errors; GET explains the transport", async
   assert.equal(r.body.error.code, -32601);
   const g = await h(new Request("https://fn.example/functions/v1/warehouse-mcp", { method: "GET" }));
   assert.equal(g.status, 405);
+});
+
+test("weekly_report signs one-hour links to the latest issue's PDF and chart images", async () => {
+  const calls: Call[] = [];
+  const h = makeHandler(ENV, (await fakeDb(calls)) as any);
+  const r = await rpc(h, { jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "weekly_report", arguments: {} } });
+  const out = JSON.parse(r.body.result.content[0].text);
+  assert.equal(out.as_of, "2026-10-23");
+  assert.equal(out.pdf_url, "https://db.example/storage/v1/object/sign/reports/weekly/2026-10-23/weekly-report.pdf?token=t");
+  assert.deepEqual(Object.keys(out.chart_png_urls), ["cross-asset-trends", "weekly-returns"]);
+  assert.equal(out.expires_in_seconds, 3600);
+  assert.deepEqual(out.series_notes, { "黄金": "COMEX 期货近月代理" });
+  assert.match(out.usage, /MSCI/);
+  const sign = calls.find((c) => c.path === "/storage/v1/object/sign/reports")!;
+  assert.equal(sign.method, "POST");
+  assert.equal(sign.headers.apikey, "sb_secret_test");
+  assert.equal(JSON.parse(sign.body).expiresIn, 3600);
+});
+
+test("weekly_report for a week without an issue is a tool error", async () => {
+  const h = makeHandler(ENV, (await fakeDb([])) as any);
+  const r = await rpc(h, { jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "weekly_report", arguments: { week: "2026-10-16" } } });
+  assert.equal(r.body.result.isError, true);
+  assert.match(r.body.result.content[0].text, /no issue for 2026-10-16/);
+  const bad = await rpc(h, { jsonrpc: "2.0", id: 12, method: "tools/call", params: { name: "weekly_report", arguments: { week: "last week" } } });
+  assert.match(bad.body.result.content[0].text, /YYYY-MM-DD/);
+});
+
+test("weekly_report refuses to sign paths that do not look like an issue", async () => {
+  const base = await fakeDb([]);
+  const odd = async (input: any, init: any = {}) => {
+    if (String(input).endsWith("/storage/v1/object/reports/weekly/latest.json")) {
+      return new Response(JSON.stringify({ as_of: "2026-10-23", path: "../private", files: ["weekly-report.pdf"] }), { status: 200 });
+    }
+    return base(input, init);
+  };
+  const h = makeHandler(ENV, odd as any);
+  const r = await rpc(h, { jsonrpc: "2.0", id: 13, method: "tools/call", params: { name: "weekly_report", arguments: {} } });
+  assert.equal(r.body.result.isError, true);
 });
