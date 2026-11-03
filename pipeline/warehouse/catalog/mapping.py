@@ -1546,6 +1546,81 @@ def build_batch5() -> None:
     api("101-014", dmp("Wage growth|realised", "realised past-year wage growth"), dnote)
 
 
+def build_hedge_funds() -> None:
+    """46: hedge fund leverage and financing (added 2026-11-03). OFR Hedge Fund Monitor
+    (Form PF, CFTC TFF in 10-year equivalents, FICC sponsored repo, SCOOS), Fed Z.1
+    hedge fund lines via FRED, TIC Cayman Islands holdings, FINRA margin balances."""
+    def ofr(mnemonic, title, freq, unit, lag):
+        return series("OFR", mnemonic, title, freq, unit, lag,
+                      f"https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic={mnemonic}")
+
+    pf_note = "OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月"
+    def pf(mnemonic, title, unit="美元"):
+        return ofr(mnemonic, f"Form PF: {title}", "Q", unit, 125)
+    gav, nav, gne = pf("FPF-ALLQHF_GAV_SUM", "gross assets"), pf("FPF-ALLQHF_NAV_SUM", "net assets"), pf("FPF-ALLQHF_GNE_SUM", "gross notional exposure")
+    api("46-001", f"{gav} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-002", f"{nav} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-003", f"{gne} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-004", f"{gne} / {nav}", pf_note + "；总名义敞口 ÷ 净资产")
+    api("46-005", f"{gav} / {nav}", pf_note + "；总资产 ÷ 净资产")
+    for iid, mnemonic, title in [
+        ("46-006", "FPF-ALLQHF_GAVN10_LEVERAGERATIO_AVERAGE", "top 10 funds leverage (equal-weighted)"),
+        ("46-007", "FPF-STRATEGY_RV_LEVERAGERATIO_GAVWMEAN", "relative value leverage (GAV-weighted)"),
+        ("46-008", "FPF-STRATEGY_MACRO_LEVERAGERATIO_GAVWMEAN", "macro leverage (GAV-weighted)"),
+        ("46-009", "FPF-STRATEGY_MULTI_LEVERAGERATIO_GAVWMEAN", "multi-strategy leverage (GAV-weighted)"),
+        ("46-010", "FPF-STRATEGY_EQUITY_LEVERAGERATIO_GAVWMEAN", "equity leverage (GAV-weighted)"),
+        ("46-011", "FPF-STRATEGY_CREDIT_LEVERAGERATIO_GAVWMEAN", "credit leverage (GAV-weighted)"),
+    ]:
+        api(iid, pf(mnemonic, title, "倍"), pf_note)
+    repo, pb, oth = (pf("FPF-BORROW_REPO_SUM", "repo borrowing"), pf("FPF-BORROW_PRIMEBROKER_SUM", "prime brokerage borrowing"),
+                     pf("FPF-BORROW_OTHERSECURED_SUM", "other secured borrowing"))
+    api("46-012", f"{repo} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-013", f"{pb} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-014", f"{oth} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-015", f"({repo} + {pb} + {oth}) / 1e9", pf_note + "；回购 + 主经纪商 + 其他有担保")
+    api("46-016", f"pop({pb})", pf_note + "；季环比")
+    lt, st = pf("FPF-ASSETCLASS_LTREASURY_SUM", "long Treasury exposure"), pf("FPF-ASSETCLASS_STREASURY_SUM", "short Treasury exposure")
+    api("46-017", f"{lt} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-018", f"{st} / 1e9", pf_note + "；美元→十亿美元")
+    api("46-019", f"({lt} - {st}) / 1e9", pf_note + "；多头 − 空头")
+
+    tff = ofr("TFF-LF_TREAS_NET_POS10YREQV", "CFTC TFF leveraged funds net Treasury futures, 10-year equivalent", "W", "美元", 21)
+    tnote = "OFR 把 CFTC TFF 各期限美债期货的杠杆基金净持仓折算为 10 年期等价（周二持仓，OFR 发布滞后约 2–3 周）"
+    api("46-020", f"{tff} / 1e9", tnote + "；美元→十亿美元，负值为净空头")
+    api("46-021", pct(tff, "3Y"), tnote)
+    ficc = ofr("FICC-SPONSORED_REPO_VOL", "FICC sponsored repo volume (daily)", "D", "美元", 20)
+    api("46-022", f"ma({ficc}, 20) / 1e9", "OFR：FICC 担保回购日度成交量，20 个交易日均值（日度在月末、季末冲高）；美元→十亿美元")
+    snote = "OFR：美联储 SCOOS 调查，交易商报告对冲基金条件变化的净百分比（季度）"
+    for iid, mnemonic, title in [("46-023", "SCOOS-NET_HF_LEVERAGEUSE", "use of leverage by hedge funds"),
+                                 ("46-024", "SCOOS-NET_HF_CREDITAVAILABILITY", "availability of leverage to hedge funds"),
+                                 ("46-025", "SCOOS-NET_HF_CREDITTERMS", "nonprice terms offered to hedge funds")]:
+        api(iid, ofr(mnemonic, f"SCOOS: {title}", "Q", "净百分比", 30), snote)
+
+    znote = "美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元"
+    for iid, code, title in [("46-026", "FL622000623", "hedge funds total assets"), ("46-027", "FL622000003", "hedge fund shares"),
+                             ("46-028", "FL623064103", "hedge funds corporate equities long"),
+                             ("46-029", "FL623061103", "hedge funds Treasuries net of short sales"),
+                             ("46-030", "FL624123035", "hedge funds prime brokerage borrowing"),
+                             ("46-031", "FL622151005", "hedge funds repo borrowing")]:
+        api(iid, f"{fred(f'BOGZ1{code}Q', f'Z.1 {title}', 'Q', '百万美元', lag=75)} / 1000", znote)
+
+    tic_url = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt"
+    cayman = series("TIC", "Cayman Islands", "Cayman Islands holdings of Treasuries (TIC)", "M", "十亿美元", 50, tic_url)
+    cnote = "美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）；代理：开曼注册基金为主，作美债基差交易的代理指标"
+    api("46-032", cayman, cnote)
+    api("46-033", f"yoy({cayman})", cnote)
+
+    furl = "https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics"
+    def finra(code, title):
+        return series("FINRA", code, f"FINRA margin statistics: {title}", "M", "百万美元", 25, furl)
+    fnote = "FINRA 保证金统计工作簿（会员券商全部客户口径，非对冲基金专属）；百万→十亿美元"
+    debit = finra("debit_margin", "debit balances in customers' securities margin accounts")
+    api("46-034", f"{debit} / 1000", fnote)
+    api("46-035", f"yoy({debit})", fnote.split("；")[0])
+    api("46-036", f"{finra('free_credit_cash', 'free credit balances in customers cash accounts')} / 1000", fnote)
+    api("46-037", f"{finra('free_credit_margin', 'free credit balances in customers securities margin accounts')} / 1000", fnote)
+
+
 def ice_note_text() -> str:
     return "ICE BofA via FRED（FRED 仅提供约 3 年日频历史，之后本库逐周累积）"
 
@@ -1558,6 +1633,7 @@ def write() -> tuple[int, int]:
     build_batch3()
     build_batch4()
     build_batch5()
+    build_hedge_funds()
     catalog = load_catalog()
     by_id = {r["indicator_id"]: r for r in catalog}
     unknown = sorted(set(MAP) - set(by_id))

@@ -267,6 +267,9 @@ FFCAL:USD|Non-Farm Employment Change|forecast,FFCAL,USD|Non-Farm Employment Chan
 FFCAL:USD|PPI m/m|forecast,FFCAL,USD|PPI m/m|forecast,Consensus USD PPI m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
 FFCAL:USD|Prelim GDP q/q|forecast,FFCAL,USD|Prelim GDP q/q|forecast,Consensus USD Prelim GDP q/q (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
 FFCAL:USD|Retail Sales m/m|forecast,FFCAL,USD|Retail Sales m/m|forecast,Consensus USD Retail Sales m/m (forecast),E,%,0,https://www.forexfactory.com/calendar,,False,cloud
+FINRA:debit_margin,FINRA,debit_margin,FINRA margin statistics: debit balances in customers' securities margin accounts,M,百万美元,25,https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics,,False,cloud
+FINRA:free_credit_cash,FINRA,free_credit_cash,FINRA margin statistics: free credit balances in customers cash accounts,M,百万美元,25,https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics,,False,cloud
+FINRA:free_credit_margin,FINRA,free_credit_margin,FINRA margin statistics: free credit balances in customers securities margin accounts,M,百万美元,25,https://www.finra.org/rules-guidance/key-topics/margin-accounts/margin-statistics,,False,cloud
 FRED:A007RY2Q224SBEA,FRED,A007RY2Q224SBEA,A007RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A007RY2Q224SBEA,,False,cloud
 FRED:A014RY2Q224SBEA,FRED,A014RY2Q224SBEA,A014RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A014RY2Q224SBEA,,False,cloud
 FRED:A019RY2Q224SBEA,FRED,A019RY2Q224SBEA,A019RY2Q224SBEA,Q,百分点,120,https://fred.stlouisfed.org/series/A019RY2Q224SBEA,,False,cloud
@@ -285,6 +288,12 @@ FRED:BAMLH0A3HYC,FRED,BAMLH0A3HYC,BAMLH0A3HYC,D,%,1,https://fred.stlouisfed.org/
 FRED:BAMLHE00EHYIOAS,FRED,BAMLHE00EHYIOAS,ICE BofA Euro HY OAS,D,%,1,https://fred.stlouisfed.org/series/BAMLHE00EHYIOAS,,False,cloud
 FRED:BAMLHE00EHYITRIV,FRED,BAMLHE00EHYITRIV,ICE BofA Euro High Yield Index Total Return (EUR),D,指数点,1,https://fred.stlouisfed.org/series/BAMLHE00EHYITRIV,,False,cloud
 FRED:BAMLHYH0A0HYM2TRIV,FRED,BAMLHYH0A0HYM2TRIV,ICE BofA US High Yield Index Total Return,D,指数点,1,https://fred.stlouisfed.org/series/BAMLHYH0A0HYM2TRIV,,False,cloud
+FRED:BOGZ1FL622000003Q,FRED,BOGZ1FL622000003Q,Z.1 hedge fund shares,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL622000003Q,,False,cloud
+FRED:BOGZ1FL622000623Q,FRED,BOGZ1FL622000623Q,Z.1 hedge funds total assets,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL622000623Q,,False,cloud
+FRED:BOGZ1FL622151005Q,FRED,BOGZ1FL622151005Q,Z.1 hedge funds repo borrowing,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL622151005Q,,False,cloud
+FRED:BOGZ1FL623061103Q,FRED,BOGZ1FL623061103Q,Z.1 hedge funds Treasuries net of short sales,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL623061103Q,,False,cloud
+FRED:BOGZ1FL623064103Q,FRED,BOGZ1FL623064103Q,Z.1 hedge funds corporate equities long,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL623064103Q,,False,cloud
+FRED:BOGZ1FL624123035Q,FRED,BOGZ1FL624123035Q,Z.1 hedge funds prime brokerage borrowing,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL624123035Q,,False,cloud
 FRED:BOGZ1FL633061105Q,FRED,BOGZ1FL633061105Q,Z.1 FL633061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL633061105Q,,False,cloud
 FRED:BOGZ1FL893061105Q,FRED,BOGZ1FL893061105Q,Z.1 FL893061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1FL893061105Q,,False,cloud
 FRED:BOGZ1LM153061105Q,FRED,BOGZ1LM153061105Q,Z.1 LM153061105,Q,百万美元,75,https://fred.stlouisfed.org/series/BOGZ1LM153061105Q,,False,cloud
@@ -483,6 +492,25 @@ NYFED:unsecured/effr:volumeInBillions,NYFED,unsecured/effr:volumeInBillions,EFFR
 "OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N",OECD,"OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.M.C.M.USD_EXC.N.N","China imports, USD bn, NSA (OECD IMTS)",M,十亿美元,35,https://data-explorer.oecd.org/,,False,cloud
 "OECD:OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N",OECD,"OECD.SDD.TPS,DSD_IMTS@DF_IMTS,1.0/CHN.W.X.C.M.USD_EXC.N.N","China exports, USD bn, NSA (OECD IMTS)",M,十亿美元,35,https://data-explorer.oecd.org/,,False,cloud
 "OECD:OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY",OECD,"OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/IND.M.N.CPI.PA._T.N.GY","India CPI all items, y/y (OECD)",M,%,50,https://data-explorer.oecd.org/,,False,cloud
+OFR:FICC-SPONSORED_REPO_VOL,OFR,FICC-SPONSORED_REPO_VOL,FICC sponsored repo volume (daily),D,美元,20,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FICC-SPONSORED_REPO_VOL,,False,cloud
+OFR:FPF-ALLQHF_GAVN10_LEVERAGERATIO_AVERAGE,OFR,FPF-ALLQHF_GAVN10_LEVERAGERATIO_AVERAGE,Form PF: top 10 funds leverage (equal-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ALLQHF_GAVN10_LEVERAGERATIO_AVERAGE,,False,cloud
+OFR:FPF-ALLQHF_GAV_SUM,OFR,FPF-ALLQHF_GAV_SUM,Form PF: gross assets,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ALLQHF_GAV_SUM,,False,cloud
+OFR:FPF-ALLQHF_GNE_SUM,OFR,FPF-ALLQHF_GNE_SUM,Form PF: gross notional exposure,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ALLQHF_GNE_SUM,,False,cloud
+OFR:FPF-ALLQHF_NAV_SUM,OFR,FPF-ALLQHF_NAV_SUM,Form PF: net assets,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ALLQHF_NAV_SUM,,False,cloud
+OFR:FPF-ASSETCLASS_LTREASURY_SUM,OFR,FPF-ASSETCLASS_LTREASURY_SUM,Form PF: long Treasury exposure,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ASSETCLASS_LTREASURY_SUM,,False,cloud
+OFR:FPF-ASSETCLASS_STREASURY_SUM,OFR,FPF-ASSETCLASS_STREASURY_SUM,Form PF: short Treasury exposure,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-ASSETCLASS_STREASURY_SUM,,False,cloud
+OFR:FPF-BORROW_OTHERSECURED_SUM,OFR,FPF-BORROW_OTHERSECURED_SUM,Form PF: other secured borrowing,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-BORROW_OTHERSECURED_SUM,,False,cloud
+OFR:FPF-BORROW_PRIMEBROKER_SUM,OFR,FPF-BORROW_PRIMEBROKER_SUM,Form PF: prime brokerage borrowing,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-BORROW_PRIMEBROKER_SUM,,False,cloud
+OFR:FPF-BORROW_REPO_SUM,OFR,FPF-BORROW_REPO_SUM,Form PF: repo borrowing,Q,美元,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-BORROW_REPO_SUM,,False,cloud
+OFR:FPF-STRATEGY_CREDIT_LEVERAGERATIO_GAVWMEAN,OFR,FPF-STRATEGY_CREDIT_LEVERAGERATIO_GAVWMEAN,Form PF: credit leverage (GAV-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-STRATEGY_CREDIT_LEVERAGERATIO_GAVWMEAN,,False,cloud
+OFR:FPF-STRATEGY_EQUITY_LEVERAGERATIO_GAVWMEAN,OFR,FPF-STRATEGY_EQUITY_LEVERAGERATIO_GAVWMEAN,Form PF: equity leverage (GAV-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-STRATEGY_EQUITY_LEVERAGERATIO_GAVWMEAN,,False,cloud
+OFR:FPF-STRATEGY_MACRO_LEVERAGERATIO_GAVWMEAN,OFR,FPF-STRATEGY_MACRO_LEVERAGERATIO_GAVWMEAN,Form PF: macro leverage (GAV-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-STRATEGY_MACRO_LEVERAGERATIO_GAVWMEAN,,False,cloud
+OFR:FPF-STRATEGY_MULTI_LEVERAGERATIO_GAVWMEAN,OFR,FPF-STRATEGY_MULTI_LEVERAGERATIO_GAVWMEAN,Form PF: multi-strategy leverage (GAV-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-STRATEGY_MULTI_LEVERAGERATIO_GAVWMEAN,,False,cloud
+OFR:FPF-STRATEGY_RV_LEVERAGERATIO_GAVWMEAN,OFR,FPF-STRATEGY_RV_LEVERAGERATIO_GAVWMEAN,Form PF: relative value leverage (GAV-weighted),Q,倍,125,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=FPF-STRATEGY_RV_LEVERAGERATIO_GAVWMEAN,,False,cloud
+OFR:SCOOS-NET_HF_CREDITAVAILABILITY,OFR,SCOOS-NET_HF_CREDITAVAILABILITY,SCOOS: availability of leverage to hedge funds,Q,净百分比,30,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=SCOOS-NET_HF_CREDITAVAILABILITY,,False,cloud
+OFR:SCOOS-NET_HF_CREDITTERMS,OFR,SCOOS-NET_HF_CREDITTERMS,SCOOS: nonprice terms offered to hedge funds,Q,净百分比,30,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=SCOOS-NET_HF_CREDITTERMS,,False,cloud
+OFR:SCOOS-NET_HF_LEVERAGEUSE,OFR,SCOOS-NET_HF_LEVERAGEUSE,SCOOS: use of leverage by hedge funds,Q,净百分比,30,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=SCOOS-NET_HF_LEVERAGEUSE,,False,cloud
+OFR:TFF-LF_TREAS_NET_POS10YREQV,OFR,TFF-LF_TREAS_NET_POS10YREQV,"CFTC TFF leveraged funds net Treasury futures, 10-year equivalent",W,美元,21,https://data.financialresearch.gov/hf/v1/metadata/query?mnemonic=TFF-LF_TREAS_NET_POS10YREQV,,False,cloud
 ONS:D7G7,ONS,D7G7,UK CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7g7/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/d7g7/mm23""}",False,cloud
 ONS:DKO8,ONS,DKO8,UK core CPI annual rate,M,%,45,https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/dko8/mm23,"{""period"": ""months"", ""uri"": ""/economy/inflationandpriceindices/timeseries/dko8/mm23""}",False,cloud
 ONS:ECY2,ONS,ECY2,UK monthly GDP index,M,%,45,https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp,"{""period"": ""months"", ""uri"": ""/economy/grossdomesticproductgdp/timeseries/ecy2/mgdp""}",False,cloud
@@ -514,6 +542,7 @@ STATCAN:2062815,STATCAN,2062815,Canada unemployment rate SA,M,%,8,https://www150
 STATCAN:41690973,STATCAN,41690973,Canada CPI all-items NSA,M,指数点,20,https://www150.statcan.gc.ca/,,False,cloud
 STATCAN:65201210,STATCAN,65201210,Canada real GDP monthly,M,百万加元,60,https://www150.statcan.gc.ca/,,False,cloud
 STOXX:sx5p,STOXX,sx5p,"STOXX Europe 50 (price, EUR)",D,点,1,https://www.stoxx.com/index/sx5p/,,False,cloud
+TIC:Cayman Islands,TIC,Cayman Islands,Cayman Islands holdings of Treasuries (TIC),M,十亿美元,50,https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt,,False,cloud
 TIC:Grand Total,TIC,Grand Total,"Foreign holdings of Treasuries, total (TIC)",M,十亿美元,50,https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt,,False,cloud
 TIC:Of Which: Foreign Official,TIC,Of Which: Foreign Official,Foreign official holdings of Treasuries (TIC),M,十亿美元,50,https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table5.txt,,False,cloud
 TSY:auction:10-Year:bid_to_cover_ratio,TSY,auction:10-Year:bid_to_cover_ratio,10-Year auction bid-to-cover,E,倍,0,https://fiscaldata.treasury.gov/datasets/treasury-securities-auctions-data/,"{""date_field"": ""auction_date"", ""endpoint"": ""v1/accounting/od/auctions_query"", ""filter"": ""original_security_term:eq:10-Year,security_type:eq:Note,inflation_index_security:eq:No,floating_rate:eq:No"", ""scale"": 1.0, ""value_field"": ""bid_to_cover_ratio""}",False,cloud

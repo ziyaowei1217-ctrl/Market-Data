@@ -240,6 +240,27 @@ class Cftc(Provider):
         return results
 
 
+# --------------------------------------------------------------------------- OFR Hedge Fund Monitor
+
+
+@register
+class OfrHedgeFundMonitor(Provider):
+    """OFR Hedge Fund Monitor API (public, no key). code = OFR mnemonic, e.g.
+    FPF-ALLQHF_GNE_SUM (Form PF), TFF-LF_TREAS_NET_POS10YREQV (CFTC TFF in 10-year
+    equivalents), FICC-SPONSORED_REPO_VOL (daily), SCOOS-NET_HF_LEVERAGEUSE (Fed SCOOS).
+    Values keep the mnemonic's own unit (U.S. dollars, ratios or net percent);
+    the catalog formulas do the scaling."""
+
+    name = "OFR"
+    URL = "https://data.financialresearch.gov/hf/v1/series/timeseries"
+
+    def fetch_one(self, d: SeriesDef, start: date) -> list[Observation]:
+        rows = self.get_json(self.URL, {"mnemonic": d.code, "start_date": start.isoformat()})
+        if not isinstance(rows, list):
+            raise ProviderError(f"unexpected OFR payload for {d.code}: {str(rows)[:120]}")
+        return obs_from_pairs(((r[0], r[1]) for r in rows if isinstance(r, (list, tuple)) and len(r) >= 2), start)
+
+
 # --------------------------------------------------------------------------- BLS
 
 

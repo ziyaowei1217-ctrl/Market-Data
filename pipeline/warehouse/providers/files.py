@@ -56,6 +56,50 @@ class TicTable5(Provider):
 
 
 @register
+class FinraMargin(Provider):
+    """FINRA margin statistics workbook: customer margin balances of FINRA member firms,
+    $ millions, monthly since 1997 (newest first; "Year-Month" text labels).
+    code = debit_margin | free_credit_cash | free_credit_margin."""
+
+    name = "FINRA"
+    batch = True
+    URL = "https://www.finra.org/sites/default/files/2021-03/margin-statistics.xlsx"
+    COLUMNS = {
+        "debit_margin": "Debit Balances in Customers' Securities Margin Accounts",
+        "free_credit_cash": "Free Credit Balances in Customers' Cash Accounts",
+        "free_credit_margin": "Free Credit Balances in Customers' Securities Margin Accounts",
+    }
+
+    def fetch_many(self, defs: Sequence[SeriesDef], start: date) -> list[FetchResult]:
+        import openpyxl
+
+        wb = openpyxl.load_workbook(io.BytesIO(self.get(self.URL)), read_only=True, data_only=True)
+        rows = [list(r) for r in wb.worksheets[0].iter_rows(values_only=True)]
+        head = next((i for i, r in enumerate(rows[:20]) if r and str(r[0] or "").strip() == "Year-Month"), None)
+        if head is None:
+            raise ProviderError("FINRA margin workbook layout changed: no Year-Month header")
+        labels = [str(c or "").strip() for c in rows[head]]
+        out = []
+        for d in defs:
+            label = self.COLUMNS.get(d.code)
+            if label not in labels:
+                out.append(FetchResult(d.key, [], "error", f"FINRA margin workbook layout changed: no column {label!r}"))
+                continue
+            col = labels.index(label)
+            values: dict[date, float] = {}
+            for r in rows[head + 1:]:
+                month = str(r[0] or "").strip()[:7] if r else ""
+                if not re.fullmatch(r"\d{4}-\d{2}", month) or col >= len(r):
+                    continue
+                when, x = date.fromisoformat(month + "-01"), to_float(r[col])
+                if x is not None and when >= start:
+                    values[when] = x
+            obs = [Observation(m, values[m]) for m in sorted(values)]
+            out.append(FetchResult(d.key, obs, "ok" if obs else "empty", "" if obs else "no observations"))
+        return out
+
+
+@register
 class JapanCpi(Provider):
     """Statistics Bureau of Japan CPI CSVs (national, monthly indices). Year-over-year
     is computed within one base (2020 base file, then 2025 base file from 2026).

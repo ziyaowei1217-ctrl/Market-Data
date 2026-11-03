@@ -205,7 +205,7 @@ class MappingTests(unittest.TestCase):
         from pipeline.warehouse.providers.base import REGISTRY
         self.assertTrue(providers <= set(REGISTRY), providers - set(REGISTRY))
         mapping = load_mapping()
-        self.assertEqual(len(mapping), 1959)
+        self.assertEqual(len(mapping), 1996)
         for iid, m in mapping.items():
             if m["method"] == "api":
                 formula = parse(m["formula"])

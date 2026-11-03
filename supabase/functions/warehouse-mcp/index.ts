@@ -19,7 +19,7 @@ const MAX_WEEKLY_ROWS = 5000;
 const MAX_SERIES_ROWS = 6000;
 const MAX_LATEST_ROWS = 400;
 
-const INSTRUCTIONS = `资本市场周报数据库（只读）。1959 个指标来自《全球资管周报｜数据采集清单》，每周六更新，周度截点为周五（week_cutoff）。
+const INSTRUCTIONS = `资本市场周报数据库（只读）。1996 个指标来自《全球资管周报｜数据采集清单》，每周六更新，周度截点为周五（week_cutoff）。
 用法：先 search_indicators 用中文关键词找指标（如 "美国10年国债"、"CPI"、"PMI"、"S&P 500"），不要猜 ID；再 get_weekly / get_latest 取数，get_series 取原始频率序列。
 - method：api = 官方/免费接口；proxy = 替代来源（coverage_note 以「代理：」开头写明替代品，引用或画图时必须注明）；manual = 人工维护的官方公告（如选举日期，数值写成 YYYYMMDD），有值时可用；pending / excluded 没有数值，告诉用户 coverage_note 里的原因，不要拿相近指标冒充。
 - status：只有 ok 的值可直接使用；stale 停更或过期，missing_input 原始缺失或尚未发布，insufficient_history 历史不够，no_vintage 缺少发布版本，provisional 议息结果尚未生效。

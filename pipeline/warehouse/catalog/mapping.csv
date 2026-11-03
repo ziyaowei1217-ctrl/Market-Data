@@ -539,6 +539,43 @@ indicator_id,method,phase,formula,coverage_note
 45-006,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
 45-007,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
 45-008,pending,P2,,ICI 网站拒绝云端服务器访问（HTTP 403，含声明爬虫身份）；需在本地电脑抓取，暂缺
+46-001,api,P1,{OFR:FPF-ALLQHF_GAV_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-002,api,P1,{OFR:FPF-ALLQHF_NAV_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-003,api,P1,{OFR:FPF-ALLQHF_GNE_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-004,api,P1,{OFR:FPF-ALLQHF_GNE_SUM} / {OFR:FPF-ALLQHF_NAV_SUM},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；总名义敞口 ÷ 净资产
+46-005,api,P1,{OFR:FPF-ALLQHF_GAV_SUM} / {OFR:FPF-ALLQHF_NAV_SUM},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；总资产 ÷ 净资产
+46-006,api,P1,{OFR:FPF-ALLQHF_GAVN10_LEVERAGERATIO_AVERAGE},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-007,api,P1,{OFR:FPF-STRATEGY_RV_LEVERAGERATIO_GAVWMEAN},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-008,api,P1,{OFR:FPF-STRATEGY_MACRO_LEVERAGERATIO_GAVWMEAN},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-009,api,P1,{OFR:FPF-STRATEGY_MULTI_LEVERAGERATIO_GAVWMEAN},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-010,api,P1,{OFR:FPF-STRATEGY_EQUITY_LEVERAGERATIO_GAVWMEAN},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-011,api,P1,{OFR:FPF-STRATEGY_CREDIT_LEVERAGERATIO_GAVWMEAN},OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月
+46-012,api,P1,{OFR:FPF-BORROW_REPO_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-013,api,P1,{OFR:FPF-BORROW_PRIMEBROKER_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-014,api,P1,{OFR:FPF-BORROW_OTHERSECURED_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-015,api,P1,({OFR:FPF-BORROW_REPO_SUM} + {OFR:FPF-BORROW_PRIMEBROKER_SUM} + {OFR:FPF-BORROW_OTHERSECURED_SUM}) / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；回购 + 主经纪商 + 其他有担保
+46-016,api,P1,pop({OFR:FPF-BORROW_PRIMEBROKER_SUM}),OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；季环比
+46-017,api,P1,{OFR:FPF-ASSETCLASS_LTREASURY_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-018,api,P1,{OFR:FPF-ASSETCLASS_STREASURY_SUM} / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；美元→十亿美元
+46-019,api,P1,({OFR:FPF-ASSETCLASS_LTREASURY_SUM} - {OFR:FPF-ASSETCLASS_STREASURY_SUM}) / 1e9,OFR Hedge Fund Monitor：SEC Form PF 汇总（合格对冲基金，含离岸），季度，滞后约 4 个月；多头 − 空头
+46-020,api,P1,{OFR:TFF-LF_TREAS_NET_POS10YREQV} / 1e9,OFR 把 CFTC TFF 各期限美债期货的杠杆基金净持仓折算为 10 年期等价（周二持仓，OFR 发布滞后约 2–3 周）；美元→十亿美元，负值为净空头
+46-021,api,P1,"pctile({OFR:TFF-LF_TREAS_NET_POS10YREQV}, ""3Y"")",OFR 把 CFTC TFF 各期限美债期货的杠杆基金净持仓折算为 10 年期等价（周二持仓，OFR 发布滞后约 2–3 周）
+46-022,api,P1,"ma({OFR:FICC-SPONSORED_REPO_VOL}, 20) / 1e9",OFR：FICC 担保回购日度成交量，20 个交易日均值（日度在月末、季末冲高）；美元→十亿美元
+46-023,api,P1,{OFR:SCOOS-NET_HF_LEVERAGEUSE},OFR：美联储 SCOOS 调查，交易商报告对冲基金条件变化的净百分比（季度）
+46-024,api,P1,{OFR:SCOOS-NET_HF_CREDITAVAILABILITY},OFR：美联储 SCOOS 调查，交易商报告对冲基金条件变化的净百分比（季度）
+46-025,api,P1,{OFR:SCOOS-NET_HF_CREDITTERMS},OFR：美联储 SCOOS 调查，交易商报告对冲基金条件变化的净百分比（季度）
+46-026,api,P1,{FRED:BOGZ1FL622000623Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-027,api,P1,{FRED:BOGZ1FL622000003Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-028,api,P1,{FRED:BOGZ1FL623064103Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-029,api,P1,{FRED:BOGZ1FL623061103Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-030,api,P1,{FRED:BOGZ1FL624123035Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-031,api,P1,{FRED:BOGZ1FL622151005Q} / 1000,美联储 Z.1 表 B.101.f 对冲基金分项（FRED 镜像，季度，只含美国本土注册基金）；百万→十亿美元
+46-032,api,P1,{TIC:Cayman Islands},美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）；代理：开曼注册基金为主，作美债基差交易的代理指标
+46-033,api,P1,yoy({TIC:Cayman Islands}),美国财政部 TIC 表 5（文件只含近 13 个月，本库逐月累积）；代理：开曼注册基金为主，作美债基差交易的代理指标
+46-034,api,P1,{FINRA:debit_margin} / 1000,FINRA 保证金统计工作簿（会员券商全部客户口径，非对冲基金专属）；百万→十亿美元
+46-035,api,P1,yoy({FINRA:debit_margin}),FINRA 保证金统计工作簿（会员券商全部客户口径，非对冲基金专属）
+46-036,api,P1,{FINRA:free_credit_cash} / 1000,FINRA 保证金统计工作簿（会员券商全部客户口径，非对冲基金专属）；百万→十亿美元
+46-037,api,P1,{FINRA:free_credit_margin} / 1000,FINRA 保证金统计工作簿（会员券商全部客户口径，非对冲基金专属）；百万→十亿美元
 47-001,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_long},CFTC TFF 期货单独口径，合约 13874A，周二持仓
 47-002,api,P1,{CFTC:gpe5-46if:13874A:asset_mgr_positions_short},CFTC TFF 期货单独口径，合约 13874A，周二持仓
 47-003,api,P1,({CFTC:gpe5-46if:13874A:asset_mgr_positions_long} - {CFTC:gpe5-46if:13874A:asset_mgr_positions_short}),CFTC TFF 期货单独口径，合约 13874A，周二持仓
