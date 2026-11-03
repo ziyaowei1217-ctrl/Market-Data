@@ -13,7 +13,7 @@ from typing import Sequence
 
 from ..db.store import Observation
 from .base import FetchResult, Provider, SeriesDef, register
-from .reports import BROWSER_UA, find_report_date
+from .documents import BROWSER_UA, find_report_date
 
 URL = ("https://advantage.factset.com/hubfs/Website/Resources%20Section/Research%20Desk/"
        "Earnings%20Insight/EarningsInsight_{d:%m%d%y}{suffix}.pdf")

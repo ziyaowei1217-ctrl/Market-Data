@@ -31,10 +31,23 @@
 - Its catalog comes from the 数据采集清单 workbook (`catalog/indicators.csv`) and
   `catalog/mapping.py`; regenerate the CSVs instead of editing them by hand.
 - Missing data stays NULL with an explicit `status`; never fill with zero.
+- Reading requires a signed-in Supabase account whose confirmed email is in
+  `public.readers` (`private.is_reader()` policy); anon sees nothing. Never commit
+  reader emails or passwords; add readers in the database, not in `schema.sql`.
+- `supabase/functions/warehouse-mcp/` is the read-only MCP server (Edge Function, deployed
+  with `--no-verify-jwt`; it checks personal `cw_` reader keys stored as hashes in
+  `public.reader_keys`). Never commit a reader key. Tests:
+  `node --experimental-strip-types --test supabase/functions/warehouse-mcp/server.test.ts`.
+- `method = 'manual'` rows come from `catalog/manual/*.csv` (official announcements only,
+  dates as YYYYMMDD) and are computed when they have a formula.
+- Checking a new source's layout from the cloud: list it in `catalog/inspect_urls.txt`
+  (modes FOLLOW / RAW / LINKS / JSONKEYS / GREP; `{X_API_KEY}` placeholders are masked) and run
+  `gh workflow run warehouse.yml --ref warehouse -f command=inspect`; previews come back as the
+  job's check-run annotations (about 4 KB each) and nothing is written to the database.
 - `method = 'proxy'` values come from a stand-in (an ETF tracking the index, or a
   sister index family); say so when charting them.
-- The scheduled run uses the default branch; `sync_catalog` refuses to run from a
-  checkout older than the one that last wrote the catalog, so keep `main` merged.
+- Scheduled and manual runs start on the default branch but check out `warehouse`;
+  `sync_catalog` refuses to run from a checkout older than the one that last wrote the catalog.
 - Tests: `python3 -m unittest discover -s pipeline/warehouse/tests -t .` (no network).
 - See `pipeline/warehouse/README.md` for tables, formulas and operations.
 

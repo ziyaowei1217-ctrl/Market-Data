@@ -25,7 +25,7 @@ create table if not exists public.indicators (
   updated_at      timestamptz not null default now()
 );
 comment on table public.indicators is '周报指标目录：来自数据采集清单，加上采集方式(method)、阶段(phase)与派生公式(formula)。';
-comment on column public.indicators.method is 'api=官方/免费接口直取或派生; proxy=用跟踪同一指数的ETF或同类指数代理（见coverage_note）; report=机构周报快照; manual=人工维护表; excluded=按需求排除; pending=暂未取得来源';
+comment on column public.indicators.method is 'api=官方/免费接口直取或派生; proxy=用跟踪同一指数的ETF或同类指数代理（见coverage_note）; manual=人工维护表; excluded=按需求排除（机构预测/长期假设，以及只见于机构周报的数字）; pending=暂未取得来源';
 
 create table if not exists public.series (
   series_key       text primary key,
@@ -88,18 +88,8 @@ create table if not exists public.warehouse_meta (
 );
 alter table public.warehouse_meta enable row level security;
 
--- Private archive of weekly institution reports (copyrighted text: no anon policy).
-create table if not exists public.report_pages (
-  source      text not null,
-  report_date date not null,
-  page        integer not null,
-  url         text,
-  text        text,
-  fetched_at  timestamptz not null default now(),
-  primary key (source, report_date, page)
-);
-alter table public.report_pages enable row level security;
-revoke all on public.report_pages from anon, authenticated;
+-- The warehouse stores numbers only: the earlier archive of institution-report text is removed.
+drop table if exists public.report_pages;
 
 create index if not exists observations_series_date on public.observations (series_key, obs_date desc);
 create index if not exists weekly_values_cutoff on public.weekly_values (week_cutoff);
@@ -138,7 +128,35 @@ left join (
   from public.weekly_values group by indicator_id
 ) s using (indicator_id);
 
--- Read-only access for anon/authenticated (REST API, classmates, agents).
+-- Who may read: classmates sign in with Supabase Auth (email + password, confirmed email)
+-- and must be on public.readers. Signed-out (anon) requests see nothing. The pipeline writes
+-- through the database connection string and is not affected.
+create table if not exists public.readers (
+  email    text primary key check (email = lower(email)),
+  note     text,
+  added_at timestamptz not null default now()
+);
+alter table public.readers enable row level security;
+revoke all on public.readers from anon, authenticated;
+
+-- The check lives in a non-exposed schema so it is not callable through the REST API.
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_reader() returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1
+    from auth.users u
+    join public.readers r on r.email = lower(u.email)
+    where u.id = auth.uid() and u.email_confirmed_at is not null
+  )
+$$;
+revoke all on function private.is_reader() from public, anon;
+grant execute on function private.is_reader() to authenticated;
+
 alter table public.indicators    enable row level security;
 alter table public.series        enable row level security;
 alter table public.observations  enable row level security;
@@ -149,17 +167,50 @@ do $$
 declare t text;
 begin
   foreach t in array array['indicators','series','observations','weekly_values','fetch_log'] loop
-    if not exists (
-      select 1 from pg_policies where schemaname = 'public' and tablename = t and policyname = 'read_all'
-    ) then
-      execute format('create policy read_all on public.%I for select to anon, authenticated using (true)', t);
-    end if;
+    execute format('drop policy if exists read_all on public.%I', t);
+    execute format('drop policy if exists readers_only on public.%I', t);
+    execute format('create policy readers_only on public.%I for select to authenticated using ((select private.is_reader()))', t);
   end loop;
 end $$;
+drop function if exists public.is_reader();
 
+revoke all on public.indicators, public.series, public.observations,
+              public.weekly_values, public.fetch_log, public.warehouse_meta,
+              public.obs_latest, public.weekly, public.latest_week, public.catalog
+  from anon;
 grant select on public.indicators, public.series, public.observations,
                 public.weekly_values, public.fetch_log,
                 public.obs_latest, public.weekly, public.latest_week, public.catalog
-  to anon, authenticated;
+  to authenticated;
 revoke insert, update, delete, truncate on public.indicators, public.series, public.observations,
-                public.weekly_values, public.fetch_log from anon, authenticated;
+                public.weekly_values, public.fetch_log from authenticated;
+
+-- Personal keys for the read-only MCP connector (supabase/functions/warehouse-mcp).
+-- Only SHA-256 hashes are stored; removing a reader deletes their keys.
+--   issue:  select private.issue_reader_key('classmate@example.com', 'Claude');  (shown once)
+--   revoke: delete from public.reader_keys where email = 'classmate@example.com';
+create table if not exists public.reader_keys (
+  key_hash     text primary key,
+  email        text not null references public.readers(email) on delete cascade,
+  label        text,
+  created_at   timestamptz not null default now(),
+  last_used_at timestamptz
+);
+alter table public.reader_keys enable row level security;
+revoke all on public.reader_keys from anon, authenticated;
+
+create or replace function private.issue_reader_key(p_email text, p_label text default null) returns text
+language plpgsql security definer set search_path = ''
+as $$
+declare k text;
+begin
+  if not exists (select 1 from public.readers where email = lower(p_email)) then
+    raise exception 'not on the readers list: %', p_email;
+  end if;
+  k := 'cw_' || encode(extensions.gen_random_bytes(24), 'hex');
+  insert into public.reader_keys (key_hash, email, label)
+  values (encode(extensions.digest(k, 'sha256'), 'hex'), lower(p_email), p_label);
+  return k;
+end
+$$;
+revoke all on function private.issue_reader_key(text, text) from public, anon, authenticated;

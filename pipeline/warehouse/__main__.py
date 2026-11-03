@@ -6,6 +6,7 @@
     python3 -m pipeline.warehouse derive [--backfill-from 2021-10-01]
     python3 -m pipeline.warehouse weekly                # sync + fetch + derive (the scheduled job)
     python3 -m pipeline.warehouse probe [--provider X]  # fetch a short window without writing
+    python3 -m pipeline.warehouse inspect               # preview catalog/inspect_urls.txt sources
 
 The database comes from --db or WAREHOUSE_DB_URL (Supabase Postgres connection
 string, or sqlite:///local.db for offline work).
@@ -39,8 +40,14 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--start", type=date.fromisoformat)
     d = sub.add_parser("derive")
     d.add_argument("--backfill-from", type=date.fromisoformat)
-    sub.add_parser("archive-reports")
+    ins = sub.add_parser("inspect")
+    ins.add_argument("--log-chars", type=int, default=0)
     args = parser.parse_args(argv)
+
+    if args.command == "inspect":
+        from .inspect_sources import main as inspect_main
+
+        return inspect_main(["--log-chars", str(args.log_chars)])
 
     if args.command == "probe":
         defs = series_defs(args.provider, args.series)
@@ -62,10 +69,6 @@ def main(argv: list[str] | None = None) -> int:
             _print_summary(fetch(store, defs, start=args.start or OBS_START, runner=args.runner))
         elif args.command == "derive":
             derive(store, backfill_from=args.backfill_from)
-        elif args.command == "archive-reports":
-            from .providers.reports import archive_all
-
-            print(f"report pages stored: {archive_all(store)}")
         elif args.command == "weekly":
             _, _, changed = sync_catalog(store)
             apply_series_resets(store)

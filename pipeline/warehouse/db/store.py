@@ -94,7 +94,6 @@ class Store:
     def upsert_weekly(self, rows: Iterable) -> int: ...
     def log(self, run_id: str, runner: str, provider: str, series_key: str | None, status: str, rows: int, message: str) -> None: ...
     def weekly_count(self) -> int: ...
-    def upsert_report_pages(self, source: str, report_date: date, url: str, pages: Sequence[str]) -> int: ...
     def indicator_formulas(self) -> dict[str, str]: ...
     def prune_series(self, keep: Sequence[str]) -> int: ...
     def get_meta(self, key: str) -> str | None: ...
@@ -155,9 +154,6 @@ create table if not exists fetch_log (
   id integer primary key autoincrement, run_id text, runner text, provider text, series_key text,
   status text, rows_written integer, message text, logged_at text);
 create table if not exists warehouse_meta (key text primary key, value text, updated_at text);
-create table if not exists report_pages (
-  source text, report_date text, page integer, url text, text text, fetched_at text,
-  primary key (source, report_date, page));
 """
 
 
@@ -287,15 +283,6 @@ class SQLiteStore(Store):
             self.conn.execute("delete from series where series_key=?", (key,))
         self.conn.commit()
         return len(stale)
-
-    def upsert_report_pages(self, source, report_date, url, pages):
-        now = datetime.now(timezone.utc).isoformat()
-        self.conn.executemany(
-            "insert or replace into report_pages values (?,?,?,?,?,?)",
-            [(source, report_date.isoformat(), i + 1, url, text, now) for i, text in enumerate(pages)],
-        )
-        self.conn.commit()
-        return len(pages)
 
     def close(self):
         self.conn.close()
@@ -466,16 +453,6 @@ class PostgresStore(Store):
             n = cur.rowcount
         self.conn.commit()
         return n
-
-    def upsert_report_pages(self, source, report_date, url, pages):
-        with self.conn.cursor() as cur:
-            cur.executemany(
-                """insert into public.report_pages (source, report_date, page, url, text) values (%s,%s,%s,%s,%s)
-                   on conflict (source, report_date, page) do update set url=excluded.url, text=excluded.text, fetched_at=now()""",
-                [(source, report_date, i + 1, url, text.replace("\x00", "")) for i, text in enumerate(pages)],
-            )
-        self.conn.commit()
-        return len(pages)
 
     def close(self):
         self.conn.close()
